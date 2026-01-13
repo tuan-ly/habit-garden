@@ -2,7 +2,18 @@
   "permissions": {
     "allow": [
       "Bash(npx shadcn@latest add:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "mcp__supabase__get_project",
+      "mcp__supabase__list_tables",
+      "mcp__supabase__apply_migration",
+      "mcp__supabase__get_advisors",
+      "mcp__supabase__generate_typescript_types",
+      "mcp__supabase__execute_sql",
+      "mcp__supabase__list_migrations",
+      "mcp__supabase__list_projects",
+      "mcp__supabase__list_extensions",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }
