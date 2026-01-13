@@ -19,9 +19,10 @@ import {
   Trophy,
   TrendingUp,
 } from 'lucide-react'
-import type { PlantWithType } from '@/types/database'
+import type { PlantWithType, WeatherType } from '@/types/database'
 import { MoistureBar } from './moisture-bar'
 import { GrowthProgress } from './growth-progress'
+import { PlantVisual, XpPopup } from './plant-visual'
 import { waterPlant, deletePlant } from '@/lib/actions/plants'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -30,15 +31,20 @@ interface PlantDetailSheetProps {
   plant: PlantWithType | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  weather?: WeatherType | null
 }
 
 export function PlantDetailSheet({
   plant,
   open,
   onOpenChange,
+  weather,
 }: PlantDetailSheetProps) {
   const [isPending, startTransition] = useTransition()
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isWatering, setIsWatering] = useState(false)
+  const [showXp, setShowXp] = useState(false)
+  const [earnedXp, setEarnedXp] = useState(0)
 
   if (!plant) return null
 
@@ -62,10 +68,16 @@ export function PlantDetailSheet({
   const handleWater = async () => {
     if (isWateredToday || isDead) return
 
+    setIsWatering(true)
     startTransition(async () => {
       const result = await waterPlant(plant.id)
 
       if (result.success) {
+        // Show XP popup animation
+        setEarnedXp(result.xpEarned || 0)
+        setShowXp(true)
+        setTimeout(() => setShowXp(false), 1500)
+
         toast.success(`Watered ${plant.name}!`, {
           description: `+${result.xpEarned} XP earned`,
         })
@@ -74,6 +86,7 @@ export function PlantDetailSheet({
           description: result.error,
         })
       }
+      setTimeout(() => setIsWatering(false), 800)
     })
   }
 
@@ -100,8 +113,16 @@ export function PlantDetailSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="overflow-y-auto">
         <SheetHeader>
-          <div className="flex items-center gap-3">
-            <span className="text-4xl">{plant.plant_type.icon}</span>
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <PlantVisual
+                plant={plant}
+                size="xl"
+                showWateringEffect={isWatering}
+                weather={weather}
+              />
+              <XpPopup amount={earnedXp} show={showXp} />
+            </div>
             <div>
               <SheetTitle>{plant.name}</SheetTitle>
               <SheetDescription>{plant.plant_type.name}</SheetDescription>
@@ -139,14 +160,14 @@ export function PlantDetailSheet({
 
           {/* Water Button */}
           <Button
-            className="w-full"
+            className={cn('w-full', isWatering && 'animate-pulse')}
             size="lg"
             variant={isWateredToday ? 'secondary' : 'default'}
             onClick={handleWater}
-            disabled={isPending || isWateredToday || isDead}
+            disabled={isPending || isWatering || isWateredToday || isDead}
           >
-            <Droplets className="h-5 w-5 mr-2" />
-            {isDead ? 'Plant is dead' : isWateredToday ? 'Already watered today' : 'Water Plant'}
+            <Droplets className={cn('h-5 w-5 mr-2', isWatering && 'text-blue-400')} />
+            {isDead ? 'Plant is dead' : isWateredToday ? 'Already watered today' : isWatering ? 'Watering...' : 'Water Plant'}
           </Button>
 
           <Separator />

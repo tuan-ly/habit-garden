@@ -37,7 +37,7 @@ Dự án chia thành 4 phases chính:
 - [x] Create "Add Plant" flow
 - [x] Plant type selection UI
 - [x] PlantDetailSheet component
-- [ ] Basic plant animation (placeholder)
+- [x] Basic plant animation (CSS animations for all growth states)
 - [x] Plant list with grid layout
 - [x] Empty state design
 
@@ -70,15 +70,15 @@ Dự án chia thành 4 phases chính:
 ### Week 7-8: Enhanced Plants
 
 **Tasks:**
-- [ ] Implement special plant effects:
-  - [ ] Bamboo (delayed growth)
-  - [ ] Sunflower (buff others)
-  - [ ] Cherry Blossom (cycle)
-  - [ ] Cactus (drought resistant)
-  - [ ] Lotus (difficulty bonus)
-- [ ] Create Lottie animations cho cây
-- [ ] Special effect UI indicators
-- [ ] Plant stage progression visuals
+- [x] Implement special plant effects:
+  - [x] Bamboo (delayed growth)
+  - [x] Sunflower (buff others)
+  - [x] Cherry Blossom (cycle)
+  - [x] Cactus (drought resistant)
+  - [x] Lotus (difficulty bonus)
+- [x] Create Lottie animations cho cây (lottie-react installed, CSS animations implemented)
+- [x] Special effect UI indicators
+- [x] Plant stage progression visuals
 
 **Deliverables:**
 - 5 loại cây đặc biệt hoạt động
@@ -87,16 +87,16 @@ Dự án chia thành 4 phases chính:
 ### Week 9-10: XP & Achievements
 
 **Tasks:**
-- [ ] Full XP system implementation
-- [ ] Level progression
-- [ ] Create achievements table & data
-- [ ] Achievement checking logic
-- [ ] Achievement popup UI
-- [ ] Daily weather system
-- [ ] Weather effects on plants
-- [ ] Water reserves (freeze) feature
-- [ ] Stats dashboard
-- [ ] Cemetery (dead plants history)
+- [x] Full XP system implementation
+- [x] Level progression
+- [x] Create achievements table & data
+- [x] Achievement checking logic
+- [x] Achievement popup UI
+- [x] Daily weather system
+- [x] Weather effects on plants
+- [x] Water reserves (freeze) feature
+- [x] Stats dashboard
+- [x] Cemetery (dead plants history)
 
 **Deliverables:**
 - Full gamification hoạt động
