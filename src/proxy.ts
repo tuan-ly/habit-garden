@@ -8,14 +8,16 @@ export async function proxy(request: NextRequest) {
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!,
     {
       cookies: {
         getAll() {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          )
           supabaseResponse = NextResponse.next({
             request,
           })
@@ -27,24 +29,39 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  // QUAN TRONG: Dung getUser() de refresh session neu can va verify token phia server
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  // Redirect logic
-  const url = request.nextUrl
-  const isAuthPage = url.pathname.startsWith('/login') || url.pathname.startsWith('/signup')
-  const isProtectedPage = url.pathname.startsWith('/dashboard')
+  // Protected routes - redirect to login if not authenticated
+  const protectedPaths = ['/garden', '/stats', '/profile', '/settings']
+  const isProtectedPath = protectedPaths.some((path) =>
+    request.nextUrl.pathname.startsWith(path)
+  )
 
-  if (!user && isProtectedPage) {
-    // Chua dang nhap, redirect ve login
-    const redirectUrl = new URL('/login', request.url)
-    redirectUrl.searchParams.set('redirectTo', url.pathname)
-    return NextResponse.redirect(redirectUrl)
+  if (isProtectedPath && !user) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
   }
 
-  if (user && isAuthPage) {
-    // Da dang nhap, redirect ve dashboard
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+  // Auth routes - redirect to garden if already authenticated
+  const authPaths = ['/login', '/signup']
+  const isAuthPath = authPaths.some((path) =>
+    request.nextUrl.pathname.startsWith(path)
+  )
+
+  if (isAuthPath && user) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/garden'
+    return NextResponse.redirect(url)
+  }
+
+  // Root path - redirect based on auth status
+  if (request.nextUrl.pathname === '/') {
+    const url = request.nextUrl.clone()
+    url.pathname = user ? '/garden' : '/login'
+    return NextResponse.redirect(url)
   }
 
   return supabaseResponse
@@ -52,13 +69,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public assets
-     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

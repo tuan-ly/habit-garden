@@ -21,13 +21,14 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { signOut } from '@/app/(auth)/actions'
-import { Home, Settings, Users, ChevronUp, LogOut } from 'lucide-react'
+import { Flower2, BarChart3, Settings, User as UserIcon, ChevronUp, LogOut } from 'lucide-react'
 import Link from 'next/link'
 
 const menuItems = [
-  { title: 'Dashboard', url: '/dashboard', icon: Home },
-  { title: 'Users', url: '/dashboard/users', icon: Users },
-  { title: 'Settings', url: '/dashboard/settings', icon: Settings },
+  { title: 'Garden', url: '/garden', icon: Flower2 },
+  { title: 'Stats', url: '/stats', icon: BarChart3 },
+  { title: 'Profile', url: '/profile', icon: UserIcon },
+  { title: 'Settings', url: '/settings', icon: Settings },
 ]
 
 export function AppSidebar({ user }: { user: User | null }) {
@@ -35,8 +36,8 @@ export function AppSidebar({ user }: { user: User | null }) {
     <Sidebar>
       <SidebarHeader>
         <div className="flex items-center gap-2 px-4 py-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            H
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-600 text-white text-lg">
+            🌱
           </div>
           <span className="font-semibold">Habit Garden</span>
         </div>
@@ -86,7 +87,7 @@ export function AppSidebar({ user }: { user: User | null }) {
                   <DropdownMenuItem asChild>
                     <button className="w-full cursor-pointer">
                       <LogOut className="mr-2 h-4 w-4" />
-                      Dang xuat
+                      Sign Out
                     </button>
                   </DropdownMenuItem>
                 </form>

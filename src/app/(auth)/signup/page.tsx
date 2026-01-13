@@ -7,12 +7,13 @@ import Link from 'next/link'
 
 export default function SignupPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-green-50 to-white dark:from-green-950 dark:to-background">
       <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Dang ky</CardTitle>
+        <CardHeader className="space-y-1 text-center">
+          <div className="text-4xl mb-2">🌱</div>
+          <CardTitle className="text-2xl font-bold">Start Your Garden</CardTitle>
           <CardDescription>
-            Tao tai khoan moi de bat dau
+            Create an account to begin growing your habits
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -28,16 +29,17 @@ export default function SignupPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Mat khau</Label>
+              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 name="password"
                 type="password"
+                placeholder="At least 6 characters"
                 required
               />
             </div>
             <Button formAction={signup} className="w-full">
-              Dang ky
+              Create Account
             </Button>
           </form>
 
@@ -47,7 +49,7 @@ export default function SignupPage() {
             </div>
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-background px-2 text-muted-foreground">
-                Hoac tiep tuc voi
+                Or continue with
               </span>
             </div>
           </div>
@@ -77,9 +79,9 @@ export default function SignupPage() {
           </form>
 
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Da co tai khoan?{' '}
+            Already have an account?{' '}
             <Link href="/login" className="text-primary hover:underline">
-              Dang nhap
+              Sign In
             </Link>
           </p>
         </CardContent>

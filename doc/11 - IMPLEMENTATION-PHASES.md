@@ -13,15 +13,15 @@ Dự án chia thành 4 phases chính:
 ### Week 1-2: Setup & Auth
 
 **Tasks:**
-- [X] Setup Next.js project với TypeScript, Tailwind
+- [x] Setup Next.js project với TypeScript, Tailwind
 - [x] Setup Supabase project
 - [x] Configure environment variables
 - [x] Setup shadcn/ui components
 - [x] Create database schema (basic tables)
-- [ ] Implement auth (login, register, logout)
-- [ ] Create protected routes
-- [ ] Setup user profile
-- [ ] Basic layout (header, navigation)
+- [x] Implement auth (login, register, logout)
+- [x] Create protected routes
+- [x] Setup user profile
+- [x] Basic layout (header, navigation)
 
 **Deliverables:**
 - User có thể đăng ký, đăng nhập
@@ -31,15 +31,15 @@ Dự án chia thành 4 phases chính:
 ### Week 3-4: Garden Core
 
 **Tasks:**
-- [ ] Create plant_types seed data
-- [ ] Implement GardenView component
-- [ ] Create PlantCard component
-- [ ] Create "Add Plant" flow
-- [ ] Plant type selection UI
-- [ ] PlantDetailSheet component
+- [x] Create plant_types seed data
+- [x] Implement GardenView component
+- [x] Create PlantCard component
+- [x] Create "Add Plant" flow
+- [x] Plant type selection UI
+- [x] PlantDetailSheet component
 - [ ] Basic plant animation (placeholder)
-- [ ] Plant list with grid layout
-- [ ] Empty state design
+- [x] Plant list with grid layout
+- [x] Empty state design
 
 **Deliverables:**
 - User có thể tạo cây mới
@@ -49,15 +49,15 @@ Dự án chia thành 4 phases chính:
 ### Week 5-6: Watering System
 
 **Tasks:**
-- [ ] Implement watering API
-- [ ] Create WateringButton component
-- [ ] Moisture bar component
-- [ ] Growth progress component
-- [ ] Streak tracking logic
+- [x] Implement watering API
+- [x] Create WateringButton component
+- [x] Moisture bar component
+- [x] Growth progress component
+- [x] Streak tracking logic
 - [ ] Daily moisture decay (cron job)
 - [ ] Plant death logic
 - [ ] Basic notifications setup
-- [ ] XP calculation (basic)
+- [x] XP calculation (basic)
 
 **Deliverables:**
 - User có thể tưới cây

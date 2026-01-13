@@ -7,12 +7,13 @@ import Link from 'next/link'
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-green-50 to-white dark:from-green-950 dark:to-background">
       <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Dang nhap</CardTitle>
+        <CardHeader className="space-y-1 text-center">
+          <div className="text-4xl mb-2">🌱</div>
+          <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
           <CardDescription>
-            Nhap email va mat khau de dang nhap
+            Sign in to continue growing your habits
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -28,7 +29,7 @@ export default function LoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Mat khau</Label>
+              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 name="password"
@@ -37,7 +38,7 @@ export default function LoginPage() {
               />
             </div>
             <Button formAction={login} className="w-full">
-              Dang nhap
+              Sign In
             </Button>
           </form>
 
@@ -47,7 +48,7 @@ export default function LoginPage() {
             </div>
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-background px-2 text-muted-foreground">
-                Hoac tiep tuc voi
+                Or continue with
               </span>
             </div>
           </div>
@@ -77,9 +78,9 @@ export default function LoginPage() {
           </form>
 
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Chua co tai khoan?{' '}
+            Don&apos;t have an account?{' '}
             <Link href="/signup" className="text-primary hover:underline">
-              Dang ky
+              Sign Up
             </Link>
           </p>
         </CardContent>
