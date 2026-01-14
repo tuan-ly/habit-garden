@@ -23,8 +23,16 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 
 ## Recent Changes (Latest First)
 
-### 2026-01-14: UI/UX Improvements
+### 2026-01-14: UI/UX Improvements (Continued)
 **Changes made in this session:**
+
+| File | Change |
+|------|--------|
+| `src/components/garden/plant-tooltip.tsx` | UPDATED - Fixed rounding of growth percentage (was showing 2.222222...%) |
+| `src/components/plants/plant-detail-sheet.tsx` | UPDATED - Major UI redesign: gradient header, card-style progress bars, colorful stat cards, better button styling |
+
+### 2026-01-14: UI/UX Improvements
+**Changes made in previous session:**
 
 | File | Change |
 |------|--------|

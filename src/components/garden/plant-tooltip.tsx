@@ -116,7 +116,7 @@ export function PlantTooltip({
                 <span className="text-green-400">🌱</span> Growth
               </span>
               <span className={cn('font-semibold', getGrowthColor(plant.growth_percentage))}>
-                {plant.growth_percentage}%
+                {Math.round(plant.growth_percentage)}%
               </span>
             </div>
             <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
