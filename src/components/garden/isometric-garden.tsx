@@ -27,14 +27,14 @@ function getGridSize(plantCount: number): number {
 }
 
 // Get responsive tile size - returns default for SSR, actual for client
-const DEFAULT_TILE_SIZE = 80
+const DEFAULT_TILE_SIZE = 100
 
 function getClientTileSize(): number {
   if (typeof window === 'undefined') return DEFAULT_TILE_SIZE
   const width = window.innerWidth
-  if (width < 640) return 65 // Mobile
-  if (width < 1024) return 80 // Tablet
-  return 90 // Desktop
+  if (width < 640) return 70 // Mobile
+  if (width < 1024) return 90 // Tablet
+  return 100 // Desktop
 }
 
 export function IsometricGarden({
@@ -121,19 +121,13 @@ export function IsometricGarden({
   // Get hovered plant for info bar
   const hoveredPlant = hoveredTile ? plantPositions.get(hoveredTile) ?? null : null
 
-  // Fixed height for garden area to prevent layout shift
-  const gardenAreaHeight = Math.max(containerHeight + 100, 400)
-
   return (
-    <div className="relative w-full flex flex-col">
+    <div className="relative w-full h-full flex flex-col">
       {/* Sky background */}
       <GardenSky weather={weather} />
 
-      {/* Garden container - centered horizontally, fixed height */}
-      <div
-        className="flex items-center justify-center"
-        style={{ height: gardenAreaHeight }}
-      >
+      {/* Garden container - centered, fills available space */}
+      <div className="flex-1 flex items-center justify-center py-2 overflow-auto">
         <div
           className="relative"
           style={{
@@ -183,7 +177,7 @@ export function IsometricGarden({
       <PlantInfoBar plant={hoveredPlant} />
 
       {/* Stats below garden */}
-      <div className="flex justify-center gap-4 mt-4 text-sm text-muted-foreground">
+      <div className="flex justify-center gap-4 mt-1 pb-1 text-sm text-muted-foreground">
         <span>🌱 {livingPlants.length} growing</span>
         <span>🪦 {plants.filter((p) => p.status === 'dead').length} dead</span>
       </div>

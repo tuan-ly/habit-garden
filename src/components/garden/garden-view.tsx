@@ -5,10 +5,11 @@ import { PlantCard } from '@/components/plants/plant-card'
 import { PlantDetailSheet } from '@/components/plants/plant-detail-sheet'
 import { AddPlantDialog } from '@/components/plants/add-plant-dialog'
 import { IsometricGarden } from './isometric-garden'
-import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Flower2, TreesIcon, LayoutGrid } from 'lucide-react'
-import type { PlantWithType, PlantType, WeatherType } from '@/types/database'
+import { TreesIcon, LayoutGrid } from 'lucide-react'
+import { WeatherBadge } from '@/components/gamification/weather-display'
+import { XpBadge } from '@/components/gamification/xp-progress'
+import type { PlantWithType, PlantType, WeatherType, Profile } from '@/types/database'
 
 type ViewMode = 'garden' | 'list'
 
@@ -16,20 +17,22 @@ interface GardenViewProps {
   plants: PlantWithType[]
   plantTypes: PlantType[]
   weather?: WeatherType | null
+  profile?: Profile | null
 }
 
-export function GardenView({ plants, plantTypes, weather }: GardenViewProps) {
+export function GardenView({ plants, plantTypes, weather, profile }: GardenViewProps) {
   const [selectedPlant, setSelectedPlant] = useState<PlantWithType | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
-  const [viewMode, setViewMode] = useState<ViewMode>('garden')
-
-  // Load saved preference
-  useEffect(() => {
-    const saved = localStorage.getItem('gardenViewMode') as ViewMode | null
-    if (saved && (saved === 'garden' || saved === 'list')) {
-      setViewMode(saved)
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    // Initialize from localStorage on client side
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('gardenViewMode') as ViewMode | null
+      if (saved === 'garden' || saved === 'list') {
+        return saved
+      }
     }
-  }, [])
+    return 'garden'
+  })
 
   // Save preference
   const handleViewModeChange = (mode: ViewMode) => {
@@ -60,9 +63,9 @@ export function GardenView({ plants, plantTypes, weather }: GardenViewProps) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* View toggle */}
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col h-full">
+      {/* Compact header bar */}
+      <div className="flex items-center justify-between py-1">
         <div className="flex items-center gap-2">
           <Button
             variant={viewMode === 'garden' ? 'default' : 'outline'}
@@ -81,23 +84,29 @@ export function GardenView({ plants, plantTypes, weather }: GardenViewProps) {
             List
           </Button>
         </div>
-        {viewMode === 'list' && (
-          <AddPlantDialog plantTypes={plantTypes} />
-        )}
+        <div className="flex items-center gap-3">
+          {viewMode === 'list' && (
+            <AddPlantDialog plantTypes={plantTypes} />
+          )}
+          {profile && <XpBadge totalXp={profile.xp} />}
+          <WeatherBadge size="sm" />
+        </div>
       </div>
 
-      {/* Isometric Garden View */}
+      {/* Isometric Garden View - fills remaining space */}
       {viewMode === 'garden' && (
-        <IsometricGarden
-          plants={plants}
-          plantTypes={plantTypes}
-          weather={weather}
-        />
+        <div className="flex-1 min-h-0">
+          <IsometricGarden
+            plants={plants}
+            plantTypes={plantTypes}
+            weather={weather}
+          />
+        </div>
       )}
 
       {/* List View (original card grid) */}
       {viewMode === 'list' && (
-        <div className="space-y-8">
+        <div className="flex-1 overflow-auto space-y-8">
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span>{growingPlants.length} growing</span>
             <span>{maturePlants.length} mature</span>

@@ -1,7 +1,6 @@
 import { getPlants, getPlantTypes } from '@/lib/actions/plants'
 import { getProfile } from '@/lib/actions/profile'
 import { GardenView } from '@/components/garden/garden-view'
-import { GardenHeader } from '@/components/garden/garden-header'
 import { getTodayWeather } from '@/lib/weather-system'
 
 export default async function GardenPage() {
@@ -14,10 +13,13 @@ export default async function GardenPage() {
   const weather = getTodayWeather()
 
   return (
-    <div className="space-y-6">
-      <GardenHeader profile={profile} />
-
-      <GardenView plants={plants} plantTypes={plantTypes} weather={weather.type} />
+    <div className="h-full">
+      <GardenView
+        plants={plants}
+        plantTypes={plantTypes}
+        weather={weather.type}
+        profile={profile}
+      />
     </div>
   )
 }
