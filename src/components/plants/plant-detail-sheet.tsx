@@ -14,7 +14,6 @@ import {
   Droplets,
   Flame,
   Calendar,
-  Trash2,
   Clock,
   Trophy,
   TrendingUp,
@@ -26,7 +25,7 @@ import type { PlantWithType, WeatherType } from '@/types/database'
 import { MoistureBar } from './moisture-bar'
 import { GrowthProgress } from './growth-progress'
 import { PlantVisual, XpPopup } from './plant-visual'
-import { waterPlant, deletePlant } from '@/lib/actions/plants'
+import { waterPlant } from '@/lib/actions/plants'
 import { getGoalForPlant, getGoalStats, type GoalWithStats, type GoalStatistics } from '@/lib/actions/goals'
 import { getAdaptiveAnalysis, type AdaptiveAnalysisResult } from '@/lib/actions/adaptive'
 import {
@@ -58,7 +57,6 @@ export function PlantDetailSheet({
   weather,
 }: PlantDetailSheetProps) {
   const [isPending, startTransition] = useTransition()
-  const [isDeleting, setIsDeleting] = useState(false)
   const [isWatering, setIsWatering] = useState(false)
   const [showXp, setShowXp] = useState(false)
   const [earnedXp, setEarnedXp] = useState(0)
@@ -141,25 +139,6 @@ export function PlantDetailSheet({
       }
       setTimeout(() => setIsWatering(false), 800)
     })
-  }
-
-  const handleDelete = async () => {
-    if (!confirm(`Are you sure you want to delete "${plant.name}"? This cannot be undone.`)) {
-      return
-    }
-
-    setIsDeleting(true)
-    const result = await deletePlant(plant.id)
-
-    if (result.success) {
-      toast.success('Plant deleted')
-      onOpenChange(false)
-    } else {
-      toast.error('Failed to delete', {
-        description: result.error,
-      })
-    }
-    setIsDeleting(false)
   }
 
   const handleGoalComplete = () => {
@@ -363,21 +342,6 @@ export function PlantDetailSheet({
               )}
             </div>
 
-            <Separator />
-
-            {/* Danger Zone */}
-            <div>
-              <h4 className="font-medium text-red-600 mb-3">Danger Zone</h4>
-              <Button
-                variant="destructive"
-                className="w-full"
-                onClick={handleDelete}
-                disabled={isDeleting}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                {isDeleting ? 'Deleting...' : 'Delete Plant'}
-              </Button>
-            </div>
           </div>
         </SheetContent>
       </Sheet>

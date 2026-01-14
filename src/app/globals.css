@@ -653,3 +653,84 @@
 .streak-fire {
   animation: streak-fire 0.5s ease-in-out infinite;
 }
+
+/* ========================================
+   Isometric Garden Animations
+   ======================================== */
+
+/* Tooltip appear animation */
+@keyframes tooltip-appear {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.animate-tooltip-appear {
+  animation: tooltip-appear 0.2s ease-out forwards;
+}
+
+/* Cloud drift animation */
+@keyframes cloud-drift {
+  0% {
+    transform: translateX(-20px);
+  }
+  100% {
+    transform: translateX(20px);
+  }
+}
+
+.animate-cloud-drift {
+  animation: cloud-drift 8s ease-in-out infinite alternate;
+}
+
+/* Star twinkle animation */
+@keyframes twinkle {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-twinkle {
+  animation: twinkle 2s ease-in-out infinite;
+}
+
+/* Rain drop animation */
+@keyframes rain-drop {
+  0% {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+}
+
+.animate-rain-drop {
+  animation: rain-drop 1s linear infinite;
+}
+
+/* Tile hover pulse */
+@keyframes tile-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.animate-tile-pulse {
+  animation: tile-pulse 0.8s ease-in-out infinite;
+}

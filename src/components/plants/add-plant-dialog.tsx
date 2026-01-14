@@ -22,10 +22,18 @@ import { toast } from 'sonner'
 
 interface AddPlantDialogProps {
   plantTypes: PlantType[]
+  // Support controlled mode for isometric garden
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
-export function AddPlantDialog({ plantTypes }: AddPlantDialogProps) {
-  const [open, setOpen] = useState(false)
+export function AddPlantDialog({ plantTypes, open: controlledOpen, onOpenChange }: AddPlantDialogProps) {
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false)
+
+  // Support both controlled and uncontrolled modes
+  const isControlled = controlledOpen !== undefined
+  const open = isControlled ? controlledOpen : uncontrolledOpen
+  const setOpen = isControlled ? (onOpenChange || (() => {})) : setUncontrolledOpen
   const [step, setStep] = useState<'select' | 'details'>('select')
   const [selectedType, setSelectedType] = useState<PlantType | null>(null)
   const [name, setName] = useState('')
@@ -99,12 +107,15 @@ export function AddPlantDialog({ plantTypes }: AddPlantDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Plant
-        </Button>
-      </DialogTrigger>
+      {/* Only show trigger button in uncontrolled mode */}
+      {!isControlled && (
+        <DialogTrigger asChild>
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Plant
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         {step === 'select' ? (
           <>

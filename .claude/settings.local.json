@@ -16,7 +16,8 @@
       "mcp__supabase__execute_sql",
       "mcp__supabase__list_migrations",
       "mcp__supabase__list_projects",
-      "mcp__supabase__list_extensions"
+      "mcp__supabase__list_extensions",
+      "Bash(git checkout:*)"
     ]
   }
 }
