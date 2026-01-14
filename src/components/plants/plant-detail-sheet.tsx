@@ -28,7 +28,19 @@ import { GrowthProgress } from './growth-progress'
 import { PlantVisual, XpPopup } from './plant-visual'
 import { waterPlant, deletePlant } from '@/lib/actions/plants'
 import { getGoalForPlant, getGoalStats, type GoalWithStats, type GoalStatistics } from '@/lib/actions/goals'
-import { GoalSetupWizard, GoalLogModal, GoalProgress, GoalModeBadge, GoalStats } from '@/components/goals'
+import { getAdaptiveAnalysis, type AdaptiveAnalysisResult } from '@/lib/actions/adaptive'
+import {
+  GoalSetupWizard,
+  GoalLogModal,
+  GoalProgress,
+  GoalModeBadge,
+  GoalStats,
+  AdaptiveSuggestionModal,
+  AdaptiveSettings,
+  PerformanceOverview,
+  AdjustmentHistory,
+} from '@/components/goals'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
@@ -59,6 +71,10 @@ export function PlantDetailSheet({
   const [showGoalStats, setShowGoalStats] = useState(false)
   const [isLoadingGoal, setIsLoadingGoal] = useState(false)
 
+  // Adaptive state
+  const [adaptiveAnalysis, setAdaptiveAnalysis] = useState<AdaptiveAnalysisResult | null>(null)
+  const [showAdaptiveSuggestion, setShowAdaptiveSuggestion] = useState(false)
+
   // Load goal when plant changes or sheet opens
   useEffect(() => {
     if (plant && open) {
@@ -70,10 +86,17 @@ export function PlantDetailSheet({
     }
   }, [plant?.id, open])
 
-  // Load full stats when viewing stats
+  // Load full stats and adaptive analysis when viewing stats
   useEffect(() => {
     if (goal && showGoalStats) {
       getGoalStats(goal.id).then(setGoalStats)
+      getAdaptiveAnalysis(goal.id).then((analysis) => {
+        setAdaptiveAnalysis(analysis)
+        // Show suggestion modal if there's a pending suggestion
+        if (analysis?.suggestion && analysis?.pendingAdjustment) {
+          setShowAdaptiveSuggestion(true)
+        }
+      })
     }
   }, [goal?.id, showGoalStats])
 
@@ -142,6 +165,15 @@ export function PlantDetailSheet({
   const handleGoalComplete = () => {
     // Refresh goal data
     getGoalForPlant(plant.id).then(setGoal)
+  }
+
+  const handleAdaptiveComplete = () => {
+    // Refresh all goal data after adaptive adjustment
+    if (goal) {
+      getGoalForPlant(plant.id).then(setGoal)
+      getGoalStats(goal.id).then(setGoalStats)
+      getAdaptiveAnalysis(goal.id).then(setAdaptiveAnalysis)
+    }
   }
 
   return (
@@ -370,7 +402,7 @@ export function PlantDetailSheet({
       )}
 
       {/* Goal Stats Modal */}
-      {goalStats && (
+      {goal && (
         <Sheet open={showGoalStats} onOpenChange={setShowGoalStats}>
           <SheetContent className="overflow-y-auto sm:max-w-lg">
             <SheetHeader>
@@ -378,10 +410,57 @@ export function PlantDetailSheet({
               <SheetDescription>{plant.name}</SheetDescription>
             </SheetHeader>
             <div className="mt-4">
-              <GoalStats stats={goalStats} />
+              <Tabs defaultValue="progress" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="progress">Progress</TabsTrigger>
+                  <TabsTrigger value="performance">Performance</TabsTrigger>
+                  <TabsTrigger value="settings">Settings</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="progress" className="mt-4">
+                  {goalStats ? (
+                    <GoalStats stats={goalStats} />
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Loading statistics...
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="performance" className="mt-4 space-y-4">
+                  {adaptiveAnalysis ? (
+                    <>
+                      <PerformanceOverview analysis={adaptiveAnalysis.analysis} />
+                      <AdjustmentHistory goalId={goal.id} />
+                    </>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Loading performance data...
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="settings" className="mt-4">
+                  <AdaptiveSettings
+                    goal={goal}
+                    onUpdate={handleAdaptiveComplete}
+                  />
+                </TabsContent>
+              </Tabs>
             </div>
           </SheetContent>
         </Sheet>
+      )}
+
+      {/* Adaptive Suggestion Modal */}
+      {adaptiveAnalysis?.suggestion && adaptiveAnalysis?.pendingAdjustment && (
+        <AdaptiveSuggestionModal
+          suggestion={adaptiveAnalysis.suggestion}
+          adjustmentId={adaptiveAnalysis.pendingAdjustment.id}
+          open={showAdaptiveSuggestion}
+          onOpenChange={setShowAdaptiveSuggestion}
+          onComplete={handleAdaptiveComplete}
+        />
       )}
     </>
   )

@@ -1,42 +1,48 @@
 # Habit Garden - Project Memo
 
 > **Last Updated**: 2026-01-14
-> **Current Phase**: Phase 3 - Goal Tracking (COMPLETE)
-> **Last Session**: Goal Tracking Implementation
+> **Current Phase**: Phase 3 - Adaptive Goals (COMPLETE)
+> **Last Session**: Adaptive Goals Implementation
 
 ---
 
 ## Current State Summary
 
-The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), and Phase 3 (Goal Tracking):
+The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (Goal Tracking), and Phase 3b (Adaptive Goals):
 - Full authentication system
 - Plant creation and management
 - Watering system with XP rewards + weather modifiers
 - Comprehensive gamification features fully integrated
 - Daily moisture decay cron job
 - Plant death logic
-- **NEW: Full goal tracking system with Build Capacity and Total Progress modes**
+- Full goal tracking system with Build Capacity and Total Progress modes
+- **NEW: Adaptive Goals system with performance analysis, suggestions, and recovery week**
 
 ---
 
 ## Recent Changes (Latest First)
 
-### 2026-01-14: Phase 3 Goal Tracking Implementation
+### 2026-01-14: Phase 3b Adaptive Goals Implementation
 **Changes made in this session:**
 
 | File | Change |
 |------|--------|
-| `src/lib/actions/goals.ts` | NEW - Server actions for createGoal, logGoalValue, getGoalStats, getGoalForPlant |
-| `src/components/goals/goal-setup-wizard.tsx` | NEW - 4-step wizard for setting up goals |
-| `src/components/goals/goal-log-modal.tsx` | NEW - Modal for logging goal progress values |
-| `src/components/goals/goal-progress.tsx` | NEW - Progress display, ring, and badge components |
-| `src/components/goals/goal-stats.tsx` | NEW - Full statistics view with charts |
-| `src/components/goals/index.ts` | NEW - Export index for goal components |
-| `src/components/plants/plant-detail-sheet.tsx` | Updated - Integrated goal display, setup wizard, and log modal |
-| `src/components/plants/plant-card.tsx` | Updated - Shows goal progress ring and badge for goal plants |
+| `src/lib/adaptive-goals.ts` | NEW - Performance analysis, trigger detection, suggestion generation utilities |
+| `src/lib/actions/adaptive.ts` | NEW - Server actions for adaptive analysis, apply/reject adjustments, recovery week |
+| `src/components/goals/adaptive-suggestion-modal.tsx` | NEW - Modal for displaying and responding to suggestions |
+| `src/components/goals/adaptive-settings.tsx` | NEW - Settings UI for adaptive mode (Fixed/Suggest/Auto) |
+| `src/components/goals/performance-overview.tsx` | NEW - Performance overview with score, trend, variance |
+| `src/components/goals/adjustment-history.tsx` | NEW - History of all adjustments made |
+| `src/components/goals/index.ts` | Updated - Added adaptive component exports |
+| `src/components/plants/plant-detail-sheet.tsx` | Updated - Integrated adaptive system with tabs (Progress/Performance/Settings) |
+| `src/components/ui/tabs.tsx` | NEW - Tabs component |
+| `src/components/ui/progress.tsx` | NEW - Progress bar component |
+| `src/components/ui/scroll-area.tsx` | NEW - Scroll area component |
+| `src/components/ui/alert-dialog.tsx` | NEW - Alert dialog component |
+| `src/components/ui/badge.tsx` | NEW - Badge component |
+| `src/components/ui/select.tsx` | NEW - Select component |
 
-### 2024-01-14: Gamification Integration (Previous Session)
-**Commit**: `99dc48a`
+### 2026-01-14: Phase 3 Goal Tracking Implementation (Previous Session)
 
 *(Previous changes remain documented below)*
 
@@ -83,14 +89,10 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), and Phase 
 - Plant death when moisture reaches 0%
 - Streak reset when plants not watered
 
-### Goal Tracking ✅ (NEW - Phase 3)
+### Goal Tracking ✅ (Phase 3)
 - **Build Capacity mode**: Track improvement over time (e.g., run 2km -> 10km)
 - **Total Progress mode**: Accumulate towards target (e.g., save $10,000)
 - **Goal Setup Wizard**: 4-step wizard to create goals
-  - Step 1: Choose mode (Build Capacity / Total Progress)
-  - Step 2: Set target value, unit, duration
-  - Step 3: Choose progression curve (linear, exponential, logarithmic, s-curve, step)
-  - Step 4: Preview weekly targets
 - **Goal Logging**: Log daily values with +/- buttons, quick presets
 - **Personal Records**: Track and celebrate PRs with trophy icon
 - **Weekly Targets**: Auto-generated based on progression curve
@@ -99,6 +101,27 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), and Phase 
 - **Plant Card Integration**: Shows goal progress on cards
 - **Bonus XP**: Extra XP for PRs (+25) and exceeding targets (+10)
 
+### Adaptive Goals ✅ (NEW - Phase 3b)
+- **Performance Analysis**: Weekly score calculation, trend analysis, variance tracking
+- **Trigger Detection**: Automatic detection of when adjustments are needed
+  - Trigger INCREASE: >110% for 3 weeks, or >130% for 2 weeks
+  - Trigger DECREASE: <80% for 3 weeks, or downward trend
+  - Trigger RECOVERY: Critical performance or missed weeks
+  - Warning: Valley of Death (weeks 2-4), high variance
+- **Suggestion Modal**: Beautiful modal with options to:
+  - Increase target / Shorten timeline
+  - Decrease target / Extend timeline
+  - Take recovery week
+  - Keep current plan
+- **Adaptive Modes**:
+  - **Fixed**: No automatic adjustments
+  - **Suggest**: Get suggestions, user decides
+  - **Auto**: Automatic adjustments with protection limits
+- **Recovery Week**: Reduce target by 50% for a week, keeps streak
+- **Performance Overview**: Visual score, trend arrows, weekly breakdown
+- **Adjustment History**: Track all adjustments made over time
+- **Integrated UI**: Tab-based view in Goal Stats (Progress/Performance/Settings)
+
 ---
 
 ## What's NOT Working / TODO
@@ -106,12 +129,12 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), and Phase 
 ### Phase 1 Remaining
 - [ ] Basic notifications setup (optional, can be added later)
 
-### Phase 4 - Adaptive Goals (Not Started)
-- [ ] Adaptive trigger detection
-- [ ] Performance scoring
-- [ ] Trend analysis
-- [ ] Suggestion generation
-- [ ] Recovery week feature
+### Phase 4 - Polish & Launch
+- [ ] Responsive design check
+- [ ] PWA setup
+- [ ] Onboarding flow
+- [ ] Error handling improvements
+- [ ] Performance optimization
 
 ### Nice to Have
 - [ ] Water reserves integration with streak protection UI
@@ -130,33 +153,37 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), and Phase 
 
 ## File Locations Quick Reference
 
-### New Files This Session (Phase 3)
+### New Files This Session (Phase 3b - Adaptive)
 ```
-src/lib/actions/goals.ts                    # Goal server actions
-src/components/goals/goal-setup-wizard.tsx  # 4-step goal wizard
-src/components/goals/goal-log-modal.tsx     # Value logging modal
-src/components/goals/goal-progress.tsx      # Progress components
-src/components/goals/goal-stats.tsx         # Statistics view
-src/components/goals/index.ts               # Exports
+src/lib/adaptive-goals.ts                           # Performance analysis utilities
+src/lib/actions/adaptive.ts                         # Adaptive server actions
+src/components/goals/adaptive-suggestion-modal.tsx  # Suggestion modal
+src/components/goals/adaptive-settings.tsx          # Settings UI
+src/components/goals/performance-overview.tsx       # Performance display
+src/components/goals/adjustment-history.tsx         # History component
+```
+
+### New UI Components
+```
+src/components/ui/tabs.tsx         # Tabs
+src/components/ui/progress.tsx     # Progress bar
+src/components/ui/scroll-area.tsx  # Scroll area
+src/components/ui/alert-dialog.tsx # Alert dialog
+src/components/ui/badge.tsx        # Badge
+src/components/ui/select.tsx       # Select dropdown
 ```
 
 ### Updated Files This Session
 ```
-src/components/plants/plant-detail-sheet.tsx # Goal integration
-src/components/plants/plant-card.tsx         # Goal progress display
+src/components/goals/index.ts               # Added adaptive exports
+src/components/plants/plant-detail-sheet.tsx # Integrated adaptive UI
 ```
 
-### Key Goal-Related Files
-```
-src/lib/progression.ts                       # Progression curves
-src/types/database.ts                        # Goal TypeScript types
-```
-
-### Database Tables (Already Created)
+### Database Tables
 ```
 goals                  # Goal configuration
 goal_logs              # Daily value logs
-goal_adjustments       # Adaptive adjustments (for future)
+goal_adjustments       # Adaptive adjustments history
 ```
 
 ---
@@ -175,41 +202,50 @@ CRON_SECRET=your-secret-token
 
 ---
 
-## How Goal Tracking Works
+## How Adaptive Goals Work
 
-### Creating a Goal
-1. Open plant detail sheet
-2. Click "Add Goal Tracking" button
-3. Follow 4-step wizard:
-   - Choose Build Capacity or Total Progress
-   - Set unit, target value, duration
-   - Select progression curve
-   - Preview and confirm
+### Performance Scoring
+- Score = (Actual / Target) × 100%
+- Categories: Exceptional (130%+), Exceeding (110%+), On Track (90%+), Below, Struggling, Critical
 
-### Logging Progress
-1. Click "Log Progress" on a goal plant
-2. Enter today's value
-3. See if it's a PR or exceeds target
-4. Get bonus XP for achievements
+### Trigger Detection
+1. **Increase Triggers**:
+   - 3+ weeks exceeding 110% → suggest increase
+   - 2+ weeks at 130%+ → suggest bigger increase
+2. **Decrease Triggers**:
+   - 3+ weeks below 80% → suggest decrease
+   - Downward trend with low scores → suggest decrease
+3. **Recovery Triggers**:
+   - Critical performance → suggest recovery week
+   - 2+ missed weeks → suggest recovery
 
-### Viewing Statistics
-1. Open plant detail sheet for goal plant
-2. Click "Stats" button
-3. See weekly chart, PRs, completion prediction
+### Suggestion Flow
+1. System analyzes performance weekly
+2. If trigger detected → creates pending adjustment
+3. User sees suggestion modal when viewing stats
+4. User can Accept, Modify, or Dismiss
+5. If Auto mode → system applies recommended option
+
+### Recovery Week
+- Target reduced by 50% for current week
+- Keeps streak intact
+- Doesn't count towards trend analysis
+- Can be triggered manually via Settings
 
 ---
 
 ## Next Steps
 
-1. **Test goal tracking**
+1. **Test adaptive goals**
    - Create a plant with goal
-   - Log some values
-   - Check statistics display
+   - Log some values (exceed/miss targets)
+   - Check performance analysis
+   - See if suggestions appear
 
-2. **Phase 4: Adaptive Goals (Optional)**
-   - Add trigger detection
-   - Implement suggestions
-   - Recovery week feature
+2. **Phase 4: Polish & Launch**
+   - Responsive design
+   - PWA setup
+   - Onboarding flow
 
 3. **Polish**
    - Achievement unlock notifications

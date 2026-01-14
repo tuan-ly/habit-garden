@@ -140,15 +140,15 @@ Dự án chia thành 4 phases chính:
 ### Week 13-14: Adaptive Goals
 
 **Tasks:**
-- [ ] Adaptive trigger detection
-- [ ] Performance scoring
-- [ ] Trend analysis
-- [ ] Suggestion generation
-- [ ] Adjustment UI (notification/modal)
-- [ ] Apply/reject adjustment flow
-- [ ] Recovery week feature
-- [ ] Adjustment history
-- [ ] Adaptive settings UI
+- [x] Adaptive trigger detection
+- [x] Performance scoring
+- [x] Trend analysis
+- [x] Suggestion generation
+- [x] Adjustment UI (notification/modal)
+- [x] Apply/reject adjustment flow
+- [x] Recovery week feature
+- [x] Adjustment history
+- [x] Adaptive settings UI
 
 **Deliverables:**
 - Adaptive goals hoạt động
@@ -237,6 +237,7 @@ Dự án chia thành 4 phases chính:
 - FID < 100ms
 - CLS < 0.1
 - Lighthouse score > 90
+
 📋 INSTRUCTION CHO CLAUDE CODE
 Khi bắt đầu làm việc, hãy:
 
