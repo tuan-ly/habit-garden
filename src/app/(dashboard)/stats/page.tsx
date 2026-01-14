@@ -22,7 +22,7 @@ async function getWateringStats() {
   // Get all plants with streaks
   const { data: plants } = await supabase
     .from('plants')
-    .select('name, current_streak, longest_streak, total_waterings, plant_type:plant_types(icon)')
+    .select('id, name, current_streak, longest_streak, total_waterings, plant_type:plant_types(icon)')
     .eq('user_id', user.id)
     .eq('status', 'growing')
     .order('current_streak', { ascending: false })
@@ -156,7 +156,7 @@ export default async function StatsPage() {
                   ? plant.plant_type[0]
                   : plant.plant_type
                 return (
-                  <div key={plant.name} className="flex items-center justify-between">
+                  <div key={plant.id} className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">
                         {plantType?.icon ?? '🌱'}

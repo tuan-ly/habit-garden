@@ -22,6 +22,19 @@ const SPECIAL_PLANT_EFFECTS: Record<string, string> = {
   'money tree': 'plant-effect-money',
 }
 
+// Plant glow colors based on type
+const PLANT_GLOW_COLORS: Record<string, string> = {
+  bamboo: 'rgba(34, 197, 94, 0.4)',
+  sunflower: 'rgba(251, 191, 36, 0.4)',
+  'cherry blossom': 'rgba(244, 114, 182, 0.4)',
+  cherry: 'rgba(244, 114, 182, 0.4)',
+  cactus: 'rgba(34, 197, 94, 0.3)',
+  lotus: 'rgba(139, 92, 246, 0.4)',
+  rose: 'rgba(244, 63, 94, 0.4)',
+  bonsai: 'rgba(101, 163, 13, 0.4)',
+  'money tree': 'rgba(251, 191, 36, 0.5)',
+}
+
 // Weather effect classes
 const WEATHER_EFFECTS: Record<WeatherType, string> = {
   sunny: 'weather-sunny',
@@ -44,9 +57,31 @@ function getSpecialEffectClass(plantTypeName: string): string {
   return SPECIAL_PLANT_EFFECTS[normalizedName] || ''
 }
 
+function getSizeClasses(size: PlantVisualProps['size']) {
+  const sizes = {
+    sm: 'text-2xl w-10 h-10',
+    md: 'text-4xl w-14 h-14',
+    lg: 'text-5xl w-16 h-16',
+    xl: 'text-6xl w-20 h-20',
+    '2xl': 'text-7xl w-24 h-24',
+  }
+  return sizes[size || 'md']
+}
+
+// Get glow color based on plant type
+function getPlantGlowColor(plantTypeName: string): string {
+  const normalizedName = plantTypeName.toLowerCase()
+  return PLANT_GLOW_COLORS[normalizedName] || 'rgba(34, 197, 94, 0.3)'
+}
+
 // Determine if plant is wilting (low moisture, not dead)
 function isWilting(plant: PlantWithType): boolean {
   return plant.status !== 'dead' && plant.current_moisture < 30
+}
+
+// Determine if plant is thriving (high moisture + good growth)
+function isThriving(plant: PlantWithType): boolean {
+  return plant.status !== 'dead' && plant.current_moisture >= 70 && plant.growth_percentage >= 25
 }
 
 export function PlantVisual({
@@ -72,6 +107,7 @@ export function PlantVisual({
   const growthStage = getGrowthStage(plant.growth_percentage, plant.status)
   const isDead = plant.status === 'dead'
   const wilting = isWilting(plant)
+  const thriving = isThriving(plant)
 
   // Detect growth stage changes for burst animation
   useEffect(() => {
@@ -89,16 +125,37 @@ export function PlantVisual({
   // Weather effect
   const weatherClass = weather ? WEATHER_EFFECTS[weather] : ''
 
+  // Glow color for thriving plants
+  const glowColor = getPlantGlowColor(plant.plant_type.name)
+
   return (
-    <div className={cn('relative inline-flex items-center justify-center', className)}>
+    <div className={cn(
+      'relative inline-flex items-center justify-center',
+      'plant-container',
+      className
+    )}>
+      {/* Background glow for thriving/mature plants */}
+      {(thriving || plant.status === 'mature') && !isDead && (
+        <div
+          className="absolute inset-0 rounded-full opacity-60 animate-pulse-slow blur-md"
+          style={{
+            background: `radial-gradient(circle, ${glowColor} 0%, transparent 70%)`,
+            transform: 'scale(1.5)',
+          }}
+        />
+      )}
+
       {/* Main plant image with animations */}
       <div
         className={cn(
-          'plant-visual inline-flex items-center justify-center transition-transform duration-300',
+          'plant-visual inline-flex items-center justify-center transition-transform duration-300 relative z-10',
+          getSizeClasses(size),
           specialEffectClass,
           weatherClass,
           wilting && 'plant-wilting',
-          showGrowthBurst && 'animate-growth-burst'
+          showGrowthBurst && 'animate-growth-burst',
+          thriving && 'plant-thriving',
+          plant.status === 'mature' && 'plant-mature-glow'
         )}
       >
         <PlantImage
@@ -112,18 +169,36 @@ export function PlantVisual({
       {isWatering && (
         <div className="water-effect absolute inset-0">
           {/* Water drops */}
-          <span className="water-drop absolute top-0 left-1/3 text-blue-400">💧</span>
-          <span className="water-drop absolute top-0 left-1/2 text-blue-400 delay-100">💧</span>
-          <span className="water-drop absolute top-0 left-2/3 text-blue-400 delay-200">💧</span>
+          <span className="water-drop absolute top-0 left-1/4 text-blue-400 text-lg">💧</span>
+          <span className="water-drop absolute top-0 left-1/2 text-blue-400 text-lg delay-100">💧</span>
+          <span className="water-drop absolute top-0 left-3/4 text-blue-400 text-lg delay-200">💧</span>
 
           {/* Splash ring */}
-          <div className="water-splash-ring absolute bottom-1/4 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-blue-400/30" />
+          <div className="water-splash-ring absolute bottom-1/4 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-blue-400/40" />
         </div>
       )}
 
-      {/* Growth stage indicator (optional visual feedback) */}
+      {/* Wilting indicator - more prominent */}
+      {wilting && !isDead && (
+        <div className="absolute -top-2 -right-2 flex items-center gap-0.5 bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 rounded-full shadow-sm">
+          <span className="text-xs">💦</span>
+          <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">Thirsty</span>
+        </div>
+      )}
+
+      {/* Growth stage indicator - enhanced */}
       {growthStage === 'blooming' && !isDead && !wilting && (
-        <span className="absolute -top-1 -right-1 text-xs sparkle">✨</span>
+        <div className="absolute -top-1 -right-1 flex">
+          <span className="text-sm sparkle">✨</span>
+          <span className="text-sm sparkle delay-150">✨</span>
+        </div>
+      )}
+
+      {/* Mature badge */}
+      {plant.status === 'mature' && !isDead && (
+        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-md">
+          MATURE
+        </div>
       )}
 
       {/* Growth burst effect */}

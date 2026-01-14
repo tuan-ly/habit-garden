@@ -740,3 +740,145 @@
   animation: growth-burst 0.6s ease-out;
 }
 
+/* ========================================
+   Enhanced Plant Visual Effects
+   ======================================== */
+
+/* Slow pulse for glowing backgrounds */
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1.4);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.6);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s ease-in-out infinite;
+}
+
+/* Thriving plant enhancement */
+.plant-thriving {
+  filter: brightness(1.05) saturate(1.1);
+}
+
+/* Mature plant special glow */
+.plant-mature-glow {
+  filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.5));
+}
+
+/* Shimmer effect for progress bars */
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.animate-shimmer {
+  background-size: 200% auto;
+  animation: shimmer 3s linear infinite;
+}
+
+/* Plant container hover effect */
+.plant-container {
+  transition: transform 0.3s ease;
+}
+
+.plant-container:hover {
+  transform: scale(1.05);
+}
+
+/* Enhanced sparkle with stagger */
+.sparkle.delay-150 {
+  animation-delay: 150ms;
+}
+
+/* Water drop delays */
+.water-drop.delay-100 {
+  animation-delay: 100ms;
+}
+
+.water-drop.delay-200 {
+  animation-delay: 200ms;
+}
+
+/* Card gradient hover effect */
+.group:hover .plant-visual {
+  transform: scale(1.08);
+  transition: transform 0.3s ease;
+}
+
+/* Bounce animation for icons */
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 1s ease-in-out infinite;
+}
+
+/* Glow ring for important status */
+@keyframes glow-ring {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+  }
+}
+
+.animate-glow-ring {
+  animation: glow-ring 2s ease-in-out infinite;
+}
+
+/* Float animation for decorative elements */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-5px) rotate(2deg);
+  }
+  75% {
+    transform: translateY(3px) rotate(-2deg);
+  }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* Gradient text effect */
+.gradient-text {
+  background: linear-gradient(135deg, #22c55e, #10b981, #14b8a6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Success ripple effect */
+@keyframes success-ripple {
+  0% {
+    transform: scale(0);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(3);
+    opacity: 0;
+  }
+}
+
+.success-ripple {
+  animation: success-ripple 0.6s ease-out forwards;
+}
