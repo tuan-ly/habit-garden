@@ -66,9 +66,12 @@ function getPlantGradient(plantTypeId: string): string {
 }
 
 export function PlantInfoBar({ plant }: PlantInfoBarProps) {
+  // Fixed height container to prevent layout shift
+  const containerHeight = 80
+
   if (!plant) {
     return (
-      <div className="flex justify-center mt-6">
+      <div className="flex justify-center items-center mt-6" style={{ height: containerHeight }}>
         <div className="px-5 py-2.5 bg-slate-800/60 backdrop-blur-md rounded-full text-sm text-slate-300 border border-slate-700/50 shadow-lg">
           <span className="opacity-80">✨ Hover a plant to see info • Click to open details</span>
         </div>
@@ -82,7 +85,7 @@ export function PlantInfoBar({ plant }: PlantInfoBarProps) {
   const isThirsty = moisturePercent < 30 && plant.status !== 'dead'
 
   return (
-    <div className="flex justify-center mt-6">
+    <div className="flex justify-center items-center mt-6" style={{ height: containerHeight }}>
       <div className={cn(
         "relative overflow-hidden rounded-2xl shadow-2xl",
         "bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-700/50",

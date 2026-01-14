@@ -27,14 +27,14 @@ function getGridSize(plantCount: number): number {
 }
 
 // Get responsive tile size - returns default for SSR, actual for client
-const DEFAULT_TILE_SIZE = 60
+const DEFAULT_TILE_SIZE = 80
 
 function getClientTileSize(): number {
   if (typeof window === 'undefined') return DEFAULT_TILE_SIZE
   const width = window.innerWidth
-  if (width < 640) return 50 // Mobile
-  if (width < 1024) return 60 // Tablet
-  return 70 // Desktop
+  if (width < 640) return 65 // Mobile
+  if (width < 1024) return 80 // Tablet
+  return 90 // Desktop
 }
 
 export function IsometricGarden({
@@ -121,20 +121,26 @@ export function IsometricGarden({
   // Get hovered plant for info bar
   const hoveredPlant = hoveredTile ? plantPositions.get(hoveredTile) ?? null : null
 
+  // Fixed height for garden area to prevent layout shift
+  const gardenAreaHeight = Math.max(containerHeight + 100, 400)
+
   return (
-    <div className="relative w-full">
+    <div className="relative w-full flex flex-col">
       {/* Sky background */}
       <GardenSky weather={weather} />
 
-      {/* Garden container */}
+      {/* Garden container - centered horizontally, fixed height */}
       <div
-        className="relative mx-auto"
-        style={{
-          width: containerWidth,
-          height: containerHeight,
-          minHeight: 300,
-        }}
+        className="flex items-center justify-center"
+        style={{ height: gardenAreaHeight }}
       >
+        <div
+          className="relative"
+          style={{
+            width: containerWidth,
+            height: containerHeight,
+          }}
+        >
         {/* Single unified ground plane */}
         <GroundPlane
           gridSize={gridSize}
@@ -170,6 +176,7 @@ export function IsometricGarden({
             </IsometricTile>
           )
         })}
+        </div>
       </div>
 
       {/* Info bar below garden - shows hovered plant details */}

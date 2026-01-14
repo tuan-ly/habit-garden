@@ -91,6 +91,13 @@ export function GroundPlane({
           <stop offset="100%" stopColor={grassColor} />
         </linearGradient>
 
+        {/* Clip path to constrain texture within diamond shape */}
+        <clipPath id="grassClip">
+          <polygon
+            points={`${topX},${topY} ${rightX},${rightY} ${bottomX},${bottomY} ${leftX},${leftY}`}
+          />
+        </clipPath>
+
         {/* Subtle noise pattern for texture */}
         <filter id="grassTexture">
           <feTurbulence
@@ -112,11 +119,13 @@ export function GroundPlane({
       </defs>
 
       {/* Main grass surface - single connected plane */}
-      <polygon
-        points={`${topX},${topY} ${rightX},${rightY} ${bottomX},${bottomY} ${leftX},${leftY}`}
-        fill="url(#grassGradient)"
-        filter="url(#grassTexture)"
-      />
+      <g clipPath="url(#grassClip)">
+        <polygon
+          points={`${topX},${topY} ${rightX},${rightY} ${bottomX},${bottomY} ${leftX},${leftY}`}
+          fill="url(#grassGradient)"
+          filter="url(#grassTexture)"
+        />
+      </g>
 
       {/* Grass surface overlay for depth */}
       <polygon

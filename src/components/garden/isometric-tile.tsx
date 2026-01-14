@@ -43,16 +43,18 @@ export function IsometricTile({
   const tileCenterX = centerX + (col - row) * (tileSize / 2)
   const tileCenterY = (col + row) * (tileSize / 4)
 
+  const tileHitHeight = tileSize / 2
+
   return (
     <div
       className={cn(
-        'absolute cursor-pointer transition-all duration-200'
+        'absolute cursor-pointer'
       )}
       style={{
         left: tileCenterX,
         top: tileCenterY,
         width: tileSize,
-        height: tileSize,
+        height: tileHitHeight,
         transform: 'translate(-50%, 0)', // Align from top-center
         zIndex: row + col + 10, // Above ground plane
       }}
@@ -110,7 +112,7 @@ export function IsometricTile({
           className="absolute flex items-center justify-center pointer-events-none"
           style={{
             left: tileSize / 2,
-            top: tileSize / 4,
+            top: tileHitHeight / 2,
             transform: 'translate(-50%, -50%)',
           }}
         >
@@ -126,7 +128,7 @@ export function IsometricTile({
           className="absolute pointer-events-none rounded-full"
           style={{
             left: tileSize / 2,
-            top: tileSize / 4,
+            top: tileHitHeight / 2,
             width: tileSize * 0.4,
             height: tileSize * 0.15,
             transform: 'translate(-50%, -50%)',
@@ -144,8 +146,9 @@ export function IsometricTile({
           )}
           style={{
             left: tileSize / 2,
-            top: tileSize / 4,
+            top: tileHitHeight / 2,
             transform: 'translate(-50%, -100%)',
+            transformOrigin: 'bottom center',
           }}
         >
           {children}
