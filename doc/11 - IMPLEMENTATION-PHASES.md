@@ -68,8 +68,8 @@ Dự án chia thành 4 phases chính:
 - [x] Moisture bar component
 - [x] Growth progress component
 - [x] Streak tracking logic
-- [ ] Daily moisture decay (cron job)
-- [ ] Plant death logic
+- [x] Daily moisture decay (cron job)
+- [x] Plant death logic
 - [ ] Basic notifications setup
 - [x] XP calculation (basic)
 
@@ -122,15 +122,15 @@ Dự án chia thành 4 phases chính:
 ### Week 11-12: Goal System
 
 **Tasks:**
-- [ ] Goals database schema
-- [ ] Goal setup wizard UI
-- [ ] Build Capacity mode
-- [ ] Total Progress mode
-- [ ] Progression curves implementation
-- [ ] Weekly targets generation
-- [ ] Goal log entry UI
-- [ ] Goal statistics display
-- [ ] Progress chart component
+- [x] Goals database schema
+- [x] Goal setup wizard UI
+- [x] Build Capacity mode
+- [x] Total Progress mode
+- [x] Progression curves implementation
+- [x] Weekly targets generation
+- [x] Goal log entry UI
+- [x] Goal statistics display
+- [x] Progress chart component
 
 **Deliverables:**
 - User có thể tạo goal plants
