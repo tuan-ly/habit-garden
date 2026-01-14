@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { IsometricTile } from './isometric-tile'
 import { IsometricPlant } from './isometric-plant'
-import { PlantTooltip } from './plant-tooltip'
+import { PlantInfoBar } from './plant-tooltip'
 import { GardenSky } from './garden-sky'
 import { AddPlantDialog } from '@/components/plants/add-plant-dialog'
 import { PlantDetailSheet } from '@/components/plants/plant-detail-sheet'
@@ -114,8 +114,8 @@ export function IsometricGarden({
     setHoveredTile(null)
   }
 
-  // Get hovered plant for tooltip
-  const hoveredPlant = hoveredTile ? plantPositions.get(hoveredTile) : null
+  // Get hovered plant for info bar
+  const hoveredPlant = hoveredTile ? plantPositions.get(hoveredTile) ?? null : null
 
   return (
     <div className="relative w-full">
@@ -160,17 +160,10 @@ export function IsometricGarden({
             </IsometricTile>
           )
         })}
-
-        {/* Tooltip for hovered plant */}
-        {hoveredPlant && hoveredTile && (
-          <PlantTooltip
-            plant={hoveredPlant}
-            tileKey={hoveredTile}
-            gridSize={gridSize}
-            tileSize={tileSize}
-          />
-        )}
       </div>
+
+      {/* Info bar below garden - shows hovered plant details */}
+      <PlantInfoBar plant={hoveredPlant} />
 
       {/* Stats below garden */}
       <div className="flex justify-center gap-4 mt-4 text-sm text-muted-foreground">

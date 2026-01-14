@@ -18,10 +18,20 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 - Full goal tracking system with Build Capacity and Total Progress modes
 - Adaptive Goals system with performance analysis, suggestions, and recovery week
 - **NEW: Enhanced Plant UI with gradients, glow effects, and modern styling**
+- **NEW: Improved garden hover UX - Info bar below garden instead of floating tooltip**
 
 ---
 
 ## Recent Changes (Latest First)
+
+### 2026-01-14: Garden Tooltip UX Fix
+**Problem:** Tooltip was floating over the garden and blocking view of plants.
+**Solution:** Replaced floating tooltip with bottom info bar.
+
+| File | Change |
+|------|--------|
+| `src/components/garden/plant-tooltip.tsx` | REWRITTEN - New `PlantInfoBar` component displays at bottom of garden instead of floating. Shows plant details, moisture/growth bars, streak, warnings. Also kept minimal `PlantTooltip` for future use |
+| `src/components/garden/isometric-garden.tsx` | UPDATED - Use `PlantInfoBar` instead of floating tooltip. Bar shows hint when no plant hovered |
 
 ### 2026-01-14: Plant UI Enhancement
 **Changes made in this session:**
@@ -35,19 +45,15 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 | `src/app/globals.css` | UPDATED - New animations: pulse-slow, shimmer, glow-ring, float, success-ripple. Classes: plant-thriving, plant-mature-glow, gradient-text |
 
 ### 2026-01-14: UI/UX Improvements (Continued)
-**Changes made in previous session:**
 
 | File | Change |
 |------|--------|
-| `src/components/garden/plant-tooltip.tsx` | UPDATED - Fixed rounding of growth percentage (was showing 2.222222...%) |
 | `src/components/plants/plant-detail-sheet.tsx` | UPDATED - Major UI redesign: gradient header, card-style progress bars, colorful stat cards, better button styling |
 
 ### 2026-01-14: UI/UX Improvements
-**Changes made in previous session:**
 
 | File | Change |
 |------|--------|
-| `src/components/garden/plant-tooltip.tsx` | UPDATED - Tooltip now appears to the side of plants instead of covering them. Added progress bars, better styling |
 | `src/components/garden/isometric-plant.tsx` | UPDATED - Larger plant sizes, hover effect, drop shadow for better visuals |
 | `src/components/garden/isometric-tile.tsx` | UPDATED - Better plant positioning with shadow, improved empty tile hover |
 | `src/components/app-sidebar.tsx` | UPDATED - Completely redesigned with active states, descriptions, daily tip section, better user dropdown |
