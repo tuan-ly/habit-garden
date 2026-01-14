@@ -2,7 +2,9 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import type { CreatePlantDto, PlantWithType, PlantType } from '@/types/database'
+import type { CreatePlantDto, PlantWithType, PlantType, Difficulty } from '@/types/database'
+import { getTodayWeather, calculateWeatherXp } from '@/lib/weather-system'
+import { calculateWateringXp } from '@/lib/xp-system'
 
 export async function getPlants(): Promise<PlantWithType[]> {
   const supabase = await createClient()
@@ -108,9 +110,15 @@ export async function deletePlant(plantId: string): Promise<{ success: boolean; 
   return { success: true }
 }
 
-export async function waterPlant(plantId: string, notes?: string): Promise<{
+export async function waterPlant(
+  plantId: string,
+  options?: { notes?: string; difficulty?: Difficulty }
+): Promise<{
   success: boolean
   xpEarned?: number
+  xpBreakdown?: Record<string, number>
+  weatherType?: string
+  newAchievements?: string[]
   error?: string
 }> {
   const supabase = await createClient()
@@ -150,11 +158,8 @@ export async function waterPlant(plantId: string, notes?: string): Promise<{
 
   const plantType = plant.plant_type as PlantType
 
-  // Calculate XP and bonuses
-  const baseXp = 10
-  const currentHour = new Date().getHours()
-  const isMorning = currentHour >= 5 && currentHour < 9
-  const morningBonus = isMorning ? 5 : 0
+  // Get today's weather
+  const weather = getTodayWeather()
 
   // Calculate streak
   const lastWateredDate = plant.last_watered_at
@@ -167,13 +172,26 @@ export async function waterPlant(plantId: string, notes?: string): Promise<{
     newStreak = plant.current_streak + 1
   }
 
-  const streakBonus = Math.min(Math.floor(newStreak / 7) * 5, 25)
-  const totalXp = baseXp + morningBonus + streakBonus
+  // Calculate XP using the xp-system
+  const currentHour = new Date().getHours()
+  const isMorning = currentHour >= 5 && currentHour < 9
 
-  // Calculate new moisture and growth
+  const { total: baseTotal, breakdown } = calculateWateringXp({
+    streak: newStreak,
+    isMorning,
+    difficulty: options?.difficulty,
+    isRainyDay: weather.type === 'rainy',
+    isRainbowDay: weather.type === 'rainbow',
+  })
+
+  // Apply weather XP modifier
+  const totalXp = calculateWeatherXp(baseTotal, weather.type)
+
+  // Calculate new moisture and growth with weather modifiers
   const newMoisture = Math.min(100, plant.current_moisture + plantType.moisture_boost)
-  const growthPerWatering = 100 / plantType.maturity_days
-  const newGrowth = Math.min(100, plant.growth_percentage + growthPerWatering)
+  const baseGrowth = 100 / plantType.maturity_days
+  const weatherGrowth = baseGrowth * weather.growthModifier
+  const newGrowth = Math.min(100, plant.growth_percentage + weatherGrowth)
   const totalWaterings = plant.total_waterings + 1
 
   // Determine if plant has matured
@@ -186,10 +204,11 @@ export async function waterPlant(plantId: string, notes?: string): Promise<{
       plant_id: plantId,
       user_id: user.id,
       watered_date: today,
-      notes: notes || null,
+      difficulty: options?.difficulty || null,
+      notes: options?.notes || null,
       xp_earned: totalXp,
       morning_bonus: isMorning,
-      streak_bonus: streakBonus,
+      streak_bonus: breakdown.streakBonus || 0,
     })
 
   if (logError) {
@@ -221,8 +240,102 @@ export async function waterPlant(plantId: string, notes?: string): Promise<{
   // Update user XP
   await supabase.rpc('increment_user_xp', { user_id: user.id, xp_amount: totalXp })
 
+  // Check for new achievements
+  const newAchievements = await checkAndUnlockAchievements(user.id)
+
   revalidatePath('/garden')
-  return { success: true, xpEarned: totalXp }
+  return {
+    success: true,
+    xpEarned: totalXp,
+    xpBreakdown: breakdown,
+    weatherType: weather.type,
+    newAchievements,
+  }
+}
+
+// Check and unlock achievements after an action
+async function checkAndUnlockAchievements(userId: string): Promise<string[]> {
+  const supabase = await createClient()
+  const newlyUnlocked: string[] = []
+
+  // Get user stats for achievement checking
+  const { data: plants } = await supabase
+    .from('plants')
+    .select('status, current_streak, longest_streak, total_waterings')
+    .eq('user_id', userId)
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('xp, level')
+    .eq('id', userId)
+    .single()
+
+  const { count: totalWaterings } = await supabase
+    .from('watering_logs')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+
+  const { count: morningWaterings } = await supabase
+    .from('watering_logs')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('morning_bonus', true)
+
+  const { data: existingAchievements } = await supabase
+    .from('user_achievements')
+    .select('achievement_id')
+    .eq('user_id', userId)
+
+  const unlockedIds = existingAchievements?.map(a => a.achievement_id) || []
+
+  // Calculate stats
+  const totalPlants = plants?.length || 0
+  const maturePlants = plants?.filter(p => p.status === 'mature').length || 0
+  const bestStreak = Math.max(...(plants?.map(p => p.longest_streak) || [0]))
+  const currentStreak = Math.max(...(plants?.map(p => p.current_streak) || [0]))
+
+  // Define achievement checks
+  const achievementChecks = [
+    { id: 'first_plant', condition: totalPlants >= 1 },
+    { id: 'first_watering', condition: (totalWaterings || 0) >= 1 },
+    { id: 'first_mature', condition: maturePlants >= 1 },
+    { id: 'watering_10', condition: (totalWaterings || 0) >= 10 },
+    { id: 'watering_50', condition: (totalWaterings || 0) >= 50 },
+    { id: 'watering_100', condition: (totalWaterings || 0) >= 100 },
+    { id: 'watering_365', condition: (totalWaterings || 0) >= 365 },
+    { id: 'streak_3', condition: bestStreak >= 3 },
+    { id: 'streak_7', condition: bestStreak >= 7 },
+    { id: 'streak_14', condition: bestStreak >= 14 },
+    { id: 'streak_30', condition: bestStreak >= 30 },
+    { id: 'streak_100', condition: bestStreak >= 100 },
+    { id: 'plants_5', condition: totalPlants >= 5 },
+    { id: 'plants_10', condition: totalPlants >= 10 },
+    { id: 'mature_5', condition: maturePlants >= 5 },
+    { id: 'mature_10', condition: maturePlants >= 10 },
+    { id: 'level_5', condition: (profile?.level || 1) >= 5 },
+    { id: 'level_10', condition: (profile?.level || 1) >= 10 },
+    { id: 'level_15', condition: (profile?.level || 1) >= 15 },
+    { id: 'early_bird', condition: (morningWaterings || 0) >= 10 },
+  ]
+
+  // Check and unlock new achievements
+  for (const check of achievementChecks) {
+    if (check.condition && !unlockedIds.includes(check.id)) {
+      const { error } = await supabase
+        .from('user_achievements')
+        .insert({
+          user_id: userId,
+          achievement_id: check.id,
+          unlocked_at: new Date().toISOString(),
+        })
+
+      if (!error) {
+        newlyUnlocked.push(check.id)
+      }
+    }
+  }
+
+  return newlyUnlocked
 }
 
 export async function getPlant(plantId: string): Promise<PlantWithType | null> {

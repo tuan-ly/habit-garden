@@ -1,20 +1,18 @@
 import { getPlants, getPlantTypes } from '@/lib/actions/plants'
+import { getProfile } from '@/lib/actions/profile'
 import { GardenView } from '@/components/garden/garden-view'
+import { GardenHeader } from '@/components/garden/garden-header'
 
 export default async function GardenPage() {
-  const [plants, plantTypes] = await Promise.all([
+  const [plants, plantTypes, profile] = await Promise.all([
     getPlants(),
     getPlantTypes(),
+    getProfile(),
   ])
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">My Garden</h1>
-        <p className="text-muted-foreground">
-          Your habits are growing here. Water them daily to help them flourish.
-        </p>
-      </div>
+      <GardenHeader profile={profile} />
 
       <GardenView plants={plants} plantTypes={plantTypes} />
     </div>

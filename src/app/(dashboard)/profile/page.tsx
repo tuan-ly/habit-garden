@@ -1,9 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
-import { getProfile, getUserStats } from '@/lib/actions/profile'
-import { calculateLevel } from '@/lib/utils/level'
+import { getProfile, getUserStats, getAchievementsData } from '@/lib/actions/profile'
+import { getLevelInfo } from '@/lib/xp-system'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Separator } from '@/components/ui/separator'
+import { AchievementsGrid } from '@/components/gamification/achievements-grid'
 import {
   Flower2,
   Droplets,
@@ -12,20 +12,27 @@ import {
   TreeDeciduous,
   Skull,
   Sprout,
-  Star,
 } from 'lucide-react'
 
 export default async function ProfilePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const [profile, stats] = await Promise.all([
+  const [profile, stats, achievementsData] = await Promise.all([
     getProfile(),
     getUserStats(),
+    getAchievementsData(),
   ])
 
-  const levelInfo = profile ? calculateLevel(profile.xp) : { level: 1, currentXp: 0, nextLevelXp: 100 }
-  const progressPercent = (levelInfo.currentXp / levelInfo.nextLevelXp) * 100
+  const levelInfo = profile ? getLevelInfo(profile.xp) : {
+    level: 1,
+    xpInCurrentLevel: 0,
+    xpToNextLevel: 100,
+    progress: 0,
+    title: 'Seedling',
+    badge: '🌱',
+    totalXp: 0,
+  }
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -57,17 +64,18 @@ export default async function ProfilePage() {
               <div className="mt-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="flex items-center gap-2">
-                    <Star className="h-5 w-5 text-yellow-500" />
+                    <span className="text-xl">{levelInfo.badge}</span>
                     <span className="font-semibold">Level {levelInfo.level}</span>
+                    <span className="text-sm text-muted-foreground">({levelInfo.title})</span>
                   </span>
                   <span className="text-sm text-muted-foreground">
-                    {levelInfo.currentXp} / {levelInfo.nextLevelXp} XP
+                    {levelInfo.xpInCurrentLevel} / {levelInfo.xpToNextLevel} XP
                   </span>
                 </div>
                 <div className="h-3 bg-secondary rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-yellow-500 transition-all"
-                    style={{ width: `${progressPercent}%` }}
+                    className="h-full bg-gradient-to-r from-emerald-500 to-green-400 transition-all"
+                    style={{ width: `${levelInfo.progress}%` }}
                   />
                 </div>
               </div>
@@ -193,12 +201,33 @@ export default async function ProfilePage() {
             ))}
             {(profile?.water_reserves ?? 0) === 0 && (
               <p className="text-sm text-muted-foreground">
-                No water reserves available
+                No water reserves available. Earn them by leveling up!
               </p>
             )}
           </div>
         </CardContent>
       </Card>
+
+      {/* Achievements */}
+      {achievementsData && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-yellow-500" />
+              Achievements
+            </CardTitle>
+            <CardDescription>
+              Track your progress and unlock rewards
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AchievementsGrid
+              progress={achievementsData.progress}
+              unlockedIds={achievementsData.unlockedIds}
+            />
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

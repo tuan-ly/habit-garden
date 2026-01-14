@@ -54,8 +54,8 @@ Dự án chia thành 4 phases chính:
 - [x] Moisture bar component
 - [x] Growth progress component
 - [x] Streak tracking logic
-- [ ] Daily moisture decay (cron job)
-- [ ] Plant death logic
+- [x] Daily moisture decay (cron job) - `/api/cron/moisture-decay`
+- [x] Plant death logic (in cron job)
 - [ ] Basic notifications setup
 - [x] XP calculation (basic)
 
