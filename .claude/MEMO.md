@@ -2,7 +2,7 @@
 
 > **Last Updated**: 2026-01-14
 > **Current Phase**: Phase 3 - Adaptive Goals (COMPLETE)
-> **Last Session**: Adaptive Goals Implementation
+> **Last Session**: UI/UX Improvements
 
 ---
 
@@ -16,14 +16,25 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 - Daily moisture decay cron job
 - Plant death logic
 - Full goal tracking system with Build Capacity and Total Progress modes
-- **NEW: Adaptive Goals system with performance analysis, suggestions, and recovery week**
+- Adaptive Goals system with performance analysis, suggestions, and recovery week
+- **NEW: Improved UI/UX for tooltip, plants, and sidebar**
 
 ---
 
 ## Recent Changes (Latest First)
 
-### 2026-01-14: Phase 3b Adaptive Goals Implementation
+### 2026-01-14: UI/UX Improvements
 **Changes made in this session:**
+
+| File | Change |
+|------|--------|
+| `src/components/garden/plant-tooltip.tsx` | UPDATED - Tooltip now appears to the side of plants instead of covering them. Added progress bars, better styling |
+| `src/components/garden/isometric-plant.tsx` | UPDATED - Larger plant sizes, hover effect, drop shadow for better visuals |
+| `src/components/garden/isometric-tile.tsx` | UPDATED - Better plant positioning with shadow, improved empty tile hover |
+| `src/components/app-sidebar.tsx` | UPDATED - Completely redesigned with active states, descriptions, daily tip section, better user dropdown |
+
+### 2026-01-14: Phase 3b Adaptive Goals Implementation
+**Changes made in previous session:**
 
 | File | Change |
 |------|--------|

@@ -140,7 +140,7 @@ export function IsometricTile({
             transform: 'translate(-50%, -50%)',
           }}
         >
-          <div className="bg-white/90 rounded-full p-1 shadow-md">
+          <div className="bg-white/95 rounded-full p-1.5 shadow-lg border border-green-200">
             <Plus className="h-4 w-4 text-green-600" />
           </div>
         </div>
@@ -149,13 +149,18 @@ export function IsometricTile({
       {/* Plant container - positioned on top of the tile */}
       {children && (
         <div
-          className="absolute pointer-events-none"
+          className="absolute pointer-events-none flex flex-col items-center"
           style={{
             left: tileSize / 2,
-            top: tileSize / 4 - 10, // Position plant slightly above tile surface
+            top: tileSize / 4 - 5,
             transform: 'translate(-50%, -100%)',
           }}
         >
+          {/* Plant shadow */}
+          <div 
+            className="absolute bottom-0 w-6 h-2 bg-black/10 rounded-full blur-sm"
+            style={{ transform: 'translateY(50%)' }}
+          />
           {children}
         </div>
       )}
