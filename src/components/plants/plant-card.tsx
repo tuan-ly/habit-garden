@@ -14,6 +14,23 @@ import { cn } from '@/lib/utils'
 import { getGoalForPlant, type GoalWithStats } from '@/lib/actions/goals'
 import { GoalProgressRing, GoalModeBadge } from '@/components/goals'
 
+// Plant type gradient backgrounds
+const PLANT_GRADIENTS: Record<string, string> = {
+  bamboo: 'from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30',
+  sunflower: 'from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/30',
+  'cherry blossom': 'from-pink-50 to-rose-50 dark:from-pink-950/30 dark:to-rose-950/30',
+  cactus: 'from-lime-50 to-green-50 dark:from-lime-950/30 dark:to-green-950/30',
+  lotus: 'from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30',
+  rose: 'from-rose-50 to-red-50 dark:from-rose-950/30 dark:to-red-950/30',
+  bonsai: 'from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30',
+  'money tree': 'from-yellow-50 to-green-50 dark:from-yellow-950/30 dark:to-green-950/30',
+}
+
+function getPlantGradient(typeName: string): string {
+  const normalizedName = typeName.toLowerCase()
+  return PLANT_GRADIENTS[normalizedName] || 'from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30'
+}
+
 interface PlantCardProps {
   plant: PlantWithType
   onClick?: () => void
@@ -80,17 +97,25 @@ export function PlantCard({ plant, onClick, weather }: PlantCardProps) {
   return (
     <Card
       className={cn(
-        'cursor-pointer transition-all hover:shadow-md hover:-translate-y-1 relative overflow-hidden',
-        isDead && 'opacity-60',
-        isMature && 'ring-2 ring-green-500',
-        hasGoal && !goal?.isOnTrack && 'ring-2 ring-amber-400'
+        'group cursor-pointer transition-all duration-300',
+        'hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1.5',
+        'relative overflow-hidden border-2',
+        'bg-gradient-to-br',
+        getPlantGradient(plant.plant_type.name),
+        isDead && 'opacity-60 grayscale',
+        isMature && 'border-green-400 dark:border-green-600 ring-2 ring-green-500/20',
+        hasGoal && !goal?.isOnTrack && 'border-amber-400 dark:border-amber-600 ring-2 ring-amber-500/20',
+        !isDead && !isMature && 'border-transparent hover:border-primary/20'
       )}
       onClick={onClick}
     >
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between mb-3">
+      {/* Decorative corner gradient */}
+      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-white/40 to-transparent dark:from-white/5 pointer-events-none" />
+      
+      <CardContent className="p-4 relative">
+        <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="relative">
+            <div className="relative p-1 bg-white/50 dark:bg-black/20 rounded-xl shadow-inner">
               <PlantVisual
                 plant={plant}
                 size="md"
@@ -99,10 +124,11 @@ export function PlantCard({ plant, onClick, weather }: PlantCardProps) {
               />
               <XpPopup amount={earnedXp} show={showXp} />
             </div>
-            <div>
-              <h3 className="font-semibold text-sm">{plant.name}</h3>
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                {plant.plant_type.name}
+            <div className="flex-1 min-w-0">
+              <h3 className="font-bold text-base truncate">{plant.name}</h3>
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                <span className="opacity-70">{plant.plant_type.icon}</span>
+                <span>{plant.plant_type.name}</span>
                 {hasGoal && <Target className="h-3 w-3 text-primary" />}
               </p>
             </div>
@@ -115,27 +141,29 @@ export function PlantCard({ plant, onClick, weather }: PlantCardProps) {
 
         {/* Show goal info or regular progress */}
         {hasGoal && goal ? (
-          <div className="space-y-2 mb-3">
+          <div className="space-y-3 mb-4 p-3 bg-white/60 dark:bg-black/20 rounded-xl backdrop-blur-sm">
             <MoistureBar value={plant.current_moisture} />
             <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Week {goal.weekNumber}</span>
-              <span className="font-medium">
+              <span className="text-muted-foreground font-medium">Week {goal.weekNumber}</span>
+              <span className="font-bold text-primary">
                 {Number(goal.current_value).toFixed(1)} / {goal.target_value} {goal.unit}
               </span>
             </div>
             {/* Progress bar for goal */}
-            <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+            <div className="h-2 w-full rounded-full bg-muted/50 overflow-hidden shadow-inner">
               <div
                 className={cn(
                   'h-full rounded-full transition-all duration-500',
-                  goal.isOnTrack ? 'bg-green-500' : 'bg-amber-500'
+                  goal.isOnTrack 
+                    ? 'bg-gradient-to-r from-green-400 to-emerald-500' 
+                    : 'bg-gradient-to-r from-amber-400 to-orange-500'
                 )}
                 style={{ width: `${Math.min(100, goal.overallProgress)}%` }}
               />
             </div>
           </div>
         ) : (
-          <div className="space-y-2 mb-3">
+          <div className="space-y-3 mb-4 p-3 bg-white/60 dark:bg-black/20 rounded-xl backdrop-blur-sm">
             <MoistureBar value={plant.current_moisture} />
             <GrowthProgress
               value={plant.growth_percentage}
@@ -150,23 +178,32 @@ export function PlantCard({ plant, onClick, weather }: PlantCardProps) {
           <Button
             variant={isWateredToday ? 'secondary' : 'default'}
             size="sm"
-            className="w-full"
+            className={cn(
+              'w-full font-semibold shadow-md transition-all',
+              !isWateredToday && !isDead && 'bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70',
+              isWateredToday && 'opacity-75'
+            )}
             onClick={handleWater}
             disabled={isWateredToday || isDead}
           >
             <Plus className="h-4 w-4 mr-2" />
-            {isDead ? 'Dead' : isWateredToday ? 'Logged' : 'Log Progress'}
+            {isDead ? 'Dead' : isWateredToday ? '✓ Logged Today' : 'Log Progress'}
           </Button>
         ) : (
           <Button
             variant={isWateredToday ? 'secondary' : 'default'}
             size="sm"
-            className={cn('w-full', isWatering && 'animate-pulse')}
+            className={cn(
+              'w-full font-semibold shadow-md transition-all',
+              isWatering && 'animate-pulse',
+              !isWateredToday && !isDead && 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white border-0',
+              isWateredToday && 'opacity-75'
+            )}
             onClick={handleWater}
             disabled={isPending || isWatering || isWateredToday || isDead}
           >
-            <Droplets className={cn('h-4 w-4 mr-2', isWatering && 'text-blue-400')} />
-            {isDead ? 'Dead' : isWateredToday ? 'Watered' : isWatering ? 'Watering...' : 'Water'}
+            <Droplets className={cn('h-4 w-4 mr-2', isWatering && 'text-blue-200 animate-bounce')} />
+            {isDead ? 'Dead' : isWateredToday ? '✓ Watered Today' : isWatering ? 'Watering...' : 'Water Plant'}
           </Button>
         )}
       </CardContent>
