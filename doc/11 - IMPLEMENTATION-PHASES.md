@@ -1,5 +1,19 @@
 # 11 - IMPLEMENTATION PHASES
 
+# Follow instructions in 01-PROJECT-OVERVIEW.md
+Khi cần tra cứu:
+Cần thông tin về	Đọc file
+Tech stack, setup	01-PROJECT-OVERVIEW.md
+Database, tables	02-DATABASE-SCHEMA.md
+Loại cây, hiệu ứng	03-PLANT-SYSTEM.md
+Tưới nước, moisture	04-WATERING-MOISTURE.md
+Goal tracking	05-GOAL-TRACKING.md
+Adaptive system	06-ADAPTIVE-GOALS.md
+XP, achievements	07-GAMIFICATION.md
+Community (future)	08-COMMUNITY.md
+UI components	09-UI-COMPONENTS.md
+API, hooks	10-API-HOOKS.md
+Task breakdown	11-IMPLEMENTATION-PHASES.md
 ## Overview
 
 Dự án chia thành 4 phases chính:
@@ -54,8 +68,8 @@ Dự án chia thành 4 phases chính:
 - [x] Moisture bar component
 - [x] Growth progress component
 - [x] Streak tracking logic
-- [x] Daily moisture decay (cron job) - `/api/cron/moisture-decay`
-- [x] Plant death logic (in cron job)
+- [ ] Daily moisture decay (cron job)
+- [ ] Plant death logic
 - [ ] Basic notifications setup
 - [x] XP calculation (basic)
 
