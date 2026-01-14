@@ -5,6 +5,7 @@ import { IsometricTile } from './isometric-tile'
 import { IsometricPlant } from './isometric-plant'
 import { PlantInfoBar } from './plant-tooltip'
 import { GardenSky } from './garden-sky'
+import { GroundPlane } from './ground-plane'
 import { AddPlantDialog } from '@/components/plants/add-plant-dialog'
 import { PlantDetailSheet } from '@/components/plants/plant-detail-sheet'
 import type { PlantWithType, PlantType, WeatherType } from '@/types/database'
@@ -17,11 +18,12 @@ interface IsometricGardenProps {
 }
 
 // Calculate grid size based on plant count
+// Always ensures at least 1 empty slot for adding new plants
 function getGridSize(plantCount: number): number {
-  if (plantCount <= 4) return 2
-  if (plantCount <= 9) return 3
-  if (plantCount <= 16) return 4
-  return 5
+  // Find the smallest grid that can fit all plants + 1 empty slot
+  const minSlots = plantCount + 1
+  const gridSize = Math.ceil(Math.sqrt(minSlots))
+  return Math.max(gridSize, 2) // Minimum 2x2
 }
 
 // Get responsive tile size - returns default for SSR, actual for client
@@ -49,11 +51,12 @@ export function IsometricGarden({
   const [tileSize, setTileSize] = useState(DEFAULT_TILE_SIZE)
 
   useEffect(() => {
-    // Set initial size
-    setTileSize(getClientTileSize())
-
     // Update on resize
     const handleResize = () => setTileSize(getClientTileSize())
+
+    // Set initial size via resize handler to avoid lint warning
+    handleResize()
+
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
@@ -94,8 +97,9 @@ export function IsometricGarden({
   }, [gridSize, plantPositions])
 
   // Calculate container dimensions
-  const containerWidth = gridSize * tileSize + tileSize
-  const containerHeight = gridSize * (tileSize / 2) + tileSize
+  // Container must match ground plane size exactly
+  const containerWidth = gridSize * tileSize
+  const containerHeight = gridSize * (tileSize / 2) + tileSize * 0.3 // + dirt height
 
   const handleTileClick = (row: number, col: number, plant?: PlantWithType) => {
     if (plant) {
@@ -131,7 +135,15 @@ export function IsometricGarden({
           minHeight: 300,
         }}
       >
-        {/* Isometric tiles */}
+        {/* Single unified ground plane */}
+        <GroundPlane
+          gridSize={gridSize}
+          tileSize={tileSize}
+          grassColor={defaultTheme.ground.primary}
+          grassDarkColor={defaultTheme.ground.secondary}
+        />
+
+        {/* Interactive tile zones (transparent) */}
         {tiles.map(({ row, col, plant }) => {
           const tileKey = `${row}-${col}`
           const isHovered = hoveredTile === tileKey
@@ -141,15 +153,13 @@ export function IsometricGarden({
               key={tileKey}
               row={row}
               col={col}
+              gridSize={gridSize}
               isEmpty={!plant}
               isHovered={isHovered}
               onClick={() => handleTileClick(row, col, plant)}
               onMouseEnter={() => handleTileHover(row, col)}
               onMouseLeave={handleTileLeave}
               tileSize={tileSize}
-              grassColor={defaultTheme.ground.primary}
-              dirtColor={defaultTheme.ground.secondary}
-              dirtDarkColor="#8b5e3c"
             >
               {plant && (
                 <IsometricPlant

@@ -6,6 +6,7 @@ import { Plus } from 'lucide-react'
 interface IsometricTileProps {
   row: number
   col: number
+  gridSize: number
   isEmpty: boolean
   isHovered: boolean
   onClick: () => void
@@ -13,14 +14,12 @@ interface IsometricTileProps {
   onMouseLeave: () => void
   children?: React.ReactNode
   tileSize?: number
-  grassColor?: string
-  dirtColor?: string
-  dirtDarkColor?: string
 }
 
 export function IsometricTile({
   row,
   col,
+  gridSize,
   isEmpty,
   isHovered,
   onClick,
@@ -28,45 +27,46 @@ export function IsometricTile({
   onMouseLeave,
   children,
   tileSize = 60,
-  grassColor = '#7cb342',
-  dirtColor = '#8d6e4c',
-  dirtDarkColor = '#6b5344',
 }: IsometricTileProps) {
-  // Calculate position in isometric grid
-  // x offset: (col - row) * tileWidth/2
-  // y offset: (col + row) * tileHeight/4
-  const xOffset = (col - row) * (tileSize / 2)
-  const yOffset = (col + row) * (tileSize / 4)
+  // Isometric tile positioning:
+  // The grid's top point (0,0) is at the top-center of the diamond
+  // Each tile's center position:
+  //   x = (col - row) * tileSize/2   (relative to center)
+  //   y = (col + row) * tileSize/4   (from top)
+  //
+  // Container is gridSize * tileSize wide, so center is at gridSize * tileSize / 2
 
-  const tileHeight = tileSize * 0.3 // Height of the 3D extrusion
+  const containerWidth = gridSize * tileSize
+  const centerX = containerWidth / 2
+
+  // Position of this tile's center point (top of the diamond shape)
+  const tileCenterX = centerX + (col - row) * (tileSize / 2)
+  const tileCenterY = (col + row) * (tileSize / 4)
 
   return (
     <div
       className={cn(
-        'absolute cursor-pointer transition-all duration-200',
-        isHovered && isEmpty && 'scale-105'
+        'absolute cursor-pointer transition-all duration-200'
       )}
       style={{
-        left: `calc(50% + ${xOffset}px)`,
-        top: `calc(50% + ${yOffset}px)`,
+        left: tileCenterX,
+        top: tileCenterY,
         width: tileSize,
         height: tileSize,
-        transform: 'translate(-50%, -50%)',
-        zIndex: row + col, // Proper layering for isometric view
+        transform: 'translate(-50%, 0)', // Align from top-center
+        zIndex: row + col + 10, // Above ground plane
       }}
       onClick={onClick}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      {/* SVG Isometric Tile */}
+      {/* Invisible hit area - diamond shape matching isometric tile */}
       <svg
         width={tileSize}
-        height={tileSize + tileHeight}
-        viewBox={`0 0 ${tileSize} ${tileSize + tileHeight}`}
+        height={tileSize / 2}
+        viewBox={`0 0 ${tileSize} ${tileSize / 2}`}
         className="absolute top-0 left-0"
-        style={{ overflow: 'visible' }}
       >
-        {/* Top face (grass/ground) - Diamond shape, solid color for seamless look */}
         <polygon
           points={`
             ${tileSize / 2},0
@@ -74,41 +74,35 @@ export function IsometricTile({
             ${tileSize / 2},${tileSize / 2}
             0,${tileSize / 4}
           `}
-          fill={grassColor}
-          stroke="#5a8f2a"
-          strokeWidth={0.5}
+          fill="transparent"
           className={cn(
             'transition-all duration-200',
-            isHovered && isEmpty && 'brightness-110'
+            isHovered && 'fill-white/10'
           )}
         />
-
-        {/* Left face (dirt) - darker side */}
-        <polygon
-          points={`
-            0,${tileSize / 4}
-            ${tileSize / 2},${tileSize / 2}
-            ${tileSize / 2},${tileSize / 2 + tileHeight}
-            0,${tileSize / 4 + tileHeight}
-          `}
-          fill={dirtDarkColor}
-          stroke="#4a3c32"
-          strokeWidth={0.3}
-        />
-
-        {/* Right face (dirt) - lighter side */}
-        <polygon
-          points={`
-            ${tileSize / 2},${tileSize / 2}
-            ${tileSize},${tileSize / 4}
-            ${tileSize},${tileSize / 4 + tileHeight}
-            ${tileSize / 2},${tileSize / 2 + tileHeight}
-          `}
-          fill={dirtColor}
-          stroke="#5a4a3a"
-          strokeWidth={0.3}
-        />
       </svg>
+
+      {/* Hover highlight effect */}
+      {isHovered && (
+        <svg
+          width={tileSize}
+          height={tileSize / 2}
+          viewBox={`0 0 ${tileSize} ${tileSize / 2}`}
+          className="absolute top-0 left-0 pointer-events-none"
+        >
+          <polygon
+            points={`
+              ${tileSize / 2},0
+              ${tileSize},${tileSize / 4}
+              ${tileSize / 2},${tileSize / 2}
+              0,${tileSize / 4}
+            `}
+            fill="rgba(255,255,255,0.15)"
+            stroke="rgba(255,255,255,0.4)"
+            strokeWidth="1.5"
+          />
+        </svg>
+      )}
 
       {/* Plus icon for empty tiles */}
       {isEmpty && isHovered && (
@@ -120,7 +114,7 @@ export function IsometricTile({
             transform: 'translate(-50%, -50%)',
           }}
         >
-          <div className="bg-white/95 rounded-full p-1.5 shadow-lg border border-green-200">
+          <div className="bg-white/95 rounded-full p-1.5 shadow-lg border border-green-200 animate-in zoom-in-50 duration-200">
             <Plus className="h-4 w-4 text-green-600" />
           </div>
         </div>
@@ -136,7 +130,7 @@ export function IsometricTile({
             width: tileSize * 0.4,
             height: tileSize * 0.15,
             transform: 'translate(-50%, -50%)',
-            background: 'radial-gradient(ellipse, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.15) 50%, transparent 100%)',
+            background: 'radial-gradient(ellipse, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.1) 50%, transparent 100%)',
           }}
         />
       )}
@@ -144,7 +138,10 @@ export function IsometricTile({
       {/* Plant container - positioned above the tile center */}
       {children && (
         <div
-          className="absolute pointer-events-none flex flex-col items-center justify-end"
+          className={cn(
+            "absolute pointer-events-none flex flex-col items-center justify-end transition-transform duration-200",
+            isHovered && "scale-110"
+          )}
           style={{
             left: tileSize / 2,
             top: tileSize / 4,
