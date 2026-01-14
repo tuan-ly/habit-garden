@@ -16,6 +16,55 @@ Mỗi entry gồm:
 
 ---
 
+## 2026-01-14 (Session 2)
+
+### Session: Plant Visual System Upgrade
+
+**Duration**: ~1.5 hours
+
+**What I did**:
+- Tạo hệ thống hiển thị cây bằng hình ảnh thay vì emoji
+- Tạo component `PlantImage` với logic theo giai đoạn (seed → sprout → growing → blooming → mature)
+- Cập nhật `PlantVisual` để dùng `PlantImage`
+- Fix hydration error trong `isometric-garden.tsx` (window.innerWidth)
+- Tăng kích thước cây trong garden view (xl → 2xl)
+- Generate 5 hình pixel art cho cây generic
+- Tạo cấu trúc thư mục `public/plants/[type]/` cho hình ảnh
+
+**What I learned**:
+1. Hydration errors khi dùng `window` object - cần useState/useEffect
+2. Next.js Image component cần width/height cụ thể
+3. Image generation có quota limit - cần plan backup với SVG
+4. Fallback logic quan trọng khi không có hình riêng cho từng loại cây
+
+**Challenges**:
+- Image generation quota bị hết sau 6 hình
+- Hình được generate có nền đất, không trong suốt - cần làm lại với SVG
+- Kích thước cây cần điều chỉnh nhiều lần
+
+**Files created/modified**:
+```
+NEW:
+- src/components/plants/plant-image.tsx
+- public/plants/generic/*.png (5 files)
+- public/plants/sunflower/seed.png
+- .agent/session-notes/plant-visual-upgrade.md
+
+MODIFIED:
+- src/components/plants/plant-visual.tsx
+- src/components/garden/isometric-garden.tsx
+- src/components/garden/isometric-plant.tsx
+- src/app/globals.css
+- CLAUDE.md
+```
+
+**Next**:
+- Tạo SVG components cho các loại cây (không nền đất)
+- Điều chỉnh vị trí cây trên tile
+- Thêm hình cho 9 loại cây đặc biệt
+
+---
+
 ## 2024-01-14
 
 ### Session: Phase 2 Gamification Complete

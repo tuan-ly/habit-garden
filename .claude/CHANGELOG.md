@@ -6,6 +6,12 @@
 
 ## [Unreleased]
 
+### In Progress
+- 🌿 **Plant Visual System**: Thay emoji bằng hình ảnh pixel art cho các giai đoạn cây
+  - Hỗ trợ 5 giai đoạn: seed → sprout → growing → blooming → mature
+  - 9 loại cây đặc biệt với hình riêng (đang phát triển)
+  - Animation khi cây chuyển giai đoạn
+
 ### Coming Soon
 - Goal tracking system với adaptive goals
 - PWA support - cài app trên điện thoại

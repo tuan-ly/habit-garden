@@ -2,7 +2,7 @@
 
 > **Last Updated**: 2026-01-14
 > **Current Phase**: Phase 3 - Adaptive Goals (COMPLETE)
-> **Last Session**: UI/UX Improvements
+> **Last Session**: Plant Visual System Upgrade
 
 ---
 
@@ -17,31 +17,33 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 - Plant death logic
 - Full goal tracking system with Build Capacity and Total Progress modes
 - Adaptive Goals system with performance analysis, suggestions, and recovery week
-- **NEW: Improved UI/UX for tooltip, plants, and sidebar**
+- **NEW: Plant Visual System - Images instead of emojis**
 
 ---
 
 ## Recent Changes (Latest First)
 
-### 2026-01-14: UI/UX Improvements (Continued)
+### 2026-01-14: Plant Visual System Upgrade
 **Changes made in this session:**
 
 | File | Change |
 |------|--------|
-| `src/components/garden/plant-tooltip.tsx` | UPDATED - Fixed rounding of growth percentage (was showing 2.222222...%) |
-| `src/components/plants/plant-detail-sheet.tsx` | UPDATED - Major UI redesign: gradient header, card-style progress bars, colorful stat cards, better button styling |
+| `src/components/plants/plant-image.tsx` | NEW - Component hiển thị cây bằng hình ảnh theo giai đoạn |
+| `src/components/plants/plant-visual.tsx` | UPDATED - Thay emoji bằng PlantImage, thêm size 2xl |
+| `src/components/garden/isometric-garden.tsx` | UPDATED - Fix hydration error (window.innerWidth), responsive tile size |
+| `src/components/garden/isometric-plant.tsx` | UPDATED - Tăng kích thước cây (xl → 2xl) |
+| `src/app/globals.css` | UPDATED - Thêm animate-growth-burst class |
+| `public/plants/generic/` | NEW - 5 hình cho các giai đoạn cây (seed, sprout, growing, blooming, mature) |
+| `public/plants/sunflower/seed.png` | NEW - Hình hạt hướng dương |
+| `.agent/session-notes/plant-visual-upgrade.md` | NEW - Session notes cho công việc tiếp theo |
+| `CLAUDE.md` | UPDATED - Thêm mục Plant Visual System |
 
-### 2026-01-14: UI/UX Improvements
-**Changes made in previous session:**
+**TODO tiếp theo:**
+1. Tạo SVG đơn giản không nền đất cho các giai đoạn cây
+2. Điều chỉnh vị trí cây trên tile isometric
+3. Thêm hình cho các loại cây đặc biệt (sunflower, cherry blossom, cactus, rose, lotus, bamboo, bonsai, money tree)
 
-| File | Change |
-|------|--------|
-| `src/components/garden/plant-tooltip.tsx` | UPDATED - Tooltip now appears to the side of plants instead of covering them. Added progress bars, better styling |
-| `src/components/garden/isometric-plant.tsx` | UPDATED - Larger plant sizes, hover effect, drop shadow for better visuals |
-| `src/components/garden/isometric-tile.tsx` | UPDATED - Better plant positioning with shadow, improved empty tile hover |
-| `src/components/app-sidebar.tsx` | UPDATED - Completely redesigned with active states, descriptions, daily tip section, better user dropdown |
-
-### 2026-01-14: Phase 3b Adaptive Goals Implementation
+### 2026-01-14: UI/UX Improvements (Continued)
 **Changes made in previous session:**
 
 | File | Change |

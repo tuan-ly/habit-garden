@@ -18,6 +18,48 @@
 
 ---
 
+## 2026-01-14: Plant Image System over Emoji
+
+**Status**: Accepted
+
+**Context**:
+Current plant display uses emoji (🌻, 🌸, etc.). User wants visuals similar to Forest app with distinct images for each growth stage.
+
+Options considered:
+1. Keep emoji with better animations
+2. Static images (PNG) for each stage
+3. SVG components with dynamic colors
+4. Lottie animations for everything
+
+**Decision**:
+Use static images as primary (PNG/SVG), with Lottie only for transition animations. Create folder structure `public/plants/[type]/[stage].png`.
+
+**Implementation**:
+- `PlantImage` component renders appropriate image based on `plant.plant_type.name` and `growth_percentage`
+- Fallback to `generic/` folder if specific plant type images not found
+- 5 stages: seed, sprout, growing, blooming, mature
+- Size options: sm, md, lg, xl, 2xl
+
+**Consequences**:
+- ✅ Much more visually appealing than emoji
+- ✅ Each plant type can have unique visuals
+- ✅ Growth stages clearly visible
+- ✅ Fallback ensures no broken UI
+- ❌ Requires creating/sourcing images for all plant types
+- ❌ More storage/bandwidth for images
+
+**Alternatives Considered**:
+- **Emoji only**: Too simple, not engaging enough (Forest-like feel)
+- **Lottie for everything**: Complex, heavy, overkill for static stages
+- **CSS-only**: Limited visual customization per plant type
+
+**Files Affected**:
+- `src/components/plants/plant-image.tsx` - New component
+- `src/components/plants/plant-visual.tsx` - Uses PlantImage
+- `public/plants/` - Image folders
+
+---
+
 ## 2024-01-14: CSS Animations over Lottie for Plant States
 
 **Status**: Accepted

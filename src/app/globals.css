@@ -734,3 +734,9 @@
 .animate-tile-pulse {
   animation: tile-pulse 0.8s ease-in-out infinite;
 }
+
+/* Plant growth burst animation when transitioning stages */
+.animate-growth-burst {
+  animation: growth-burst 0.6s ease-out;
+}
+

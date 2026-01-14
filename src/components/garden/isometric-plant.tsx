@@ -47,7 +47,7 @@ export function IsometricPlant({
     >
       <PlantVisual
         plant={plant}
-        size="xl"
+        size="2xl"
         weather={weather}
         showWateringEffect={showWateringEffect}
       />

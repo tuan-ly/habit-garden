@@ -19,6 +19,7 @@ Nếu user hỏi về project mà chưa đọc MEMO.md → Đọc ngay!
 1. `.claude/MEMO.md` - Current project state and recent changes
 2. `.claude/DECISIONS.md` - Architecture decisions and reasoning
 3. `doc/11 - IMPLEMENTATION-PHASES.md` - Task completion status
+4. `.agent/session-notes/` - Session notes for ongoing work
 
 ## After Completing Work
 
@@ -42,6 +43,10 @@ Nếu user hỏi về project mà chưa đọc MEMO.md → Đọc ngay!
 ├── ROADMAP.md     # Product roadmap
 ├── STORY.md       # Product story for marketing
 └── PROTOCOL.md    # Rules and conventions
+
+.agent/
+└── session-notes/ # Session notes for ongoing work
+    └── plant-visual-upgrade.md  # Plant visual system upgrade notes
 ```
 
 ## Project Context
@@ -55,13 +60,40 @@ Nếu user hỏi về project mà chưa đọc MEMO.md → Đọc ngay!
 
 ```
 .claude/           → Project memo and decisions (READ FIRST!)
+.agent/            → Session notes and agent workflows
 src/components/    → React components by feature
+  ├── plants/      → Plant components (PlantVisual, PlantImage, etc.)
+  └── garden/      → Garden view components (IsometricGarden, etc.)
 src/lib/           → Utilities and server actions
 src/types/         → TypeScript definitions
 doc/               → Project documentation
+public/plants/     → Plant images by type and growth stage
 ```
+
+## Plant Visual System (NEW)
+
+**Plant images are stored in `public/plants/[type]/[stage].png`**
+
+Growth stages: `seed`, `sprout`, `growing`, `blooming`, `mature`
+
+Plant types with custom images:
+- `generic/` - Default plant (fallback)
+- `sunflower/` - Hoa hướng dương
+- `cherry-blossom/` - Hoa anh đào
+- `cactus/` - Xương rồng
+- `rose/` - Hoa hồng
+- `lotus/` - Hoa sen
+- `bamboo/` - Tre
+- `bonsai/` - Bonsai
+- `money-tree/` - Cây tiền
+
+**Components:**
+- `PlantImage` - Renders plant based on growth stage
+- `PlantVisual` - Main plant display with effects
+- `IsometricPlant` - Plant in garden view
 
 ## Commit Messages
 
 Use format: `<type>: <description>` with Co-Authored-By trailer.
 Types: feat, fix, refactor, docs, style, test, chore
+

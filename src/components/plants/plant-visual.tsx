@@ -2,18 +2,12 @@
 
 import { cn } from '@/lib/utils'
 import type { PlantWithType, PlantStatus, WeatherType } from '@/types/database'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
+import { PlantImage, getGrowthStage, type GrowthStage } from './plant-image'
 
-// Growth stage thresholds
-const GROWTH_STAGES = {
-  seed: { min: 0, max: 10 },
-  sprout: { min: 10, max: 25 },
-  growing: { min: 25, max: 75 },
-  blooming: { min: 75, max: 100 },
-  mature: { min: 100, max: Infinity },
-} as const
-
-type GrowthStage = keyof typeof GROWTH_STAGES
+// Re-export growth stages for backwards compatibility
+export { getGrowthStage }
+export type { GrowthStage }
 
 // Special plant effects mapped to plant type names
 const SPECIAL_PLANT_EFFECTS: Record<string, string> = {
@@ -39,47 +33,15 @@ const WEATHER_EFFECTS: Record<WeatherType, string> = {
 
 interface PlantVisualProps {
   plant: PlantWithType
-  size?: 'sm' | 'md' | 'lg' | 'xl'
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'
   showWateringEffect?: boolean
   weather?: WeatherType | null
   className?: string
 }
 
-function getGrowthStage(growthPercentage: number, status: PlantStatus): GrowthStage {
-  if (status === 'mature') return 'mature'
-  if (status === 'dead') return 'seed' // Dead plants don't animate growth
-
-  if (growthPercentage < GROWTH_STAGES.seed.max) return 'seed'
-  if (growthPercentage < GROWTH_STAGES.sprout.max) return 'sprout'
-  if (growthPercentage < GROWTH_STAGES.growing.max) return 'growing'
-  if (growthPercentage < GROWTH_STAGES.blooming.max) return 'blooming'
-  return 'mature'
-}
-
-function getGrowthStageClass(stage: GrowthStage): string {
-  const classes: Record<GrowthStage, string> = {
-    seed: 'plant-seed',
-    sprout: 'plant-sprout',
-    growing: 'plant-growing',
-    blooming: 'plant-blooming',
-    mature: 'plant-mature',
-  }
-  return classes[stage]
-}
-
 function getSpecialEffectClass(plantTypeName: string): string {
   const normalizedName = plantTypeName.toLowerCase()
   return SPECIAL_PLANT_EFFECTS[normalizedName] || ''
-}
-
-function getSizeClasses(size: PlantVisualProps['size']) {
-  const sizes = {
-    sm: 'text-2xl w-8 h-8',
-    md: 'text-3xl w-10 h-10',
-    lg: 'text-4xl w-12 h-12',
-    xl: 'text-5xl w-16 h-16',
-  }
-  return sizes[size || 'md']
 }
 
 // Determine if plant is wilting (low moisture, not dead)
@@ -96,6 +58,7 @@ export function PlantVisual({
 }: PlantVisualProps) {
   const [isWatering, setIsWatering] = useState(false)
   const [showGrowthBurst, setShowGrowthBurst] = useState(false)
+  const previousStageRef = useRef<GrowthStage | null>(null)
 
   // Handle watering animation trigger
   useEffect(() => {
@@ -110,12 +73,15 @@ export function PlantVisual({
   const isDead = plant.status === 'dead'
   const wilting = isWilting(plant)
 
-  // Determine animation class
-  const getAnimationClass = () => {
-    if (isDead) return 'plant-dead'
-    if (wilting) return 'plant-wilting'
-    return getGrowthStageClass(growthStage)
-  }
+  // Detect growth stage changes for burst animation
+  useEffect(() => {
+    if (previousStageRef.current && previousStageRef.current !== growthStage && !isDead) {
+      setShowGrowthBurst(true)
+      const timer = setTimeout(() => setShowGrowthBurst(false), 800)
+      return () => clearTimeout(timer)
+    }
+    previousStageRef.current = growthStage
+  }, [growthStage, isDead])
 
   // Get special effect if applicable (only for non-dead plants)
   const specialEffectClass = !isDead ? getSpecialEffectClass(plant.plant_type.name) : ''
@@ -125,23 +91,26 @@ export function PlantVisual({
 
   return (
     <div className={cn('relative inline-flex items-center justify-center', className)}>
-      {/* Main plant icon with animations */}
-      <span
+      {/* Main plant image with animations */}
+      <div
         className={cn(
-          'plant-visual inline-flex items-center justify-center',
-          getSizeClasses(size),
-          getAnimationClass(),
+          'plant-visual inline-flex items-center justify-center transition-transform duration-300',
           specialEffectClass,
           weatherClass,
-          showGrowthBurst && 'growth-milestone'
+          wilting && 'plant-wilting',
+          showGrowthBurst && 'animate-growth-burst'
         )}
       >
-        {plant.plant_type.icon}
-      </span>
+        <PlantImage
+          plant={plant}
+          size={size}
+          showGrowthTransition={showGrowthBurst}
+        />
+      </div>
 
       {/* Watering effect overlay */}
       {isWatering && (
-        <div className="water-effect">
+        <div className="water-effect absolute inset-0">
           {/* Water drops */}
           <span className="water-drop absolute top-0 left-1/3 text-blue-400">💧</span>
           <span className="water-drop absolute top-0 left-1/2 text-blue-400 delay-100">💧</span>
@@ -152,18 +121,22 @@ export function PlantVisual({
         </div>
       )}
 
-      {/* Wilting indicator */}
-      {wilting && !isDead && (
-        <span className="absolute -top-1 -right-1 text-xs animate-pulse">💦</span>
-      )}
-
       {/* Growth stage indicator (optional visual feedback) */}
       {growthStage === 'blooming' && !isDead && !wilting && (
         <span className="absolute -top-1 -right-1 text-xs sparkle">✨</span>
       )}
+
+      {/* Growth burst effect */}
+      {showGrowthBurst && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="absolute w-full h-full rounded-full bg-green-400/20 animate-ping" />
+          <span className="absolute text-yellow-400 animate-bounce">✨</span>
+        </div>
+      )}
     </div>
   )
 }
+
 
 // Sub-component for cherry blossom petals effect
 export function CherryBlossomPetals({ active }: { active: boolean }) {
