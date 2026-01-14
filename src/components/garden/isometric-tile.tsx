@@ -28,9 +28,9 @@ export function IsometricTile({
   onMouseLeave,
   children,
   tileSize = 60,
-  grassColor = '#4ade80',
-  dirtColor = '#a3744f',
-  dirtDarkColor = '#8b5e3c',
+  grassColor = '#7cb342',
+  dirtColor = '#8d6e4c',
+  dirtDarkColor = '#6b5344',
 }: IsometricTileProps) {
   // Calculate position in isometric grid
   // x offset: (col - row) * tileWidth/2
@@ -66,7 +66,7 @@ export function IsometricTile({
         className="absolute top-0 left-0"
         style={{ overflow: 'visible' }}
       >
-        {/* Top face (grass/ground) - Diamond shape */}
+        {/* Top face (grass/ground) - Diamond shape, solid color for seamless look */}
         <polygon
           points={`
             ${tileSize / 2},0
@@ -75,15 +75,15 @@ export function IsometricTile({
             0,${tileSize / 4}
           `}
           fill={grassColor}
-          stroke={isHovered && isEmpty ? '#22c55e' : '#16a34a'}
-          strokeWidth={isHovered && isEmpty ? 2 : 1}
+          stroke="#5a8f2a"
+          strokeWidth={0.5}
           className={cn(
             'transition-all duration-200',
             isHovered && isEmpty && 'brightness-110'
           )}
         />
 
-        {/* Left face (dirt) */}
+        {/* Left face (dirt) - darker side */}
         <polygon
           points={`
             0,${tileSize / 4}
@@ -92,11 +92,11 @@ export function IsometricTile({
             0,${tileSize / 4 + tileHeight}
           `}
           fill={dirtDarkColor}
-          stroke="#7a5232"
-          strokeWidth={0.5}
+          stroke="#4a3c32"
+          strokeWidth={0.3}
         />
 
-        {/* Right face (dirt) */}
+        {/* Right face (dirt) - lighter side */}
         <polygon
           points={`
             ${tileSize / 2},${tileSize / 2}
@@ -105,28 +105,8 @@ export function IsometricTile({
             ${tileSize / 2},${tileSize / 2 + tileHeight}
           `}
           fill={dirtColor}
-          stroke="#7a5232"
-          strokeWidth={0.5}
-        />
-
-        {/* Grid lines on top face */}
-        <line
-          x1={tileSize / 4}
-          y1={tileSize / 8}
-          x2={tileSize * 3 / 4}
-          y2={tileSize * 3 / 8}
-          stroke="#22c55e"
-          strokeWidth={0.5}
-          opacity={0.3}
-        />
-        <line
-          x1={tileSize / 4}
-          y1={tileSize * 3 / 8}
-          x2={tileSize * 3 / 4}
-          y2={tileSize / 8}
-          stroke="#22c55e"
-          strokeWidth={0.5}
-          opacity={0.3}
+          stroke="#5a4a3a"
+          strokeWidth={0.3}
         />
       </svg>
 
@@ -146,21 +126,31 @@ export function IsometricTile({
         </div>
       )}
 
-      {/* Plant container - positioned on top of the tile */}
+      {/* Plant shadow - centered on tile */}
       {children && (
         <div
-          className="absolute pointer-events-none flex flex-col items-center"
+          className="absolute pointer-events-none rounded-full"
           style={{
             left: tileSize / 2,
-            top: tileSize / 4 - 5,
+            top: tileSize / 4,
+            width: tileSize * 0.4,
+            height: tileSize * 0.15,
+            transform: 'translate(-50%, -50%)',
+            background: 'radial-gradient(ellipse, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.15) 50%, transparent 100%)',
+          }}
+        />
+      )}
+
+      {/* Plant container - positioned above the tile center */}
+      {children && (
+        <div
+          className="absolute pointer-events-none flex flex-col items-center justify-end"
+          style={{
+            left: tileSize / 2,
+            top: tileSize / 4,
             transform: 'translate(-50%, -100%)',
           }}
         >
-          {/* Plant shadow */}
-          <div 
-            className="absolute bottom-0 w-6 h-2 bg-black/10 rounded-full blur-sm"
-            style={{ transform: 'translateY(50%)' }}
-          />
           {children}
         </div>
       )}

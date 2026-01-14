@@ -2,8 +2,6 @@
 
 import { cn } from '@/lib/utils'
 import type { PlantWithType, PlantStatus } from '@/types/database'
-import Image from 'next/image'
-import { useState, useEffect, useMemo } from 'react'
 
 // Growth stage thresholds matching plant-visual.tsx
 const GROWTH_STAGES = {
@@ -16,31 +14,13 @@ const GROWTH_STAGES = {
 
 export type GrowthStage = keyof typeof GROWTH_STAGES
 
-// Map plant type names to folder names
-const PLANT_TYPE_FOLDERS: Record<string, string> = {
-    // Default/generic plants
-    'generic': 'generic',
-    // Special plant types
-    'sunflower': 'sunflower',
-    'cherry blossom': 'cherry-blossom',
-    'cherry': 'cherry-blossom',
-    'sakura': 'cherry-blossom',
-    'cactus': 'cactus',
-    'bonsai': 'bonsai',
-    'lotus': 'lotus',
-    'rose': 'rose',
-    'bamboo': 'bamboo',
-    'money tree': 'money-tree',
-    'money': 'money-tree',
-}
-
-// Size configurations
+// Size configurations - using text sizes for emoji
 const SIZE_CONFIG = {
-    sm: { width: 32, height: 32, className: 'w-8 h-8' },
-    md: { width: 40, height: 40, className: 'w-10 h-10' },
-    lg: { width: 48, height: 48, className: 'w-12 h-12' },
-    xl: { width: 64, height: 64, className: 'w-16 h-16' },
-    '2xl': { width: 96, height: 96, className: 'w-24 h-24' },
+    sm: { className: 'w-8 h-8 text-2xl' },
+    md: { className: 'w-10 h-10 text-3xl' },
+    lg: { className: 'w-12 h-12 text-4xl' },
+    xl: { className: 'w-16 h-16 text-5xl' },
+    '2xl': { className: 'w-24 h-24 text-7xl' },
 } as const
 
 interface PlantImageProps {
@@ -61,7 +41,22 @@ function getGrowthStage(growthPercentage: number, status: PlantStatus): GrowthSt
     return 'mature'
 }
 
+// Map plant type names to folder names (kept for future use)
 function getPlantFolder(plantTypeName: string): string {
+    const PLANT_TYPE_FOLDERS: Record<string, string> = {
+        'generic': 'generic',
+        'sunflower': 'sunflower',
+        'cherry blossom': 'cherry-blossom',
+        'cherry': 'cherry-blossom',
+        'sakura': 'cherry-blossom',
+        'cactus': 'cactus',
+        'bonsai': 'bonsai',
+        'lotus': 'lotus',
+        'rose': 'rose',
+        'bamboo': 'bamboo',
+        'money tree': 'money-tree',
+        'money': 'money-tree',
+    }
     const normalizedName = plantTypeName.toLowerCase().trim()
     return PLANT_TYPE_FOLDERS[normalizedName] || 'generic'
 }
@@ -70,7 +65,6 @@ function getPlantImagePath(plantTypeName: string, stage: GrowthStage, isDead: bo
     const folder = getPlantFolder(plantTypeName)
 
     if (isDead) {
-        // Check if dead image exists, otherwise use withered generic
         return `/plants/${folder}/dead.png`
     }
 
@@ -83,72 +77,33 @@ export function PlantImage({
     showGrowthTransition = false,
     className,
 }: PlantImageProps) {
-    const [isTransitioning, setIsTransitioning] = useState(false)
-    const [previousStage, setPreviousStage] = useState<GrowthStage | null>(null)
-    const [imageError, setImageError] = useState(false)
-
     const isDead = plant.status === 'dead'
     const currentStage = getGrowthStage(plant.growth_percentage, plant.status)
     const sizeConfig = SIZE_CONFIG[size]
 
-    // Memoize image path to prevent unnecessary re-renders
-    const imagePath = useMemo(() => {
-        if (imageError) {
-            // Fallback to generic if specific plant type image not found
-            return `/plants/generic/${currentStage}.png`
-        }
-        return getPlantImagePath(plant.plant_type.name, currentStage, isDead)
-    }, [plant.plant_type.name, currentStage, isDead, imageError])
-
-    // Handle growth stage transitions with animation
-    useEffect(() => {
-        if (showGrowthTransition && previousStage && previousStage !== currentStage) {
-            setIsTransitioning(true)
-            const timer = setTimeout(() => setIsTransitioning(false), 600)
-            return () => clearTimeout(timer)
-        }
-        setPreviousStage(currentStage)
-    }, [currentStage, previousStage, showGrowthTransition])
-
-    // Reset image error when plant type changes
-    useEffect(() => {
-        setImageError(false)
-    }, [plant.plant_type.name])
+    // Temporarily use emoji icon from plant_type instead of PNG images
+    // TODO: Replace with Image component when proper plant images are ready
+    const icon = plant.plant_type.icon || '🌱'
 
     return (
         <div
             className={cn(
                 'relative inline-flex items-center justify-center',
                 sizeConfig.className,
-                isTransitioning && 'animate-growth-burst',
+                showGrowthTransition && 'animate-growth-burst',
                 className
             )}
         >
-            <Image
-                src={imagePath}
-                alt={`${plant.plant_type.name} - ${currentStage}`}
-                width={sizeConfig.width}
-                height={sizeConfig.height}
+            <span
                 className={cn(
-                    'object-contain transition-all duration-300',
-                    isDead && 'grayscale opacity-60',
-                    isTransitioning && 'scale-110'
+                    'transition-all duration-300 select-none',
+                    isDead && 'grayscale opacity-60'
                 )}
-                onError={() => {
-                    if (!imageError) {
-                        setImageError(true)
-                    }
-                }}
-                priority={size === 'xl' || size === '2xl'}
-            />
-
-            {/* Growth transition sparkle effect */}
-            {isTransitioning && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <span className="absolute animate-ping text-yellow-400 text-lg">✨</span>
-                    <span className="absolute animate-bounce text-yellow-300 text-sm delay-100">✨</span>
-                </div>
-            )}
+                role="img"
+                aria-label={`${plant.plant_type.name} - ${currentStage}`}
+            >
+                {icon}
+            </span>
 
             {/* Wilting indicator for low moisture */}
             {!isDead && plant.current_moisture < 30 && (

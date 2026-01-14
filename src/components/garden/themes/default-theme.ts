@@ -17,13 +17,13 @@ export const defaultTheme: GardenTheme = {
     },
   },
   ground: {
-    primary: '#4ade80', // Green 400
-    secondary: '#22c55e', // Green 500
-    accent: '#86efac', // Green 300
+    primary: '#7cb342', // Natural grass green (Forest-like)
+    secondary: '#689f38', // Darker grass
+    accent: '#8bc34a', // Light grass highlight
   },
   decorations: {
     type: 'trees',
-    color: '#166534', // Green 800
-    secondaryColor: '#15803d', // Green 700
+    color: '#33691e', // Dark forest green
+    secondaryColor: '#558b2f', // Medium forest green
   },
 }

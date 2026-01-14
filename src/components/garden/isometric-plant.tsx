@@ -12,14 +12,14 @@ interface IsometricPlantProps {
   className?: string
 }
 
-// Map growth percentage to a visual scale - larger base sizes
+// Map growth percentage to a visual scale
 function getPlantScale(growthPercentage: number): number {
-  if (growthPercentage < 10) return 0.7 // Seed - slightly larger
-  if (growthPercentage < 25) return 0.8 // Sprout
-  if (growthPercentage < 50) return 0.9 // Early growing
-  if (growthPercentage < 75) return 1.0 // Mid growing
-  if (growthPercentage < 100) return 1.1 // Late growing/blooming
-  return 1.2 // Mature - noticeably larger
+  if (growthPercentage < 10) return 0.6 // Seed
+  if (growthPercentage < 25) return 0.7 // Sprout
+  if (growthPercentage < 50) return 0.8 // Early growing
+  if (growthPercentage < 75) return 0.9 // Mid growing
+  if (growthPercentage < 100) return 0.95 // Late growing/blooming
+  return 1.0 // Mature
 }
 
 export function IsometricPlant({
@@ -35,19 +35,17 @@ export function IsometricPlant({
   return (
     <div
       className={cn(
-        'transition-all duration-500 ease-out',
-        'hover:scale-110',
+        'transition-all duration-300 ease-out',
         className
       )}
       style={{
         transform: `scale(${finalScale})`,
         transformOrigin: 'bottom center',
-        filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))',
       }}
     >
       <PlantVisual
         plant={plant}
-        size="2xl"
+        size="md"
         weather={weather}
         showWateringEffect={showWateringEffect}
       />
