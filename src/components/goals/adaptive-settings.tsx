@@ -165,14 +165,16 @@ export function AdaptiveSettings({ goal, className, onUpdate }: AdaptiveSettings
                   <Moon className="h-5 w-5 text-purple-500" />
                   Activate Recovery Week?
                 </AlertDialogTitle>
-                <AlertDialogDescription className="space-y-2">
-                  <p>A recovery week will:</p>
-                  <ul className="list-disc list-inside text-sm space-y-1">
-                    <li>Reduce this week's target by 50%</li>
-                    <li>Keep your streak intact</li>
-                    <li>Not count towards performance trends</li>
-                    <li>Help you rest and recover</li>
-                  </ul>
+                <AlertDialogDescription asChild>
+                  <div className="text-sm text-muted-foreground space-y-2">
+                    <p>A recovery week will:</p>
+                    <ul className="list-disc list-inside text-sm space-y-1">
+                      <li>Reduce this week's target by 50%</li>
+                      <li>Keep your streak intact</li>
+                      <li>Not count towards performance trends</li>
+                      <li>Help you rest and recover</li>
+                    </ul>
+                  </div>
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
