@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { IsometricTile } from './isometric-tile'
 import { IsometricPlant } from './isometric-plant'
 import { PlantTooltip } from './plant-tooltip'
@@ -24,9 +24,11 @@ function getGridSize(plantCount: number): number {
   return 5
 }
 
-// Get responsive tile size
-function getTileSize(): number {
-  if (typeof window === 'undefined') return 60
+// Get responsive tile size - returns default for SSR, actual for client
+const DEFAULT_TILE_SIZE = 60
+
+function getClientTileSize(): number {
+  if (typeof window === 'undefined') return DEFAULT_TILE_SIZE
   const width = window.innerWidth
   if (width < 640) return 50 // Mobile
   if (width < 1024) return 60 // Tablet
@@ -43,6 +45,19 @@ export function IsometricGarden({
   const [sheetOpen, setSheetOpen] = useState(false)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
 
+  // Use default tile size on server, actual size on client to avoid hydration mismatch
+  const [tileSize, setTileSize] = useState(DEFAULT_TILE_SIZE)
+
+  useEffect(() => {
+    // Set initial size
+    setTileSize(getClientTileSize())
+
+    // Update on resize
+    const handleResize = () => setTileSize(getClientTileSize())
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   // Filter out dead plants for the garden view (they go to cemetery)
   const livingPlants = plants.filter((p) => p.status !== 'dead')
 
@@ -51,8 +66,6 @@ export function IsometricGarden({
     // Always show at least one empty spot
     return Math.max(getGridSize(livingPlants.length + 1), 2)
   }, [livingPlants.length])
-
-  const tileSize = getTileSize()
 
   // Create a map of plant positions
   // Plants are assigned positions based on their index

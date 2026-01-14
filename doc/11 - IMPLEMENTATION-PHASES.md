@@ -155,6 +155,9 @@ Dự án chia thành 4 phases chính:
 - User nhận suggestions
 - Recovery week available
 
+phần goal chưa ổn lắm, thứ nhât là phải show cả progress dành cho họ, thứ 2 là có thể log nhiều ngày nhưng không tăng XP trừ khi họ vượt qua được record hiện tại
+paste doc của goal master va
+
 ## Phase 4: Polish & Launch (2 tuần)
 
 ### Week 15-16: Polish
