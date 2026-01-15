@@ -164,11 +164,11 @@ paste doc của goal master va
 
 **Tasks:**
 - [ ] Responsive design check
-- [ ] PWA setup
-- [ ] Onboarding flow
+- [x] PWA setup
+- [x] Onboarding flow
 - [ ] Empty states
-- [ ] Error handling
-- [ ] Loading states
+- [x] Error handling
+- [x] Loading states
 - [ ] Performance optimization
 - [ ] SEO setup
 - [ ] Analytics integration

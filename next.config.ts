@@ -11,8 +11,9 @@ const withPWA = withPWAInit({
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
-  // Use webpack for build (required for next-pwa)
-  // Turbopack doesn't support webpack plugins yet
+  // Empty turbopack config to silence the warning in dev mode
+  // next-pwa adds webpack config but is disabled in development anyway
+  turbopack: {},
 };
 
 export default withPWA(nextConfig);

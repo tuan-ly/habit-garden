@@ -1,14 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { PlantCard } from '@/components/plants/plant-card'
 import { PlantDetailSheet } from '@/components/plants/plant-detail-sheet'
 import { AddPlantDialog } from '@/components/plants/add-plant-dialog'
 import { IsometricGarden } from './isometric-garden'
-import { Button } from '@/components/ui/button'
 import { TreesIcon, LayoutGrid } from 'lucide-react'
-import { WeatherBadge } from '@/components/gamification/weather-display'
-import { XpBadge } from '@/components/gamification/xp-progress'
+import { GameHud } from '@/components/game-ui'
+import { cn } from '@/lib/utils'
 import type { PlantWithType, PlantType, WeatherType, Profile } from '@/types/database'
 
 type ViewMode = 'garden' | 'list'
@@ -52,7 +51,10 @@ export function GardenView({ plants, plantTypes, weather, profile }: GardenViewP
   // Empty state
   if (plants.length === 0) {
     return (
-      <div className="space-y-6">
+      <div className="h-screen">
+        {/* Game HUD */}
+        <GameHud profile={profile} weather={weather} />
+
         <IsometricGarden
           plants={[]}
           plantTypes={plantTypes}
@@ -63,39 +65,43 @@ export function GardenView({ plants, plantTypes, weather, profile }: GardenViewP
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Compact header bar */}
-      <div className="flex items-center justify-between py-1">
-        <div className="flex items-center gap-2">
-          <Button
-            variant={viewMode === 'garden' ? 'default' : 'outline'}
-            size="sm"
+    <div className="flex flex-col h-screen">
+      {/* Game HUD - floating at top */}
+      <GameHud profile={profile} weather={weather} />
+
+      {/* View mode toggle - game style floating buttons */}
+      <div className="fixed top-16 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
+        <div className="flex items-center gap-1 p-1 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-xl border border-white/20 dark:border-slate-700/50 shadow-lg">
+          <button
             onClick={() => handleViewModeChange('garden')}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+              viewMode === 'garden'
+                ? "bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-md"
+                : "text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+            )}
           >
-            <TreesIcon className="h-4 w-4 mr-1" />
+            <TreesIcon className="w-4 h-4" />
             Garden
-          </Button>
-          <Button
-            variant={viewMode === 'list' ? 'default' : 'outline'}
-            size="sm"
+          </button>
+          <button
             onClick={() => handleViewModeChange('list')}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+              viewMode === 'list'
+                ? "bg-gradient-to-br from-blue-400 to-indigo-500 text-white shadow-md"
+                : "text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+            )}
           >
-            <LayoutGrid className="h-4 w-4 mr-1" />
+            <LayoutGrid className="w-4 h-4" />
             List
-          </Button>
-        </div>
-        <div className="flex items-center gap-3">
-          {viewMode === 'list' && (
-            <AddPlantDialog plantTypes={plantTypes} />
-          )}
-          {profile && <XpBadge totalXp={profile.xp} />}
-          <WeatherBadge size="sm" />
+          </button>
         </div>
       </div>
 
-      {/* Isometric Garden View - fills remaining space */}
+      {/* Isometric Garden View - fills entire screen */}
       {viewMode === 'garden' && (
-        <div className="flex-1 min-h-0">
+        <div className="flex-1">
           <IsometricGarden
             plants={plants}
             plantTypes={plantTypes}
@@ -104,24 +110,44 @@ export function GardenView({ plants, plantTypes, weather, profile }: GardenViewP
         </div>
       )}
 
-      {/* List View (original card grid) */}
+      {/* List View (card grid with game styling) */}
       {viewMode === 'list' && (
-        <div className="flex-1 overflow-auto space-y-8">
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span>{growingPlants.length} growing</span>
-            <span>{maturePlants.length} mature</span>
+        <div className="flex-1 overflow-auto pt-20 px-4 pb-4 space-y-6">
+          {/* Add plant button - floating */}
+          <div className="fixed top-16 right-4 z-30">
+            <AddPlantDialog plantTypes={plantTypes} />
+          </div>
+
+          {/* Stats bar */}
+          <div className="flex items-center justify-center gap-4">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-100 dark:bg-green-900/30 rounded-full">
+              <span className="text-sm">🌱</span>
+              <span className="text-sm font-medium text-green-700 dark:text-green-400">{growingPlants.length} growing</span>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-full">
+              <span className="text-sm">🌳</span>
+              <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">{maturePlants.length} mature</span>
+            </div>
             {deadPlants.length > 0 && (
-              <span className="text-red-500">{deadPlants.length} dead</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-red-100 dark:bg-red-900/30 rounded-full">
+                <span className="text-sm">🪦</span>
+                <span className="text-sm font-medium text-red-700 dark:text-red-400">{deadPlants.length} dead</span>
+              </div>
             )}
           </div>
 
           {/* Growing Plants */}
           {growingPlants.length > 0 && (
             <section>
-              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <span className="text-xl">🌱</span>
-                Growing ({growingPlants.length})
-              </h2>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-md shadow-green-500/30">
+                  <span className="text-lg">🌱</span>
+                </div>
+                <div>
+                  <h2 className="font-bold text-lg">Growing</h2>
+                  <p className="text-xs text-slate-500">{growingPlants.length} plants</p>
+                </div>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {growingPlants.map((plant) => (
                   <PlantCard
@@ -137,10 +163,15 @@ export function GardenView({ plants, plantTypes, weather, profile }: GardenViewP
           {/* Mature Plants */}
           {maturePlants.length > 0 && (
             <section>
-              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <span className="text-xl">🌳</span>
-                Mature ({maturePlants.length})
-              </h2>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-md shadow-emerald-500/30">
+                  <span className="text-lg">🌳</span>
+                </div>
+                <div>
+                  <h2 className="font-bold text-lg">Mature</h2>
+                  <p className="text-xs text-slate-500">{maturePlants.length} plants</p>
+                </div>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {maturePlants.map((plant) => (
                   <PlantCard
@@ -156,10 +187,15 @@ export function GardenView({ plants, plantTypes, weather, profile }: GardenViewP
           {/* Dead Plants (Cemetery) */}
           {deadPlants.length > 0 && (
             <section>
-              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-muted-foreground">
-                <span className="text-xl">🪦</span>
-                Cemetery ({deadPlants.length})
-              </h2>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-400 to-slate-600 flex items-center justify-center shadow-md">
+                  <span className="text-lg">🪦</span>
+                </div>
+                <div>
+                  <h2 className="font-bold text-lg text-slate-500">Cemetery</h2>
+                  <p className="text-xs text-slate-400">{deadPlants.length} plants</p>
+                </div>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {deadPlants.map((plant) => (
                   <PlantCard

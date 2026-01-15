@@ -1,11 +1,34 @@
+'use client'
+
+import { useState } from 'react'
 import { signup, signInWithGoogle } from '../actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import Link from 'next/link'
 
 export default function SignupPage() {
+  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+
+  async function handleSignup(formData: FormData) {
+    setError(null)
+    setIsLoading(true)
+
+    try {
+      const result = await signup(formData)
+      if (result?.error) {
+        setError(result.error)
+      }
+    } catch {
+      setError('An unexpected error occurred')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-green-50 to-white dark:from-green-950 dark:to-background">
       <Card className="w-full max-w-md">
@@ -17,7 +40,13 @@ export default function SignupPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="space-y-4">
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <form action={handleSignup} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -26,6 +55,7 @@ export default function SignupPage() {
                 type="email"
                 placeholder="email@example.com"
                 required
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -36,10 +66,11 @@ export default function SignupPage() {
                 type="password"
                 placeholder="At least 6 characters"
                 required
+                disabled={isLoading}
               />
             </div>
-            <Button formAction={signup} className="w-full">
-              Create Account
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? 'Creating account...' : 'Create Account'}
             </Button>
           </form>
 
