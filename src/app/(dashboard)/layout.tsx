@@ -18,7 +18,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="min-h-screen relative ">
       {/* Animated gradient background */}
       <div className="fixed inset-0 bg-gradient-to-br from-sky-200 via-emerald-100 to-green-200 dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950" />
 
