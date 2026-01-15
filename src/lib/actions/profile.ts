@@ -5,6 +5,43 @@ import type { Profile } from '@/types/database'
 import { ACHIEVEMENTS, type AchievementProgress } from '@/lib/achievements'
 import { getLevelFromXp } from '@/lib/xp-system'
 
+// Sync user XP from watering_logs to profiles table
+export async function syncUserXp(): Promise<{ success: boolean; xp?: number; error?: string }> {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
+
+  // Calculate total XP from watering_logs
+  const { data: waterings, error: wateringsError } = await supabase
+    .from('watering_logs')
+    .select('xp_earned')
+    .eq('user_id', user.id)
+
+  if (wateringsError) {
+    console.error('Error fetching waterings:', wateringsError)
+    return { success: false, error: wateringsError.message }
+  }
+
+  const totalXp = waterings?.reduce((sum, w) => sum + (w.xp_earned ?? 0), 0) ?? 0
+
+  // Update profiles table
+  const { error: updateError } = await supabase
+    .from('profiles')
+    .update({
+      xp: totalXp,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', user.id)
+
+  if (updateError) {
+    console.error('Error updating profile XP:', updateError)
+    return { success: false, error: updateError.message }
+  }
+
+  return { success: true, xp: totalXp }
+}
+
 export async function getProfile(): Promise<Profile | null> {
   const supabase = await createClient()
 
@@ -20,6 +57,29 @@ export async function getProfile(): Promise<Profile | null> {
   if (error) {
     console.error('Error fetching profile:', error)
     return null
+  }
+
+  // Auto-sync XP if profile.xp is 0 but user has waterings
+  if (data && data.xp === 0) {
+    const { data: waterings } = await supabase
+      .from('watering_logs')
+      .select('xp_earned')
+      .eq('user_id', user.id)
+
+    const totalXp = waterings?.reduce((sum, w) => sum + (w.xp_earned ?? 0), 0) ?? 0
+
+    if (totalXp > 0) {
+      // Update profile with correct XP
+      await supabase
+        .from('profiles')
+        .update({
+          xp: totalXp,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id)
+
+      data.xp = totalXp
+    }
   }
 
   return data as Profile

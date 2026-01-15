@@ -2,7 +2,7 @@
 
 > **Last Updated**: 2026-01-15
 > **Current Phase**: Phase 4 - Polish & Launch (IN PROGRESS)
-> **Last Session**: Optimistic Updates for Watering
+> **Last Session**: Remove RPC Dependency + XP Auto-Sync
 
 ---
 
@@ -28,11 +28,31 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 - Floating HUD for XP/level/weather display
 - Game-style animations and visual polish
 - Redesigned Stats and Profile pages with game aesthetics
-- **NEW: Optimistic Updates** - UI updates instantly when watering, syncs with server in background
+- Optimistic Updates - UI updates instantly when watering, syncs with server in background
+- **NEW: XP Update Fixed** - Removed RPC dependency, direct profile table update + auto-sync
 
 ---
 
 ## Recent Changes (Latest First)
+
+### 2026-01-15: Remove RPC Dependency + XP Auto-Sync
+**Problem solved:** XP wasn't updating after watering because `supabase.rpc('increment_user_xp')` function didn't exist in the database.
+
+**Solution:** Replaced RPC calls with direct profile table updates and added XP auto-sync.
+
+| File | Change |
+|------|--------|
+| `src/lib/actions/plants.ts` | FIXED - Replaced `supabase.rpc('increment_user_xp')` with direct `profiles` table update (fetch current XP → add → update) |
+| `src/lib/actions/goals.ts` | FIXED - Same pattern: replaced RPC with direct profile table update for goal logging XP |
+| `src/lib/actions/profile.ts` | NEW - Added `syncUserXp()` function to recalculate XP from watering_logs |
+| `src/lib/actions/profile.ts` | IMPROVED - `getProfile()` now auto-syncs XP if profile.xp is 0 but user has waterings |
+
+**How XP updates work now:**
+1. **Watering/Goal Log**: Fetch profile → Calculate new XP → Update profile table
+2. **Auto-sync**: If `getProfile()` detects XP=0 but waterings exist, it recalculates and updates
+3. **Manual sync**: `syncUserXp()` can be called to force recalculation from watering_logs
+
+---
 
 ### 2026-01-15: Fix Optimistic Updates Not Persisting
 **Problem solved:** UI wasn't updating after watering or adding new plants - required page refresh.

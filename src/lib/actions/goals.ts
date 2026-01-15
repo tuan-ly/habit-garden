@@ -291,8 +291,26 @@ export async function logGoalValue(dto: LogGoalDto): Promise<{
     })
     .eq('id', plant.id)
 
-  // Update user XP
-  await supabase.rpc('increment_user_xp', { user_id: user.id, xp_amount: totalXp })
+  // Update user XP in profiles table
+  const { data: currentProfile } = await supabase
+    .from('profiles')
+    .select('xp')
+    .eq('id', user.id)
+    .single()
+
+  if (currentProfile) {
+    const { error: xpError } = await supabase
+      .from('profiles')
+      .update({
+        xp: currentProfile.xp + totalXp,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', user.id)
+
+    if (xpError) {
+      console.error('Error updating user XP:', xpError)
+    }
+  }
 
   revalidatePath('/garden')
   return {

@@ -242,8 +242,26 @@ export async function waterPlant(
     return { success: false, error: updateError.message }
   }
 
-  // Update user XP
-  await supabase.rpc('increment_user_xp', { user_id: user.id, xp_amount: totalXp })
+  // Update user XP in profiles table
+  const { data: currentProfile } = await supabase
+    .from('profiles')
+    .select('xp')
+    .eq('id', user.id)
+    .single()
+
+  if (currentProfile) {
+    const { error: xpError } = await supabase
+      .from('profiles')
+      .update({
+        xp: currentProfile.xp + totalXp,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', user.id)
+
+    if (xpError) {
+      console.error('Error updating user XP:', xpError)
+    }
+  }
 
   // Check for new achievements
   const newAchievements = await checkAndUnlockAchievements(user.id)
@@ -358,7 +376,7 @@ export interface WateringLogWithPlant {
       name: string
       icon: string
     }
-  }
+  } | null
 }
 
 export interface GardenStatsData {
@@ -434,6 +452,8 @@ export async function getGardenStats(
   }
 
   // Fetch watering logs with plant info
+  // Use watered_date for filtering (local date, no timezone issues)
+  // watered_date should always be set (DEFAULT CURRENT_DATE in schema)
   const { data: waterings, error } = await supabase
     .from('watering_logs')
     .select(`
@@ -471,20 +491,30 @@ export async function getGardenStats(
     current.setDate(current.getDate() + 1)
   }
 
+  // Helper to extract date from watered_at timestamp
+  const extractDateFromTimestamp = (timestamp: string): string => {
+    // watered_at is ISO timestamp like "2026-01-15T10:30:00.000Z"
+    // Extract the date part, handling timezone
+    const date = new Date(timestamp)
+    return formatDate(date.getFullYear(), date.getMonth(), date.getDate())
+  }
+
   // Transform Supabase nested select arrays to objects
   const typedWaterings: WateringLogWithPlant[] = (waterings || [])
-    .filter(w => w.plant && w.plant.length > 0)
     .map(w => ({
       id: w.id,
       plant_id: w.plant_id,
       watered_at: w.watered_at,
-      watered_date: w.watered_date,
+      // Use watered_date if available, otherwise extract from watered_at
+      watered_date: w.watered_date || extractDateFromTimestamp(w.watered_at),
       xp_earned: w.xp_earned,
-      plant: {
-        id: w.plant[0].id,
-        name: w.plant[0].name,
-        plant_type: w.plant[0].plant_type?.[0] || { id: '', name: '', icon: '' }
-      }
+      plant: w.plant && w.plant.length > 0
+        ? {
+            id: w.plant[0].id,
+            name: w.plant[0].name,
+            plant_type: w.plant[0].plant_type?.[0] || { id: '', name: 'Unknown', icon: '🌱' }
+          }
+        : null
     }))
   typedWaterings.forEach(w => {
     const date = w.watered_date
