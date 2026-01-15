@@ -39,7 +39,8 @@ export function PlantTooltip({ plant }: PlantTooltipProps) {
   )
 }
 
-// Floating card - shows details when hovering a plant
+// Floating tooltip - shows details when hovering a plant
+// Positioned as fixed element above the garden area
 interface PlantInfoBarProps {
   plant: PlantWithType | null
 }
@@ -66,17 +67,15 @@ function getPlantGradient(plantTypeId: string): string {
 }
 
 export function PlantInfoBar({ plant }: PlantInfoBarProps) {
-  // Fixed height container to prevent layout shift
-  const containerHeight = 80
-
+  // Empty state - show subtle hint centered above garden
   if (!plant) {
     return (
-      <div className="flex justify-center items-center mt-3" style={{ height: containerHeight }}>
-        <div className="px-6 py-3 bg-slate-900/90 backdrop-blur-md rounded-2xl text-sm text-slate-300 border-2 border-slate-700/50 shadow-xl">
-          <span className="opacity-80 flex items-center gap-2">
-            <span className="text-lg">✨</span>
+      <div className="absolute left-1/2 -translate-x-1/2 top-16 z-20 pointer-events-none">
+        <div className="px-4 py-2 bg-slate-900/70 backdrop-blur-md rounded-full text-xs text-slate-400 border border-slate-700/50 shadow-lg">
+          <span className="flex items-center gap-2">
+            <span>✨</span>
             <span>Hover a plant to see info</span>
-            <span className="text-slate-500">•</span>
+            <span className="text-slate-600">•</span>
             <span>Click to open details</span>
           </span>
         </div>
@@ -90,7 +89,7 @@ export function PlantInfoBar({ plant }: PlantInfoBarProps) {
   const isThirsty = moisturePercent < 30 && plant.status !== 'dead'
 
   return (
-    <div className="flex justify-center items-center mt-3" style={{ height: containerHeight }}>
+    <div className="absolute left-1/2 -translate-x-1/2 top-16 z-20 pointer-events-none">
       <div className={cn(
         "relative overflow-hidden rounded-2xl shadow-2xl",
         "bg-slate-900/95 border-2 border-slate-700/50",

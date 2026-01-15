@@ -23,7 +23,7 @@ export async function login(formData: FormData): Promise<AuthResult> {
   }
 
   revalidatePath('/', 'layout')
-  redirect('/dashboard')
+  redirect('/garden')
 }
 
 export async function signup(formData: FormData): Promise<AuthResult> {

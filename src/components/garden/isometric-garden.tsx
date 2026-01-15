@@ -4,7 +4,6 @@ import { useState, useMemo, useEffect } from 'react'
 import { IsometricTile } from './isometric-tile'
 import { IsometricPlant } from './isometric-plant'
 import { PlantInfoBar } from './plant-tooltip'
-import { GardenSky } from './garden-sky'
 import { GroundPlane } from './ground-plane'
 import { AddPlantDialog } from '@/components/plants/add-plant-dialog'
 import { PlantDetailSheet } from '@/components/plants/plant-detail-sheet'
@@ -32,7 +31,7 @@ const DEFAULT_TILE_SIZE = 140
 function getClientTileSize(): number {
   if (typeof window === 'undefined') return DEFAULT_TILE_SIZE
   const width = window.innerWidth
-  if (width < 640) return 90 // Mobile
+  if (width < 640) return 100 // Mobile - slightly larger
   if (width < 1024) return 120 // Tablet
   return 140 // Desktop - larger tiles for better visuals
 }
@@ -122,12 +121,12 @@ export function IsometricGarden({
   const hoveredPlant = hoveredTile ? plantPositions.get(hoveredTile) ?? null : null
 
   return (
-    <div className="relative w-full h-full flex flex-col">
-      {/* Sky background */}
-      <GardenSky weather={weather} />
+    <div className="relative w-full h-full flex flex-col justify-end">
+      {/* Floating info tooltip - positioned above garden */}
+      <PlantInfoBar plant={hoveredPlant} />
 
-      {/* Garden container - centered, fills available space */}
-      <div className="flex-1 flex items-center justify-center py-2 overflow-auto">
+      {/* Garden container - anchored to bottom */}
+      <div className="flex justify-center px-4 pb-28">
         <div
           className="relative"
           style={{
@@ -135,61 +134,42 @@ export function IsometricGarden({
             height: containerHeight,
           }}
         >
-        {/* Single unified ground plane */}
-        <GroundPlane
-          gridSize={gridSize}
-          tileSize={tileSize}
-          grassColor={defaultTheme.ground.primary}
-          grassDarkColor={defaultTheme.ground.secondary}
-        />
+          {/* Single unified ground plane */}
+          <GroundPlane
+            gridSize={gridSize}
+            tileSize={tileSize}
+            grassColor={defaultTheme.ground.primary}
+            grassDarkColor={defaultTheme.ground.secondary}
+          />
 
-        {/* Interactive tile zones (transparent) */}
-        {tiles.map(({ row, col, plant }) => {
-          const tileKey = `${row}-${col}`
-          const isHovered = hoveredTile === tileKey
+          {/* Interactive tile zones (transparent) */}
+          {tiles.map(({ row, col, plant }) => {
+            const tileKey = `${row}-${col}`
+            const isHovered = hoveredTile === tileKey
 
-          return (
-            <IsometricTile
-              key={tileKey}
-              row={row}
-              col={col}
-              gridSize={gridSize}
-              isEmpty={!plant}
-              isHovered={isHovered}
-              onClick={() => handleTileClick(row, col, plant)}
-              onMouseEnter={() => handleTileHover(row, col)}
-              onMouseLeave={handleTileLeave}
-              tileSize={tileSize}
-            >
-              {plant && (
-                <IsometricPlant
-                  plant={plant}
-                  weather={weather}
-                />
-              )}
-            </IsometricTile>
-          )
-        })}
+            return (
+              <IsometricTile
+                key={tileKey}
+                row={row}
+                col={col}
+                gridSize={gridSize}
+                isEmpty={!plant}
+                isHovered={isHovered}
+                onClick={() => handleTileClick(row, col, plant)}
+                onMouseEnter={() => handleTileHover(row, col)}
+                onMouseLeave={handleTileLeave}
+                tileSize={tileSize}
+              >
+                {plant && (
+                  <IsometricPlant
+                    plant={plant}
+                    weather={weather}
+                  />
+                )}
+              </IsometricTile>
+            )
+          })}
         </div>
-      </div>
-
-      {/* Info bar below garden - shows hovered plant details */}
-      <PlantInfoBar plant={hoveredPlant} />
-
-      {/* Stats below garden - game style */}
-      <div className="flex justify-center gap-3 mt-2 pb-2">
-        <div className="flex items-center gap-2 px-4 py-2 bg-slate-900/80 backdrop-blur-sm rounded-xl border border-slate-700/50">
-          <span className="text-lg">🌱</span>
-          <span className="text-sm font-bold text-green-400">{livingPlants.length}</span>
-          <span className="text-xs text-slate-400">growing</span>
-        </div>
-        {plants.filter((p) => p.status === 'dead').length > 0 && (
-          <div className="flex items-center gap-2 px-4 py-2 bg-slate-900/80 backdrop-blur-sm rounded-xl border border-slate-700/50">
-            <span className="text-lg">🪦</span>
-            <span className="text-sm font-bold text-slate-400">{plants.filter((p) => p.status === 'dead').length}</span>
-            <span className="text-xs text-slate-500">cemetery</span>
-          </div>
-        )}
       </div>
 
       {/* Add plant dialog */}

@@ -22,7 +22,15 @@ export default function LoginPage() {
       if (result?.error) {
         setError(result.error)
       }
-    } catch {
+      // If no error returned, redirect happens server-side
+    } catch (e) {
+      // NEXT_REDIRECT throws an error, but it's not a real error
+      // Check if it's a redirect by looking at the error type
+      const error = e as Error
+      if (error?.message?.includes('NEXT_REDIRECT')) {
+        // This is a redirect, not an error - do nothing
+        return
+      }
       setError('An unexpected error occurred')
     } finally {
       setIsLoading(false)

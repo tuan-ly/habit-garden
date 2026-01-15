@@ -39,7 +39,7 @@ export function GardenSky({ weather, className }: GardenSkyProps) {
 
   return (
     <div
-      className={`absolute inset-0 -z-10 overflow-hidden rounded-xl ${className || ''}`}
+      className={`fixed inset-0 z-0 overflow-hidden ${className || ''}`}
       style={{
         background: `linear-gradient(to bottom, ${skyGradient.from}, ${skyGradient.via}, ${skyGradient.to})`,
       }}
@@ -112,11 +112,11 @@ export function GardenSky({ weather, className }: GardenSkyProps) {
         </div>
       )}
 
-      {/* Decorative trees on sides */}
-      <div className="absolute bottom-0 left-2 text-2xl opacity-60">🌲</div>
-      <div className="absolute bottom-0 left-8 text-3xl opacity-70">🌳</div>
-      <div className="absolute bottom-0 right-2 text-2xl opacity-60">🌲</div>
-      <div className="absolute bottom-0 right-10 text-3xl opacity-70">🌳</div>
+      {/* Decorative trees on sides - positioned above bottom nav */}
+      <div className="absolute bottom-32 left-2 text-2xl opacity-40">🌲</div>
+      <div className="absolute bottom-32 left-12 text-3xl opacity-50">🌳</div>
+      <div className="absolute bottom-32 right-2 text-2xl opacity-40">🌲</div>
+      <div className="absolute bottom-32 right-12 text-3xl opacity-50">🌳</div>
     </div>
   )
 }

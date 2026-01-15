@@ -5,7 +5,8 @@ import { PlantCard } from '@/components/plants/plant-card'
 import { PlantDetailSheet } from '@/components/plants/plant-detail-sheet'
 import { AddPlantDialog } from '@/components/plants/add-plant-dialog'
 import { IsometricGarden } from './isometric-garden'
-import { TreesIcon, LayoutGrid } from 'lucide-react'
+import { GardenSky } from './garden-sky'
+import { TreesIcon, LayoutGrid, Plus } from 'lucide-react'
 import { GameHud } from '@/components/game-ui'
 import { cn } from '@/lib/utils'
 import type { PlantWithType, PlantType, WeatherType, Profile } from '@/types/database'
@@ -22,6 +23,7 @@ interface GardenViewProps {
 export function GardenView({ plants, plantTypes, weather, profile }: GardenViewProps) {
   const [selectedPlant, setSelectedPlant] = useState<PlantWithType | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     // Initialize from localStorage on client side
     if (typeof window !== 'undefined') {
@@ -51,57 +53,48 @@ export function GardenView({ plants, plantTypes, weather, profile }: GardenViewP
   // Empty state
   if (plants.length === 0) {
     return (
-      <div className="h-screen">
+      <div className="h-screen relative overflow-hidden">
+        {/* Sky background */}
+        <GardenSky weather={weather} />
+
         {/* Game HUD */}
         <GameHud profile={profile} weather={weather} />
+
+        {/* View toggle - top center */}
+        <ViewToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
 
         <IsometricGarden
           plants={[]}
           plantTypes={plantTypes}
           weather={weather}
         />
+
+        <AddPlantDialog
+          plantTypes={plantTypes}
+          open={addDialogOpen}
+          onOpenChange={setAddDialogOpen}
+        />
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col h-screen">
-      {/* Game HUD - floating at top */}
+    <div className="h-screen relative overflow-hidden">
+      {/* Sky background - fills entire screen */}
+      {viewMode === 'garden' && <GardenSky weather={weather} />}
+
+      {/* Game HUD - floating at top corners */}
       <GameHud profile={profile} weather={weather} />
 
-      {/* View mode toggle - game style floating buttons */}
-      <div className="fixed top-20 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
-        <div className="flex items-center gap-1 p-1.5 bg-slate-900/90 backdrop-blur-xl rounded-2xl border-2 border-slate-700/50 shadow-xl">
-          <button
-            onClick={() => handleViewModeChange('garden')}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300",
-              viewMode === 'garden'
-                ? "bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-lg shadow-green-500/30"
-                : "text-slate-400 hover:text-white hover:bg-slate-800"
-            )}
-          >
-            <TreesIcon className="w-5 h-5" />
-            Garden
-          </button>
-          <button
-            onClick={() => handleViewModeChange('list')}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300",
-              viewMode === 'list'
-                ? "bg-gradient-to-br from-blue-400 to-indigo-500 text-white shadow-lg shadow-blue-500/30"
-                : "text-slate-400 hover:text-white hover:bg-slate-800"
-            )}
-          >
-            <LayoutGrid className="w-5 h-5" />
-            List
-          </button>
-        </div>
-      </div>
+      {/* View toggle - top center */}
+      <ViewToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
+
+      {/* Floating Add Plant button - only in list view */}
+      {viewMode === 'list' && <FloatingAddButton onClick={() => setAddDialogOpen(true)} />}
 
       {/* Isometric Garden View - fills entire screen */}
       {viewMode === 'garden' && (
-        <div className="flex-1">
+        <div className="h-full">
           <IsometricGarden
             plants={plants}
             plantTypes={plantTypes}
@@ -113,11 +106,6 @@ export function GardenView({ plants, plantTypes, weather, profile }: GardenViewP
       {/* List View (card grid with game styling) */}
       {viewMode === 'list' && (
         <div className="flex-1 overflow-auto pt-20 px-4 pb-4 space-y-6">
-          {/* Add plant button - floating */}
-          <div className="fixed top-16 right-4 z-30">
-            <AddPlantDialog plantTypes={plantTypes} />
-          </div>
-
           {/* Stats bar */}
           <div className="flex items-center justify-center gap-4">
             <div className="flex items-center gap-2 px-3 py-1.5 bg-green-100 dark:bg-green-900/30 rounded-full">
@@ -215,6 +203,84 @@ export function GardenView({ plants, plantTypes, weather, profile }: GardenViewP
           />
         </div>
       )}
+
+      {/* Add plant dialog */}
+      <AddPlantDialog
+        plantTypes={plantTypes}
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
+      />
+
+      {/* Plant detail sheet for list view */}
+      {viewMode === 'list' && (
+        <PlantDetailSheet
+          plant={selectedPlant}
+          open={sheetOpen}
+          onOpenChange={setSheetOpen}
+        />
+      )}
     </div>
+  )
+}
+
+// View toggle component - compact, positioned at top center
+function ViewToggle({ 
+  viewMode, 
+  onViewModeChange 
+}: { 
+  viewMode: ViewMode
+  onViewModeChange: (mode: ViewMode) => void 
+}) {
+  return (
+    <div className="fixed top-3 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
+      <div className="flex items-center gap-0.5 p-1 bg-slate-900/80 backdrop-blur-xl rounded-xl border border-slate-700/50 shadow-lg">
+        <button
+          onClick={() => onViewModeChange('garden')}
+          className={cn(
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-300",
+            viewMode === 'garden'
+              ? "bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-md shadow-green-500/30"
+              : "text-slate-400 hover:text-white hover:bg-slate-800"
+          )}
+        >
+          <TreesIcon className="w-3.5 h-3.5" />
+          Garden
+        </button>
+        <button
+          onClick={() => onViewModeChange('list')}
+          className={cn(
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-300",
+            viewMode === 'list'
+              ? "bg-gradient-to-br from-blue-400 to-indigo-500 text-white shadow-md shadow-blue-500/30"
+              : "text-slate-400 hover:text-white hover:bg-slate-800"
+          )}
+        >
+          <LayoutGrid className="w-3.5 h-3.5" />
+          List
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// Floating Add Plant button - positioned at top right, below weather
+function FloatingAddButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "fixed top-16 right-3 z-30",
+        "flex items-center gap-1.5 px-3 py-2 rounded-xl",
+        "bg-gradient-to-br from-green-400 to-emerald-500",
+        "text-white text-xs font-bold",
+        "shadow-lg shadow-green-500/30",
+        "hover:shadow-xl hover:shadow-green-500/40 hover:scale-105",
+        "transition-all duration-300",
+        "border border-green-300/30"
+      )}
+    >
+      <Plus className="w-4 h-4" />
+      Add Plant
+    </button>
   )
 }

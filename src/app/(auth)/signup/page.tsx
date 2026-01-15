@@ -22,7 +22,13 @@ export default function SignupPage() {
       if (result?.error) {
         setError(result.error)
       }
-    } catch {
+      // If no error returned, redirect happens server-side
+    } catch (e) {
+      // NEXT_REDIRECT throws an error, but it's not a real error
+      const error = e as Error
+      if (error?.message?.includes('NEXT_REDIRECT')) {
+        return
+      }
       setError('An unexpected error occurred')
     } finally {
       setIsLoading(false)
