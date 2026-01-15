@@ -53,7 +53,7 @@ export function GardenView({ plants, plantTypes, weather, profile }: GardenViewP
   // Empty state
   if (plants.length === 0) {
     return (
-      <div className="h-screen relative overflow-hidden">
+      <div className="h-full relative overflow-hidden">
         {/* Sky background */}
         <GardenSky weather={weather} />
 
@@ -79,7 +79,7 @@ export function GardenView({ plants, plantTypes, weather, profile }: GardenViewP
   }
 
   return (
-    <div className="h-screen relative overflow-hidden">
+    <div className="h-full relative overflow-hidden">
       {/* Sky background - fills entire screen */}
       {viewMode === 'garden' && <GardenSky weather={weather} />}
 

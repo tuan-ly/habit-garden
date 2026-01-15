@@ -121,7 +121,7 @@ export function IsometricGarden({
   const hoveredPlant = hoveredTile ? plantPositions.get(hoveredTile) ?? null : null
 
   return (
-    <div className="relative w-full h-full flex flex-col justify-center items-center">
+    <div className="relative w-full h-full flex flex-col justify-end items-center pb-16">
        {/* Floating info tooltip - positioned above garden */}
       {/* <PlantInfoBar plant={hoveredPlant} /> */}
 

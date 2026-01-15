@@ -34,7 +34,7 @@ export default async function DashboardLayout({
            style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)', backgroundSize: '40px 40px' }} />
 
       {/* Main content area - full screen with padding for nav */}
-      <main className="relative min-h-screen pb-28">
+      <main className="relative h-screen pb-24">
         {children}
       </main>
 
