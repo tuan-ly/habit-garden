@@ -121,12 +121,13 @@ export function IsometricGarden({
   const hoveredPlant = hoveredTile ? plantPositions.get(hoveredTile) ?? null : null
 
   return (
-    <div className="relative w-full h-full flex flex-col justify-end">
-      {/* Floating info tooltip - positioned above garden */}
-      <PlantInfoBar plant={hoveredPlant} />
+    <div className="relative w-full h-full flex flex-col justify-center items-center">
+       {/* Floating info tooltip - positioned above garden */}
+      {/* <PlantInfoBar plant={hoveredPlant} /> */}
 
       {/* Garden container - anchored to bottom */}
-      <div className="flex justify-center px-4 pb-28">
+      {/* Garden container - centered in viewport */}
+      <div className="flex justify-center px-4">
         <div
           className="relative"
           style={{
@@ -171,6 +172,9 @@ export function IsometricGarden({
           })}
         </div>
       </div>
+
+      {/* Fixed info bar at bottom - above nav bar */}
+      <PlantInfoBar plant={hoveredPlant} />
 
       {/* Add plant dialog */}
       <AddPlantDialog
