@@ -125,9 +125,9 @@ export function StatsGarden({
   // Empty state
   if (waterings.length === 0) {
     return (
-      <div className="relative w-full h-full flex flex-col">
-        <GardenSky weather={weather} />
-        <div className="flex-1 flex items-center justify-center">
+      <div className="relative w-full h-full flex flex-col overflow-hidden">
+        <GardenSky weather={weather} contained />
+        <div className="flex-1 flex items-center justify-center relative z-10">
           <div className="text-center text-muted-foreground">
             <span className="text-4xl mb-2 block">🏜️</span>
             <p className="text-sm">No waterings in this period</p>
@@ -138,12 +138,12 @@ export function StatsGarden({
   }
 
   return (
-    <div className="relative w-full h-full flex flex-col">
-      {/* Sky background */}
-      <GardenSky weather={weather} />
+    <div className="relative w-full h-full flex flex-col overflow-hidden">
+      {/* Sky background - contained within this component */}
+      <GardenSky weather={weather} contained />
 
-      {/* Garden container */}
-      <div className="flex-1 flex items-center justify-center py-2 overflow-auto">
+      {/* Garden container - above sky */}
+      <div className="flex-1 flex items-center justify-center py-2 overflow-auto relative z-10">
         <div
           className="relative"
           style={{
@@ -174,7 +174,7 @@ export function StatsGarden({
       </div>
 
       {/* Stats summary below garden */}
-      <div className="flex justify-center gap-4 mt-1 pb-1 text-sm text-muted-foreground">
+      <div className="flex justify-center gap-4 mt-1 pb-1 text-sm text-muted-foreground relative z-10">
         <span className="flex items-center gap-1">
           <span className="text-blue-500">💧</span>
           {waterings.length} waterings

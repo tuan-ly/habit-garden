@@ -163,7 +163,7 @@ paste doc của goal master va
 ### Week 15-16: Polish
 
 **Tasks:**
-- [ ] Responsive design check
+- [x] Responsive design check
 - [x] PWA setup
 - [x] Onboarding flow
 - [ ] Empty states

@@ -9,6 +9,14 @@ import { getGardenStats, type GardenStatsData } from '@/lib/actions/plants'
 
 type Period = 'day' | 'week' | 'month' | 'year'
 
+// Format date as YYYY-MM-DD in local timezone (not UTC)
+function formatDateLocal(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 // Format date display based on period
 function formatPeriodDisplay(period: Period, date: Date): string {
   switch (period) {
@@ -71,7 +79,7 @@ export default function OverviewPage() {
   // Load stats when period or date changes
   useEffect(() => {
     startTransition(async () => {
-      const dateStr = currentDate.toISOString().split('T')[0]
+      const dateStr = formatDateLocal(currentDate)
       const data = await getGardenStats(period, dateStr)
       setStats(data)
     })
@@ -95,14 +103,14 @@ export default function OverviewPage() {
   return (
     <div className="h-full flex flex-col">
       {/* Period selector tabs */}
-      <div className="flex justify-center py-2 bg-background/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="flex gap-1 p-1 rounded-lg bg-muted/50">
+      <div className="flex justify-center py-2 px-2 bg-background/80 backdrop-blur-sm sticky top-0 z-10">
+        <div className="flex gap-0.5 sm:gap-1 p-0.5 sm:p-1 rounded-lg bg-muted/50">
           {(['day', 'week', 'month', 'year'] as Period[]).map((p) => (
             <button
               key={p}
               onClick={() => setPeriod(p)}
               className={cn(
-                'px-4 py-1.5 text-sm font-medium rounded-md transition-all',
+                'px-2.5 py-1 sm:px-4 sm:py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all',
                 period === p
                   ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
@@ -115,27 +123,29 @@ export default function OverviewPage() {
       </div>
 
       {/* Date navigation */}
-      <div className="flex items-center justify-center gap-2 py-2">
+      <div className="flex items-center justify-center gap-1 sm:gap-2 py-2 px-2">
         <Button
           variant="ghost"
           size="icon"
+          className="h-8 w-8 sm:h-10 sm:w-10"
           onClick={handlePrevious}
           disabled={isPending}
         >
-          <ChevronLeft className="h-5 w-5" />
+          <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
         </Button>
 
-        <span className="text-lg font-semibold min-w-[200px] text-center">
+        <span className="text-sm sm:text-lg font-semibold min-w-40 sm:min-w-50 text-center">
           {formatPeriodDisplay(period, currentDate)}
         </span>
 
         <Button
           variant="ghost"
           size="icon"
+          className="h-8 w-8 sm:h-10 sm:w-10"
           onClick={handleNext}
           disabled={isPending || !canGoNext}
         >
-          <ChevronRight className="h-5 w-5" />
+          <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
         </Button>
       </div>
 
@@ -159,29 +169,29 @@ export default function OverviewPage() {
 
       {/* Stats summary */}
       {stats && (
-        <div className="px-4 py-3 border-t bg-background/80 backdrop-blur-sm">
-          <div className="flex justify-center gap-6">
-            <div className="flex items-center gap-2">
-              <Droplets className="h-5 w-5 text-blue-500" />
+        <div className="px-2 sm:px-4 py-2 sm:py-3 border-t bg-background/80 backdrop-blur-sm">
+          <div className="flex justify-center gap-4 sm:gap-6">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Droplets className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
               <div>
-                <p className="text-lg font-bold">{stats.totalWaterings}</p>
-                <p className="text-xs text-muted-foreground">Waterings</p>
+                <p className="text-base sm:text-lg font-bold">{stats.totalWaterings}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Waterings</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <TreeDeciduous className="h-5 w-5 text-green-500" />
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <TreeDeciduous className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
               <div>
-                <p className="text-lg font-bold">{stats.uniquePlants}</p>
-                <p className="text-xs text-muted-foreground">Plants</p>
+                <p className="text-base sm:text-lg font-bold">{stats.uniquePlants}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Plants</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-yellow-500" />
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500" />
               <div>
-                <p className="text-lg font-bold">{stats.totalXp}</p>
-                <p className="text-xs text-muted-foreground">XP</p>
+                <p className="text-base sm:text-lg font-bold">{stats.totalXp}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">XP</p>
               </div>
             </div>
           </div>

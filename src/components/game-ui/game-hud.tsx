@@ -53,46 +53,46 @@ export function GameHud({ profile, weather }: GameHudProps) {
     <>
       {/* Left side: XP & Level - Compact */}
       {levelInfo && (
-        <div className="fixed top-3 left-3 z-40 pointer-events-auto">
+        <div className="fixed top-2 left-2 sm:top-3 sm:left-3 z-40 pointer-events-auto">
           <button
             onClick={() => setExpanded(!expanded)}
             className={cn(
-              "group relative flex items-center gap-2 rounded-2xl overflow-hidden",
+              "group relative flex items-center gap-1.5 sm:gap-2 rounded-xl sm:rounded-2xl overflow-hidden",
               "bg-gradient-to-r from-slate-900/90 to-slate-800/90",
               "border-2 border-amber-500/30 shadow-lg shadow-amber-500/10",
               "transition-all duration-300 hover:border-amber-400/50",
-              "px-2.5 py-2"
+              "px-2 py-1.5 sm:px-2.5 sm:py-2"
             )}
           >
             {/* Level badge - Compact */}
             <div className="relative">
-              <div className="relative w-10 h-10 flex items-center justify-center">
-                <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-amber-400 via-yellow-500 to-orange-500 opacity-50" />
-                <div className="relative w-9 h-9 rounded-lg bg-gradient-to-br from-amber-400 via-yellow-500 to-orange-500 flex items-center justify-center shadow-md border border-amber-300/50">
-                  <span className="text-white font-black text-base drop-shadow-md">
+              <div className="relative w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
+                <div className="absolute inset-0 rounded-md sm:rounded-lg bg-gradient-to-br from-amber-400 via-yellow-500 to-orange-500 opacity-50" />
+                <div className="relative w-7 h-7 sm:w-9 sm:h-9 rounded-md sm:rounded-lg bg-gradient-to-br from-amber-400 via-yellow-500 to-orange-500 flex items-center justify-center shadow-md border border-amber-300/50">
+                  <span className="text-white font-black text-sm sm:text-base drop-shadow-md">
                     {levelInfo.level}
                   </span>
                 </div>
               </div>
-              <div className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-gradient-to-br from-yellow-300 to-amber-500 rounded-full flex items-center justify-center shadow-md">
-                <Star className="w-2.5 h-2.5 text-white fill-white" />
+              <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-gradient-to-br from-yellow-300 to-amber-500 rounded-full flex items-center justify-center shadow-md">
+                <Star className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-white fill-white" />
               </div>
             </div>
 
-            {/* XP info - Compact */}
-            <div className="flex flex-col min-w-20 gap-0.5">
+            {/* XP info - Compact - Hidden on very small screens */}
+            <div className="hidden xs:flex flex-col min-w-16 sm:min-w-20 gap-0.5">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-amber-400">
+                <span className="text-[10px] sm:text-xs font-bold text-amber-400 truncate max-w-14 sm:max-w-none">
                   {levelInfo.title}
                 </span>
                 <ChevronDown className={cn(
-                  "w-3 h-3 text-amber-400/60 transition-transform",
+                  "w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400/60 transition-transform ml-1",
                   expanded && "rotate-180"
                 )} />
               </div>
 
               {/* XP Bar - Compact */}
-              <div className="relative h-2 w-full bg-slate-700/80 rounded-full overflow-hidden border border-slate-600/50">
+              <div className="relative h-1.5 sm:h-2 w-full bg-slate-700/80 rounded-full overflow-hidden border border-slate-600/50">
                 <div
                   className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 rounded-full transition-all duration-700"
                   style={{ width: `${levelInfo.progress}%` }}
@@ -100,12 +100,12 @@ export function GameHud({ profile, weather }: GameHudProps) {
               </div>
 
               {/* XP numbers - Compact */}
-              <div className="flex items-center justify-between text-[10px]">
+              <div className="flex items-center justify-between text-[9px] sm:text-[10px]">
                 <span className="text-amber-300/80 font-medium flex items-center gap-0.5">
-                  <Zap className="w-2.5 h-2.5" />
-                  {profile?.xp} XP
+                  <Zap className="w-2 h-2 sm:w-2.5 sm:h-2.5" />
+                  {profile?.xp}
                 </span>
-                <span className="text-slate-400">
+                <span className="text-slate-400 hidden sm:inline">
                   Lv.{levelInfo.level + 1}: {levelInfo.xpForNextLevel}
                 </span>
               </div>
@@ -141,9 +141,9 @@ export function GameHud({ profile, weather }: GameHudProps) {
       )}
 
       {/* Right side: Weather - Compact pill */}
-      <div className="fixed top-3 right-3 z-40 pointer-events-auto">
+      <div className="fixed top-2 right-2 sm:top-3 sm:right-3 z-40 pointer-events-auto">
         <div className={cn(
-          "relative flex items-center gap-2 px-3 py-2 rounded-2xl overflow-hidden",
+          "relative flex items-center gap-1.5 sm:gap-2 px-2 py-1.5 sm:px-3 sm:py-2 rounded-xl sm:rounded-2xl overflow-hidden",
           "bg-gradient-to-r from-slate-900/90 to-slate-800/90",
           "border-2 shadow-lg transition-all duration-300",
           weather === 'rainbow' ? "border-pink-500/30 shadow-pink-500/10" :
@@ -154,20 +154,20 @@ export function GameHud({ profile, weather }: GameHudProps) {
         )}>
           {/* Weather icon */}
           <div className={cn(
-            "w-9 h-9 rounded-lg flex items-center justify-center",
+            "w-7 h-7 sm:w-9 sm:h-9 rounded-md sm:rounded-lg flex items-center justify-center",
             `bg-gradient-to-br ${currentWeather.bgColor}`,
             "shadow-md border border-white/20"
           )}>
-            <span className="text-lg drop-shadow-md">{currentWeather.effect}</span>
+            <span className="text-base sm:text-lg drop-shadow-md">{currentWeather.effect}</span>
           </div>
 
-          {/* Weather info */}
+          {/* Weather info - Hidden label on very small screens */}
           <div className="flex flex-col">
-            <span className="text-xs font-bold text-white">
+            <span className="text-[10px] sm:text-xs font-bold text-white">
               {currentWeather.label}
             </span>
             <span className={cn(
-              "text-[10px] font-medium",
+              "text-[9px] sm:text-[10px] font-medium hidden xs:block",
               weather === 'rainbow' ? "text-pink-400" :
               weather === 'sunny' ? "text-amber-400" :
               weather === 'rainy' ? "text-blue-400" :

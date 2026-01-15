@@ -382,41 +382,56 @@ export async function getGardenStats(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  // Calculate date range based on period
-  const baseDate = targetDate ? new Date(targetDate) : new Date()
-  let startDate: Date
-  let endDate: Date
+  // Parse date from YYYY-MM-DD string without timezone issues
+  // new Date('2026-01-15') parses as UTC midnight, which can shift dates
+  // Instead, parse components directly
+  let baseYear: number, baseMonth: number, baseDay: number
+  if (targetDate) {
+    const [y, m, d] = targetDate.split('-').map(Number)
+    baseYear = y
+    baseMonth = m - 1 // JS months are 0-indexed
+    baseDay = d
+  } else {
+    const now = new Date()
+    baseYear = now.getFullYear()
+    baseMonth = now.getMonth()
+    baseDay = now.getDate()
+  }
+
+  // Helper to format date as YYYY-MM-DD
+  const formatDate = (y: number, m: number, d: number) =>
+    `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+
+  let startStr: string
+  let endStr: string
 
   switch (period) {
     case 'day':
-      startDate = new Date(baseDate)
-      startDate.setHours(0, 0, 0, 0)
-      endDate = new Date(baseDate)
-      endDate.setHours(23, 59, 59, 999)
+      startStr = formatDate(baseYear, baseMonth, baseDay)
+      endStr = startStr
       break
-    case 'week':
+    case 'week': {
       // Start from Monday of the week
-      startDate = new Date(baseDate)
-      const dayOfWeek = startDate.getDay()
+      const baseDate = new Date(baseYear, baseMonth, baseDay)
+      const dayOfWeek = baseDate.getDay()
       const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
-      startDate.setDate(startDate.getDate() + diffToMonday)
-      startDate.setHours(0, 0, 0, 0)
-      endDate = new Date(startDate)
-      endDate.setDate(endDate.getDate() + 6)
-      endDate.setHours(23, 59, 59, 999)
+      const startDate = new Date(baseYear, baseMonth, baseDay + diffToMonday)
+      const endDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + 6)
+      startStr = formatDate(startDate.getFullYear(), startDate.getMonth(), startDate.getDate())
+      endStr = formatDate(endDate.getFullYear(), endDate.getMonth(), endDate.getDate())
       break
-    case 'month':
-      startDate = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1)
-      endDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 0, 23, 59, 59, 999)
+    }
+    case 'month': {
+      const lastDay = new Date(baseYear, baseMonth + 1, 0).getDate()
+      startStr = formatDate(baseYear, baseMonth, 1)
+      endStr = formatDate(baseYear, baseMonth, lastDay)
       break
+    }
     case 'year':
-      startDate = new Date(baseDate.getFullYear(), 0, 1)
-      endDate = new Date(baseDate.getFullYear(), 11, 31, 23, 59, 59, 999)
+      startStr = formatDate(baseYear, 0, 1)
+      endStr = formatDate(baseYear, 11, 31)
       break
   }
-
-  const startStr = startDate.toISOString().split('T')[0]
-  const endStr = endDate.toISOString().split('T')[0]
 
   // Fetch watering logs with plant info
   const { data: waterings, error } = await supabase
@@ -446,10 +461,13 @@ export async function getGardenStats(
   // Calculate daily breakdown
   const dailyMap = new Map<string, number>()
 
-  // Initialize all dates in range
-  const current = new Date(startDate)
+  // Initialize all dates in range using string parsing to avoid timezone issues
+  const [startY, startM, startD] = startStr.split('-').map(Number)
+  const [endY, endM, endD] = endStr.split('-').map(Number)
+  const current = new Date(startY, startM - 1, startD)
+  const endDate = new Date(endY, endM - 1, endD)
   while (current <= endDate) {
-    dailyMap.set(current.toISOString().split('T')[0], 0)
+    dailyMap.set(formatDate(current.getFullYear(), current.getMonth(), current.getDate()), 0)
     current.setDate(current.getDate() + 1)
   }
 

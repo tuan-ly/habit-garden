@@ -224,39 +224,39 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
   )
 }
 
-// View toggle component - compact, positioned at top center
-function ViewToggle({ 
-  viewMode, 
-  onViewModeChange 
-}: { 
+// View toggle component - compact, positioned at top center (moves down on mobile to avoid HUD overlap)
+function ViewToggle({
+  viewMode,
+  onViewModeChange
+}: {
   viewMode: ViewMode
-  onViewModeChange: (mode: ViewMode) => void 
+  onViewModeChange: (mode: ViewMode) => void
 }) {
   return (
-    <div className="fixed top-3 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
-      <div className="flex items-center gap-0.5 p-1 bg-slate-900/80 backdrop-blur-xl rounded-xl border border-slate-700/50 shadow-lg">
+    <div className="fixed top-14 sm:top-3 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
+      <div className="flex items-center gap-0.5 p-0.5 sm:p-1 bg-slate-900/80 backdrop-blur-xl rounded-lg sm:rounded-xl border border-slate-700/50 shadow-lg">
         <button
           onClick={() => onViewModeChange('garden')}
           className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-300",
+            "flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-bold transition-all duration-300",
             viewMode === 'garden'
               ? "bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-md shadow-green-500/30"
               : "text-slate-400 hover:text-white hover:bg-slate-800"
           )}
         >
-          <TreesIcon className="w-3.5 h-3.5" />
+          <TreesIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
           Garden
         </button>
         <button
           onClick={() => onViewModeChange('list')}
           className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-300",
+            "flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-bold transition-all duration-300",
             viewMode === 'list'
               ? "bg-gradient-to-br from-blue-400 to-indigo-500 text-white shadow-md shadow-blue-500/30"
               : "text-slate-400 hover:text-white hover:bg-slate-800"
           )}
         >
-          <LayoutGrid className="w-3.5 h-3.5" />
+          <LayoutGrid className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
           List
         </button>
       </div>
@@ -270,18 +270,19 @@ function FloatingAddButton({ onClick }: { onClick: () => void }) {
     <button
       onClick={onClick}
       className={cn(
-        "fixed top-16 right-3 z-30",
-        "flex items-center gap-1.5 px-3 py-2 rounded-xl",
+        "fixed top-14 right-2 sm:top-16 sm:right-3 z-30",
+        "flex items-center gap-1 sm:gap-1.5 px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl",
         "bg-gradient-to-br from-green-400 to-emerald-500",
-        "text-white text-xs font-bold",
+        "text-white text-[11px] sm:text-xs font-bold",
         "shadow-lg shadow-green-500/30",
         "hover:shadow-xl hover:shadow-green-500/40 hover:scale-105",
         "transition-all duration-300",
         "border border-green-300/30"
       )}
     >
-      <Plus className="w-4 h-4" />
-      Add Plant
+      <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+      <span className="hidden xs:inline">Add Plant</span>
+      <span className="xs:hidden">Add</span>
     </button>
   )
 }

@@ -7,6 +7,8 @@ import { getTimeOfDay, type TimeOfDay } from './themes'
 interface GardenSkyProps {
   weather?: WeatherType | null
   className?: string
+  /** If true, uses absolute positioning instead of fixed (for contained views like StatsGarden) */
+  contained?: boolean
 }
 
 // Sky gradient colors based on time of day
@@ -32,14 +34,14 @@ const WEATHER_OVERLAYS: Record<WeatherType, { color: string; opacity: number }> 
   rainbow: { color: 'rgba(252, 211, 77, 0.1)', opacity: 0.1 },
 }
 
-export function GardenSky({ weather, className }: GardenSkyProps) {
+export function GardenSky({ weather, className, contained }: GardenSkyProps) {
   const timeOfDay = useMemo(() => getTimeOfDay(), [])
   const skyGradient = SKY_GRADIENTS[timeOfDay]
   const weatherOverlay = weather ? WEATHER_OVERLAYS[weather] : null
 
   return (
     <div
-      className={`fixed inset-0 z-0 overflow-hidden ${className || ''}`}
+      className={`${contained ? 'absolute' : 'fixed'} inset-0 z-0 overflow-hidden ${className || ''}`}
       style={{
         background: `linear-gradient(to bottom, ${skyGradient.from}, ${skyGradient.via}, ${skyGradient.to})`,
       }}
