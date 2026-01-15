@@ -1,0 +1,192 @@
+'use client'
+
+import { useState, useEffect, useTransition } from 'react'
+import { ChevronLeft, ChevronRight, Droplets, Sparkles, TreeDeciduous } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import { StatsGarden } from '@/components/garden/stats-garden'
+import { getGardenStats, type GardenStatsData } from '@/lib/actions/plants'
+
+type Period = 'day' | 'week' | 'month' | 'year'
+
+// Format date display based on period
+function formatPeriodDisplay(period: Period, date: Date): string {
+  switch (period) {
+    case 'day':
+      return date.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })
+    case 'week': {
+      const startOfWeek = new Date(date)
+      const dayOfWeek = startOfWeek.getDay()
+      const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
+      startOfWeek.setDate(startOfWeek.getDate() + diffToMonday)
+      const endOfWeek = new Date(startOfWeek)
+      endOfWeek.setDate(endOfWeek.getDate() + 6)
+
+      return `${startOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+    }
+    case 'month':
+      return date.toLocaleDateString('en-US', {
+        month: 'long',
+        year: 'numeric',
+      })
+    case 'year':
+      return date.getFullYear().toString()
+  }
+}
+
+// Navigate date based on period
+function navigateDate(date: Date, period: Period, direction: 'prev' | 'next'): Date {
+  const newDate = new Date(date)
+  const delta = direction === 'next' ? 1 : -1
+
+  switch (period) {
+    case 'day':
+      newDate.setDate(newDate.getDate() + delta)
+      break
+    case 'week':
+      newDate.setDate(newDate.getDate() + delta * 7)
+      break
+    case 'month':
+      newDate.setMonth(newDate.getMonth() + delta)
+      break
+    case 'year':
+      newDate.setFullYear(newDate.getFullYear() + delta)
+      break
+  }
+
+  return newDate
+}
+
+export default function OverviewPage() {
+  const [period, setPeriod] = useState<Period>('month')
+  const [currentDate, setCurrentDate] = useState(new Date())
+  const [stats, setStats] = useState<GardenStatsData | null>(null)
+  const [isPending, startTransition] = useTransition()
+
+  // Load stats when period or date changes
+  useEffect(() => {
+    startTransition(async () => {
+      const dateStr = currentDate.toISOString().split('T')[0]
+      const data = await getGardenStats(period, dateStr)
+      setStats(data)
+    })
+  }, [period, currentDate])
+
+  const handlePrevious = () => {
+    setCurrentDate((prev) => navigateDate(prev, period, 'prev'))
+  }
+
+  const handleNext = () => {
+    const nextDate = navigateDate(currentDate, period, 'next')
+    // Don't allow navigating to the future
+    if (nextDate <= new Date()) {
+      setCurrentDate(nextDate)
+    }
+  }
+
+  // Check if we can go to next (not future)
+  const canGoNext = navigateDate(currentDate, period, 'next') <= new Date()
+
+  return (
+    <div className="h-full flex flex-col">
+      {/* Period selector tabs */}
+      <div className="flex justify-center py-2 bg-background/80 backdrop-blur-sm sticky top-0 z-10">
+        <div className="flex gap-1 p-1 rounded-lg bg-muted/50">
+          {(['day', 'week', 'month', 'year'] as Period[]).map((p) => (
+            <button
+              key={p}
+              onClick={() => setPeriod(p)}
+              className={cn(
+                'px-4 py-1.5 text-sm font-medium rounded-md transition-all',
+                period === p
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              {p.charAt(0).toUpperCase() + p.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Date navigation */}
+      <div className="flex items-center justify-center gap-2 py-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handlePrevious}
+          disabled={isPending}
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+
+        <span className="text-lg font-semibold min-w-[200px] text-center">
+          {formatPeriodDisplay(period, currentDate)}
+        </span>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleNext}
+          disabled={isPending || !canGoNext}
+        >
+          <ChevronRight className="h-5 w-5" />
+        </Button>
+      </div>
+
+      {/* Garden visualization */}
+      <div className="flex-1 min-h-[300px] relative">
+        {isPending ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
+          </div>
+        ) : stats ? (
+          <StatsGarden
+            waterings={stats.waterings}
+            maxDisplay={period === 'year' ? 100 : period === 'month' ? 50 : 30}
+          />
+        ) : (
+          <div className="h-full flex items-center justify-center text-muted-foreground">
+            <p>No data available</p>
+          </div>
+        )}
+      </div>
+
+      {/* Stats summary */}
+      {stats && (
+        <div className="px-4 py-3 border-t bg-background/80 backdrop-blur-sm">
+          <div className="flex justify-center gap-6">
+            <div className="flex items-center gap-2">
+              <Droplets className="h-5 w-5 text-blue-500" />
+              <div>
+                <p className="text-lg font-bold">{stats.totalWaterings}</p>
+                <p className="text-xs text-muted-foreground">Waterings</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <TreeDeciduous className="h-5 w-5 text-green-500" />
+              <div>
+                <p className="text-lg font-bold">{stats.uniquePlants}</p>
+                <p className="text-xs text-muted-foreground">Plants</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-yellow-500" />
+              <div>
+                <p className="text-lg font-bold">{stats.totalXp}</p>
+                <p className="text-xs text-muted-foreground">XP</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

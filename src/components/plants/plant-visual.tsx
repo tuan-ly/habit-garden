@@ -50,6 +50,8 @@ interface PlantVisualProps {
   showWateringEffect?: boolean
   weather?: WeatherType | null
   className?: string
+  /** If true, hides the "needs water" indicator (plant already watered today) */
+  isWateredToday?: boolean
 }
 
 function getSpecialEffectClass(plantTypeName: string): string {
@@ -90,7 +92,12 @@ export function PlantVisual({
   showWateringEffect = false,
   weather,
   className,
+  isWateredToday,
 }: PlantVisualProps) {
+  // Auto-detect if watered today when not explicitly passed
+  const wateredToday = isWateredToday ?? (plant.last_watered_at
+    ? new Date(plant.last_watered_at).toDateString() === new Date().toDateString()
+    : false)
   const [isWatering, setIsWatering] = useState(false)
   const [showGrowthBurst, setShowGrowthBurst] = useState(false)
   const previousStageRef = useRef<GrowthStage | null>(null)
@@ -178,11 +185,27 @@ export function PlantVisual({
         </div>
       )}
 
-      {/* Wilting indicator - more prominent */}
+      {/* Needs water indicator - shows when plant hasn't been watered today */}
+      {!wateredToday && !isDead && !isWatering && (
+        <div className="needs-water-indicator">
+          <div className="relative flex items-center justify-center">
+            {/* Watering can icon */}
+            <span className="watering-can-anim text-lg">🚿</span>
+            {/* Water drops falling */}
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-1">
+              <span className="needs-water-drop text-xs text-blue-400">💧</span>
+              <span className="needs-water-drop text-xs text-blue-400">💧</span>
+              <span className="needs-water-drop text-xs text-blue-400">💧</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Wilting indicator - more prominent (only shows when critically low) */}
       {wilting && !isDead && (
         <div className="absolute -top-2 -right-2 flex items-center gap-0.5 bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 rounded-full shadow-sm">
-          <span className="text-xs">💦</span>
-          <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">Thirsty</span>
+          <span className="text-xs">⚠️</span>
+          <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">Critical!</span>
         </div>
       )}
 

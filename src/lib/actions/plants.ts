@@ -338,6 +338,143 @@ async function checkAndUnlockAchievements(userId: string): Promise<string[]> {
   return newlyUnlocked
 }
 
+// Types for garden statistics
+export interface WateringLogWithPlant {
+  id: string
+  plant_id: string
+  watered_at: string
+  watered_date: string
+  xp_earned: number
+  plant: {
+    id: string
+    name: string
+    plant_type: {
+      id: string
+      name: string
+      icon: string
+    }
+  }
+}
+
+export interface GardenStatsData {
+  period: 'day' | 'week' | 'month' | 'year'
+  startDate: string
+  endDate: string
+  waterings: WateringLogWithPlant[]
+  totalWaterings: number
+  totalXp: number
+  uniquePlants: number
+  dailyBreakdown: { date: string; count: number }[]
+}
+
+// Get watering logs for a specific time period
+export async function getGardenStats(
+  period: 'day' | 'week' | 'month' | 'year',
+  targetDate?: string // YYYY-MM-DD format, defaults to today
+): Promise<GardenStatsData | null> {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+
+  // Calculate date range based on period
+  const baseDate = targetDate ? new Date(targetDate) : new Date()
+  let startDate: Date
+  let endDate: Date
+
+  switch (period) {
+    case 'day':
+      startDate = new Date(baseDate)
+      startDate.setHours(0, 0, 0, 0)
+      endDate = new Date(baseDate)
+      endDate.setHours(23, 59, 59, 999)
+      break
+    case 'week':
+      // Start from Monday of the week
+      startDate = new Date(baseDate)
+      const dayOfWeek = startDate.getDay()
+      const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
+      startDate.setDate(startDate.getDate() + diffToMonday)
+      startDate.setHours(0, 0, 0, 0)
+      endDate = new Date(startDate)
+      endDate.setDate(endDate.getDate() + 6)
+      endDate.setHours(23, 59, 59, 999)
+      break
+    case 'month':
+      startDate = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1)
+      endDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 0, 23, 59, 59, 999)
+      break
+    case 'year':
+      startDate = new Date(baseDate.getFullYear(), 0, 1)
+      endDate = new Date(baseDate.getFullYear(), 11, 31, 23, 59, 59, 999)
+      break
+  }
+
+  const startStr = startDate.toISOString().split('T')[0]
+  const endStr = endDate.toISOString().split('T')[0]
+
+  // Fetch watering logs with plant info
+  const { data: waterings, error } = await supabase
+    .from('watering_logs')
+    .select(`
+      id,
+      plant_id,
+      watered_at,
+      watered_date,
+      xp_earned,
+      plant:plants(
+        id,
+        name,
+        plant_type:plant_types(id, name, icon)
+      )
+    `)
+    .eq('user_id', user.id)
+    .gte('watered_date', startStr)
+    .lte('watered_date', endStr)
+    .order('watered_at', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching garden stats:', error)
+    return null
+  }
+
+  // Calculate daily breakdown
+  const dailyMap = new Map<string, number>()
+
+  // Initialize all dates in range
+  const current = new Date(startDate)
+  while (current <= endDate) {
+    dailyMap.set(current.toISOString().split('T')[0], 0)
+    current.setDate(current.getDate() + 1)
+  }
+
+  // Count waterings per day
+  const typedWaterings = waterings as WateringLogWithPlant[]
+  typedWaterings.forEach(w => {
+    const date = w.watered_date
+    dailyMap.set(date, (dailyMap.get(date) || 0) + 1)
+  })
+
+  const dailyBreakdown = Array.from(dailyMap.entries()).map(([date, count]) => ({
+    date,
+    count,
+  }))
+
+  // Calculate unique plants
+  const uniquePlantIds = new Set(typedWaterings.map(w => w.plant_id))
+
+  return {
+    period,
+    startDate: startStr,
+    endDate: endStr,
+    waterings: typedWaterings,
+    totalWaterings: typedWaterings.length,
+    totalXp: typedWaterings.reduce((sum, w) => sum + w.xp_earned, 0),
+    uniquePlants: uniquePlantIds.size,
+    dailyBreakdown,
+  }
+}
+
 export async function getPlant(plantId: string): Promise<PlantWithType | null> {
   const supabase = await createClient()
 

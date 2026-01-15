@@ -23,13 +23,14 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { signOut } from '@/app/(auth)/actions'
-import { Flower2, BarChart3, Settings, User as UserIcon, ChevronUp, LogOut, Sparkles } from 'lucide-react'
+import { Flower2, BarChart3, Settings, User as UserIcon, ChevronUp, LogOut, Sparkles, TreeDeciduous } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
 const menuItems = [
   { title: 'Garden', url: '/garden', icon: Flower2, description: 'Grow your habits' },
+  { title: 'Overview', url: '/overview', icon: TreeDeciduous, description: 'Forest view' },
   { title: 'Stats', url: '/stats', icon: BarChart3, description: 'Track progress' },
   { title: 'Profile', url: '/profile', icon: UserIcon, description: 'View achievements' },
   { title: 'Settings', url: '/settings', icon: Settings, description: 'Customize app' },
