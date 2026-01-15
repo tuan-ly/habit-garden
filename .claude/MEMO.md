@@ -2,7 +2,7 @@
 
 > **Last Updated**: 2026-01-15
 > **Current Phase**: Phase 4 - Polish & Launch (IN PROGRESS)
-> **Last Session**: Remove RPC Dependency + XP Auto-Sync
+> **Last Session**: Fix Overview Plant Icons
 
 ---
 
@@ -29,11 +29,27 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 - Game-style animations and visual polish
 - Redesigned Stats and Profile pages with game aesthetics
 - Optimistic Updates - UI updates instantly when watering, syncs with server in background
-- **NEW: XP Update Fixed** - Removed RPC dependency, direct profile table update + auto-sync
+- XP Update Fixed - Removed RPC dependency, direct profile table update + auto-sync
+- **NEW: Overview Plant Icons Fixed** - Stats garden now displays correct plant icons
 
 ---
 
 ## Recent Changes (Latest First)
+
+### 2026-01-15: Fix Overview Plant Icons Not Showing
+**Problem solved:** In Overview page, all plants displayed default 🌱 emoji instead of their actual icons (pumpkin, flower, tree, etc.), while Garden view showed them correctly.
+
+**Root cause:** In `getGardenStats()`, when transforming Supabase nested data, `plant_type` was incorrectly accessed as an array with `?.[0]`. Supabase returns nested foreign key relations as objects, not arrays.
+
+**Solution:**
+| File | Change |
+|------|--------|
+| `src/lib/actions/plants.ts` | FIXED - Changed `w.plant[0].plant_type?.[0]` to `w.plant[0].plant_type` in `getGardenStats()` |
+
+**Before:** `plant_type: w.plant[0].plant_type?.[0] || { id: '', name: 'Unknown', icon: '🌱' }`
+**After:** `plant_type: w.plant[0].plant_type || { id: '', name: 'Unknown', icon: '🌱' }`
+
+---
 
 ### 2026-01-15: Remove RPC Dependency + XP Auto-Sync
 **Problem solved:** XP wasn't updating after watering because `supabase.rpc('increment_user_xp')` function didn't exist in the database.

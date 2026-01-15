@@ -500,22 +500,43 @@ export async function getGardenStats(
   }
 
   // Transform Supabase nested select arrays to objects
+  // Supabase returns nested relations as arrays when using the syntax `relation:table(...)`
   const typedWaterings: WateringLogWithPlant[] = (waterings || [])
-    .map(w => ({
-      id: w.id,
-      plant_id: w.plant_id,
-      watered_at: w.watered_at,
-      // Use watered_date if available, otherwise extract from watered_at
-      watered_date: w.watered_date || extractDateFromTimestamp(w.watered_at),
-      xp_earned: w.xp_earned,
-      plant: w.plant && w.plant.length > 0
-        ? {
-            id: w.plant[0].id,
-            name: w.plant[0].name,
-            plant_type: w.plant[0].plant_type?.[0] || { id: '', name: 'Unknown', icon: '🌱' }
+    .map(w => {
+      // Handle nested plant relation (could be array or single object depending on Supabase version)
+      const plantData = Array.isArray(w.plant) ? w.plant[0] : w.plant
+      
+      // Handle nested plant_type relation 
+      let plantType = { id: '', name: 'Unknown', icon: '🌱' }
+      if (plantData?.plant_type) {
+        const typeData = Array.isArray(plantData.plant_type) 
+          ? plantData.plant_type[0] 
+          : plantData.plant_type
+        if (typeData) {
+          plantType = {
+            id: typeData.id || '',
+            name: typeData.name || 'Unknown',
+            icon: typeData.icon || '🌱'
           }
-        : null
-    }))
+        }
+      }
+
+      return {
+        id: w.id,
+        plant_id: w.plant_id,
+        watered_at: w.watered_at,
+        // Use watered_date if available, otherwise extract from watered_at
+        watered_date: w.watered_date || extractDateFromTimestamp(w.watered_at),
+        xp_earned: w.xp_earned,
+        plant: plantData
+          ? {
+              id: plantData.id,
+              name: plantData.name,
+              plant_type: plantType
+            }
+          : null
+      }
+    })
   typedWaterings.forEach(w => {
     const date = w.watered_date
     dailyMap.set(date, (dailyMap.get(date) || 0) + 1)
