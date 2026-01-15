@@ -122,8 +122,30 @@ export function IsometricGarden({
   // Get hovered plant for info bar
   const hoveredPlant = hoveredTile ? plantPositions.get(hoveredTile) ?? null : null
 
+  // Check if garden is empty
+  const isEmpty = livingPlants.length === 0
+
   return (
     <div className="relative w-full h-full flex flex-col justify-end items-center pb-16">
+      {/* Empty state overlay for new users */}
+      {isEmpty && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+          <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-6 sm:p-8 max-w-sm mx-4 text-center shadow-2xl border border-white/20 dark:border-slate-700/50 pointer-events-auto animate-fade-in">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-green-500/30">
+              <span className="text-3xl sm:text-4xl">🌱</span>
+            </div>
+            <h3 className="text-lg sm:text-xl font-bold mb-2">Your Garden Awaits!</h3>
+            <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 mb-4">
+              Tap any empty tile to plant your first habit and watch it grow as you build consistency.
+            </p>
+            <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-emerald-600 dark:text-emerald-400">
+              <span className="animate-bounce">👆</span>
+              <span>Tap a tile to start</span>
+            </div>
+          </div>
+        </div>
+      )}
+
        {/* Floating info tooltip - positioned above garden */}
       {/* <PlantInfoBar plant={hoveredPlant} /> */}
 

@@ -166,7 +166,7 @@ paste doc của goal master va
 - [x] Responsive design check
 - [x] PWA setup
 - [x] Onboarding flow
-- [ ] Empty states
+- [x] Empty states
 - [x] Error handling
 - [x] Loading states
 - [ ] Performance optimization

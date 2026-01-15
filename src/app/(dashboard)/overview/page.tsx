@@ -161,8 +161,14 @@ export default function OverviewPage() {
             maxDisplay={period === 'year' ? 100 : period === 'month' ? 50 : 30}
           />
         ) : (
-          <div className="h-full flex items-center justify-center text-muted-foreground">
-            <p>No data available</p>
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center p-6 max-w-xs">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-3 rounded-xl sm:rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                <span className="text-2xl sm:text-3xl">📊</span>
+              </div>
+              <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400">No data available</p>
+              <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-500 mt-1">Start watering your plants to see activity here</p>
+            </div>
           </div>
         )}
       </div>
