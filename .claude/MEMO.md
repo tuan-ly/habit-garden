@@ -2,7 +2,7 @@
 
 > **Last Updated**: 2026-01-15
 > **Current Phase**: Phase 4 - Polish & Launch (IN PROGRESS)
-> **Last Session**: Game-Style UI Redesign
+> **Last Session**: Optimistic Updates for Watering
 
 ---
 
@@ -24,14 +24,65 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 - Onboarding flow for new users
 - Error boundaries and friendly error pages
 - Loading states with skeleton loaders
-- **NEW: Game-style UI - Removed sidebar, added bottom navigation**
-- **NEW: Floating HUD for XP/level/weather display**
-- **NEW: Game-style animations and visual polish**
-- **NEW: Redesigned Stats and Profile pages with game aesthetics**
+- Game-style UI - Removed sidebar, added bottom navigation
+- Floating HUD for XP/level/weather display
+- Game-style animations and visual polish
+- Redesigned Stats and Profile pages with game aesthetics
+- **NEW: Optimistic Updates** - UI updates instantly when watering, syncs with server in background
 
 ---
 
 ## Recent Changes (Latest First)
+
+### 2026-01-15: Fix Optimistic Updates Not Persisting
+**Problem solved:** UI wasn't updating after watering or adding new plants - required page refresh.
+
+**Root causes:**
+1. `useOptimistic` only works during transition - after server response, state reverted to old `serverPlants`
+2. `createPlant` action didn't return the created plant data
+3. `AddPlantDialog` didn't update context after creating plant
+
+**Solution:**
+| File | Change |
+|------|--------|
+| `src/lib/context/plants-context.tsx` | FIXED - Update `serverPlants` after successful watering to persist changes |
+| `src/lib/context/plants-context.tsx` | ADDED - `addPlant()` and `removePlant()` functions for immediate state updates |
+| `src/lib/actions/plants.ts` | FIXED - `createPlant` now returns `PlantWithType` with plant_type data |
+| `src/components/plants/add-plant-dialog.tsx` | FIXED - Uses `usePlants().addPlant()` for instant UI update |
+
+**How it works now:**
+1. **Watering**: Optimistic update → Server call → Update `serverPlants` on success → State persists
+2. **Add Plant**: Server creates plant → Returns plant data → `addPlant()` adds to state → UI updates instantly
+
+---
+
+### 2026-01-15: Optimistic Updates for Watering Performance (Initial - Had Bug)
+**Problem solved:** App was very slow when watering plants - had to wait for server round-trip before UI updated.
+
+**Solution:** Implemented optimistic updates using React's `useOptimistic` hook.
+
+| File | Change |
+|------|--------|
+| `src/lib/context/plants-context.tsx` | NEW - Global plants state management with optimistic updates |
+| `src/lib/context/index.ts` | NEW - Export barrel file |
+| `src/app/(dashboard)/garden/page.tsx` | UPDATED - Wrapped with PlantsProvider |
+| `src/components/garden/garden-view.tsx` | UPDATED - Uses `usePlants()` hook instead of props |
+| `src/components/garden/isometric-garden.tsx` | UPDATED - Uses `usePlants()` hook instead of props |
+| `src/components/plants/plant-card.tsx` | UPDATED - Uses context for watering with optimistic updates |
+| `src/components/plants/plant-detail-sheet.tsx` | UPDATED - Uses context for watering with optimistic updates |
+
+**How it works:**
+1. User clicks "Water Plant"
+2. UI updates **immediately** (moisture, growth, streak, last_watered_at)
+3. Server action runs in background
+4. Toast notification shows XP earned when server confirms
+5. If server fails, error toast is shown (and next page load will correct state)
+
+**UX Improvements:**
+- Watering feels instant (no lag)
+- Plant card updates immediately without waiting
+- Single toast notification with XP earned
+- Network errors handled gracefully
 
 ### 2026-01-15: Game-Style UI Redesign
 **Changes made in this session:**

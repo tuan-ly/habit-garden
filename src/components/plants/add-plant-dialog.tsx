@@ -18,6 +18,7 @@ import { Plus, Clock, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { PlantType } from '@/types/database'
 import { createPlant } from '@/lib/actions/plants'
+import { usePlants } from '@/lib/context'
 import { toast } from 'sonner'
 
 interface AddPlantDialogProps {
@@ -29,6 +30,7 @@ interface AddPlantDialogProps {
 
 export function AddPlantDialog({ plantTypes, open: controlledOpen, onOpenChange }: AddPlantDialogProps) {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false)
+  const { addPlant } = usePlants()
 
   // Support both controlled and uncontrolled modes
   const isControlled = controlledOpen !== undefined
@@ -64,7 +66,10 @@ export function AddPlantDialog({ plantTypes, open: controlledOpen, onOpenChange 
         habit_description: description.trim() || undefined,
       })
 
-      if (result.success) {
+      if (result.success && result.plant) {
+        // Add plant to context immediately for instant UI update
+        addPlant(result.plant)
+        
         toast.success('Plant created!', {
           description: `${name} has been planted in your garden.`,
         })

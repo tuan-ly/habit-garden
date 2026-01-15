@@ -7,9 +7,8 @@ import type { PlantWithType, WeatherType } from '@/types/database'
 import { MoistureBar } from './moisture-bar'
 import { GrowthProgress } from './growth-progress'
 import { PlantVisual, StreakFire, XpPopup } from './plant-visual'
-import { waterPlant } from '@/lib/actions/plants'
-import { toast } from 'sonner'
-import { useState, useTransition, useEffect } from 'react'
+import { usePlants } from '@/lib/context'
+import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { getGoalForPlant, type GoalWithStats } from '@/lib/actions/goals'
 import { GoalProgressRing, GoalModeBadge } from '@/components/goals'
@@ -37,8 +36,11 @@ interface PlantCardProps {
   weather?: WeatherType | null
 }
 
-export function PlantCard({ plant, onClick, weather }: PlantCardProps) {
-  const [isPending, startTransition] = useTransition()
+export function PlantCard({ plant: initialPlant, onClick, weather }: PlantCardProps) {
+  // Get the latest plant data from context (with optimistic updates)
+  const { plants, waterPlant, isPending, isSyncing } = usePlants()
+  const plant = plants.find(p => p.id === initialPlant.id) || initialPlant
+  
   const [isWatering, setIsWatering] = useState(false)
   const [showXp, setShowXp] = useState(false)
   const [earnedXp, setEarnedXp] = useState(0)
@@ -72,26 +74,19 @@ export function PlantCard({ plant, onClick, weather }: PlantCardProps) {
     }
 
     setIsWatering(true)
-    startTransition(async () => {
-      const result = await waterPlant(plant.id)
-
-      if (result.success) {
-        // Show XP popup animation
-        setEarnedXp(result.xpEarned || 0)
-        setShowXp(true)
-        setTimeout(() => setShowXp(false), 1500)
-
-        toast.success(`Watered ${plant.name}!`, {
-          description: `+${result.xpEarned} XP earned`,
-        })
-      } else {
-        toast.error('Failed to water', {
-          description: result.error,
-        })
-      }
-      // Keep watering animation for a moment after success
-      setTimeout(() => setIsWatering(false), 800)
-    })
+    
+    // Use optimistic update from context
+    const result = await waterPlant(plant.id)
+    
+    if (result.success) {
+      // Show XP popup animation
+      setEarnedXp(result.xpEarned || 0)
+      setShowXp(true)
+      setTimeout(() => setShowXp(false), 1500)
+    }
+    
+    // Keep watering animation for a moment
+    setTimeout(() => setIsWatering(false), 800)
   }
 
   return (

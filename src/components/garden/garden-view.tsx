@@ -9,18 +9,21 @@ import { GardenSky } from './garden-sky'
 import { TreesIcon, LayoutGrid, Plus } from 'lucide-react'
 import { GameHud } from '@/components/game-ui'
 import { cn } from '@/lib/utils'
+import { usePlants } from '@/lib/context'
 import type { PlantWithType, PlantType, WeatherType, Profile } from '@/types/database'
 
 type ViewMode = 'garden' | 'list'
 
 interface GardenViewProps {
-  plants: PlantWithType[]
   plantTypes: PlantType[]
   weather?: WeatherType | null
   profile?: Profile | null
 }
 
-export function GardenView({ plants, plantTypes, weather, profile }: GardenViewProps) {
+export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
+  // Get plants from context with optimistic updates
+  const { plants } = usePlants()
+  
   const [selectedPlant, setSelectedPlant] = useState<PlantWithType | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
@@ -64,7 +67,6 @@ export function GardenView({ plants, plantTypes, weather, profile }: GardenViewP
         <ViewToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
 
         <IsometricGarden
-          plants={[]}
           plantTypes={plantTypes}
           weather={weather}
         />
@@ -96,7 +98,6 @@ export function GardenView({ plants, plantTypes, weather, profile }: GardenViewP
       {viewMode === 'garden' && (
         <div className="h-full">
           <IsometricGarden
-            plants={plants}
             plantTypes={plantTypes}
             weather={weather}
           />

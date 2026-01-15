@@ -7,11 +7,11 @@ import { PlantInfoBar } from './plant-tooltip'
 import { GroundPlane } from './ground-plane'
 import { AddPlantDialog } from '@/components/plants/add-plant-dialog'
 import { PlantDetailSheet } from '@/components/plants/plant-detail-sheet'
+import { usePlants } from '@/lib/context'
 import type { PlantWithType, PlantType, WeatherType } from '@/types/database'
 import { defaultTheme } from './themes'
 
 interface IsometricGardenProps {
-  plants: PlantWithType[]
   plantTypes: PlantType[]
   weather?: WeatherType | null
 }
@@ -37,10 +37,12 @@ function getClientTileSize(): number {
 }
 
 export function IsometricGarden({
-  plants,
   plantTypes,
   weather,
 }: IsometricGardenProps) {
+  // Get plants from context with optimistic updates
+  const { plants } = usePlants()
+  
   const [hoveredTile, setHoveredTile] = useState<string | null>(null)
   const [selectedPlant, setSelectedPlant] = useState<PlantWithType | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Sheet,
   SheetContent,
@@ -25,7 +25,7 @@ import type { PlantWithType, WeatherType } from '@/types/database'
 import { MoistureBar } from './moisture-bar'
 import { GrowthProgress } from './growth-progress'
 import { PlantVisual, XpPopup } from './plant-visual'
-import { waterPlant } from '@/lib/actions/plants'
+import { usePlants } from '@/lib/context'
 import { getGoalForPlant, getGoalStats, type GoalWithStats, type GoalStatistics } from '@/lib/actions/goals'
 import { getAdaptiveAnalysis, type AdaptiveAnalysisResult } from '@/lib/actions/adaptive'
 import {
@@ -51,12 +51,15 @@ interface PlantDetailSheetProps {
 }
 
 export function PlantDetailSheet({
-  plant,
+  plant: initialPlant,
   open,
   onOpenChange,
   weather,
 }: PlantDetailSheetProps) {
-  const [isPending, startTransition] = useTransition()
+  // Get the latest plant data from context (with optimistic updates)
+  const { plants, waterPlant, isPending, isSyncing } = usePlants()
+  const plant = initialPlant ? (plants.find(p => p.id === initialPlant.id) || initialPlant) : null
+  
   const [isWatering, setIsWatering] = useState(false)
   const [showXp, setShowXp] = useState(false)
   const [earnedXp, setEarnedXp] = useState(0)
@@ -121,24 +124,17 @@ export function PlantDetailSheet({
     if (isWateredToday || isDead) return
 
     setIsWatering(true)
-    startTransition(async () => {
-      const result = await waterPlant(plant.id)
-
-      if (result.success) {
-        setEarnedXp(result.xpEarned || 0)
-        setShowXp(true)
-        setTimeout(() => setShowXp(false), 1500)
-
-        toast.success(`Watered ${plant.name}!`, {
-          description: `+${result.xpEarned} XP earned`,
-        })
-      } else {
-        toast.error('Failed to water', {
-          description: result.error,
-        })
-      }
-      setTimeout(() => setIsWatering(false), 800)
-    })
+    
+    // Use optimistic update from context
+    const result = await waterPlant(plant.id)
+    
+    if (result.success) {
+      setEarnedXp(result.xpEarned || 0)
+      setShowXp(true)
+      setTimeout(() => setShowXp(false), 1500)
+    }
+    
+    setTimeout(() => setIsWatering(false), 800)
   }
 
   const handleGoalComplete = () => {

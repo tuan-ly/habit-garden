@@ -45,7 +45,7 @@ export async function getPlantTypes(): Promise<PlantType[]> {
   return data as PlantType[]
 }
 
-export async function createPlant(dto: CreatePlantDto): Promise<{ success: boolean; error?: string }> {
+export async function createPlant(dto: CreatePlantDto): Promise<{ success: boolean; plant?: PlantWithType; error?: string }> {
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -61,9 +61,9 @@ export async function createPlant(dto: CreatePlantDto): Promise<{ success: boole
     .order('position', { ascending: false })
     .limit(1)
 
-  const nextPosition = existingPlants?.[0]?.position ?? 0 + 1
+  const nextPosition = (existingPlants?.[0]?.position ?? 0) + 1
 
-  const { error } = await supabase
+  const { data: newPlant, error } = await supabase
     .from('plants')
     .insert({
       user_id: user.id,
@@ -77,14 +77,19 @@ export async function createPlant(dto: CreatePlantDto): Promise<{ success: boole
       growth_percentage: 0,
       status: 'growing',
     })
+    .select(`
+      *,
+      plant_type:plant_types(*)
+    `)
+    .single()
 
-  if (error) {
+  if (error || !newPlant) {
     console.error('Error creating plant:', error)
-    return { success: false, error: error.message }
+    return { success: false, error: error?.message || 'Failed to create plant' }
   }
 
   revalidatePath('/garden')
-  return { success: true }
+  return { success: true, plant: newPlant as PlantWithType }
 }
 
 export async function deletePlant(plantId: string): Promise<{ success: boolean; error?: string }> {
