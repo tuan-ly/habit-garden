@@ -190,13 +190,13 @@ export function PlantVisual({
         <div className="needs-water-indicator">
           <div className="relative flex items-center justify-center">
             {/* Watering can icon */}
-            <span className="watering-can-anim text-lg">🚿</span>
+          <span className="watering-can-anim text-lg">🚿</span>
             {/* Water drops falling */}
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-1">
+            {/* <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-1">
               <span className="needs-water-drop text-xs text-blue-400">💧</span>
               <span className="needs-water-drop text-xs text-blue-400">💧</span>
               <span className="needs-water-drop text-xs text-blue-400">💧</span>
-            </div>
+            </div> */}
           </div>
         </div>
       )}
