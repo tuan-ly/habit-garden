@@ -18,9 +18,23 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-100 via-green-50 to-emerald-100 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Animated gradient background */}
+      <div className="fixed inset-0 bg-gradient-to-br from-sky-200 via-emerald-100 to-green-200 dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950" />
+
+      {/* Subtle animated patterns */}
+      <div className="fixed inset-0 opacity-30 dark:opacity-20">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-green-300 dark:bg-green-500 rounded-full blur-3xl animate-pulse-slow" style={{ animationDuration: '8s' }} />
+        <div className="absolute bottom-0 right-0 w-80 h-80 bg-emerald-300 dark:bg-emerald-500 rounded-full blur-3xl animate-pulse-slow" style={{ animationDuration: '10s', animationDelay: '2s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-teal-200 dark:bg-teal-600 rounded-full blur-3xl animate-pulse-slow" style={{ animationDuration: '12s', animationDelay: '4s' }} />
+      </div>
+
+      {/* Subtle grid pattern overlay */}
+      <div className="fixed inset-0 opacity-5 dark:opacity-10 pointer-events-none"
+           style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)', backgroundSize: '40px 40px' }} />
+
       {/* Main content area - full screen with padding for nav */}
-      <main className="min-h-screen pb-24">
+      <main className="relative min-h-screen pb-28">
         {children}
       </main>
 

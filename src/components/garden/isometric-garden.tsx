@@ -27,14 +27,14 @@ function getGridSize(plantCount: number): number {
 }
 
 // Get responsive tile size - returns default for SSR, actual for client
-const DEFAULT_TILE_SIZE = 100
+const DEFAULT_TILE_SIZE = 140
 
 function getClientTileSize(): number {
   if (typeof window === 'undefined') return DEFAULT_TILE_SIZE
   const width = window.innerWidth
-  if (width < 640) return 70 // Mobile
-  if (width < 1024) return 90 // Tablet
-  return 100 // Desktop
+  if (width < 640) return 90 // Mobile
+  if (width < 1024) return 120 // Tablet
+  return 140 // Desktop - larger tiles for better visuals
 }
 
 export function IsometricGarden({
@@ -176,10 +176,20 @@ export function IsometricGarden({
       {/* Info bar below garden - shows hovered plant details */}
       <PlantInfoBar plant={hoveredPlant} />
 
-      {/* Stats below garden */}
-      <div className="flex justify-center gap-4 mt-1 pb-1 text-sm text-muted-foreground">
-        <span>🌱 {livingPlants.length} growing</span>
-        <span>🪦 {plants.filter((p) => p.status === 'dead').length} dead</span>
+      {/* Stats below garden - game style */}
+      <div className="flex justify-center gap-3 mt-2 pb-2">
+        <div className="flex items-center gap-2 px-4 py-2 bg-slate-900/80 backdrop-blur-sm rounded-xl border border-slate-700/50">
+          <span className="text-lg">🌱</span>
+          <span className="text-sm font-bold text-green-400">{livingPlants.length}</span>
+          <span className="text-xs text-slate-400">growing</span>
+        </div>
+        {plants.filter((p) => p.status === 'dead').length > 0 && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-slate-900/80 backdrop-blur-sm rounded-xl border border-slate-700/50">
+            <span className="text-lg">🪦</span>
+            <span className="text-sm font-bold text-slate-400">{plants.filter((p) => p.status === 'dead').length}</span>
+            <span className="text-xs text-slate-500">cemetery</span>
+          </div>
+        )}
       </div>
 
       {/* Add plant dialog */}

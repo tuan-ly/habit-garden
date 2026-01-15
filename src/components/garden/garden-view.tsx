@@ -70,30 +70,30 @@ export function GardenView({ plants, plantTypes, weather, profile }: GardenViewP
       <GameHud profile={profile} weather={weather} />
 
       {/* View mode toggle - game style floating buttons */}
-      <div className="fixed top-16 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
-        <div className="flex items-center gap-1 p-1 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-xl border border-white/20 dark:border-slate-700/50 shadow-lg">
+      <div className="fixed top-20 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
+        <div className="flex items-center gap-1 p-1.5 bg-slate-900/90 backdrop-blur-xl rounded-2xl border-2 border-slate-700/50 shadow-xl">
           <button
             onClick={() => handleViewModeChange('garden')}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300",
               viewMode === 'garden'
-                ? "bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-md"
-                : "text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+                ? "bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-lg shadow-green-500/30"
+                : "text-slate-400 hover:text-white hover:bg-slate-800"
             )}
           >
-            <TreesIcon className="w-4 h-4" />
+            <TreesIcon className="w-5 h-5" />
             Garden
           </button>
           <button
             onClick={() => handleViewModeChange('list')}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300",
               viewMode === 'list'
-                ? "bg-gradient-to-br from-blue-400 to-indigo-500 text-white shadow-md"
-                : "text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+                ? "bg-gradient-to-br from-blue-400 to-indigo-500 text-white shadow-lg shadow-blue-500/30"
+                : "text-slate-400 hover:text-white hover:bg-slate-800"
             )}
           >
-            <LayoutGrid className="w-4 h-4" />
+            <LayoutGrid className="w-5 h-5" />
             List
           </button>
         </div>

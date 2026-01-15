@@ -43,6 +43,10 @@ next-env.d.ts
 # temp files
 tmpclaude-*
 
+# Windows reserved names (created by scripts using wrong redirect)
+nul
+NUL
+
 # PWA files (auto-generated)
 public/sw.js
 public/workbox-*.js

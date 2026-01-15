@@ -63,9 +63,9 @@ function getSizeClasses(size: PlantVisualProps['size']) {
   const sizes = {
     sm: 'text-2xl w-10 h-10',
     md: 'text-4xl w-14 h-14',
-    lg: 'text-5xl w-16 h-16',
-    xl: 'text-6xl w-20 h-20',
-    '2xl': 'text-7xl w-24 h-24',
+    lg: 'text-5xl w-20 h-20',
+    xl: 'text-6xl w-28 h-28',
+    '2xl': 'text-7xl w-36 h-36',
   }
   return sizes[size || 'md']
 }
