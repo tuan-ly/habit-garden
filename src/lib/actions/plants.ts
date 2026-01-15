@@ -448,8 +448,21 @@ export async function getGardenStats(
     current.setDate(current.getDate() + 1)
   }
 
-  // Count waterings per day
-  const typedWaterings = waterings as WateringLogWithPlant[]
+  // Transform Supabase nested select arrays to objects
+  const typedWaterings: WateringLogWithPlant[] = (waterings || [])
+    .filter(w => w.plant && w.plant.length > 0)
+    .map(w => ({
+      id: w.id,
+      plant_id: w.plant_id,
+      watered_at: w.watered_at,
+      watered_date: w.watered_date,
+      xp_earned: w.xp_earned,
+      plant: {
+        id: w.plant[0].id,
+        name: w.plant[0].name,
+        plant_type: w.plant[0].plant_type?.[0] || { id: '', name: '', icon: '' }
+      }
+    }))
   typedWaterings.forEach(w => {
     const date = w.watered_date
     dailyMap.set(date, (dailyMap.get(date) || 0) + 1)
