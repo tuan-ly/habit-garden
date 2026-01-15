@@ -206,6 +206,22 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 2. **Service role key needed**: Set `SUPABASE_SERVICE_ROLE_KEY` for cron job
 3. **No push notifications**: Would need PWA setup
 
+## Testing Moisture Decay Locally
+
+**Vấn đề**: Cron job không chạy tự động trên local development. Chỉ chạy trên Vercel hoặc khi gọi API thủ công.
+
+**Giải pháp**: Dùng test endpoint (chỉ hoạt động ở development):
+
+```bash
+# Preview (dry run) - xem sẽ xảy ra gì
+curl http://localhost:3000/api/test/moisture-decay
+
+# Apply decay - thực sự giảm moisture
+curl -X POST http://localhost:3000/api/test/moisture-decay
+```
+
+**Lưu ý**: Test endpoint dùng auth của user đang login, không cần Service Role Key.
+
 ---
 
 ## File Locations Quick Reference
