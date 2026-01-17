@@ -5,6 +5,8 @@ import { revalidatePath } from 'next/cache'
 import type { CreatePlantDto, PlantWithType, PlantType, Difficulty } from '@/types/database'
 import { getTodayWeather, calculateWeatherXp } from '@/lib/weather-system'
 import { calculateWateringXp } from '@/lib/xp-system'
+import { getTodayMood } from '@/lib/actions/mood'
+import { calculateXpWithMood, getMoodBonusXp, getMoodConfig } from '@/lib/mood-system'
 
 export async function getPlants(): Promise<PlantWithType[]> {
   const supabase = await createClient()
@@ -123,6 +125,8 @@ export async function waterPlant(
   xpEarned?: number
   xpBreakdown?: Record<string, number>
   weatherType?: string
+  moodWeather?: string
+  moodBonusXp?: number
   newAchievements?: string[]
   error?: string
 }> {
@@ -166,6 +170,10 @@ export async function waterPlant(
   // Get today's weather
   const weather = getTodayWeather()
 
+  // Get today's mood for XP bonus
+  const todayMood = await getTodayMood()
+  const moodConfig = getMoodConfig(todayMood)
+
   // Calculate streak
   const lastWateredDate = plant.last_watered_at
     ? new Date(plant.last_watered_at).toISOString().split('T')[0]
@@ -190,7 +198,11 @@ export async function waterPlant(
   })
 
   // Apply weather XP modifier
-  const totalXp = calculateWeatherXp(baseTotal, weather.type)
+  const weatherXp = calculateWeatherXp(baseTotal, weather.type)
+
+  // Apply mood XP bonus (tough days earn more XP!)
+  const totalXp = calculateXpWithMood(weatherXp, todayMood)
+  const moodBonusXp = getMoodBonusXp(weatherXp, todayMood)
 
   // Calculate new moisture and growth with weather modifiers
   const newMoisture = Math.min(100, plant.current_moisture + plantType.moisture_boost)
@@ -272,6 +284,8 @@ export async function waterPlant(
     xpEarned: totalXp,
     xpBreakdown: breakdown,
     weatherType: weather.type,
+    moodWeather: moodConfig.weather,
+    moodBonusXp: moodBonusXp > 0 ? moodBonusXp : undefined,
     newAchievements,
   }
 }

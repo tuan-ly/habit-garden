@@ -5,7 +5,7 @@ import { Star, ChevronDown, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getLevelInfo } from '@/lib/xp-system'
 import type { Profile } from '@/types/database'
-import { EnergySelector } from '@/components/energy'
+import { MoodSelector } from '@/components/mood'
 
 interface GameHudProps {
   profile?: Profile | null
@@ -106,9 +106,9 @@ export function GameHud({ profile }: GameHudProps) {
         </div>
       )}
 
-      {/* Right side: Energy Selector */}
+      {/* Right side: Mood/Weather Selector */}
       <div className="fixed top-2 right-2 sm:top-3 sm:right-3 z-40 pointer-events-auto">
-        <EnergySelector />
+        <MoodSelector />
       </div>
     </>
   )

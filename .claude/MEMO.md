@@ -2,7 +2,7 @@
 
 > **Last Updated**: 2026-01-17
 > **Current Phase**: Phase 4 - Polish & Launch (IN PROGRESS)
-> **Last Session**: Mood → Energy System Redesign
+> **Last Session**: Energy → Mood/Weather System Redesign
 
 ---
 
@@ -31,7 +31,7 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 - Optimistic Updates - UI updates instantly when watering, syncs with server in background
 - XP Update Fixed - Removed RPC dependency, direct profile table update + auto-sync
 - **NEW: Overview Plant Icons Fixed** - Stats garden now displays correct plant icons
-- **NEW: Energy System** - Track daily energy (1-4), adjusts goal targets accordingly (replaces old Mood system)
+- **NEW: Mood/Weather System** - Track daily mood with weather metaphors (☀️→⛈️), XP bonus on tough days, NO goal target adjustment
 - **NEW: Goal Progress Charts** - Goal Master style charts and timeline
 - **NEW: Goal Wizard Redesign** - Garden-themed wizard with manual target editing
 - **NEW: Weeds System** - Weeds grow when not checking in, tap to clear for XP
@@ -41,41 +41,50 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 
 ## Recent Changes (Latest First)
 
-### 2026-01-17: Mood → Energy System Redesign
-**Problem**: Mood system was gamification-focused (XP bonuses) instead of useful for habit tracking. Users chose "stormy" to farm XP, not reflecting actual state.
+### 2026-01-17: Energy → Mood/Weather System Redesign
+**Problem**: Energy system adjusted goal targets based on energy level, but goals are weekly - daily energy shouldn't affect them. Also, users want to track mood honestly without gaming the system.
 
-**Solution**: Redesigned as **Energy Tracking** - tracks capacity/energy level, adjusts goal targets accordingly.
+**Solution**: Redesigned as **Mood/Weather System** - track mood using weather metaphors, earn bonus XP for showing up on tough days.
 
-| Energy Level | Target Adjustment | Use Case |
-|--------------|-------------------|----------|
-| ⚡⚡⚡⚡ Full | 100% target | Ready to crush it |
-| ⚡⚡⚡ Good | 85% target | Feeling capable |
-| ⚡⚡ Low | 60% target | Taking it easy |
-| 🔋 Rest | Check-in only | Just show up |
+| Level | Weather | XP Multiplier | Description |
+|-------|---------|---------------|-------------|
+| 5 | ☀️ Sunny | 1.0x | Feeling great |
+| 4 | 🌤️ Partly Cloudy | 1.05x | Normal day |
+| 3 | ☁️ Cloudy | 1.15x | Low motivation |
+| 2 | 🌧️ Rainy | 1.3x | Struggling |
+| 1 | ⛈️ Stormy | 1.5x | Tough day |
+
+**Key Differences from Energy System:**
+- **NO goal target adjustment** - goals stay consistent
+- **XP bonus for tough days** - rewards showing up when it's hard
+- **5 levels instead of 4** - more nuanced mood tracking
+- **Weather metaphors** - more intuitive than energy bars
 
 **Key Changes:**
 | File | Change |
 |------|--------|
-| `src/lib/energy-system.ts` | NEW - Energy types, target adjustments (NO XP bonuses) |
-| `src/lib/actions/energy.ts` | NEW - Server actions + pattern insights |
-| `src/lib/context/energy-context.tsx` | NEW - EnergyProvider with optimistic updates |
-| `src/components/energy/energy-selector.tsx` | NEW - Bottom sheet with energy bars UI |
-| `src/components/game-ui/game-hud.tsx` | UPDATED - Uses EnergySelector |
-| `src/app/(dashboard)/providers.tsx` | UPDATED - Uses EnergyProvider |
-| `src/app/(dashboard)/layout.tsx` | UPDATED - Fetches initialEnergy |
-| Supabase | NEW table `energy_logs` |
+| `src/lib/mood-system.ts` | NEW - Mood types, XP multipliers, weather configs |
+| `src/lib/actions/mood.ts` | NEW - Server actions (get/set mood, stats, patterns) |
+| `src/lib/context/mood-context.tsx` | NEW - MoodProvider with XP calculation helpers |
+| `src/components/mood/mood-selector.tsx` | NEW - Bottom sheet with weather-themed UI |
+| `src/components/mood/index.ts` | NEW - Export barrel |
+| `src/components/game-ui/game-hud.tsx` | UPDATED - Uses MoodSelector instead of EnergySelector |
+| `src/app/(dashboard)/providers.tsx` | UPDATED - Uses MoodProvider instead of EnergyProvider |
+| `src/app/(dashboard)/layout.tsx` | UPDATED - Fetches initialMood |
+| `src/lib/actions/plants.ts` | UPDATED - waterPlant() now applies mood XP bonus |
+| Supabase | NEW table `mood_logs` (mood_level 1-5) |
 
-**Removed files:**
-- `src/lib/mood-system.ts`
-- `src/lib/actions/mood.ts`
-- `src/lib/context/mood-context.tsx`
-- `src/components/mood/*`
+**Files to be cleaned up (Energy system):**
+- `src/lib/energy-system.ts` - Can be deleted
+- `src/lib/actions/energy.ts` - Can be deleted
+- `src/lib/context/energy-context.tsx` - Can be deleted
+- `src/components/energy/*` - Can be deleted
 
 **Benefits:**
-- No wrong incentives (no XP bonus for low energy)
-- Self-compassion built-in (rest days count)
-- Useful patterns (weekday averages, trends)
-- Integrates with goals (adjusted targets)
+- Encourages honest mood tracking (no gaming - tough days = more XP)
+- Goals stay consistent (weekly targets not affected by daily mood)
+- Rewards resilience (showing up on stormy days matters)
+- Future: Can track recovery patterns (which activities help mood)
 
 ---
 

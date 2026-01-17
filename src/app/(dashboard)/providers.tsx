@@ -1,24 +1,24 @@
 'use client'
 
-import { EnergyProvider } from '@/lib/context/energy-context'
+import { MoodProvider } from '@/lib/context/mood-context'
 import { WeedsProvider } from '@/lib/context/weeds-context'
-import type { EnergyLevel } from '@/lib/energy-system'
+import type { MoodLevel } from '@/lib/mood-system'
 import type { ReactNode } from 'react'
 
 interface DashboardProvidersProps {
   children: ReactNode
-  initialEnergy?: EnergyLevel
+  initialMood?: MoodLevel
   initialWeeds?: { [plantId: string]: number }
 }
 
 export function DashboardProviders({
   children,
-  initialEnergy,
+  initialMood,
   initialWeeds = {},
 }: DashboardProvidersProps) {
   return (
-    <EnergyProvider initialEnergy={initialEnergy}>
+    <MoodProvider initialMood={initialMood}>
       <WeedsProvider initialWeeds={initialWeeds}>{children}</WeedsProvider>
-    </EnergyProvider>
+    </MoodProvider>
   )
 }

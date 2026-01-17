@@ -4,7 +4,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { OnboardingModal } from '@/components/onboarding'
 import { GameNav } from '@/components/game-ui'
 import { DashboardProviders } from './providers'
-import { getTodayEnergy } from '@/lib/actions/energy'
+import { getTodayMood } from '@/lib/actions/mood'
 
 export default async function DashboardLayout({
   children,
@@ -19,8 +19,8 @@ export default async function DashboardLayout({
     redirect('/login')
   }
 
-  // Fetch initial energy for the provider
-  const initialEnergy = await getTodayEnergy()
+  // Fetch initial mood for the provider
+  const initialMood = await getTodayMood()
 
   // Fetch initial weeds for all plants
   const { data: plantsWithWeeds } = await supabase
@@ -37,7 +37,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <DashboardProviders initialEnergy={initialEnergy} initialWeeds={initialWeeds}>
+    <DashboardProviders initialMood={initialMood} initialWeeds={initialWeeds}>
       <div className="min-h-screen relative ">
         {/* Animated gradient background */}
         <div className="fixed inset-0 bg-gradient-to-br from-sky-200 via-emerald-100 to-green-200 dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950" />
