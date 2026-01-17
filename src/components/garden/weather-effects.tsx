@@ -7,9 +7,11 @@ import type { WeatherType } from '@/types/database'
 interface WeatherEffectsProps {
     weather: WeatherType
     className?: string
+    /** If true, uses absolute positioning instead of fixed */
+    contained?: boolean
 }
 
-export function WeatherEffects({ weather, className }: WeatherEffectsProps) {
+export function WeatherEffects({ weather, className, contained }: WeatherEffectsProps) {
     const [showLightning, setShowLightning] = useState(false)
 
     // Lightning effect logic
@@ -54,7 +56,11 @@ export function WeatherEffects({ weather, className }: WeatherEffectsProps) {
     if (weather !== 'rainy' && weather !== 'stormy') return null;
 
     return (
-        <div className={cn("absolute inset-0 pointer-events-none z-20 overflow-hidden", className)}>
+        <div className={cn(
+            contained ? "absolute" : "fixed",
+            "inset-0 pointer-events-none z-20 overflow-hidden",
+            className
+        )}>
             {/* Rain drops animation */}
             {(weather === 'rainy' || weather === 'stormy') && (
                 <div className="absolute inset-0 w-full h-full">
