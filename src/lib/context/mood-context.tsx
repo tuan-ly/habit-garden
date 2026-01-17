@@ -18,12 +18,13 @@ import {
   isToughDay,
   getMoodEncouragement,
 } from '@/lib/mood-system'
-import { getTodayMood, setTodayMood as setMoodAction } from '@/lib/actions/mood'
+import { getTodayMood, setTodayMood as setMoodAction, hasMoodSetToday } from '@/lib/actions/mood'
 import { toast } from 'sonner'
 
 interface MoodContextValue {
   mood: MoodLevel
   isLoading: boolean
+  isMoodSet: boolean
   setMood: (level: MoodLevel, note?: string) => Promise<void>
   // Derived values
   xpMultiplier: number
@@ -46,17 +47,25 @@ export function MoodProvider({
   initialMood?: MoodLevel
 }) {
   const [mood, setMoodState] = useState<MoodLevel>(initialMood || DEFAULT_MOOD)
-  const [isLoading, setIsLoading] = useState(!initialMood)
+  const [isMoodSet, setIsMoodSet] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   // Fetch initial mood on mount if not provided
   useEffect(() => {
-    if (!initialMood) {
-      getTodayMood().then((fetchedMood) => {
-        setMoodState(fetchedMood)
-        setIsLoading(false)
-      })
+    const initMood = async () => {
+      setIsLoading(true)
+      const [fetchedMood, moodWasSet] = await Promise.all([
+        getTodayMood(),
+        hasMoodSetToday()
+      ])
+
+      setMoodState(fetchedMood)
+      setIsMoodSet(moodWasSet)
+      setIsLoading(false)
     }
-  }, [initialMood])
+
+    initMood()
+  }, [])
 
   // Set mood handler
   const setMood = useCallback(
@@ -81,6 +90,7 @@ export function MoodProvider({
             description: config.description,
           })
         }
+        setIsMoodSet(true)
       } else {
         // Revert on error
         setMoodState(previousMood)
@@ -114,6 +124,7 @@ export function MoodProvider({
       value={{
         mood,
         isLoading,
+        isMoodSet,
         setMood,
         xpMultiplier,
         isToughDay: tough,

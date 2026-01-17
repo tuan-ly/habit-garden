@@ -5,6 +5,7 @@ import { OnboardingModal } from '@/components/onboarding'
 import { GameNav } from '@/components/game-ui'
 import { DashboardProviders } from './providers'
 import { getTodayMood } from '@/lib/actions/mood'
+import { MoodProactivePrompt } from '@/components/mood'
 
 export default async function DashboardLayout({
   children,
@@ -63,6 +64,7 @@ export default async function DashboardLayout({
 
         <Toaster />
         <OnboardingModal />
+        <MoodProactivePrompt />
       </div>
     </DashboardProviders>
   )
