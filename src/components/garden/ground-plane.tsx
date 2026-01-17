@@ -170,19 +170,8 @@ export function GroundPlane({
         />
       ))}
 
-      {/* Border highlight on top edges */}
-      <line
-        x1={topX} y1={topY}
-        x2={rightX} y2={rightY}
-        stroke="rgba(255,255,255,0.2)"
-        strokeWidth="1.5"
-      />
-      <line
-        x1={topX} y1={topY}
-        x2={leftX} y2={leftY}
-        stroke="rgba(255,255,255,0.25)"
-        strokeWidth="1.5"
-      />
+      {/* Border highlight removed */}
+
 
       {/* Shadow on bottom edges */}
       <line

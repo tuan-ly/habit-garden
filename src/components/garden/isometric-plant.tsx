@@ -39,7 +39,7 @@ export function IsometricPlant({
         className
       )}
       style={{
-        transform: `scale(${finalScale})`,
+        transform: `translate(0, 12%) scale(${finalScale})`,
         transformOrigin: 'bottom center',
       }}
     >
