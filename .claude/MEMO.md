@@ -2,7 +2,7 @@
 
 > **Last Updated**: 2026-01-17
 > **Current Phase**: Phase 4 - Polish & Launch (IN PROGRESS)
-> **Last Session**: Energy → Mood/Weather System Redesign
+> **Last Session**: Visual Polish & Weather Effects
 
 ---
 
@@ -40,6 +40,32 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 ---
 
 ## Recent Changes (Latest First)
+
+### 2026-01-17: Visual Polish & Weather Effects
+**Goal**: Fix UI overlaps and enhance immersive weather effects.
+
+**Visual Updates:**
+- **Sky Elements Positioning**: Moved Sun/Moon from `top-4 right-8` to `top-24 right-8` to avoid overlapping with the Mood Selector button.
+- **Enhanced Overlay**: Created `WeatherEffects` component (z-index 20) to ensure rain renders *over* garden tiles (previously occluded).
+- **Atmosphere Tuning**:
+  - `rainy`: Darker grey overlay (`rgba(55, 65, 81, 0.35)`) for gloomier feel.
+  - `stormy`: Very dark overlay (`rgba(15, 23, 42, 0.6)`), 3x raindrop count, faster rain.
+
+**New Features:**
+- **Lightning Effect**: Random full-screen flash animation (white mix-blend-hard-light) for Stormy weather. Intervals: 8-25s.
+- **Windy Plants**: Plants now shake independently during storms.
+  - Randomized delay (0 to -2s) and duration (0.4-0.8s) per plant.
+  - Intermittent logic: Each plant has an internal timer to shake for 1-2s every 5-15s (organic wind gust effect).
+
+| File | Change |
+|------|--------|
+| `src/components/garden/garden-sky.tsx` | UPDATED - Adjusted positioning, updated weather colors |
+| `src/components/garden/weather-effects.tsx` | NEW - Dedicated overlay for rain and lightning |
+| `src/components/garden/garden-view.tsx` | UPDATED - Integrated WeatherEffects |
+| `src/components/plants/plant-visual.tsx` | UPDATED - Added `isStormShaking` logic for independent wind effects |
+| `src/app/globals.css` | UPDATED - Added `lightning-flash` keyframes |
+
+---
 
 ### 2026-01-17: Energy → Mood/Weather System Redesign
 **Problem**: Energy system adjusted goal targets based on energy level, but goals are weekly - daily energy shouldn't affect them. Also, users want to track mood honestly without gaming the system.
