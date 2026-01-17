@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import type { CreatePlantDto, PlantWithType, PlantType, Difficulty } from '@/types/database'
+import type { CreatePlantDto, PlantWithType, PlantType, Difficulty, WeatherType } from '@/types/database'
 import { getTodayWeather, calculateWeatherXp } from '@/lib/weather-system'
 import { calculateWateringXp } from '@/lib/xp-system'
 import { getTodayMood } from '@/lib/actions/mood'
@@ -402,6 +402,7 @@ export interface GardenStatsData {
   totalXp: number
   uniquePlants: number
   dailyBreakdown: { date: string; count: number }[]
+  weather: WeatherType | null
 }
 
 // Get watering logs for a specific time period
@@ -564,6 +565,16 @@ export async function getGardenStats(
   // Calculate unique plants
   const uniquePlantIds = new Set(typedWaterings.map(w => w.plant_id))
 
+  // Fetch mood logs for weather calculation
+  const { data: moodLogs } = await supabase
+    .from('mood_logs')
+    .select('mood_level')
+    .eq('user_id', user.id)
+    .gte('date', startStr)
+    .lte('date', endStr)
+
+  const periodWeather = calculateDominantWeather(moodLogs || [])
+
   return {
     period,
     startDate: startStr,
@@ -573,7 +584,46 @@ export async function getGardenStats(
     totalXp: typedWaterings.reduce((sum, w) => sum + w.xp_earned, 0),
     uniquePlants: uniquePlantIds.size,
     dailyBreakdown,
+    weather: periodWeather,
   }
+}
+
+// Helper to calculate dominant weather from mood logs
+function calculateDominantWeather(logs: any[]): WeatherType | null {
+  if (!logs || logs.length === 0) return null
+
+  // Count mood levels
+  const counts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+  let maxCount = 0
+  let dominantLevel = 4 // Default to neutral/good
+
+  for (const log of logs) {
+    const level = log.mood_level
+    counts[level] = (counts[level] || 0) + 1
+    
+    // Update dominant (prefer lower moods if tie for "tough" days logic? or just first found? 
+    // Let's stick to simple max. If tie, maybe prioritizing recent or average?
+    // Let's just pick the level with max count.
+    if (counts[level] > maxCount) {
+      maxCount = counts[level]
+      dominantLevel = level
+    }
+  }
+
+  // Map mood level to weather type for GardenSky
+  // 5: Sunny, 4: Partly Cloudy, 3: Cloudy, 2: Rainy, 1: Stormy
+  const config = getMoodConfig(dominantLevel as any)
+  if (!config) return 'sunny'
+
+  const weatherMap: Record<string, WeatherType> = {
+    'Sunny': 'sunny',
+    'Partly Cloudy': 'cloudy',
+    'Cloudy': 'cloudy',
+    'Rainy': 'rainy',
+    'Stormy': 'stormy'
+  }
+
+  return weatherMap[config.weather] || 'sunny'
 }
 
 export async function getPlant(plantId: string): Promise<PlantWithType | null> {

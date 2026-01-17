@@ -101,7 +101,7 @@ export default function OverviewPage() {
   const canGoNext = navigateDate(currentDate, period, 'next') <= new Date()
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col pb-24 sm:pb-28">
       {/* Period selector tabs */}
       <div className="flex justify-center py-2 px-2 bg-background/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="flex gap-0.5 sm:gap-1 p-0.5 sm:p-1 rounded-lg bg-muted/50">
@@ -158,6 +158,7 @@ export default function OverviewPage() {
         ) : stats ? (
           <StatsGarden
             waterings={stats.waterings}
+            weather={stats.weather}
             maxDisplay={period === 'year' ? 100 : period === 'month' ? 50 : 30}
           />
         ) : (
@@ -175,7 +176,7 @@ export default function OverviewPage() {
 
       {/* Stats summary */}
       {stats && (
-        <div className="px-2 sm:px-4 py-2 sm:py-3 border-t bg-background/80 backdrop-blur-sm">
+        <div className="px-2 sm:px-4 py-2 sm:py-3 border-t bg-background/80 backdrop-blur-sm transition-all animate-in slide-in-from-bottom-4">
           <div className="flex justify-center gap-4 sm:gap-6">
             <div className="flex items-center gap-1.5 sm:gap-2">
               <Droplets className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
