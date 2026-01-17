@@ -10,12 +10,18 @@ import { PlantDetailSheet } from '@/components/plants/plant-detail-sheet'
 import { usePlants } from '@/lib/context'
 import type { PlantWithType, PlantType, WeatherType } from '@/types/database'
 import { defaultTheme } from './themes'
+import {
+  calculateRequiredGridSize,
+  buildOccupiedCellsMap,
+  isAnchorCell,
+} from '@/lib/utils/grid-positioning'
 
 interface IsometricGardenProps {
   plantTypes: PlantType[]
   weather?: WeatherType | null
 }
 
+// Legacy function - kept for reference but replaced by calculateRequiredGridSize
 // Calculate grid size based on plant count
 // Always ensures at least 1 empty slot for adding new plants
 function getGridSize(plantCount: number): number {
@@ -65,37 +71,28 @@ export function IsometricGarden({
   // Filter out dead plants for the garden view (they go to cemetery)
   const livingPlants = plants.filter((p) => p.status !== 'dead')
 
-  // Calculate grid size - minimum 2x2, grows with plant count
+  // Calculate grid size based on multi-cell plants
   const gridSize = useMemo(() => {
-    // Always show at least one empty spot
-    return Math.max(getGridSize(livingPlants.length + 1), 2)
-  }, [livingPlants.length])
+    return calculateRequiredGridSize(livingPlants)
+  }, [livingPlants])
 
-  // Create a map of plant positions
-  // Plants are assigned positions based on their index
-  const plantPositions = useMemo(() => {
-    const positions = new Map<string, PlantWithType>()
-    livingPlants.forEach((plant, index) => {
-      const row = Math.floor(index / gridSize)
-      const col = index % gridSize
-      if (row < gridSize && col < gridSize) {
-        positions.set(`${row}-${col}`, plant)
-      }
-    })
-    return positions
-  }, [livingPlants, gridSize])
+  // Build map of occupied cells (supports multi-cell plants)
+  const occupiedCells = useMemo(() => {
+    return buildOccupiedCellsMap(livingPlants)
+  }, [livingPlants])
 
   // Generate grid tiles
   const tiles = useMemo(() => {
-    const result: { row: number; col: number; plant?: PlantWithType }[] = []
+    const result: { row: number; col: number; plant?: PlantWithType; isAnchor: boolean }[] = []
     for (let row = 0; row < gridSize; row++) {
       for (let col = 0; col < gridSize; col++) {
-        const plant = plantPositions.get(`${row}-${col}`)
-        result.push({ row, col, plant })
+        const plant = occupiedCells.get(`${row}-${col}`)
+        const isAnchor = plant ? isAnchorCell(plant, row, col) : false
+        result.push({ row, col, plant, isAnchor })
       }
     }
     return result
-  }, [gridSize, plantPositions])
+  }, [gridSize, occupiedCells])
 
   // Calculate container dimensions
   // Container must match ground plane size exactly
@@ -120,7 +117,7 @@ export function IsometricGarden({
   }
 
   // Get hovered plant for info bar
-  const hoveredPlant = hoveredTile ? plantPositions.get(hoveredTile) ?? null : null
+  const hoveredPlant = hoveredTile ? occupiedCells.get(hoveredTile) ?? null : null
 
   // Check if garden is empty
   const isEmpty = livingPlants.length === 0
@@ -168,7 +165,7 @@ export function IsometricGarden({
           />
 
           {/* Interactive tile zones (transparent) */}
-          {tiles.map(({ row, col, plant }) => {
+          {tiles.map(({ row, col, plant, isAnchor }) => {
             const tileKey = `${row}-${col}`
             const isHovered = hoveredTile === tileKey
 
@@ -185,7 +182,8 @@ export function IsometricGarden({
                 onMouseLeave={handleTileLeave}
                 tileSize={tileSize}
               >
-                {plant && (
+                {/* Only render plant at its anchor (top-left) position */}
+                {plant && isAnchor && (
                   <IsometricPlant
                     plant={plant}
                     weather={weather}

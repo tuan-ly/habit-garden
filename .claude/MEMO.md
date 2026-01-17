@@ -2,7 +2,7 @@
 
 > **Last Updated**: 2026-01-17
 > **Current Phase**: Phase 4 - Polish & Launch (IN PROGRESS)
-> **Last Session**: UI/UX Refinement & Layout Optimization
+> **Last Session**: Multi-Cell Plants Infrastructure
 
 ---
 
@@ -38,6 +38,57 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 - **NEW: Goal Modification** - Modify goals mid-way with before/after comparison
 - **NEW: Adaptive Layout & Navigation** - Fixed navigation sizing and global scrolling strategy to prevent content overlap.
 - **NEW: Bottom HUD Info Bar** - Plant details moved to fixed bottom position above navigation.
+- **NEW: Multi-Cell Plants Infrastructure** - Plants can occupy multiple grid cells (1x1, 2x2, 3x3) - code ready, migration pending
+
+---
+
+## Recent Changes (Latest First)
+
+### 2026-01-17: Multi-Cell Plants Infrastructure
+**Goal**: Cây có thể chiếm nhiều ô vuông khi trồng càng lâu (1x1, 2x2, 3x3, etc.)
+
+**Status**: ✅ Code ready, ⏳ Database migration pending
+
+**Infrastructure Implemented:**
+- **Grid Positioning System**: Complete collision detection, auto-positioning, grid expansion
+- **Visual Scaling**: Plants scale based on `grid_size` (1x1→1.0x, 2x2→1.8x, 3x3→2.5x)
+- **Database Schema**: Added `grid_size`, `grid_row`, `grid_col` fields
+- **Migration Tools**: SQL migration + API endpoint + utility scripts
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `.claude/MULTI-CELL-PLANTS-DESIGN.md` | Complete design document |
+| `src/lib/utils/grid-positioning.ts` | Grid utilities (collision, positioning, scaling) |
+| `src/lib/utils/migrate-plant-positions.ts` | Migration helper functions |
+| `supabase/migrations/20260117_add_grid_positioning.sql` | Database schema changes |
+| `src/app/api/admin/migrate-grid/route.ts` | Migration API endpoint |
+| `MIGRATION-GUIDE.md` | Step-by-step migration instructions |
+
+**Updated Files:**
+| File | Change |
+|------|--------|
+| `src/types/database.ts` | Added grid fields to Plant interface |
+| `src/components/garden/isometric-garden.tsx` | Use new grid algorithm with multi-cell support |
+| `src/components/garden/isometric-plant.tsx` | Scale based on grid_size + growth_percentage |
+| `src/lib/actions/plants.ts` | Auto-assign grid positions when creating plants |
+
+**How It Works:**
+- All new plants start as **1x1** (single cell)
+- Grid **auto-expands** to fit all plants
+- **Collision detection** prevents overlaps
+- **Visual scaling** makes larger plants look bigger
+- **Backward compatible** - old `position` field still exists
+
+**Next Steps (User will do later):**
+1. Run database migration (SQL + API endpoint)
+2. Test in dev environment
+3. Configure expansion milestones per plant type (future feature)
+
+**Design Decisions:**
+- Grid size based on plant age, not real-time metrics (rewards long-term consistency)
+- Expansion milestones will be configured per plant type (e.g., Sunflower: 30d→2x2, 90d→3x3)
+- Infrastructure first, milestone logic later (user wants to configure per plant type)
 
 ---
 

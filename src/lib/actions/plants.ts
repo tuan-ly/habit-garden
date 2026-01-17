@@ -7,6 +7,10 @@ import { getTodayWeather, calculateWeatherXp } from '@/lib/weather-system'
 import { calculateWateringXp } from '@/lib/xp-system'
 import { getTodayMood } from '@/lib/actions/mood'
 import { calculateXpWithMood, getMoodBonusXp, getMoodConfig } from '@/lib/mood-system'
+import {
+  calculateRequiredGridSize,
+  findNextAvailablePosition,
+} from '@/lib/utils/grid-positioning'
 
 export async function getPlants(): Promise<PlantWithType[]> {
   const supabase = await createClient()
@@ -55,15 +59,61 @@ export async function createPlant(dto: CreatePlantDto): Promise<{ success: boole
     return { success: false, error: 'Not authenticated' }
   }
 
-  // Get the next position
+  // Get all existing living plants to calculate grid position
   const { data: existingPlants } = await supabase
+    .from('plants')
+    .select(`
+      id,
+      position,
+      grid_size,
+      grid_row,
+      grid_col,
+      status,
+      plant_type:plant_types(*)
+    `)
+    .eq('user_id', user.id)
+    .neq('status', 'dead')
+
+  const livingPlants = (existingPlants || []) as PlantWithType[]
+
+  // Calculate next position (legacy)
+  const { data: lastPlant } = await supabase
     .from('plants')
     .select('position')
     .eq('user_id', user.id)
     .order('position', { ascending: false })
     .limit(1)
 
-  const nextPosition = (existingPlants?.[0]?.position ?? 0) + 1
+  const nextPosition = (lastPlant?.[0]?.position ?? 0) + 1
+
+  // Calculate grid position for new plant
+  const gridSize = calculateRequiredGridSize(livingPlants)
+  const newPlantSize = 1 // All new plants start as 1x1
+
+  const gridPosition = findNextAvailablePosition(livingPlants, gridSize, newPlantSize)
+
+  // If grid is full, expand and try again
+  let finalRow = 0
+  let finalCol = 0
+
+  if (!gridPosition) {
+    // Grid is full, expand it
+    const expandedSize = gridSize + 1
+    const expandedPosition = findNextAvailablePosition(livingPlants, expandedSize, newPlantSize)
+
+    if (!expandedPosition) {
+      // Should never happen, but handle gracefully
+      console.error('Failed to find position even after expanding grid')
+      finalRow = gridSize
+      finalCol = gridSize
+    } else {
+      finalRow = expandedPosition.row
+      finalCol = expandedPosition.col
+    }
+  } else {
+    finalRow = gridPosition.row
+    finalCol = gridPosition.col
+  }
 
   const { data: newPlant, error } = await supabase
     .from('plants')
@@ -74,7 +124,10 @@ export async function createPlant(dto: CreatePlantDto): Promise<{ success: boole
       habit_description: dto.habit_description || null,
       reminder_time: dto.reminder_time || null,
       reminder_enabled: dto.reminder_enabled ?? true,
-      position: nextPosition,
+      position: nextPosition, // Keep for backward compatibility
+      grid_size: newPlantSize,
+      grid_row: finalRow,
+      grid_col: finalCol,
       current_moisture: 100,
       growth_percentage: 0,
       status: 'growing',
