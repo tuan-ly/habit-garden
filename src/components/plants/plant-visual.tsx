@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils'
 import type { PlantWithType, PlantStatus, WeatherType } from '@/types/database'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { PlantImage, getGrowthStage, type GrowthStage } from './plant-image'
 
 // Re-export growth stages for backwards compatibility
@@ -129,8 +129,41 @@ export function PlantVisual({
   // Get special effect if applicable (only for non-dead plants)
   const specialEffectClass = !isDead ? getSpecialEffectClass(plant.plant_type.name) : ''
 
-  // Weather effect
-  const weatherClass = weather ? WEATHER_EFFECTS[weather] : ''
+  // Independent random shaking for stormy weather
+  const [isStormShaking, setIsStormShaking] = useState(false)
+
+  useEffect(() => {
+    if (weather !== 'stormy') {
+      setIsStormShaking(false)
+      return
+    }
+
+    let timeoutId: NodeJS.Timeout
+
+    const scheduleShake = () => {
+      // Random interval between 5s and 15s to check for shake
+      const nextInterval = 5000 + Math.random() * 10000
+
+      timeoutId = setTimeout(() => {
+        triggerShake()
+        scheduleShake()
+      }, nextInterval)
+    }
+
+    const triggerShake = () => {
+      setIsStormShaking(true)
+      // Shake for 1-2 seconds
+      setTimeout(() => setIsStormShaking(false), 1000 + Math.random() * 1000)
+    }
+
+    // Initial random delay
+    scheduleShake()
+
+    return () => clearTimeout(timeoutId)
+  }, [weather])
+
+  // Weather effect - exclude stormy from default class as we handle it manually
+  const weatherClass = weather && weather !== 'stormy' ? WEATHER_EFFECTS[weather] : ''
 
   // Glow color for thriving plants
   const glowColor = getPlantGlowColor(plant.plant_type.name)
@@ -159,6 +192,7 @@ export function PlantVisual({
           getSizeClasses(size),
           specialEffectClass,
           weatherClass,
+          isStormShaking && 'weather-stormy', // Apply shake only when active
           wilting && 'plant-wilting',
           showGrowthBurst && 'animate-growth-burst',
           thriving && 'plant-thriving',
@@ -190,7 +224,7 @@ export function PlantVisual({
         <div className="needs-water-indicator">
           <div className="relative flex items-center justify-center">
             {/* Watering can icon */}
-          <span className="watering-can-anim text-lg">🚿</span>
+            <span className="watering-can-anim text-lg">🚿</span>
             {/* Water drops falling */}
             {/* <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-1">
               <span className="needs-water-drop text-xs text-blue-400">💧</span>
