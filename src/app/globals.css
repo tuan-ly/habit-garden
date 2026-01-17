@@ -1232,3 +1232,84 @@
   background: rgba(15, 23, 42, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
+
+/* ============================================
+   Weeds System Animations
+   ============================================ */
+
+/* Weed sway animation */
+@keyframes weed-sway {
+  0%, 100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+.animate-weed-sway {
+  animation: weed-sway 2s ease-in-out infinite;
+}
+
+/* Weed clear/pull animation */
+@keyframes weed-clear {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-10px) scale(1.2);
+  }
+  100% {
+    transform: translateY(-30px) scale(0);
+    opacity: 0;
+  }
+}
+
+.animate-weed-clear {
+  animation: weed-clear 0.4s ease-out forwards;
+}
+
+/* Mood selection glow */
+@keyframes mood-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 var(--mood-color, rgba(34, 197, 94, 0.4));
+  }
+  50% {
+    box-shadow: 0 0 20px 5px var(--mood-color, rgba(34, 197, 94, 0.4));
+  }
+}
+
+.animate-mood-glow {
+  animation: mood-glow 2s ease-in-out infinite;
+}
+
+/* Week card entrance animation */
+@keyframes week-card-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-week-card-enter {
+  animation: week-card-enter 0.3s ease-out forwards;
+}
+
+/* Target hit celebration */
+@keyframes target-hit {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.animate-target-hit {
+  animation: target-hit 0.5s ease-out;
+}

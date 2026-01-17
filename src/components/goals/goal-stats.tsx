@@ -1,8 +1,8 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   TrendingUp,
   TrendingDown,
@@ -12,9 +12,16 @@ import {
   Calendar,
   BarChart3,
   CheckCircle,
+  Clock,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { GoalStatistics } from '@/lib/actions/goals'
+import { GoalProgressChart } from './goal-progress-chart'
+import { GoalTimeline } from './goal-timeline'
+import { Button } from '@/components/ui/button'
 
 interface GoalStatsProps {
   stats: GoalStatistics
@@ -23,45 +30,7 @@ interface GoalStatsProps {
 
 export function GoalStats({ stats, className }: GoalStatsProps) {
   const { goal, logs, currentWeek, weeklyTarget, overallProgress, isOnTrack, weeklyTrend } = stats
-
-  // Group logs by week for the chart
-  const weeklyData = useMemo(() => {
-    const weeklyTargets = goal.weekly_targets as number[] || []
-    const weeks: { week: number; actual: number; target: number }[] = []
-
-    for (let w = 1; w <= Math.min(currentWeek, weeklyTargets.length); w++) {
-      const startDate = new Date(goal.started_at)
-      startDate.setDate(startDate.getDate() + (w - 1) * 7)
-      const endDate = new Date(startDate)
-      endDate.setDate(endDate.getDate() + 7)
-
-      const weekLogs = logs.filter((log) => {
-        const logDate = new Date(log.logged_at)
-        return logDate >= startDate && logDate < endDate
-      })
-
-      let actual = 0
-      if (goal.goal_mode === 'total_progress') {
-        actual = weekLogs.reduce((sum, log) => sum + Number(log.value), 0)
-      } else {
-        actual = weekLogs.length > 0 ? Math.max(...weekLogs.map((l) => Number(l.value))) : 0
-      }
-
-      weeks.push({
-        week: w,
-        actual,
-        target: weeklyTargets[w - 1] || 0,
-      })
-    }
-
-    return weeks
-  }, [goal, logs, currentWeek])
-
-  // Find max value for chart scaling
-  const maxValue = useMemo(() => {
-    const allValues = weeklyData.flatMap((w) => [w.actual, w.target])
-    return Math.max(...allValues, 1)
-  }, [weeklyData])
+  const [showFullTimeline, setShowFullTimeline] = useState(false)
 
   const TrendIcon =
     weeklyTrend === 'up' ? TrendingUp : weeklyTrend === 'down' ? TrendingDown : Minus
@@ -72,187 +41,244 @@ export function GoalStats({ stats, className }: GoalStatsProps) {
       ? 'text-red-500'
       : 'text-gray-500'
 
+  // Calculate days remaining
+  const daysRemaining = useMemo(() => {
+    if (!goal.target_date) return 0
+    const targetDate = new Date(goal.target_date)
+    const today = new Date()
+    return Math.max(0, Math.ceil((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)))
+  }, [goal.target_date])
+
   return (
-    <div className={cn('space-y-4', className)}>
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 gap-3">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground text-sm">
-              <Target className="h-4 w-4" />
-              Overall Progress
-            </div>
-            <div className="text-2xl font-bold mt-1">{Math.round(overallProgress)}%</div>
-            <div className="text-xs text-muted-foreground">
-              {Number(goal.current_value).toFixed(1)} / {goal.target_value} {goal.unit}
-            </div>
-          </CardContent>
-        </Card>
+    <Tabs defaultValue="progress" className={cn('space-y-4', className)}>
+      <TabsList className="grid w-full grid-cols-2 h-auto">
+        <TabsTrigger value="progress" className="flex items-center gap-2 py-2">
+          <BarChart3 className="h-4 w-4" />
+          <span className="hidden sm:inline">Progress</span>
+        </TabsTrigger>
+        <TabsTrigger value="timeline" className="flex items-center gap-2 py-2">
+          <Calendar className="h-4 w-4" />
+          <span className="hidden sm:inline">Timeline</span>
+        </TabsTrigger>
+      </TabsList>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground text-sm">
-              <Calendar className="h-4 w-4" />
-              Week {currentWeek}
-            </div>
-            <div className="text-2xl font-bold mt-1">{weeklyTarget.toFixed(1)}</div>
-            <div className="text-xs text-muted-foreground">This week's target</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground text-sm">
-              <Trophy className="h-4 w-4 text-yellow-500" />
-              Personal Records
-            </div>
-            <div className="text-2xl font-bold mt-1">{stats.personalRecords}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground text-sm">
-              <CheckCircle className="h-4 w-4 text-green-500" />
-              Weeks Completed
-            </div>
-            <div className="text-2xl font-bold mt-1">{stats.weeksCompleted}</div>
-            <div className="text-xs text-muted-foreground">Target met</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Status */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div
-                className={cn(
-                  'w-3 h-3 rounded-full',
-                  isOnTrack ? 'bg-green-500' : 'bg-amber-500'
-                )}
-              />
-              <span className="font-medium">
-                {isOnTrack ? 'On Track' : 'Behind Schedule'}
-              </span>
-            </div>
-            <div className={cn('flex items-center gap-1', trendColor)}>
-              <TrendIcon className="h-4 w-4" />
-              <span className="text-sm capitalize">{weeklyTrend} trend</span>
-            </div>
-          </div>
-          {stats.predictedCompletion && (
-            <div className="mt-2 text-sm text-muted-foreground">
-              Predicted completion:{' '}
-              <span className="font-medium">
-                {stats.predictedCompletion.toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric',
-                })}
-              </span>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Progress Chart */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Weekly Progress
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {weeklyData.map((week) => (
-              <div key={week.week} className="space-y-1">
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Week {week.week}</span>
-                  <span>
-                    {week.actual.toFixed(1)} / {week.target.toFixed(1)} {goal.unit}
-                  </span>
-                </div>
-                <div className="h-4 bg-muted rounded-full overflow-hidden relative">
-                  {/* Target line */}
-                  <div
-                    className="absolute top-0 bottom-0 w-0.5 bg-gray-400 z-10"
-                    style={{ left: `${(week.target / maxValue) * 100}%` }}
-                  />
-                  {/* Actual bar */}
-                  <div
-                    className={cn(
-                      'h-full rounded-full transition-all',
-                      week.actual >= week.target ? 'bg-green-500' : 'bg-blue-400'
-                    )}
-                    style={{ width: `${(week.actual / maxValue) * 100}%` }}
-                  />
-                </div>
+      {/* Progress Tab */}
+      <TabsContent value="progress" className="space-y-4 mt-4">
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 gap-3">
+          <Card className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/30 dark:to-green-950/30 border-emerald-200/50 dark:border-emerald-800/50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-sm">
+                <Target className="h-4 w-4" />
+                Overall Progress
               </div>
-            ))}
-          </div>
+              <div className="text-2xl font-bold mt-1 text-emerald-700 dark:text-emerald-300">
+                {Math.round(overallProgress)}%
+              </div>
+              <div className="text-xs text-emerald-600/80 dark:text-emerald-400/80">
+                {Number(goal.current_value).toFixed(1)} / {goal.target_value} {goal.unit}
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* Legend */}
-          <div className="flex items-center gap-4 mt-4 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded bg-blue-400" />
-              <span>Actual</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded bg-green-500" />
-              <span>Target met</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-0.5 h-3 bg-gray-400" />
-              <span>Target</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border-blue-200/50 dark:border-blue-800/50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 text-sm">
+                <Calendar className="h-4 w-4" />
+                Week {currentWeek}
+              </div>
+              <div className="text-2xl font-bold mt-1 text-blue-700 dark:text-blue-300">
+                {weeklyTarget.toFixed(1)}
+              </div>
+              <div className="text-xs text-blue-600/80 dark:text-blue-400/80">
+                This week's target
+              </div>
+            </CardContent>
+          </Card>
 
-      {/* Recent Logs */}
-      {logs.length > 0 && (
+          <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 border-amber-200/50 dark:border-amber-800/50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 text-sm">
+                <Trophy className="h-4 w-4" />
+                Personal Records
+              </div>
+              <div className="text-2xl font-bold mt-1 text-amber-700 dark:text-amber-300">
+                {stats.personalRecords}
+              </div>
+              <div className="text-xs text-amber-600/80 dark:text-amber-400/80">
+                Milestones achieved
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30 border-violet-200/50 dark:border-violet-800/50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-violet-600 dark:text-violet-400 text-sm">
+                <CheckCircle className="h-4 w-4" />
+                Weeks Completed
+              </div>
+              <div className="text-2xl font-bold mt-1 text-violet-700 dark:text-violet-300">
+                {stats.weeksCompleted}
+              </div>
+              <div className="text-xs text-violet-600/80 dark:text-violet-400/80">
+                Target met
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Status Card */}
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {logs.slice(-5).reverse().map((log) => (
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
                 <div
-                  key={log.id}
-                  className="flex items-center justify-between py-2 border-b last:border-0"
-                >
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">
-                        {Number(log.value).toFixed(1)} {goal.unit}
-                      </span>
-                      {log.is_personal_record && (
-                        <Trophy className="h-3 w-3 text-yellow-500" />
-                      )}
-                      {log.exceeded_target && !log.is_personal_record && (
-                        <CheckCircle className="h-3 w-3 text-green-500" />
-                      )}
-                    </div>
-                    {log.notes && (
-                      <p className="text-xs text-muted-foreground">{log.notes}</p>
-                    )}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(log.logged_at).toLocaleDateString('en-US', {
+                  className={cn(
+                    'w-3 h-3 rounded-full animate-pulse',
+                    isOnTrack ? 'bg-green-500' : 'bg-amber-500'
+                  )}
+                />
+                <span className="font-medium">
+                  {isOnTrack ? 'On Track' : 'Behind Schedule'}
+                </span>
+              </div>
+              <div className={cn('flex items-center gap-1', trendColor)}>
+                <TrendIcon className="h-4 w-4" />
+                <span className="text-sm capitalize">{weeklyTrend} trend</span>
+              </div>
+            </div>
+
+            <div className="mt-3 flex items-center justify-between text-sm">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Clock className="h-4 w-4" />
+                <span>{daysRemaining} days remaining</span>
+              </div>
+              {stats.predictedCompletion && (
+                <div className="text-muted-foreground">
+                  Est. finish:{' '}
+                  <span className="font-medium">
+                    {stats.predictedCompletion.toLocaleDateString('en-US', {
                       month: 'short',
                       day: 'numeric',
                     })}
-                  </div>
+                  </span>
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>
-      )}
-    </div>
+
+        {/* Progress Chart */}
+        <Card>
+          <CardContent className="p-4">
+            <GoalProgressChart stats={stats} />
+          </CardContent>
+        </Card>
+
+        {/* Recent Logs */}
+        {logs.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-amber-500" />
+                Recent Activity
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {logs.slice(-5).reverse().map((log) => (
+                  <div
+                    key={log.id}
+                    className="flex items-center justify-between py-2 border-b last:border-0"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">
+                          {Number(log.value).toFixed(1)} {goal.unit}
+                        </span>
+                        {log.is_personal_record && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400 text-[10px] font-medium">
+                            <Trophy className="h-2.5 w-2.5" />
+                            PR
+                          </span>
+                        )}
+                        {log.exceeded_target && !log.is_personal_record && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-400 text-[10px] font-medium">
+                            <CheckCircle className="h-2.5 w-2.5" />
+                            Hit
+                          </span>
+                        )}
+                      </div>
+                      {log.notes && (
+                        <p className="text-xs text-muted-foreground mt-0.5">{log.notes}</p>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(log.logged_at).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </TabsContent>
+
+      {/* Timeline Tab */}
+      <TabsContent value="timeline" className="space-y-4 mt-4">
+        <Card>
+          <CardContent className="p-4">
+            <GoalTimeline stats={stats} showAll={showFullTimeline} />
+
+            {/* Toggle button for full timeline */}
+            <div className="mt-4 flex justify-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowFullTimeline(!showFullTimeline)}
+                className="text-xs"
+              >
+                {showFullTimeline ? (
+                  <>
+                    <ChevronUp className="h-3 w-3 mr-1" />
+                    Show Less
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-3 w-3 mr-1" />
+                    Show Full Timeline
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-3 gap-2">
+          <Card className="p-3 text-center">
+            <div className="text-lg font-bold text-green-600 dark:text-green-400">
+              {stats.weeksCompleted}
+            </div>
+            <div className="text-[10px] text-muted-foreground">Weeks Hit</div>
+          </Card>
+          <Card className="p-3 text-center">
+            <div className="text-lg font-bold text-amber-600 dark:text-amber-400">
+              {currentWeek - 1 - stats.weeksCompleted}
+            </div>
+            <div className="text-[10px] text-muted-foreground">Weeks Missed</div>
+          </Card>
+          <Card className="p-3 text-center">
+            <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
+              {((goal.weekly_targets as number[])?.length || goal.duration_weeks) - currentWeek + 1}
+            </div>
+            <div className="text-[10px] text-muted-foreground">Weeks Left</div>
+          </Card>
+        </div>
+      </TabsContent>
+    </Tabs>
   )
 }

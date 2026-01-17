@@ -61,7 +61,7 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
         <GardenSky weather={weather} />
 
         {/* Game HUD */}
-        <GameHud profile={profile} weather={weather} />
+        <GameHud profile={profile} />
 
         {/* View toggle - top center */}
         <ViewToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
@@ -86,7 +86,7 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
       {viewMode === 'garden' && <GardenSky weather={weather} />}
 
       {/* Game HUD - floating at top corners */}
-      <GameHud profile={profile} weather={weather} />
+      <GameHud profile={profile} />
 
       {/* View toggle - top center */}
       <ViewToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />

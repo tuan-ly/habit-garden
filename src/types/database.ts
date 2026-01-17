@@ -5,7 +5,7 @@ export type FrequencyType = 'daily' | 'flexible'
 export type Difficulty = 'easy' | 'medium' | 'hard'
 export type GoalMode = 'build_capacity' | 'total_progress'
 export type AdaptiveMode = 'suggest' | 'auto' | 'off'
-export type ProgressionType = 'linear' | 'exponential' | 'step' | 'custom'
+export type ProgressionType = 'linear' | 'exponential' | 'logarithmic' | 's-curve' | 'step' | 'custom'
 export type WeatherType = 'sunny' | 'cloudy' | 'rainy' | 'stormy' | 'rainbow'
 export type AdjustmentType = 'increase' | 'decrease' | 'recovery_week' | 'timeline_extend'
 
@@ -89,6 +89,10 @@ export interface Plant {
   reminder_enabled: boolean
   adaptive_mode: AdaptiveMode
   position: number
+  // Weeds system
+  weed_count: number
+  last_weed_added: string | null
+  weeds_cleared_total: number
   created_at: string
   updated_at: string
 }
@@ -243,6 +247,7 @@ export interface CreateGoalDto {
   duration_weeks: number
   progression_type?: ProgressionType
   step_size?: number
+  weekly_targets?: number[] // Optional manual targets override
 }
 
 export interface LogGoalDto {

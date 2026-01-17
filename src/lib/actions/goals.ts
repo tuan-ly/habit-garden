@@ -51,9 +51,9 @@ export async function createGoal(dto: CreateGoalDto): Promise<{ success: boolean
     return { success: false, error: 'Plant not found' }
   }
 
-  // Generate weekly targets based on progression type
+  // Use custom weekly targets if provided, otherwise generate based on progression type
   const progressionType = (dto.progression_type || 'linear') as ProgType
-  const weeklyTargets = generateProgressionPlan({
+  const weeklyTargets = dto.weekly_targets || generateProgressionPlan({
     startValue: dto.start_value || 0,
     endValue: dto.target_value,
     totalWeeks: dto.duration_weeks,
@@ -521,4 +521,75 @@ export async function getUserGoals(): Promise<GoalWithStats[]> {
   }
 
   return goalsWithStats
+}
+
+// Modify an existing goal
+export async function modifyGoal(dto: {
+  goal_id: string
+  target_value?: number
+  duration_weeks?: number
+  weekly_targets?: number[]
+}): Promise<{ success: boolean; goal?: Goal; error?: string }> {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return { success: false, error: 'Not authenticated' }
+  }
+
+  // Verify the goal belongs to the user
+  const { data: existingGoal, error: fetchError } = await supabase
+    .from('goals')
+    .select(`
+      *,
+      plant:plants!inner(user_id)
+    `)
+    .eq('id', dto.goal_id)
+    .single()
+
+  if (fetchError || !existingGoal) {
+    return { success: false, error: 'Goal not found' }
+  }
+
+  const plant = existingGoal.plant as { user_id: string } | null
+  if (!plant || plant.user_id !== user.id) {
+    return { success: false, error: 'Unauthorized' }
+  }
+
+  // Build update object
+  const updates: Partial<Goal> & { updated_at: string } = {
+    updated_at: new Date().toISOString(),
+  }
+
+  if (dto.target_value !== undefined) {
+    updates.target_value = dto.target_value
+  }
+
+  if (dto.duration_weeks !== undefined) {
+    updates.duration_weeks = dto.duration_weeks
+
+    // Recalculate target date
+    const targetDate = new Date(existingGoal.started_at)
+    targetDate.setDate(targetDate.getDate() + dto.duration_weeks * 7)
+    updates.target_date = targetDate.toISOString()
+  }
+
+  if (dto.weekly_targets !== undefined) {
+    updates.weekly_targets = dto.weekly_targets
+  }
+
+  const { data: goal, error } = await supabase
+    .from('goals')
+    .update(updates)
+    .eq('id', dto.goal_id)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error modifying goal:', error)
+    return { success: false, error: error.message }
+  }
+
+  revalidatePath('/garden')
+  return { success: true, goal: goal as Goal }
 }

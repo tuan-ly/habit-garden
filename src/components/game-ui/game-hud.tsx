@@ -4,50 +4,16 @@ import { useState } from 'react'
 import { Star, ChevronDown, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getLevelInfo } from '@/lib/xp-system'
-import type { WeatherType, Profile } from '@/types/database'
+import type { Profile } from '@/types/database'
+import { EnergySelector } from '@/components/energy'
 
 interface GameHudProps {
   profile?: Profile | null
-  weather?: WeatherType | null
 }
 
-const weatherConfig: Record<WeatherType, { label: string; bgColor: string; effect: string; bonus: string }> = {
-  sunny: {
-    label: 'Sunny',
-    bgColor: 'from-amber-400 to-orange-500',
-    effect: '☀️',
-    bonus: '+10% XP'
-  },
-  cloudy: {
-    label: 'Cloudy',
-    bgColor: 'from-slate-400 to-slate-600',
-    effect: '☁️',
-    bonus: 'Normal'
-  },
-  rainy: {
-    label: 'Rainy',
-    bgColor: 'from-blue-400 to-cyan-500',
-    effect: '🌧️',
-    bonus: '+20% Growth'
-  },
-  stormy: {
-    label: 'Stormy',
-    bgColor: 'from-purple-500 to-violet-600',
-    effect: '⛈️',
-    bonus: '-10% Decay'
-  },
-  rainbow: {
-    label: 'Rainbow',
-    bgColor: 'from-pink-400 via-purple-400 to-cyan-400',
-    effect: '🌈',
-    bonus: '+25% XP'
-  },
-}
-
-export function GameHud({ profile, weather }: GameHudProps) {
+export function GameHud({ profile }: GameHudProps) {
   const [expanded, setExpanded] = useState(false)
   const levelInfo = profile ? getLevelInfo(profile.xp) : null
-  const currentWeather = weather ? weatherConfig[weather] : weatherConfig.sunny
 
   return (
     <>
@@ -140,44 +106,9 @@ export function GameHud({ profile, weather }: GameHudProps) {
         </div>
       )}
 
-      {/* Right side: Weather - Compact pill */}
+      {/* Right side: Energy Selector */}
       <div className="fixed top-2 right-2 sm:top-3 sm:right-3 z-40 pointer-events-auto">
-        <div className={cn(
-          "relative flex items-center gap-1.5 sm:gap-2 px-2 py-1.5 sm:px-3 sm:py-2 rounded-xl sm:rounded-2xl overflow-hidden",
-          "bg-gradient-to-r from-slate-900/90 to-slate-800/90",
-          "border-2 shadow-lg transition-all duration-300",
-          weather === 'rainbow' ? "border-pink-500/30 shadow-pink-500/10" :
-          weather === 'sunny' ? "border-amber-500/30 shadow-amber-500/10" :
-          weather === 'rainy' ? "border-blue-500/30 shadow-blue-500/10" :
-          weather === 'stormy' ? "border-purple-500/30 shadow-purple-500/10" :
-          "border-slate-500/30 shadow-slate-500/10"
-        )}>
-          {/* Weather icon */}
-          <div className={cn(
-            "w-7 h-7 sm:w-9 sm:h-9 rounded-md sm:rounded-lg flex items-center justify-center",
-            `bg-gradient-to-br ${currentWeather.bgColor}`,
-            "shadow-md border border-white/20"
-          )}>
-            <span className="text-base sm:text-lg drop-shadow-md">{currentWeather.effect}</span>
-          </div>
-
-          {/* Weather info - Hidden label on very small screens */}
-          <div className="flex flex-col">
-            <span className="text-[10px] sm:text-xs font-bold text-white">
-              {currentWeather.label}
-            </span>
-            <span className={cn(
-              "text-[9px] sm:text-[10px] font-medium hidden xs:block",
-              weather === 'rainbow' ? "text-pink-400" :
-              weather === 'sunny' ? "text-amber-400" :
-              weather === 'rainy' ? "text-blue-400" :
-              weather === 'stormy' ? "text-purple-400" :
-              "text-slate-400"
-            )}>
-              {currentWeather.bonus}
-            </span>
-          </div>
-        </div>
+        <EnergySelector />
       </div>
     </>
   )

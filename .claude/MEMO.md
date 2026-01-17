@@ -1,8 +1,8 @@
 # Habit Garden - Project Memo
 
-> **Last Updated**: 2026-01-15
+> **Last Updated**: 2026-01-17
 > **Current Phase**: Phase 4 - Polish & Launch (IN PROGRESS)
-> **Last Session**: Fix Overview Plant Icons
+> **Last Session**: Mood → Energy System Redesign
 
 ---
 
@@ -31,10 +31,115 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 - Optimistic Updates - UI updates instantly when watering, syncs with server in background
 - XP Update Fixed - Removed RPC dependency, direct profile table update + auto-sync
 - **NEW: Overview Plant Icons Fixed** - Stats garden now displays correct plant icons
+- **NEW: Energy System** - Track daily energy (1-4), adjusts goal targets accordingly (replaces old Mood system)
+- **NEW: Goal Progress Charts** - Goal Master style charts and timeline
+- **NEW: Goal Wizard Redesign** - Garden-themed wizard with manual target editing
+- **NEW: Weeds System** - Weeds grow when not checking in, tap to clear for XP
+- **NEW: Goal Modification** - Modify goals mid-way with before/after comparison
 
 ---
 
 ## Recent Changes (Latest First)
+
+### 2026-01-17: Mood → Energy System Redesign
+**Problem**: Mood system was gamification-focused (XP bonuses) instead of useful for habit tracking. Users chose "stormy" to farm XP, not reflecting actual state.
+
+**Solution**: Redesigned as **Energy Tracking** - tracks capacity/energy level, adjusts goal targets accordingly.
+
+| Energy Level | Target Adjustment | Use Case |
+|--------------|-------------------|----------|
+| ⚡⚡⚡⚡ Full | 100% target | Ready to crush it |
+| ⚡⚡⚡ Good | 85% target | Feeling capable |
+| ⚡⚡ Low | 60% target | Taking it easy |
+| 🔋 Rest | Check-in only | Just show up |
+
+**Key Changes:**
+| File | Change |
+|------|--------|
+| `src/lib/energy-system.ts` | NEW - Energy types, target adjustments (NO XP bonuses) |
+| `src/lib/actions/energy.ts` | NEW - Server actions + pattern insights |
+| `src/lib/context/energy-context.tsx` | NEW - EnergyProvider with optimistic updates |
+| `src/components/energy/energy-selector.tsx` | NEW - Bottom sheet with energy bars UI |
+| `src/components/game-ui/game-hud.tsx` | UPDATED - Uses EnergySelector |
+| `src/app/(dashboard)/providers.tsx` | UPDATED - Uses EnergyProvider |
+| `src/app/(dashboard)/layout.tsx` | UPDATED - Fetches initialEnergy |
+| Supabase | NEW table `energy_logs` |
+
+**Removed files:**
+- `src/lib/mood-system.ts`
+- `src/lib/actions/mood.ts`
+- `src/lib/context/mood-context.tsx`
+- `src/components/mood/*`
+
+**Benefits:**
+- No wrong incentives (no XP bonus for low energy)
+- Self-compassion built-in (rest days count)
+- Useful patterns (weekday averages, trends)
+- Integrates with goals (adjusted targets)
+
+---
+
+### 2026-01-16: Goal UI/UX Redesign (Major Update)
+**Inspired by**: Goal Master app + Garden metaphors
+**Theme**: "Gần gũi nhưng mạnh mẽ" (Approachable yet Powerful)
+
+**Phase 1: Goal Progress Chart** ✅
+| File | Change |
+|------|--------|
+| `src/components/goals/goal-progress-chart.tsx` | NEW - Visual bar chart with plant growth icons on Y-axis |
+| `src/components/goals/goal-timeline.tsx` | NEW - Week-by-week timeline in Goal Master format |
+| `src/components/goals/goal-week-card.tsx` | NEW - Single week card with daily breakdown |
+| `src/components/goals/goal-stats.tsx` | UPDATED - Tabs layout, integrated new chart components |
+
+**Phase 2: Energy System** ✅ (Originally Mood, redesigned 2026-01-17)
+See "2026-01-17: Mood → Energy System Redesign" above for details.
+
+**Phase 3: Goal Wizard Redesign** ✅
+| File | Change |
+|------|--------|
+| `src/components/goals/goal-setup-wizard.tsx` | REWRITTEN - Garden theme, visual curve selector, Goal Master preview format |
+| `src/types/database.ts` | UPDATED - Added weekly_targets to CreateGoalDto |
+| `src/lib/actions/goals.ts` | UPDATED - Support custom weekly_targets |
+
+**Wizard Features:**
+- Garden-themed steps (Seed → Target → Growth → Preview)
+- Seed Types: Capacity Seed (📈) vs Accumulator Seed (🎯)
+- Growth Curves: Steady, S-Curve, Step, Quick Start, Slow Burn
+- Duration slider with plant growth markers (🌱🌿🌸🌳)
+- Manual target editing in preview
+- Goal Master format weekly targets list
+
+**Phase 4: Weeds System** ✅
+| File | Change |
+|------|--------|
+| `src/lib/actions/weeds.ts` | NEW - Weed actions (get/clear/clearAll/grow) |
+| `src/lib/context/weeds-context.tsx` | NEW - WeedsProvider with optimistic updates |
+| `src/components/weeds/weed-item.tsx` | NEW - Single weed with animations |
+| `src/components/weeds/plant-weeds.tsx` | NEW - Weeds container + Clear All button |
+| `src/types/database.ts` | UPDATED - Added weed fields to Plant interface |
+| `src/app/globals.css` | UPDATED - Added weed-sway, weed-clear, mood-glow animations |
+
+**Weeds Rules:**
+- 1 weed/day when not checking in (max 7)
+- Tap to clear each weed (+5 XP)
+- "Clear All" button when 3+ weeds
+- Weeds positioned around plant in circle
+
+**Phase 5: Goal Modification** ✅
+| File | Change |
+|------|--------|
+| `src/components/goals/goal-modify-modal.tsx` | NEW - Modal for adjusting goals |
+| `src/components/goals/goal-comparison.tsx` | NEW - Before/after comparison view |
+| `src/lib/actions/goals.ts` | UPDATED - Added modifyGoal() action |
+| `src/components/goals/index.ts` | UPDATED - Exported new components |
+
+**Modification Options:**
+- Increase Target: "I can do more!"
+- Decrease Target: "I need to be more realistic"
+- Extend Timeline: "I need more time"
+- Recalculate from Now: "Start fresh from current level"
+
+---
 
 ### 2026-01-15: Fix Overview Plant Icons Not Showing
 **Problem solved:** In Overview page, all plants displayed default 🌱 emoji instead of their actual icons (pumpkin, flower, tree, etc.), while Garden view showed them correctly.
