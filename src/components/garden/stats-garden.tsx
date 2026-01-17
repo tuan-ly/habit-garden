@@ -37,7 +37,7 @@ function MiniPlant({ watering }: { watering: WateringLogWithPlant }) {
   const icon = watering.plant?.plant_type?.icon || '🌱'
 
   return (
-    <div className="flex flex-col items-center justify-center transition-transform hover:scale-110">
+    <div className="flex flex-col items-center justify-center transition-transform hover:scale-110 origin-bottom -translate-y-[35%]">
       <span className="text-2xl sm:text-3xl drop-shadow-md">{icon}</span>
     </div>
   )
