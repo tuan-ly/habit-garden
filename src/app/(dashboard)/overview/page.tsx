@@ -101,9 +101,9 @@ export default function OverviewPage() {
   const canGoNext = navigateDate(currentDate, period, 'next') <= new Date()
 
   return (
-    <div className="h-full flex flex-col pb-24 sm:pb-28">
+    <div className="min-h-full flex flex-col">
       {/* Period selector tabs */}
-      <div className="flex justify-center py-2 px-2 bg-background/80 backdrop-blur-sm sticky top-0 z-10">
+      <div className="flex justify-center py-2 px-2 bg-background/80 backdrop-blur-sm sticky top-0 z-40">
         <div className="flex gap-0.5 sm:gap-1 p-0.5 sm:p-1 rounded-lg bg-muted/50">
           {(['day', 'week', 'month', 'year'] as Period[]).map((p) => (
             <button
@@ -149,34 +149,9 @@ export default function OverviewPage() {
         </Button>
       </div>
 
-      {/* Garden visualization */}
-      <div className="flex-1 min-h-[300px] relative">
-        {isPending ? (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
-          </div>
-        ) : stats ? (
-          <StatsGarden
-            waterings={stats.waterings}
-            weather={stats.weather}
-            maxDisplay={period === 'year' ? 100 : period === 'month' ? 50 : 30}
-          />
-        ) : (
-          <div className="h-full flex items-center justify-center">
-            <div className="text-center p-6 max-w-xs">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-3 rounded-xl sm:rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                <span className="text-2xl sm:text-3xl">📊</span>
-              </div>
-              <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400">No data available</p>
-              <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-500 mt-1">Start watering your plants to see activity here</p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Stats summary */}
+      {/* Stats summary - Moved to top */}
       {stats && (
-        <div className="px-2 sm:px-4 py-2 sm:py-3 border-t bg-background/80 backdrop-blur-sm transition-all animate-in slide-in-from-bottom-4">
+        <div className="px-2 sm:px-4 py-2 sm:py-3 border-b bg-background/50 backdrop-blur-sm transition-all animate-in slide-in-from-top-4">
           <div className="flex justify-center gap-4 sm:gap-6">
             <div className="flex items-center gap-1.5 sm:gap-2">
               <Droplets className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
@@ -204,6 +179,31 @@ export default function OverviewPage() {
           </div>
         </div>
       )}
+
+      {/* Garden visualization */}
+      <div className="flex-1 min-h-[300px] relative">
+        {isPending ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
+          </div>
+        ) : stats ? (
+          <StatsGarden
+            waterings={stats.waterings}
+            weather={stats.weather}
+            maxDisplay={period === 'year' ? 100 : period === 'month' ? 50 : 30}
+          />
+        ) : (
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center p-6 max-w-xs">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-3 rounded-xl sm:rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                <span className="text-2xl sm:text-3xl">📊</span>
+              </div>
+              <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400">No data available</p>
+              <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-500 mt-1">Start watering your plants to see activity here</p>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

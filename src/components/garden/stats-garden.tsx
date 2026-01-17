@@ -138,12 +138,15 @@ export function StatsGarden({
   }
 
   return (
-    <div className="relative w-full h-full flex flex-col overflow-hidden">
+    <div className="relative w-full min-h-[500px] flex flex-col">
       {/* Sky background - contained within this component */}
       <GardenSky weather={weather} contained />
 
       {/* Garden container - above sky */}
-      <div className="flex-1 flex items-center justify-center py-2 overflow-auto relative z-10">
+      <div
+        className="flex-1 flex items-center justify-center py-8 overflow-x-auto overflow-y-visible relative z-10 custom-scrollbar"
+        style={{ minHeight: containerHeight + 100 }}
+      >
         <div
           className="relative"
           style={{
