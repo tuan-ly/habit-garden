@@ -122,6 +122,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -133,10 +134,13 @@
 
 /* Seed state - buried underground, subtle pulse */
 @keyframes seed-pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(0.6);
     opacity: 0.7;
   }
+
   50% {
     transform: scale(0.65);
     opacity: 0.85;
@@ -149,9 +153,11 @@
     transform: translateY(10px) scale(0.7);
     opacity: 0.6;
   }
+
   50% {
     transform: translateY(-2px) scale(0.85);
   }
+
   100% {
     transform: translateY(0) scale(0.8);
     opacity: 1;
@@ -160,9 +166,12 @@
 
 /* Growing state - gentle sway */
 @keyframes plant-sway {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: rotate(-2deg) scale(0.9);
   }
+
   50% {
     transform: rotate(2deg) scale(0.92);
   }
@@ -170,10 +179,13 @@
 
 /* Blooming state - ready to mature */
 @keyframes plant-bloom {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(0.95);
     filter: brightness(1);
   }
+
   50% {
     transform: scale(1);
     filter: brightness(1.1);
@@ -182,10 +194,13 @@
 
 /* Mature state - full grown, gentle breathing */
 @keyframes mature-breathe {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
     filter: drop-shadow(0 0 0 transparent);
   }
+
   50% {
     transform: scale(1.02);
     filter: drop-shadow(0 2px 8px rgba(34, 197, 94, 0.3));
@@ -194,11 +209,14 @@
 
 /* Wilting animation - drooping and fading */
 @keyframes plant-wilt {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: rotate(-5deg) scale(0.95);
     opacity: 0.7;
     filter: saturate(0.5);
   }
+
   50% {
     transform: rotate(-8deg) scale(0.93);
     opacity: 0.6;
@@ -213,6 +231,7 @@
     opacity: 1;
     filter: grayscale(0);
   }
+
   100% {
     transform: scale(0.9) rotate(-10deg);
     opacity: 0.5;
@@ -226,10 +245,12 @@
     transform: scale(0);
     opacity: 1;
   }
+
   50% {
     transform: scale(1.5);
     opacity: 0.7;
   }
+
   100% {
     transform: scale(2);
     opacity: 0;
@@ -242,9 +263,11 @@
     transform: translateY(-20px);
     opacity: 0;
   }
+
   20% {
     opacity: 1;
   }
+
   100% {
     transform: translateY(30px);
     opacity: 0;
@@ -256,10 +279,12 @@
   0% {
     transform: scale(1);
   }
+
   50% {
     transform: scale(1.2);
     filter: brightness(1.3);
   }
+
   100% {
     transform: scale(1);
   }
@@ -267,10 +292,13 @@
 
 /* Sparkle effect for achievements/milestones */
 @keyframes sparkle {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0;
     transform: scale(0) rotate(0deg);
   }
+
   50% {
     opacity: 1;
     transform: scale(1) rotate(180deg);
@@ -283,6 +311,7 @@
     transform: translateY(0) translateX(0);
     opacity: 1;
   }
+
   100% {
     transform: translateY(-40px) translateX(10px);
     opacity: 0;
@@ -295,10 +324,12 @@
     transform: translateY(0) scale(0);
     opacity: 0;
   }
+
   50% {
     transform: translateY(-10px) scale(1.2);
     opacity: 1;
   }
+
   100% {
     transform: translateY(-30px) scale(1);
     opacity: 0;
@@ -391,12 +422,16 @@
 
 /* Bamboo - Fast growing burst effect */
 @keyframes bamboo-grow {
-  0%, 90% {
+
+  0%,
+  90% {
     transform: scaleY(1);
   }
+
   95% {
     transform: scaleY(1.15);
   }
+
   100% {
     transform: scaleY(1.1);
   }
@@ -409,10 +444,13 @@
 
 /* Sunflower - Sun tracking rotation */
 @keyframes sunflower-track {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: rotate(-5deg);
     filter: brightness(1);
   }
+
   50% {
     transform: rotate(5deg);
     filter: brightness(1.15);
@@ -429,6 +467,7 @@
     transform: translateY(0) translateX(0) rotate(0deg);
     opacity: 1;
   }
+
   100% {
     transform: translateY(50px) translateX(30px) rotate(360deg);
     opacity: 0;
@@ -441,9 +480,12 @@
 
 /* Cactus - Drought resistant glow */
 @keyframes cactus-resilient {
-  0%, 100% {
+
+  0%,
+  100% {
     filter: drop-shadow(0 0 0 transparent);
   }
+
   50% {
     filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.4));
   }
@@ -458,6 +500,7 @@
   0% {
     box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
   }
+
   100% {
     box-shadow: 0 0 0 15px rgba(59, 130, 246, 0);
   }
@@ -470,10 +513,13 @@
 
 /* Rose - Blooming heart pulse */
 @keyframes rose-pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
     filter: hue-rotate(0deg);
   }
+
   50% {
     transform: scale(1.05);
     filter: hue-rotate(10deg);
@@ -486,10 +532,13 @@
 
 /* Bonsai - Zen breathing */
 @keyframes bonsai-zen {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
     opacity: 1;
   }
+
   50% {
     transform: scale(1.01);
     opacity: 0.95;
@@ -502,15 +551,20 @@
 
 /* Money Tree - Coin shimmer */
 @keyframes money-shimmer {
-  0%, 100% {
+
+  0%,
+  100% {
     filter: brightness(1);
   }
+
   25% {
     filter: brightness(1.2);
   }
+
   50% {
     filter: brightness(1);
   }
+
   75% {
     filter: brightness(1.15);
   }
@@ -526,9 +580,12 @@
 
 /* Sunny day glow */
 @keyframes sunny-glow {
-  0%, 100% {
+
+  0%,
+  100% {
     filter: brightness(1.05) saturate(1.1);
   }
+
   50% {
     filter: brightness(1.15) saturate(1.2);
   }
@@ -540,9 +597,12 @@
 
 /* Rainy effect - enhanced growth */
 @keyframes rainy-shimmer {
-  0%, 100% {
+
+  0%,
+  100% {
     filter: brightness(0.95) contrast(1.05);
   }
+
   50% {
     filter: brightness(1) contrast(1.1);
   }
@@ -554,12 +614,16 @@
 
 /* Stormy - shake effect */
 @keyframes stormy-shake {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateX(0);
   }
+
   25% {
     transform: translateX(-2px);
   }
+
   75% {
     transform: translateX(2px);
   }
@@ -571,8 +635,13 @@
 
 /* Rainbow - color shift */
 @keyframes rainbow-shift {
-  0% { filter: hue-rotate(0deg) brightness(1.1); }
-  100% { filter: hue-rotate(360deg) brightness(1.1); }
+  0% {
+    filter: hue-rotate(0deg) brightness(1.1);
+  }
+
+  100% {
+    filter: hue-rotate(360deg) brightness(1.1);
+  }
 }
 
 .weather-rainbow {
@@ -589,13 +658,16 @@
     transform: scale(0) rotate(-180deg);
     opacity: 0;
   }
+
   50% {
     transform: scale(1.2) rotate(10deg);
     opacity: 1;
   }
+
   75% {
     transform: scale(0.9) rotate(-5deg);
   }
+
   100% {
     transform: scale(1) rotate(0deg);
     opacity: 1;
@@ -613,10 +685,12 @@
     opacity: 0;
     filter: brightness(2);
   }
+
   30% {
     transform: scale(1.3);
     opacity: 1;
   }
+
   100% {
     transform: scale(1);
     filter: brightness(1);
@@ -632,6 +706,7 @@
   0% {
     width: var(--xp-from, 0%);
   }
+
   100% {
     width: var(--xp-to, 100%);
   }
@@ -643,10 +718,13 @@
 
 /* Streak fire effect */
 @keyframes streak-fire {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1) translateY(0);
     filter: brightness(1);
   }
+
   50% {
     transform: scale(1.1) translateY(-2px);
     filter: brightness(1.2);
@@ -667,6 +745,7 @@
     opacity: 0;
     transform: translateX(-50%) translateY(5px);
   }
+
   100% {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
@@ -682,6 +761,7 @@
   0% {
     transform: translateX(-20px);
   }
+
   100% {
     transform: translateX(20px);
   }
@@ -693,9 +773,12 @@
 
 /* Star twinkle animation */
 @keyframes twinkle {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0.3;
   }
+
   50% {
     opacity: 1;
   }
@@ -711,9 +794,11 @@
     transform: translateY(-20px);
     opacity: 0;
   }
+
   10% {
     opacity: 1;
   }
+
   100% {
     transform: translateY(100vh);
     opacity: 0;
@@ -722,25 +807,34 @@
 
 .animate-rain-drop {
   animation: rain-drop 1s linear infinite;
+  animation-fill-mode: backwards;
 }
 
 /* Lightning flash animation */
 @keyframes lightning-flash {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0;
   }
-  10%, 90% {
+
+  10%,
+  90% {
     opacity: 0;
   }
+
   11% {
     opacity: 0.8;
   }
+
   13% {
     opacity: 0;
   }
+
   14% {
     opacity: 0.6;
   }
+
   50% {
     opacity: 0;
   }
@@ -752,9 +846,12 @@
 
 /* Tile hover pulse */
 @keyframes tile-pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
   }
+
   50% {
     transform: scale(1.05);
   }
@@ -775,10 +872,13 @@
 
 /* Slow pulse for glowing backgrounds */
 @keyframes pulse-slow {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0.4;
     transform: scale(1.4);
   }
+
   50% {
     opacity: 0.6;
     transform: scale(1.6);
@@ -804,6 +904,7 @@
   0% {
     background-position: -200% center;
   }
+
   100% {
     background-position: 200% center;
   }
@@ -845,9 +946,12 @@
 
 /* Bounce animation for icons */
 @keyframes bounce-subtle {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-2px);
   }
@@ -859,9 +963,12 @@
 
 /* Glow ring for important status */
 @keyframes glow-ring {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
   }
+
   50% {
     box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
   }
@@ -873,12 +980,16 @@
 
 /* Float animation for decorative elements */
 @keyframes float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0) rotate(0deg);
   }
+
   25% {
     transform: translateY(-5px) rotate(2deg);
   }
+
   75% {
     transform: translateY(3px) rotate(-2deg);
   }
@@ -902,6 +1013,7 @@
     transform: scale(0);
     opacity: 0.8;
   }
+
   100% {
     transform: scale(3);
     opacity: 0;
@@ -922,14 +1034,17 @@
     transform: translateY(-8px) scale(0.8);
     opacity: 0;
   }
+
   15% {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+
   85% {
     opacity: 0.8;
     transform: translateY(20px) scale(0.9);
   }
+
   100% {
     transform: translateY(28px) scale(0.6);
     opacity: 0;
@@ -938,9 +1053,12 @@
 
 /* Watering can wobble */
 @keyframes watering-can-wobble {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: rotate(-10deg);
   }
+
   50% {
     transform: rotate(-20deg);
   }
@@ -948,10 +1066,13 @@
 
 /* Water stream from can */
 @keyframes water-stream {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0.7;
     transform: scaleY(1);
   }
+
   50% {
     opacity: 1;
     transform: scaleY(1.1);
@@ -1003,9 +1124,12 @@
 
 /* Bottom nav icon bounce on tap */
 @keyframes nav-bounce {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
   }
+
   50% {
     transform: scale(0.9);
   }
@@ -1021,6 +1145,7 @@
     transform: translateY(100%);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;
@@ -1037,9 +1162,11 @@
     transform: scale(0.8);
     opacity: 0;
   }
+
   50% {
     transform: scale(1.05);
   }
+
   100% {
     transform: scale(1);
     opacity: 1;
@@ -1052,10 +1179,13 @@
 
 /* Glow pulse for active nav items */
 @keyframes glow-pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
     opacity: 0.5;
   }
+
   50% {
     box-shadow: 0 0 20px currentColor, 0 0 30px currentColor;
     opacity: 0.8;
@@ -1071,9 +1201,11 @@
   0% {
     transform: scale(1);
   }
+
   50% {
     transform: scale(0.95);
   }
+
   100% {
     transform: scale(1);
   }
@@ -1085,9 +1217,12 @@
 
 /* Floating animation for decorative elements */
 @keyframes gentle-float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px);
   }
+
   50% {
     transform: translateY(-8px);
   }
@@ -1103,6 +1238,7 @@
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1118,7 +1254,9 @@
   0% {
     left: -100%;
   }
-  50%, 100% {
+
+  50%,
+  100% {
     left: 100%;
   }
 }
@@ -1135,12 +1273,10 @@
   left: -100%;
   width: 50%;
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.3),
-    transparent
-  );
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.3),
+      transparent);
   animation: shine 3s infinite;
 }
 
@@ -1156,7 +1292,9 @@
 
 /* Ping animation for notifications */
 @keyframes ping-slow {
-  75%, 100% {
+
+  75%,
+  100% {
     transform: scale(2);
     opacity: 0;
   }
@@ -1172,6 +1310,7 @@
     transform: scale(0);
     opacity: 0.5;
   }
+
   100% {
     transform: scale(4);
     opacity: 0;
@@ -1200,35 +1339,40 @@
 
 /* Gradient border animation */
 @keyframes gradient-border {
-  0%, 100% {
+
+  0%,
+  100% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
 }
 
 .gradient-border {
-  background: linear-gradient(
-    90deg,
-    #22c55e,
-    #10b981,
-    #0ea5e9,
-    #8b5cf6,
-    #22c55e
-  );
+  background: linear-gradient(90deg,
+      #22c55e,
+      #10b981,
+      #0ea5e9,
+      #8b5cf6,
+      #22c55e);
   background-size: 300% 300%;
   animation: gradient-border 4s ease infinite;
 }
 
 /* Icon wiggle on hover */
 @keyframes wiggle {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: rotate(0deg);
   }
+
   25% {
     transform: rotate(-5deg);
   }
+
   75% {
     transform: rotate(5deg);
   }
@@ -1265,9 +1409,12 @@
 
 /* Weed sway animation */
 @keyframes weed-sway {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: rotate(-3deg);
   }
+
   50% {
     transform: rotate(3deg);
   }
@@ -1283,9 +1430,11 @@
     transform: translateY(0) scale(1);
     opacity: 1;
   }
+
   50% {
     transform: translateY(-10px) scale(1.2);
   }
+
   100% {
     transform: translateY(-30px) scale(0);
     opacity: 0;
@@ -1298,9 +1447,12 @@
 
 /* Mood selection glow */
 @keyframes mood-glow {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 0 0 var(--mood-color, rgba(34, 197, 94, 0.4));
   }
+
   50% {
     box-shadow: 0 0 20px 5px var(--mood-color, rgba(34, 197, 94, 0.4));
   }
@@ -1316,6 +1468,7 @@
     opacity: 0;
     transform: translateX(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -1328,9 +1481,12 @@
 
 /* Target hit celebration */
 @keyframes target-hit {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
   }
+
   50% {
     transform: scale(1.1);
   }

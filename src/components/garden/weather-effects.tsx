@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import type { WeatherType } from '@/types/database'
 
@@ -13,6 +13,17 @@ interface WeatherEffectsProps {
 
 export function WeatherEffects({ weather, className, contained }: WeatherEffectsProps) {
     const [showLightning, setShowLightning] = useState(false)
+
+    const rainDrops = useMemo(() => {
+        if (weather !== 'rainy' && weather !== 'stormy') return [];
+        const count = weather === 'stormy' ? 80 : 30;
+        return Array.from({ length: count }).map((_, i) => ({
+            id: i,
+            left: `${Math.random() * 100}%`,
+            delay: `${Math.random() * 2}s`,
+            duration: `${(weather === 'stormy' ? 0.3 : 0.6) + Math.random() * 0.4}s`,
+        }));
+    }, [weather]);
 
     // Lightning effect logic
     useEffect(() => {
@@ -62,24 +73,20 @@ export function WeatherEffects({ weather, className, contained }: WeatherEffects
             className
         )}>
             {/* Rain drops animation */}
-            {(weather === 'rainy' || weather === 'stormy') && (
-                <div className="absolute inset-0 w-full h-full">
-                    {Array.from({ length: weather === 'stormy' ? 80 : 30 }).map((_, i) => (
-                        <div
-                            key={i}
-                            className={cn(
-                                "absolute w-0.5 animate-rain-drop",
-                                weather === 'stormy' ? "h-8 bg-slate-400/60" : "h-5 bg-blue-300/50"
-                            )}
-                            style={{
-                                left: `${Math.random() * 100}%`,
-                                animationDelay: `${Math.random() * 2}s`,
-                                animationDuration: `${(weather === 'stormy' ? 0.3 : 0.6) + Math.random() * 0.4}s`,
-                            }}
-                        />
-                    ))}
-                </div>
-            )}
+            {rainDrops.map((drop) => (
+                <div
+                    key={drop.id}
+                    className={cn(
+                        "absolute w-0.5 animate-rain-drop opacity-0",
+                        weather === 'stormy' ? "h-8 bg-slate-400/60" : "h-5 bg-blue-300/50"
+                    )}
+                    style={{
+                        left: drop.left,
+                        animationDelay: drop.delay,
+                        animationDuration: drop.duration,
+                    }}
+                />
+            ))}
 
             {/* Lightning Effect for Stormy */}
             {weather === 'stormy' && (
