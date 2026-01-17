@@ -2,7 +2,7 @@
 
 > **Last Updated**: 2026-01-17
 > **Current Phase**: Phase 4 - Polish & Launch (IN PROGRESS)
-> **Last Session**: Visual Polish & Weather Effects
+> **Last Session**: UI/UX Refinement & Layout Optimization
 
 ---
 
@@ -36,10 +36,63 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 - **NEW: Goal Wizard Redesign** - Garden-themed wizard with manual target editing
 - **NEW: Weeds System** - Weeds grow when not checking in, tap to clear for XP
 - **NEW: Goal Modification** - Modify goals mid-way with before/after comparison
+- **NEW: Adaptive Layout & Navigation** - Fixed navigation sizing and global scrolling strategy to prevent content overlap.
+- **NEW: Bottom HUD Info Bar** - Plant details moved to fixed bottom position above navigation.
 
 ---
 
 ## Recent Changes (Latest First)
+
+### 2026-01-17: Overview Page Immersive Redesign
+**Goal**: Transform the Overview page into a premium, immersive visualization with full-screen effects.
+
+**Visual Updates:**
+- **Full-Screen Sky & Weather**: 
+  - Extended the sky background to cover the entire viewport (`skyContained={false}`).
+  - Integrated full-screen weather animations (rain, lightning) into the `StatsGarden` visualization.
+- **Glassmorphism UI Overlays**:
+  - Replaced solid headers with a floating **Main Controls Capsule** (Period Selector + Date Nav) featuring `backdrop-blur-xl` and subtle glow effects.
+  - Redesigned statistical summaries into **Floating Cards** with color-coded glassmorphism accents and smooth zoom-in entry animations.
+- **Layout Depth**: 
+  - Adjusted z-index layering to ensure controls remain accessible above weather effects (`z-50`).
+  - Centered the garden island vertically within the full-height viewport for better balance.
+
+**Key Changes:**
+| File | Change |
+|------|--------|
+| `src/app/(dashboard)/overview/page.tsx` | UPDATED - Full-screen layout, transparent controls capsule, floating stat cards |
+| `src/components/garden/stats-garden.tsx` | UPDATED - Added `skyContained` and `className` props, integrated `WeatherEffects` |
+| `src/components/garden/garden-sky.tsx` | UPDATED - Support for `fixed` positioning when not contained |
+
+---
+
+### 2026-01-17: UI/UX Refinement & Layout Optimization
+**Goal**: Solve content overlap issues, improve navigation usability, and reorganize the Overview page.
+
+**Visual Updates:**
+- **Navigation Redesign**: 
+  - Increased icon and label sizes for `GameNav` to improve mobile usability.
+  - Enhanced active state with scaling (`scale-110`) and glow effects.
+- **Global Layout Fix**: 
+  - Switched main layout to use `h-dvh` (Dynamic Viewport Height) for better mobile browser support.
+  - Implemented `overflow-y-auto` on the main content area with `pb-32` padding to ensure no content is hidden behind the fixed bottom menu.
+- **Plant Info Bar Repositioning**: 
+  - Moved the floating tooltip from the top to a **fixed bottom position** (`bottom-20` / `bottom-28`).
+  - This creates a cleaner "HUD" effect and prevents the info bar from obscuring garden plants.
+- **Overview Page Reorganization**:
+  - Moved **Stats Summary** (Water/Plants/XP) to the top of the page for immediate visibility.
+  - Updated **Stats Garden** to reflect the dominant weather of the selected period.
+  - Fixed z-index layering (`z-40`) for sticky headers to ensure they float above scrolling content.
+
+| File | Change |
+|------|--------|
+| `src/app/(dashboard)/layout.tsx` | UPDATED - Global scrolling strategy and padding |
+| `src/components/game-ui/game-nav.tsx` | UPDATED - Sizing and active state animations |
+| `src/components/garden/plant-tooltip.tsx` | UPDATED - Fixed bottom positioning for Info Bar |
+| `src/app/(dashboard)/overview/page.tsx` | UPDATED - Reordered stats summary, fixed sticky header |
+| `src/components/garden/stats-garden.tsx` | UPDATED - Dynamic sizing and weather integration |
+
+---
 
 ### 2026-01-17: Visual Polish - Tile & Plant Alignment
 **Goal**: Fix visual inconsistencies in the garden view.

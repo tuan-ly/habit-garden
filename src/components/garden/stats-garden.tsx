@@ -143,7 +143,7 @@ export function StatsGarden({
   }
 
   return (
-    <div className={cn("relative w-full min-h-[500px] flex flex-col", className)}>
+    <div className={cn("relative w-full min-h-0 flex flex-col", className)}>
       {/* Sky background - contained within this component */}
       <GardenSky weather={weather} contained={skyContained} />
 
