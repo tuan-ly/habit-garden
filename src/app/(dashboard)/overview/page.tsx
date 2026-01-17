@@ -102,88 +102,91 @@ export default function OverviewPage() {
 
   return (
     <div className="min-h-full flex flex-col">
-      {/* Period selector tabs */}
-      <div className="flex justify-center py-2 px-2 bg-background/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="flex gap-0.5 sm:gap-1 p-0.5 sm:p-1 rounded-lg bg-muted/50">
-          {(['day', 'week', 'month', 'year'] as Period[]).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={cn(
-                'px-2.5 py-1 sm:px-4 sm:py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all',
-                period === p
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              {p.charAt(0).toUpperCase() + p.slice(1)}
-            </button>
-          ))}
+      {/* Header section with controls and stats */}
+      <div className="bg-background/80 backdrop-blur-md border-b sticky top-0 z-40 transition-all">
+        {/* Period selector tabs */}
+        <div className="flex justify-center py-2 px-2">
+          <div className="flex gap-0.5 sm:gap-1 p-0.5 sm:p-1 rounded-lg bg-muted/50">
+            {(['day', 'week', 'month', 'year'] as Period[]).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={cn(
+                  'px-2.5 py-1 sm:px-4 sm:py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all',
+                  period === p
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                {p.charAt(0).toUpperCase() + p.slice(1)}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Date navigation */}
-      <div className="flex items-center justify-center gap-1 sm:gap-2 py-2 px-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 sm:h-10 sm:w-10"
-          onClick={handlePrevious}
-          disabled={isPending}
-        >
-          <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
-        </Button>
+        {/* Date navigation */}
+        <div className="flex items-center justify-center gap-1 sm:gap-2 py-2 px-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 sm:h-10 sm:w-10"
+            onClick={handlePrevious}
+            disabled={isPending}
+          >
+            <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+          </Button>
 
-        <span className="text-sm sm:text-lg font-semibold min-w-40 sm:min-w-50 text-center">
-          {formatPeriodDisplay(period, currentDate)}
-        </span>
+          <span className="text-sm sm:text-lg font-semibold min-w-40 sm:min-w-50 text-center">
+            {formatPeriodDisplay(period, currentDate)}
+          </span>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 sm:h-10 sm:w-10"
-          onClick={handleNext}
-          disabled={isPending || !canGoNext}
-        >
-          <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
-        </Button>
-      </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 sm:h-10 sm:w-10"
+            onClick={handleNext}
+            disabled={isPending || !canGoNext}
+          >
+            <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
+          </Button>
+        </div>
 
-      {/* Stats summary - Moved to top */}
-      {stats && (
-        <div className="px-2 sm:px-4 py-2 sm:py-3 border-b bg-background/50 backdrop-blur-sm transition-all animate-in slide-in-from-top-4">
-          <div className="flex justify-center gap-4 sm:gap-6">
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <Droplets className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
-              <div>
-                <p className="text-base sm:text-lg font-bold">{stats.totalWaterings}</p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Waterings</p>
+        {/* Stats summary */}
+        {stats && (
+          <div className="px-2 sm:px-4 py-2 sm:py-3 animate-in fade-in slide-in-from-top-2 duration-500">
+            <div className="flex justify-center gap-4 sm:gap-8">
+              <div className="flex flex-col items-center gap-0.5">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <Droplets className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
+                  <p className="text-base sm:text-xl font-bold">{stats.totalWaterings}</p>
+                </div>
+                <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">Waterings</p>
               </div>
-            </div>
 
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <TreeDeciduous className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
-              <div>
-                <p className="text-base sm:text-lg font-bold">{stats.uniquePlants}</p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Plants</p>
+              <div className="flex flex-col items-center gap-0.5">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <TreeDeciduous className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
+                  <p className="text-base sm:text-xl font-bold">{stats.uniquePlants}</p>
+                </div>
+                <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">Plants</p>
               </div>
-            </div>
 
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500" />
-              <div>
-                <p className="text-base sm:text-lg font-bold">{stats.totalXp}</p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">XP</p>
+              <div className="flex flex-col items-center gap-0.5">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500" />
+                  <p className="text-base sm:text-xl font-bold">{stats.totalXp}</p>
+                </div>
+                <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">XP</p>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Garden visualization */}
-      <div className="flex-1 min-h-[300px] relative">
+      {/* Garden visualization area */}
+      <div className="flex-1 relative overflow-hidden">
         {isPending ? (
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center justify-center bg-background/20 backdrop-blur-sm z-50">
             <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
           </div>
         ) : stats ? (
@@ -191,6 +194,8 @@ export default function OverviewPage() {
             waterings={stats.waterings}
             weather={stats.weather}
             maxDisplay={period === 'year' ? 100 : period === 'month' ? 50 : 30}
+            className="h-full "
+            skyContained={true}
           />
         ) : (
           <div className="h-full flex items-center justify-center">

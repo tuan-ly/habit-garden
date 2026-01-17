@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import { GardenSky } from './garden-sky'
+import { WeatherEffects } from './weather-effects'
 import { GroundPlane } from './ground-plane'
 import type { WateringLogWithPlant } from '@/lib/actions/plants'
 import type { WeatherType } from '@/types/database'
@@ -12,6 +13,8 @@ interface StatsGardenProps {
   waterings: WateringLogWithPlant[]
   weather?: WeatherType | null
   maxDisplay?: number // Max trees to display (default 50)
+  className?: string
+  skyContained?: boolean
 }
 
 // Calculate grid size based on plant count
@@ -85,6 +88,8 @@ export function StatsGarden({
   waterings,
   weather,
   maxDisplay = 50,
+  className,
+  skyContained = true,
 }: StatsGardenProps) {
   const [tileSize, setTileSize] = useState(DEFAULT_TILE_SIZE)
 
@@ -138,9 +143,12 @@ export function StatsGarden({
   }
 
   return (
-    <div className="relative w-full min-h-[500px] flex flex-col">
+    <div className={cn("relative w-full min-h-[500px] flex flex-col", className)}>
       {/* Sky background - contained within this component */}
-      <GardenSky weather={weather} contained />
+      <GardenSky weather={weather} contained={skyContained} />
+
+      {/* Weather effects */}
+      {weather && <WeatherEffects weather={weather} contained={skyContained} />}
 
       {/* Garden container - above sky */}
       <div
@@ -174,19 +182,6 @@ export function StatsGarden({
             />
           ))}
         </div>
-      </div>
-
-      {/* Stats summary below garden */}
-      <div className="flex justify-center gap-4 mt-1 pb-1 text-sm text-muted-foreground relative z-10">
-        <span className="flex items-center gap-1">
-          <span className="text-blue-500">💧</span>
-          {waterings.length} waterings
-        </span>
-        {waterings.length > maxDisplay && (
-          <span className="text-xs opacity-70">
-            (showing {maxDisplay} of {waterings.length})
-          </span>
-        )}
       </div>
     </div>
   )
