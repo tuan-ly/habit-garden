@@ -9,7 +9,7 @@ import { GardenSky } from './garden-sky'
 import { TreesIcon, LayoutGrid, Plus } from 'lucide-react'
 import { GameHud } from '@/components/game-ui'
 import { cn } from '@/lib/utils'
-import { usePlants } from '@/lib/context'
+import { usePlants, useMood } from '@/lib/context'
 import type { PlantWithType, PlantType, WeatherType, Profile } from '@/types/database'
 
 type ViewMode = 'garden' | 'list'
@@ -23,7 +23,28 @@ interface GardenViewProps {
 export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
   // Get plants from context with optimistic updates
   const { plants } = usePlants()
-  
+  const { mood } = useMood()
+
+  // Map mood to weather
+  const moodWeather: WeatherType = (() => {
+    switch (mood) {
+      case 5: // Sunny
+        return 'sunny';
+      case 4: // Partly Cloudy
+        return 'cloudy';
+      case 3: // Cloudy
+        return 'cloudy';
+      case 2: // Rainy
+        return 'rainy';
+      case 1: // Stormy
+        return 'stormy';
+      default:
+        return 'sunny';
+    }
+  })();
+
+  const displayWeather = moodWeather;
+
   const [selectedPlant, setSelectedPlant] = useState<PlantWithType | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
@@ -58,7 +79,7 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
     return (
       <div className="h-full relative overflow-hidden">
         {/* Sky background */}
-        <GardenSky weather={weather} />
+        <GardenSky weather={displayWeather} />
 
         {/* Game HUD */}
         <GameHud profile={profile} />
@@ -68,7 +89,7 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
 
         <IsometricGarden
           plantTypes={plantTypes}
-          weather={weather}
+          weather={displayWeather}
         />
 
         <AddPlantDialog
@@ -83,7 +104,7 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
   return (
     <div className="h-full relative overflow-hidden">
       {/* Sky background - fills entire screen */}
-      {viewMode === 'garden' && <GardenSky weather={weather} />}
+      {viewMode === 'garden' && <GardenSky weather={displayWeather} />}
 
       {/* Game HUD - floating at top corners */}
       <GameHud profile={profile} />
@@ -99,7 +120,7 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
         <div className="h-full">
           <IsometricGarden
             plantTypes={plantTypes}
-            weather={weather}
+            weather={displayWeather}
           />
         </div>
       )}
