@@ -29,8 +29,8 @@ const SKY_GRADIENTS: Record<TimeOfDay, { from: string; via: string; to: string }
 const WEATHER_OVERLAYS: Record<WeatherType, { color: string; opacity: number }> = {
   sunny: { color: 'rgba(255, 236, 179, 0.15)', opacity: 0.15 },
   cloudy: { color: 'rgba(156, 163, 175, 0.25)', opacity: 0.25 },
-  rainy: { color: 'rgba(96, 165, 250, 0.2)', opacity: 0.2 },
-  stormy: { color: 'rgba(55, 65, 81, 0.35)', opacity: 0.35 },
+  rainy: { color: 'rgba(55, 65, 81, 0.35)', opacity: 0.35 }, // Darker grey (was stormy value)
+  stormy: { color: 'rgba(15, 23, 42, 0.6)', opacity: 0.6 }, // Very dark slate (much darker)
   rainbow: { color: 'rgba(252, 211, 77, 0.1)', opacity: 0.1 },
 }
 
@@ -58,7 +58,7 @@ export function GardenSky({ weather, className, contained }: GardenSkyProps) {
 
       {/* Sun or Moon */}
       {timeOfDay === 'day' ? (
-        <div className="absolute top-4 right-8">
+        <div className="absolute top-24 right-8">
           {weather === 'sunny' && (
             <div className="text-4xl animate-pulse">☀️</div>
           )}
@@ -79,7 +79,7 @@ export function GardenSky({ weather, className, contained }: GardenSkyProps) {
           )}
         </div>
       ) : (
-        <div className="absolute top-4 right-8">
+        <div className="absolute top-24 right-8">
           <div className="text-4xl">🌙</div>
           {/* Stars */}
           <div className="absolute top-0 left-[-60px] text-xs animate-twinkle">✨</div>
@@ -89,7 +89,7 @@ export function GardenSky({ weather, className, contained }: GardenSkyProps) {
       )}
 
       {/* Decorative clouds */}
-      {timeOfDay === 'day' && (weather === 'cloudy' || weather === 'rainy') && (
+      {timeOfDay === 'day' && (weather === 'cloudy' || weather === 'rainy' || weather === 'stormy') && (
         <>
           <div className="absolute top-8 left-[10%] text-2xl opacity-70 animate-cloud-drift">☁️</div>
           <div className="absolute top-12 left-[30%] text-xl opacity-50 animate-cloud-drift delay-1000">☁️</div>
@@ -97,22 +97,7 @@ export function GardenSky({ weather, className, contained }: GardenSkyProps) {
         </>
       )}
 
-      {/* Rain drops animation */}
-      {weather === 'rainy' && (
-        <div className="absolute inset-0 pointer-events-none">
-          {Array.from({ length: 20 }).map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-0.5 h-4 bg-blue-300/40 animate-rain-drop"
-              style={{
-                left: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 2}s`,
-                animationDuration: `${0.5 + Math.random() * 0.5}s`,
-              }}
-            />
-          ))}
-        </div>
-      )}
+
 
       {/* Decorative trees on sides - positioned above bottom nav */}
       <div className="absolute bottom-32 left-2 text-2xl opacity-40">🌲</div>

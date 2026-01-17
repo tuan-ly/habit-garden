@@ -724,6 +724,32 @@
   animation: rain-drop 1s linear infinite;
 }
 
+/* Lightning flash animation */
+@keyframes lightning-flash {
+  0%, 100% {
+    opacity: 0;
+  }
+  10%, 90% {
+    opacity: 0;
+  }
+  11% {
+    opacity: 0.8;
+  }
+  13% {
+    opacity: 0;
+  }
+  14% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.animate-lightning {
+  animation: lightning-flash 5s infinite;
+}
+
 /* Tile hover pulse */
 @keyframes tile-pulse {
   0%, 100% {

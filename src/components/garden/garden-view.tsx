@@ -6,6 +6,7 @@ import { PlantDetailSheet } from '@/components/plants/plant-detail-sheet'
 import { AddPlantDialog } from '@/components/plants/add-plant-dialog'
 import { IsometricGarden } from './isometric-garden'
 import { GardenSky } from './garden-sky'
+import { WeatherEffects } from './weather-effects'
 import { TreesIcon, LayoutGrid, Plus } from 'lucide-react'
 import { GameHud } from '@/components/game-ui'
 import { cn } from '@/lib/utils'
@@ -105,6 +106,9 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
     <div className="h-full relative overflow-hidden">
       {/* Sky background - fills entire screen */}
       {viewMode === 'garden' && <GardenSky weather={displayWeather} />}
+
+      {/* Weather Overlay - Renders on top of everything but below HUD */}
+      {viewMode === 'garden' && displayWeather && <WeatherEffects weather={displayWeather} />}
 
       {/* Game HUD - floating at top corners */}
       <GameHud profile={profile} />
