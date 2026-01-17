@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { StatsGarden } from '@/components/garden/stats-garden'
 import { getGardenStats, type GardenStatsData } from '@/lib/actions/plants'
+import { getTimeOfDay } from '@/components/garden/themes'
 
 type Period = 'day' | 'week' | 'month' | 'year'
 
@@ -201,6 +202,7 @@ export default function OverviewPage() {
             maxDisplay={period === 'year' ? 100 : period === 'month' ? 50 : 30}
             className="h-full"
             skyContained={false}
+            timeOfDay="day"
           />
         ) : (
           <div className="h-full flex items-center justify-center relative z-10">

@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import type { WeatherType } from '@/types/database'
 import { getTimeOfDay, type TimeOfDay } from './themes'
 
@@ -9,6 +9,8 @@ interface GardenSkyProps {
   className?: string
   /** If true, uses absolute positioning instead of fixed (for contained views like StatsGarden) */
   contained?: boolean
+  /** Force a specific time of day (optional) */
+  timeOfDay?: TimeOfDay
 }
 
 // Sky gradient colors based on time of day
@@ -34,9 +36,20 @@ const WEATHER_OVERLAYS: Record<WeatherType, { color: string; opacity: number }> 
   rainbow: { color: 'rgba(252, 211, 77, 0.1)', opacity: 0.1 },
 }
 
-export function GardenSky({ weather, className, contained }: GardenSkyProps) {
-  const timeOfDay = useMemo(() => getTimeOfDay(), [])
-  const skyGradient = SKY_GRADIENTS[timeOfDay]
+export function GardenSky({ weather, className, contained, timeOfDay: forcedTimeOfDay }: GardenSkyProps) {
+  const [currentTimeOfDay, setCurrentTimeOfDay] = useState<TimeOfDay>('day')
+
+  useEffect(() => {
+    if (!forcedTimeOfDay) {
+      setCurrentTimeOfDay(getTimeOfDay())
+      // Optional: Update periodically if it stays open
+      const interval = setInterval(() => setCurrentTimeOfDay(getTimeOfDay()), 60000)
+      return () => clearInterval(interval)
+    }
+  }, [forcedTimeOfDay])
+
+  const timeOfDay = forcedTimeOfDay || currentTimeOfDay
+  const skyGradient = useMemo(() => SKY_GRADIENTS[timeOfDay], [timeOfDay])
   const weatherOverlay = weather ? WEATHER_OVERLAYS[weather] : null
 
   return (

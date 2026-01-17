@@ -43,6 +43,25 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 
 ## Recent Changes (Latest First)
 
+### 2026-01-17: Stats Garden Sky Theme Fix
+**Goal**: Ensure the stats preview garden always looks bright and clear by forcing the daytime theme.
+
+**Changes:**
+- **GardenSky Component**: 
+  - Added support for `timeOfDay` prop (`day` | `night`).
+  - Improved hydration robustness using `useEffect` for client-side time calculation.
+  - Added auto-update interval (1 min) for dynamic time-of-day transitions.
+- **StatsGarden Component**: Added `timeOfDay` prop pass-through.
+- **Overview Page**: Forced `timeOfDay="day"` for the `StatsGarden` visualization to ensure statistics are always displayed against a bright, readable background.
+
+| File | Change |
+|------|--------|
+| `src/components/garden/garden-sky.tsx` | UPDATED - Added `timeOfDay` prop, useEffect for hydration, auto-sync |
+| `src/components/garden/stats-garden.tsx` | UPDATED - Added `timeOfDay` prop pass-through |
+| `src/app/(dashboard)/overview/page.tsx` | UPDATED - Forced `timeOfDay="day"` for `StatsGarden` |
+
+---
+
 ### 2026-01-17: Overview Page Immersive Redesign
 **Goal**: Transform the Overview page into a premium, immersive visualization with full-screen effects.
 

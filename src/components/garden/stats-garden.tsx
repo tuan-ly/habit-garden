@@ -6,6 +6,7 @@ import { WeatherEffects } from './weather-effects'
 import { GroundPlane } from './ground-plane'
 import type { WateringLogWithPlant } from '@/lib/actions/plants'
 import type { WeatherType } from '@/types/database'
+import type { TimeOfDay } from './themes'
 import { defaultTheme } from './themes'
 import { cn } from '@/lib/utils'
 
@@ -15,6 +16,7 @@ interface StatsGardenProps {
   maxDisplay?: number // Max trees to display (default 50)
   className?: string
   skyContained?: boolean
+  timeOfDay?: TimeOfDay
 }
 
 // Calculate grid size based on plant count
@@ -90,6 +92,7 @@ export function StatsGarden({
   maxDisplay = 50,
   className,
   skyContained = true,
+  timeOfDay,
 }: StatsGardenProps) {
   const [tileSize, setTileSize] = useState(DEFAULT_TILE_SIZE)
 
@@ -131,7 +134,7 @@ export function StatsGarden({
   if (waterings.length === 0) {
     return (
       <div className="relative w-full h-full flex flex-col overflow-hidden">
-        <GardenSky weather={weather} contained />
+        <GardenSky weather={weather} contained timeOfDay={timeOfDay} />
         <div className="flex-1 flex items-center justify-center relative z-10">
           <div className="text-center text-muted-foreground">
             <span className="text-4xl mb-2 block">🏜️</span>
@@ -145,7 +148,7 @@ export function StatsGarden({
   return (
     <div className={cn("relative w-full min-h-0 flex flex-col", className)}>
       {/* Sky background - contained within this component */}
-      <GardenSky weather={weather} contained={skyContained} />
+      <GardenSky weather={weather} contained={skyContained} timeOfDay={timeOfDay} />
 
       {/* Weather effects */}
       {weather && <WeatherEffects weather={weather} contained={skyContained} />}
