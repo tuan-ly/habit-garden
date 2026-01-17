@@ -41,6 +41,24 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 
 ## Recent Changes (Latest First)
 
+### 2026-01-17: Visual Polish - Tile & Plant Alignment
+**Goal**: Fix visual inconsistencies in the garden view.
+
+**Visual Updates:**
+- **Tile Border Fix**: Removed the white border highlight on the top-left and top-right edges of the `isometric-tile` (in `ground-plane.tsx`) which looked "unbeautiful".
+- **Plant Positioning**:
+  - Main Garden: Lowered plant position (`translate(0, 12%)`) in `isometric-plant.tsx` to align the plant base with the tile shadow/center.
+  - Stats Garden: Applied similar fix (`-translate-y-[35%]`, `origin-bottom`) to `stats-garden.tsx` to match the main garden aesthetic.
+
+**Key Changes:**
+| File | Change |
+|------|--------|
+| `src/components/garden/ground-plane.tsx` | FIXED - Removed white top border stroke |
+| `src/components/garden/isometric-plant.tsx` | FIXED - Adjusted vertical alignment (translate Y 12%) |
+| `src/components/garden/stats-garden.tsx` | FIXED - Aligned MiniPlant with tile center |
+
+---
+
 ### 2026-01-17: Visual Polish & Weather Effects
 **Goal**: Fix UI overlaps and enhance immersive weather effects.
 
