@@ -3,6 +3,7 @@
 import { PlantVisual } from '@/components/plants/plant-visual'
 import type { PlantWithType, WeatherType } from '@/types/database'
 import { cn } from '@/lib/utils'
+import { getPlantSizeScale } from '@/lib/utils/grid-positioning'
 
 interface IsometricPlantProps {
   plant: PlantWithType
@@ -12,8 +13,8 @@ interface IsometricPlantProps {
   className?: string
 }
 
-// Map growth percentage to a visual scale
-function getPlantScale(growthPercentage: number): number {
+// Map growth percentage to a visual scale (base scale)
+function getGrowthScale(growthPercentage: number): number {
   if (growthPercentage < 10) return 0.6 // Seed
   if (growthPercentage < 25) return 0.7 // Sprout
   if (growthPercentage < 50) return 0.8 // Early growing
@@ -29,8 +30,14 @@ export function IsometricPlant({
   scale = 1,
   className,
 }: IsometricPlantProps) {
-  const growthScale = getPlantScale(plant.growth_percentage)
-  const finalScale = scale * growthScale
+  // Base scale from growth stage
+  const growthScale = getGrowthScale(plant.growth_percentage)
+
+  // Multi-cell size multiplier (1x1→1.0x, 2x2→1.8x, 3x3→2.5x, etc.)
+  const gridSizeScale = getPlantSizeScale(plant.grid_size || 1)
+
+  // Combine all scale factors
+  const finalScale = scale * growthScale * gridSizeScale
 
   return (
     <div

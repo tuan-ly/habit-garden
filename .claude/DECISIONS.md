@@ -269,6 +269,69 @@ if (plantName.includes('cherry') || effect.type === 'cycle') {
 
 ---
 
+## 2026-01-17: Multi-Cell Plants Grid System
+
+**Status**: Accepted
+
+**Context**:
+User requested plants to occupy more space as they grow older, creating visual hierarchy and rewarding long-term consistency. Plants should expand from 1x1 to 2x2, 3x3, etc. over time.
+
+**Decision**:
+Implement grid-based positioning system where each plant tracks:
+- `grid_size`: Number of cells in one dimension (1, 2, 3, 4...)
+- `grid_row`, `grid_col`: Top-left position in garden grid
+
+All plants start as 1x1. Expansion milestones will be configured per plant type later.
+
+**Implementation**:
+```typescript
+// Grid utilities
+- calculateRequiredGridSize() // Calculate grid to fit all plants
+- findNextAvailablePosition() // Auto-positioning with collision detection
+- getOccupiedCells() // Get all cells occupied by a plant
+- hasCollision() // Prevent overlapping plants
+- getPlantSizeScale() // Visual scaling (1x1→1.0x, 2x2→1.8x, 3x3→2.5x)
+```
+
+**Consequences**:
+- ✅ Visual hierarchy - mature plants look more impressive
+- ✅ Rewards long-term consistency (bigger plants = more commitment)
+- ✅ Auto-expanding grid handles any configuration
+- ✅ Collision detection prevents overlaps
+- ✅ Backward compatible - old `position` field still exists
+- ✅ Infrastructure ready for milestone-based expansion
+- ❌ Requires database migration for existing plants
+- ❌ More complex grid rendering logic
+
+**Alternatives Considered**:
+- **Visual scaling only**: Just make plants bigger without grid changes
+  - Rejected: Plants would overlap, no real "space occupation"
+- **Fixed grid slots**: Pre-define 1x1, 2x2 zones
+  - Rejected: Not flexible, can't handle dynamic expansion
+- **Free-form positioning**: No grid, plants positioned anywhere
+  - Rejected: Too complex, hard to manage collisions
+- **Immediate expansion**: Plants grow as you water them
+  - Rejected: User wants milestones based on time/age, not real-time
+
+**Design Choices**:
+1. **Grid-based over free-form**: Easier collision detection, cleaner layout
+2. **Auto-positioning over manual**: Better UX, no need to pick positions
+3. **Infrastructure first, milestones later**: User wants to configure per plant type
+4. **Visual scale 0.8x per size increase**: Prevents plants from looking too large (2x2 → 1.8x, not 2.0x)
+
+**Files Affected**:
+- `src/lib/utils/grid-positioning.ts` - NEW
+- `src/types/database.ts` - Added grid fields
+- `src/components/garden/isometric-garden.tsx` - Use grid algorithm
+- `src/components/garden/isometric-plant.tsx` - Scale by grid_size
+- `src/lib/actions/plants.ts` - Auto-assign positions
+- `supabase/migrations/20260117_add_grid_positioning.sql` - DB migration
+
+**Migration Path**:
+See `MIGRATION-GUIDE.md` for detailed steps.
+
+---
+
 ## Template for Future Decisions
 
 ```
