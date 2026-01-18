@@ -1,12 +1,20 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { IsometricTile } from './isometric-tile'
 import { IsometricPlant } from './isometric-plant'
 import { PlantInfoBar } from './plant-tooltip'
+import { FloatingPlantCard } from './floating-plant-card'
 import { GroundPlane } from './ground-plane'
 import { AddPlantDialog } from '@/components/plants/add-plant-dialog'
 import { PlantDetailSheet } from '@/components/plants/plant-detail-sheet'
+import { QuickLogModal } from '@/components/plants/quick-log-modal'
+import {
+  showWaterToast,
+  showAlreadyWateredToast,
+  showWaterErrorToast,
+  showGoalLogToast,
+} from '@/components/plants/water-toast'
 import { usePlants } from '@/lib/context'
 import type { PlantWithType, PlantType, WeatherType } from '@/types/database'
 import { defaultTheme } from './themes'
@@ -21,54 +29,56 @@ interface IsometricGardenProps {
   weather?: WeatherType | null
 }
 
-// Legacy function - kept for reference but replaced by calculateRequiredGridSize
-// Calculate grid size based on plant count
-// Always ensures at least 1 empty slot for adding new plants
-function getGridSize(plantCount: number): number {
-  // Find the smallest grid that can fit all plants + 1 empty slot
-  const minSlots = plantCount + 1
-  const gridSize = Math.ceil(Math.sqrt(minSlots))
-  return Math.max(gridSize, 2) // Minimum 2x2
-}
-
 // Get responsive tile size - returns default for SSR, actual for client
 const DEFAULT_TILE_SIZE = 140
 
 function getClientTileSize(): number {
   if (typeof window === 'undefined') return DEFAULT_TILE_SIZE
   const width = window.innerWidth
-  if (width < 640) return 100 // Mobile - slightly larger
+  if (width < 640) return 100 // Mobile
   if (width < 1024) return 120 // Tablet
-  return 140 // Desktop - larger tiles for better visuals
+  return 140 // Desktop
 }
+
+// Long press threshold in milliseconds
+const LONG_PRESS_THRESHOLD = 500
 
 export function IsometricGarden({
   plantTypes,
   weather,
 }: IsometricGardenProps) {
   // Get plants from context with optimistic updates
-  const { plants } = usePlants()
-  
+  const { plants, waterPlant } = usePlants()
+
   const [hoveredTile, setHoveredTile] = useState<string | null>(null)
   const [selectedPlant, setSelectedPlant] = useState<PlantWithType | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
 
-  // Use default tile size on server, actual size on client to avoid hydration mismatch
+  // New state for enhanced interactions
+  const [floatingCard, setFloatingCard] = useState<{
+    plant: PlantWithType
+    position: { x: number; y: number }
+  } | null>(null)
+  const [quickLogPlant, setQuickLogPlant] = useState<PlantWithType | null>(null)
+  const [quickLogOpen, setQuickLogOpen] = useState(false)
+
+  // Long press tracking
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null)
+  const longPressTriggered = useRef(false)
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null)
+
+  // Use default tile size on server, actual size on client
   const [tileSize, setTileSize] = useState(DEFAULT_TILE_SIZE)
 
   useEffect(() => {
-    // Update on resize
     const handleResize = () => setTileSize(getClientTileSize())
-
-    // Set initial size via resize handler to avoid lint warning
     handleResize()
-
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Filter out dead plants for the garden view (they go to cemetery)
+  // Filter out dead plants for the garden view
   const livingPlants = plants.filter((p) => p.status !== 'dead')
 
   // Calculate grid size based on multi-cell plants
@@ -76,7 +86,7 @@ export function IsometricGarden({
     return calculateRequiredGridSize(livingPlants)
   }, [livingPlants])
 
-  // Build map of occupied cells (supports multi-cell plants)
+  // Build map of occupied cells
   const occupiedCells = useMemo(() => {
     return buildOccupiedCellsMap(livingPlants)
   }, [livingPlants])
@@ -95,18 +105,195 @@ export function IsometricGarden({
   }, [gridSize, occupiedCells])
 
   // Calculate container dimensions
-  // Container must match ground plane size exactly
   const containerWidth = gridSize * tileSize
-  const containerHeight = gridSize * (tileSize / 2) + tileSize * 0.3 // + dirt height
+  const containerHeight = gridSize * (tileSize / 2) + tileSize * 0.3
 
-  const handleTileClick = (row: number, col: number, plant?: PlantWithType) => {
-    if (plant) {
-      setSelectedPlant(plant)
-      setSheetOpen(true)
-    } else {
-      setAddDialogOpen(true)
+  // Check if plant is watered today
+  const isWateredToday = useCallback((plant: PlantWithType) => {
+    return plant.last_watered_at
+      ? new Date(plant.last_watered_at).toDateString() === new Date().toDateString()
+      : false
+  }, [])
+
+  // Handle quick water for simple (non-goal) plants
+  const handleQuickWater = useCallback(
+    async (plant: PlantWithType) => {
+      if (isWateredToday(plant)) {
+        showAlreadyWateredToast(plant.name)
+        return
+      }
+
+      const result = await waterPlant(plant.id)
+
+      if (result.success) {
+        showWaterToast({
+          plantName: plant.name,
+          plantIcon: plant.plant_type.icon,
+          xpEarned: result.xpEarned || 10,
+          xpBreakdown: result.xpBreakdown,
+          streakCount: plant.current_streak + 1,
+          newAchievements: result.newAchievements,
+        })
+      } else {
+        showWaterErrorToast(result.error || 'Unknown error')
+      }
+    },
+    [waterPlant, isWateredToday]
+  )
+
+  // Handle tap/click on plant
+  const handlePlantTap = useCallback(
+    (plant: PlantWithType) => {
+      // Check if plant has a goal
+      if (plant.goal_mode) {
+        // Open quick log modal for goal plants
+        setQuickLogPlant(plant)
+        setQuickLogOpen(true)
+      } else {
+        // Quick water for simple plants
+        handleQuickWater(plant)
+      }
+    },
+    [handleQuickWater]
+  )
+
+  // Handle right-click / long-press to show info card
+  const handleShowInfo = useCallback(
+    (plant: PlantWithType, position: { x: number; y: number }) => {
+      setFloatingCard({ plant, position })
+    },
+    []
+  )
+
+  // Handle tile click
+  const handleTileClick = useCallback(
+    (plant?: PlantWithType) => {
+      // If long press was triggered, don't handle click
+      if (longPressTriggered.current) {
+        longPressTriggered.current = false
+        return
+      }
+
+      if (plant) {
+        handlePlantTap(plant)
+      } else {
+        setAddDialogOpen(true)
+      }
+    },
+    [handlePlantTap]
+  )
+
+  // Handle right-click (desktop)
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent, plant?: PlantWithType) => {
+      e.preventDefault()
+      if (plant) {
+        handleShowInfo(plant, { x: e.clientX, y: e.clientY })
+      }
+    },
+    [handleShowInfo]
+  )
+
+  // Handle touch start (mobile long-press)
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent, plant?: PlantWithType) => {
+      if (!plant) return
+
+      const touch = e.touches[0]
+      touchStartPos.current = { x: touch.clientX, y: touch.clientY }
+      longPressTriggered.current = false
+
+      longPressTimer.current = setTimeout(() => {
+        longPressTriggered.current = true
+        // Haptic feedback if available
+        if (navigator.vibrate) {
+          navigator.vibrate(50)
+        }
+        handleShowInfo(plant, {
+          x: touchStartPos.current?.x ?? touch.clientX,
+          y: touchStartPos.current?.y ?? touch.clientY,
+        })
+      }, LONG_PRESS_THRESHOLD)
+    },
+    [handleShowInfo]
+  )
+
+  // Handle touch move (cancel long-press if moved)
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchStartPos.current) return
+
+    const touch = e.touches[0]
+    const dx = Math.abs(touch.clientX - touchStartPos.current.x)
+    const dy = Math.abs(touch.clientY - touchStartPos.current.y)
+
+    // Cancel if moved more than 10px
+    if (dx > 10 || dy > 10) {
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current)
+        longPressTimer.current = null
+      }
     }
-  }
+  }, [])
+
+  // Handle touch end
+  const handleTouchEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+    touchStartPos.current = null
+  }, [])
+
+  // Handle goal log
+  const handleGoalLog = useCallback(
+    async (value: number, notes?: string) => {
+      if (!quickLogPlant) return
+
+      // For now, use waterPlant with notes
+      // TODO: Implement proper goal logging with logGoalValue action
+      const result = await waterPlant(quickLogPlant.id, { notes })
+
+      if (result.success) {
+        showGoalLogToast({
+          plantName: quickLogPlant.name,
+          plantIcon: quickLogPlant.plant_type.icon,
+          value,
+          unit: '', // TODO: Get unit from goal
+          xpEarned: result.xpEarned || 15,
+        })
+      } else {
+        showWaterErrorToast(result.error || 'Failed to log')
+      }
+    },
+    [quickLogPlant, waterPlant]
+  )
+
+  // Close floating card
+  const handleCloseFloatingCard = useCallback(() => {
+    setFloatingCard(null)
+  }, [])
+
+  // Open details from floating card
+  const handleOpenDetails = useCallback(() => {
+    if (floatingCard) {
+      setSelectedPlant(floatingCard.plant)
+      setSheetOpen(true)
+      setFloatingCard(null)
+    }
+  }, [floatingCard])
+
+  // Log from floating card
+  const handleLogFromCard = useCallback(() => {
+    if (floatingCard) {
+      if (floatingCard.plant.goal_mode) {
+        setQuickLogPlant(floatingCard.plant)
+        setQuickLogOpen(true)
+      } else {
+        handleQuickWater(floatingCard.plant)
+      }
+      setFloatingCard(null)
+    }
+  }, [floatingCard, handleQuickWater])
 
   const handleTileHover = (row: number, col: number) => {
     setHoveredTile(`${row}-${col}`)
@@ -143,11 +330,7 @@ export function IsometricGarden({
         </div>
       )}
 
-       {/* Floating info tooltip - positioned above garden */}
-      {/* <PlantInfoBar plant={hoveredPlant} /> */}
-
-      {/* Garden container - anchored to bottom */}
-      {/* Garden container - centered in viewport */}
+      {/* Garden container */}
       <div className="flex justify-center px-4">
         <div
           className="relative"
@@ -164,7 +347,7 @@ export function IsometricGarden({
             grassDarkColor={defaultTheme.ground.secondary}
           />
 
-          {/* Interactive tile zones (transparent) */}
+          {/* Interactive tile zones */}
           {tiles.map(({ row, col, plant, isAnchor }) => {
             const tileKey = `${row}-${col}`
             const isHovered = hoveredTile === tileKey
@@ -177,16 +360,21 @@ export function IsometricGarden({
                 gridSize={gridSize}
                 isEmpty={!plant}
                 isHovered={isHovered}
-                onClick={() => handleTileClick(row, col, plant)}
+                onClick={() => handleTileClick(plant)}
+                onContextMenu={(e) => handleContextMenu(e, plant)}
+                onTouchStart={(e) => handleTouchStart(e, plant)}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
                 onMouseEnter={() => handleTileHover(row, col)}
                 onMouseLeave={handleTileLeave}
                 tileSize={tileSize}
               >
-                {/* Only render plant at its anchor (top-left) position */}
+                {/* Only render plant at its anchor position */}
                 {plant && isAnchor && (
                   <IsometricPlant
                     plant={plant}
                     weather={weather}
+                    showBadge={true}
                   />
                 )}
               </IsometricTile>
@@ -195,8 +383,42 @@ export function IsometricGarden({
         </div>
       </div>
 
+      {/* Interaction hint - shown when not empty */}
+      {!isEmpty && !hoveredPlant && (
+        <div className="absolute left-1/2 -translate-x-1/2 top-16 z-20 pointer-events-none">
+          <div className="px-4 py-2 bg-slate-900/70 backdrop-blur-md rounded-full text-xs text-slate-400 border border-slate-700/50 shadow-lg">
+            <span className="flex items-center gap-2">
+              <span>👆</span>
+              <span>Tap to water</span>
+              <span className="text-slate-600">•</span>
+              <span>Hold for info</span>
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Fixed info bar at bottom - above nav bar */}
       <PlantInfoBar plant={hoveredPlant} />
+
+      {/* Floating plant card (long-press / right-click) */}
+      {floatingCard && (
+        <FloatingPlantCard
+          plant={floatingCard.plant}
+          position={floatingCard.position}
+          onClose={handleCloseFloatingCard}
+          onLog={handleLogFromCard}
+          onDetails={handleOpenDetails}
+        />
+      )}
+
+      {/* Quick log modal for goal plants */}
+      <QuickLogModal
+        plant={quickLogPlant}
+        open={quickLogOpen}
+        onOpenChange={setQuickLogOpen}
+        onLog={handleGoalLog}
+        estimatedXp={15}
+      />
 
       {/* Add plant dialog */}
       <AddPlantDialog

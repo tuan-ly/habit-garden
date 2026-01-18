@@ -3,7 +3,7 @@
 > **Last Updated**: 2026-01-18
 > **Current Phase**: Phase 4 - Polish & Launch (IN PROGRESS)
 
-> **Last Session**: Critical Bug Fix - Moisture Decay Cron
+> **Last Session**: UX Watering Redesign - Tap-to-Water & Long-Press Info
 
 
 ---
@@ -41,10 +41,58 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 - **NEW: Adaptive Layout & Navigation** - Fixed navigation sizing and global scrolling strategy to prevent content overlap.
 - **NEW: Bottom HUD Info Bar** - Plant details moved to fixed bottom position above navigation.
 - **NEW: Multi-Cell Plants Infrastructure** - Plants can occupy multiple grid cells (1x1, 2x2, 3x3) - code ready, migration pending
+- **NEW: UX Watering Redesign** - One-tap watering, long-press for info, overlay badges on plants
 
 ---
 
 ## Recent Changes (Latest First)
+
+### 2026-01-18: UX Watering Redesign (Phase 1)
+**Goal**: Simplify watering UX - tap to water, long-press/right-click for info
+
+**Status**: ✅ Phase 1 Complete (Core Interaction)
+
+**Key Changes:**
+- **Tap-to-Water**: Single tap on plant waters it instantly (simple habits) or opens Quick Log Modal (goal plants)
+- **Long-Press/Right-Click Info**: Hold 500ms or right-click to show Floating Plant Card with stats and actions
+- **Plant Overlay Badge**: Shows ✓ for watered simple plants, 💧×N for goal plants with today's log count
+- **Enhanced Toast Feedback**: Game-style toast with XP earned, streak info, and undo option
+
+**New Files:**
+| File | Purpose |
+|------|---------|
+| `src/components/garden/plant-overlay-badge.tsx` | Badge showing today's activity on plants |
+| `src/components/garden/floating-plant-card.tsx` | Long-press info card with stats and actions |
+| `src/components/plants/quick-log-modal.tsx` | Fast value input for goal plants |
+| `src/components/plants/water-toast.tsx` | Custom toast functions with game-style feedback |
+
+**Updated Files:**
+| File | Change |
+|------|--------|
+| `src/components/garden/isometric-garden.tsx` | NEW - Tap-to-water, long-press, right-click handling |
+| `src/components/garden/isometric-plant.tsx` | NEW - Overlay badge integration |
+| `src/components/garden/isometric-tile.tsx` | NEW - Touch/context menu event handlers |
+| `src/lib/utils/grid-positioning.ts` | FIX - Added `PlantForGrid` interface for type safety |
+| `src/lib/actions/plants.ts` | FIX - Removed incorrect type assertion |
+
+**Interaction Model:**
+| Platform | Gesture | Action |
+|----------|---------|--------|
+| Desktop | Left click | Water (simple) or Open Quick Log (goal) |
+| Desktop | Right click | Show Floating Info Card |
+| Mobile | Single tap | Water (simple) or Open Quick Log (goal) |
+| Mobile | Long press (500ms) | Show Floating Info Card |
+
+**Phase 2 TODO** (Multi-Log Support):
+- [ ] Remove single-watering-per-day constraint for goal plants
+- [ ] Integrate logGoalValue action with Quick Log Modal
+- [ ] Add today's logs display in Floating Card
+
+**Phase 3 TODO** (Overview Stats Redesign):
+- [ ] Distinguish "Plants Tended" vs "Total Actions"
+- [ ] Add Best Streak metric
+
+---
 
 ### 2026-01-17: Multi-Cell Plants Infrastructure
 **Goal**: Cây có thể chiếm nhiều ô vuông khi trồng càng lâu (1x1, 2x2, 3x3, etc.)

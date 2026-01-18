@@ -74,7 +74,7 @@ export async function createPlant(dto: CreatePlantDto): Promise<{ success: boole
     .eq('user_id', user.id)
     .neq('status', 'dead')
 
-  const livingPlants = (existingPlants || []) as PlantWithType[]
+  const livingPlants = existingPlants || []
 
   // Calculate next position (legacy)
   const { data: lastPlant } = await supabase

@@ -12,6 +12,10 @@ interface IsometricTileProps {
   onClick: () => void
   onMouseEnter: () => void
   onMouseLeave: () => void
+  onContextMenu?: (e: React.MouseEvent) => void
+  onTouchStart?: (e: React.TouchEvent) => void
+  onTouchMove?: (e: React.TouchEvent) => void
+  onTouchEnd?: (e: React.TouchEvent) => void
   children?: React.ReactNode
   tileSize?: number
 }
@@ -25,6 +29,10 @@ export function IsometricTile({
   onClick,
   onMouseEnter,
   onMouseLeave,
+  onContextMenu,
+  onTouchStart,
+  onTouchMove,
+  onTouchEnd,
   children,
   tileSize = 60,
 }: IsometricTileProps) {
@@ -59,6 +67,10 @@ export function IsometricTile({
         zIndex: row + col + 10, // Above ground plane
       }}
       onClick={onClick}
+      onContextMenu={onContextMenu}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >

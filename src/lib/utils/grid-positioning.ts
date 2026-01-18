@@ -24,9 +24,20 @@ export interface PlantGridData {
 }
 
 /**
+ * Minimal interface for plants used in grid calculations.
+ * Allows partial plants (e.g., from Supabase queries with limited fields).
+ */
+export interface PlantForGrid {
+  id?: string
+  grid_size?: number | null
+  grid_row?: number | null
+  grid_col?: number | null
+}
+
+/**
  * Calculate minimum grid size needed to fit all plants with buffer
  */
-export function calculateRequiredGridSize(plants: PlantWithType[]): number {
+export function calculateRequiredGridSize(plants: PlantForGrid[]): number {
   if (plants.length === 0) return 2 // Minimum 2x2
 
   // Calculate total occupied cells
@@ -68,7 +79,7 @@ export function getOccupiedCells(plant: PlantGridData): GridCell[] {
  */
 export function hasCollision(
   newPlant: PlantGridData,
-  existingPlants: PlantWithType[],
+  existingPlants: PlantForGrid[],
   excludePlantId?: string
 ): boolean {
   const newCells = getOccupiedCells(newPlant)
@@ -102,7 +113,7 @@ export function hasCollision(
  * Find next available position for a plant of given size
  */
 export function findNextAvailablePosition(
-  plants: PlantWithType[],
+  plants: PlantForGrid[],
   gridSize: number,
   plantSize: number = 1
 ): GridPosition | null {
