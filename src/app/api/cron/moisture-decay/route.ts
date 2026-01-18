@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
         current_moisture,
         current_streak,
         last_watered_at,
+        updated_at,
         plant_type:plant_types(moisture_decay_rate)
       `)
       .eq('status', 'growing')
@@ -52,6 +53,7 @@ export async function GET(request: NextRequest) {
     const today = new Date().toISOString().split('T')[0]
     const results = {
       processed: 0,
+      skipped: 0,
       decayed: 0,
       died: 0,
       streaksReset: 0,
@@ -63,6 +65,24 @@ export async function GET(request: NextRequest) {
         : plant.plant_type
 
       if (!plantType) continue
+
+      // Idempotency check: Skip if already updated today
+      // This prevents double decay if cron runs multiple times
+      // Also skips if user already watered today (they're ahead of schedule!)
+      const updatedDate = plant.updated_at
+        ? new Date(plant.updated_at).toISOString().split('T')[0]
+        : null
+      const lastWateredDate = plant.last_watered_at
+        ? new Date(plant.last_watered_at).toISOString().split('T')[0]
+        : null
+
+      if (updatedDate === today) {
+        // Plant was already updated today (by cron or by user watering)
+        const reason = lastWateredDate === today ? 'watered today' : 'already processed'
+        console.log(`Plant ${plant.id} (${plant.name}) ${reason}, skipping decay`)
+        results.skipped++
+        continue
+      }
 
       // Calculate base decay rate (default 10% per day)
       const baseDecayRate = plantType.moisture_decay_rate || 10
@@ -77,9 +97,6 @@ export async function GET(request: NextRequest) {
       const shouldDie = newMoisture <= 0
 
       // Check if streak should be reset (not watered today or yesterday)
-      const lastWateredDate = plant.last_watered_at
-        ? new Date(plant.last_watered_at).toISOString().split('T')[0]
-        : null
       const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
       const shouldResetStreak = lastWateredDate !== today && lastWateredDate !== yesterday
 
@@ -116,9 +133,18 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    console.log(`Moisture decay completed:`, {
+      date: today,
+      weather: weather.type,
+      totalPlants: plants.length,
+      ...results,
+    })
+
     return NextResponse.json({
       success: true,
+      date: today,
       weather: weather.type,
+      totalPlants: plants.length,
       ...results,
     })
   } catch (error) {
