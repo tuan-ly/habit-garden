@@ -48,7 +48,7 @@ export function IsometricGarden({
   weather,
 }: IsometricGardenProps) {
   // Get plants from context with optimistic updates
-  const { plants, waterPlant } = usePlants()
+  const { plants, waterPlant, logGoal } = usePlants()
 
   const [hoveredTile, setHoveredTile] = useState<string | null>(null)
   const [selectedPlant, setSelectedPlant] = useState<PlantWithType | null>(null)
@@ -249,23 +249,23 @@ export function IsometricGarden({
     async (value: number, notes?: string) => {
       if (!quickLogPlant) return
 
-      // For now, use waterPlant with notes
-      // TODO: Implement proper goal logging with logGoalValue action
-      const result = await waterPlant(quickLogPlant.id, { notes })
+      const result = await logGoal(quickLogPlant.id, value, notes)
 
       if (result.success) {
         showGoalLogToast({
           plantName: quickLogPlant.name,
           plantIcon: quickLogPlant.plant_type.icon,
           value,
-          unit: '', // TODO: Get unit from goal
+          unit: quickLogPlant.goal?.unit || '',
           xpEarned: result.xpEarned || 15,
+          isPersonalRecord: result.isPersonalRecord,
+          exceededTarget: result.exceededTarget,
         })
       } else {
         showWaterErrorToast(result.error || 'Failed to log')
       }
     },
-    [quickLogPlant, waterPlant]
+    [quickLogPlant, logGoal]
   )
 
   // Close floating card
@@ -375,6 +375,8 @@ export function IsometricGarden({
                     plant={plant}
                     weather={weather}
                     showBadge={true}
+                    todayLogCount={plant.today_log_count}
+                    todayValue={plant.today_value}
                   />
                 )}
               </IsometricTile>
@@ -405,6 +407,12 @@ export function IsometricGarden({
         <FloatingPlantCard
           plant={floatingCard.plant}
           position={floatingCard.position}
+          todayLogs={(floatingCard.plant.today_logs || []).map(log => ({
+            time: new Date(log.logged_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+            value: log.value,
+            notes: log.notes || undefined,
+          }))}
+          todayValue={floatingCard.plant.today_value}
           onClose={handleCloseFloatingCard}
           onLog={handleLogFromCard}
           onDetails={handleOpenDetails}
@@ -417,6 +425,9 @@ export function IsometricGarden({
         open={quickLogOpen}
         onOpenChange={setQuickLogOpen}
         onLog={handleGoalLog}
+        todayLogCount={quickLogPlant?.today_log_count || 0}
+        todayValue={quickLogPlant?.today_value}
+        unit={quickLogPlant?.goal?.unit || ''}
         estimatedXp={15}
       />
 

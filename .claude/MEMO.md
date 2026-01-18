@@ -3,7 +3,7 @@
 > **Last Updated**: 2026-01-18
 > **Current Phase**: Phase 4 - Polish & Launch (IN PROGRESS)
 
-> **Last Session**: UX Watering Redesign - Tap-to-Water & Long-Press Info
+> **Last Session**: Goal Data Integration - Merged goal info into PlantWithType
 
 
 ---
@@ -42,10 +42,63 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 - **NEW: Bottom HUD Info Bar** - Plant details moved to fixed bottom position above navigation.
 - **NEW: Multi-Cell Plants Infrastructure** - Plants can occupy multiple grid cells (1x1, 2x2, 3x3) - code ready, migration pending
 - **NEW: UX Watering Redesign** - One-tap watering, long-press for info, overlay badges on plants
+- **NEW: Goal Data Integration** - Goal info and today's logs merged into PlantWithType for display
 
 ---
 
 ## Recent Changes (Latest First)
+
+### 2026-01-18: Goal Data Integration (Phase 2 Complete)
+**Goal**: Merge goal info and today's logs vào PlantWithType để hiển thị số lần log trên badge
+
+**Status**: ✅ Complete
+
+**Problem Solved:**
+- Badge không hiển thị số lần log vì data không được truyền xuống
+- Watering và goal log là 2 hệ thống riêng, cần hợp nhất
+
+**Solution**: Option B - Merge goal info vào plant
+- `PlantWithType` giờ có thêm `goal`, `today_logs`, `today_log_count`, `today_value`
+- `getPlants()` fetch goal và today's logs cùng lúc
+- `PlantsContext` có thêm `logGoal()` function với optimistic updates
+- Goal plants cho phép log nhiều lần/ngày (multi-log support)
+
+**Updated Types:**
+```typescript
+interface PlantWithType extends Plant {
+  plant_type: PlantType
+  goal?: PlantGoalInfo | null       // Goal info for goal plants
+  today_logs?: TodayGoalLog[]       // Today's goal logs
+  today_log_count?: number          // Computed: number of logs today
+  today_value?: number              // Computed: sum of values today
+}
+```
+
+**Updated Files:**
+| File | Change |
+|------|--------|
+| `src/types/database.ts` | NEW - Added `PlantGoalInfo`, `TodayGoalLog` interfaces, extended `PlantWithType` |
+| `src/lib/actions/plants.ts` | UPDATED - `getPlants()` now fetches goal and today's logs |
+| `src/lib/actions/goals.ts` | UPDATED - `logGoalValue()` allows multi-log per day, only first log waters plant |
+| `src/lib/context/plants-context.tsx` | UPDATED - Added `logGoal()` function with optimistic updates |
+| `src/components/garden/isometric-garden.tsx` | UPDATED - Uses `logGoal` from context, passes data to components |
+
+**How It Works:**
+1. `getPlants()` fetches plants + goals + today's goal_logs in parallel queries
+2. Data merged into `PlantWithType` with computed fields
+3. Components receive full data through context
+4. `logGoal()` creates optimistic update immediately, syncs with server
+5. Badge shows `today_log_count`, modal shows `today_logs`
+
+**XP Logic for Multi-Log:**
+- First log of the day: Full watering XP + bonuses (streak, morning, weather)
+- Subsequent logs: Base 10 XP + bonuses (PR: +25, Exceed target: +10)
+
+**Phase 3 TODO** (Overview Stats Redesign):
+- [ ] Distinguish "Plants Tended" vs "Total Actions"
+- [ ] Add Best Streak metric
+
+---
 
 ### 2026-01-18: UX Watering Redesign (Phase 1)
 **Goal**: Simplify watering UX - tap to water, long-press/right-click for info
@@ -82,15 +135,6 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 | Desktop | Right click | Show Floating Info Card |
 | Mobile | Single tap | Water (simple) or Open Quick Log (goal) |
 | Mobile | Long press (500ms) | Show Floating Info Card |
-
-**Phase 2 TODO** (Multi-Log Support):
-- [ ] Remove single-watering-per-day constraint for goal plants
-- [ ] Integrate logGoalValue action with Quick Log Modal
-- [ ] Add today's logs display in Floating Card
-
-**Phase 3 TODO** (Overview Stats Redesign):
-- [ ] Distinguish "Plants Tended" vs "Total Actions"
-- [ ] Add Best Streak metric
 
 ---
 

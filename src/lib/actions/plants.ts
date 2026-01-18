@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import type { CreatePlantDto, PlantWithType, PlantType, Difficulty, WeatherType } from '@/types/database'
+import type { CreatePlantDto, PlantWithType, PlantType, Difficulty, WeatherType, PlantGoalInfo, TodayGoalLog } from '@/types/database'
 import { getTodayWeather, calculateWeatherXp } from '@/lib/weather-system'
 import { calculateWateringXp } from '@/lib/xp-system'
 import { getTodayMood } from '@/lib/actions/mood'
@@ -18,7 +18,10 @@ export async function getPlants(): Promise<PlantWithType[]> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return []
 
-  const { data, error } = await supabase
+  const today = new Date().toISOString().split('T')[0]
+
+  // Fetch plants with plant_type
+  const { data: plantsData, error } = await supabase
     .from('plants')
     .select(`
       *,
@@ -32,7 +35,88 @@ export async function getPlants(): Promise<PlantWithType[]> {
     return []
   }
 
-  return data as PlantWithType[]
+  if (!plantsData || plantsData.length === 0) {
+    return []
+  }
+
+  // Get plant IDs that have goals
+  const plantIds = plantsData.map(p => p.id)
+  const plantsWithGoalMode = plantsData.filter(p => p.goal_mode)
+  const plantIdsWithGoal = plantsWithGoalMode.map(p => p.id)
+
+  // Fetch goals for plants that have goal_mode
+  let goalsMap = new Map<string, PlantGoalInfo>()
+  if (plantIdsWithGoal.length > 0) {
+    const { data: goals } = await supabase
+      .from('goals')
+      .select('id, plant_id, goal_mode, tracking_metric, unit, target_value, current_value, weekly_targets, started_at')
+      .in('plant_id', plantIdsWithGoal)
+
+    if (goals) {
+      for (const goal of goals) {
+        // Calculate week number and current week target
+        const startDate = new Date(goal.started_at)
+        const daysSinceStart = Math.floor((Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+        const weekNumber = Math.floor(daysSinceStart / 7) + 1
+        const weeklyTargets = (goal.weekly_targets as number[]) || []
+        const currentWeekTarget = weeklyTargets[Math.min(weekNumber - 1, weeklyTargets.length - 1)] || goal.target_value
+
+        goalsMap.set(goal.plant_id, {
+          id: goal.id,
+          goal_mode: goal.goal_mode,
+          tracking_metric: goal.tracking_metric,
+          unit: goal.unit,
+          target_value: goal.target_value,
+          current_value: goal.current_value,
+          weekly_targets: weeklyTargets,
+          current_week_target: currentWeekTarget,
+          week_number: weekNumber,
+        })
+      }
+    }
+  }
+
+  // Fetch today's goal logs for all plants
+  let todayLogsMap = new Map<string, TodayGoalLog[]>()
+  if (plantIdsWithGoal.length > 0) {
+    const { data: todayLogs } = await supabase
+      .from('goal_logs')
+      .select('id, plant_id, value, notes, logged_at')
+      .in('plant_id', plantIdsWithGoal)
+      .eq('logged_date', today)
+      .order('logged_at', { ascending: false })
+
+    if (todayLogs) {
+      for (const log of todayLogs) {
+        const plantLogs = todayLogsMap.get(log.plant_id) || []
+        plantLogs.push({
+          id: log.id,
+          value: log.value,
+          notes: log.notes,
+          logged_at: log.logged_at,
+        })
+        todayLogsMap.set(log.plant_id, plantLogs)
+      }
+    }
+  }
+
+  // Merge data into PlantWithType
+  const plants: PlantWithType[] = plantsData.map(plant => {
+    const goal = goalsMap.get(plant.id) || null
+    const todayLogs = todayLogsMap.get(plant.id) || []
+    const todayLogCount = todayLogs.length
+    const todayValue = todayLogs.reduce((sum, log) => sum + log.value, 0)
+
+    return {
+      ...plant,
+      goal,
+      today_logs: todayLogs,
+      today_log_count: todayLogCount,
+      today_value: todayValue > 0 ? todayValue : undefined,
+    } as PlantWithType
+  })
+
+  return plants
 }
 
 export async function getPlantTypes(): Promise<PlantType[]> {

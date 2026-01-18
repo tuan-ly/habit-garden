@@ -9,8 +9,9 @@ import {
   useTransition,
   type ReactNode,
 } from 'react'
-import type { PlantWithType } from '@/types/database'
+import type { PlantWithType, TodayGoalLog } from '@/types/database'
 import { waterPlant as waterPlantAction } from '@/lib/actions/plants'
+import { logGoalValue as logGoalValueAction } from '@/lib/actions/goals'
 import { toast } from 'sonner'
 
 // Types for optimistic updates
@@ -19,6 +20,7 @@ type OptimisticAction =
   | { type: 'UPDATE_PLANT'; plant: PlantWithType }
   | { type: 'REMOVE_PLANT'; plantId: string }
   | { type: 'ADD_PLANT'; plant: PlantWithType }
+  | { type: 'LOG_GOAL'; plantId: string; value: number; notes?: string }
 
 interface WaterResult {
   success: boolean
@@ -26,6 +28,15 @@ interface WaterResult {
   xpBreakdown?: Record<string, number>
   weatherType?: string
   newAchievements?: string[]
+  error?: string
+}
+
+interface GoalLogResult {
+  success: boolean
+  xpEarned?: number
+  isPersonalRecord?: boolean
+  exceededTarget?: boolean
+  newValue?: number
   error?: string
 }
 
@@ -37,6 +48,11 @@ interface PlantsContextType {
     plantId: string,
     options?: { notes?: string; difficulty?: 'easy' | 'medium' | 'hard' }
   ) => Promise<WaterResult>
+  logGoal: (
+    plantId: string,
+    value: number,
+    notes?: string
+  ) => Promise<GoalLogResult>
   addPlant: (plant: PlantWithType) => void
   removePlant: (plantId: string) => void
   refreshPlants: (newPlants: PlantWithType[]) => void
@@ -54,13 +70,13 @@ function plantsReducer(
     case 'WATER_PLANT': {
       return state.map((plant) => {
         if (plant.id !== action.plantId) return plant
-        
+
         // Optimistically update plant state
         const newMoisture = Math.min(100, plant.current_moisture + (plant.plant_type?.moisture_boost || 20))
         const baseGrowth = 100 / (plant.plant_type?.maturity_days || 30)
         const newGrowth = Math.min(100, plant.growth_percentage + baseGrowth)
         const newStreak = plant.current_streak + 1
-        
+
         return {
           ...plant,
           current_moisture: newMoisture,
@@ -73,21 +89,71 @@ function plantsReducer(
         } as PlantWithType
       })
     }
-    
+
+    case 'LOG_GOAL': {
+      return state.map((plant) => {
+        if (plant.id !== action.plantId) return plant
+
+        // Create optimistic log entry
+        const newLog: TodayGoalLog = {
+          id: `temp-${Date.now()}`,
+          value: action.value,
+          notes: action.notes || null,
+          logged_at: new Date().toISOString(),
+        }
+
+        // Update today's logs and computed values
+        const existingLogs = plant.today_logs || []
+        const newLogs = [newLog, ...existingLogs]
+        const newLogCount = newLogs.length
+        const newTotalValue = newLogs.reduce((sum, log) => sum + log.value, 0)
+
+        // Also update plant state (watering effect)
+        const newMoisture = Math.min(100, plant.current_moisture + (plant.plant_type?.moisture_boost || 20))
+        const baseGrowth = 100 / (plant.plant_type?.maturity_days || 30)
+        const newGrowth = Math.min(100, plant.growth_percentage + baseGrowth)
+        const newStreak = plant.current_streak + 1
+
+        // Update goal current_value if present
+        let updatedGoal = plant.goal
+        if (updatedGoal) {
+          const newCurrentValue = updatedGoal.goal_mode === 'total_progress'
+            ? updatedGoal.current_value + action.value
+            : Math.max(updatedGoal.current_value, action.value)
+          updatedGoal = { ...updatedGoal, current_value: newCurrentValue }
+        }
+
+        return {
+          ...plant,
+          today_logs: newLogs,
+          today_log_count: newLogCount,
+          today_value: newTotalValue,
+          goal: updatedGoal,
+          current_moisture: newMoisture,
+          growth_percentage: newGrowth,
+          current_streak: newStreak,
+          longest_streak: Math.max(plant.longest_streak, newStreak),
+          total_waterings: plant.total_waterings + 1,
+          last_watered_at: new Date().toISOString(),
+          status: newGrowth >= 100 ? 'mature' : plant.status,
+        } as PlantWithType
+      })
+    }
+
     case 'UPDATE_PLANT': {
       return state.map((plant) =>
         plant.id === action.plant.id ? action.plant : plant
       )
     }
-    
+
     case 'REMOVE_PLANT': {
       return state.filter((plant) => plant.id !== action.plantId)
     }
-    
+
     case 'ADD_PLANT': {
       return [...state, action.plant]
     }
-    
+
     default:
       return state
   }
@@ -195,6 +261,104 @@ export function PlantsProvider({
     [optimisticPlants, startTransition, addOptimisticUpdate]
   )
 
+  // Log goal value with optimistic update
+  const logGoal = useCallback(
+    async (
+      plantId: string,
+      value: number,
+      notes?: string
+    ): Promise<GoalLogResult> => {
+      const plant = optimisticPlants.find((p) => p.id === plantId)
+      if (!plant) {
+        return { success: false, error: 'Plant not found' }
+      }
+
+      if (!plant.goal) {
+        return { success: false, error: 'Plant has no goal' }
+      }
+
+      // Apply optimistic update IMMEDIATELY
+      startTransition(() => {
+        addOptimisticUpdate({ type: 'LOG_GOAL', plantId, value, notes })
+      })
+
+      // Sync with server in background
+      setIsSyncing(true)
+      try {
+        const result = await logGoalValueAction({
+          goal_id: plant.goal.id,
+          value,
+          notes,
+        })
+
+        if (result.success) {
+          // Server confirmed - update serverPlants to persist the change
+          setServerPlants((prev) =>
+            prev.map((p) => {
+              if (p.id !== plantId) return p
+
+              // Create new log entry
+              const newLog: TodayGoalLog = {
+                id: `log-${Date.now()}`,
+                value,
+                notes: notes || null,
+                logged_at: new Date().toISOString(),
+              }
+
+              const existingLogs = p.today_logs || []
+              const newLogs = [newLog, ...existingLogs]
+              const newLogCount = newLogs.length
+              const newTotalValue = newLogs.reduce((sum, log) => sum + log.value, 0)
+
+              // Update plant state
+              const newMoisture = Math.min(100, p.current_moisture + (p.plant_type?.moisture_boost || 20))
+              const baseGrowth = 100 / (p.plant_type?.maturity_days || 30)
+              const newGrowth = Math.min(100, p.growth_percentage + baseGrowth)
+              const newStreak = p.current_streak + 1
+
+              // Update goal
+              let updatedGoal = p.goal
+              if (updatedGoal && result.newValue !== undefined) {
+                updatedGoal = { ...updatedGoal, current_value: result.newValue }
+              }
+
+              return {
+                ...p,
+                today_logs: newLogs,
+                today_log_count: newLogCount,
+                today_value: newTotalValue,
+                goal: updatedGoal,
+                current_moisture: newMoisture,
+                growth_percentage: newGrowth,
+                current_streak: newStreak,
+                longest_streak: Math.max(p.longest_streak, newStreak),
+                total_waterings: p.total_waterings + 1,
+                last_watered_at: new Date().toISOString(),
+                status: newGrowth >= 100 ? 'mature' : p.status,
+              } as PlantWithType
+            })
+          )
+
+          return result
+        } else {
+          // Server rejected
+          toast.error('Failed to log', {
+            description: result.error,
+          })
+          return result
+        }
+      } catch {
+        toast.error('Network error', {
+          description: 'Changes will sync when connection is restored',
+        })
+        return { success: false, error: 'Network error' }
+      } finally {
+        setIsSyncing(false)
+      }
+    },
+    [optimisticPlants, startTransition, addOptimisticUpdate]
+  )
+
   // Add a new plant immediately to state
   const addPlant = useCallback((plant: PlantWithType) => {
     setServerPlants((prev) => [...prev, plant])
@@ -223,6 +387,7 @@ export function PlantsProvider({
         isPending,
         isSyncing,
         waterPlant,
+        logGoal,
         addPlant,
         removePlant,
         refreshPlants,

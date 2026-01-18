@@ -147,18 +147,18 @@ export async function logGoalValue(dto: LogGoalDto): Promise<{
     return { success: false, error: 'Unauthorized' }
   }
 
-  // Check if already logged today
   const today = new Date().toISOString().split('T')[0]
-  const { data: existingLog } = await supabase
-    .from('goal_logs')
+
+  // Goal plants allow multiple logs per day (multi-log support)
+  // Check if already watered today (for plant watering, not goal logging)
+  const { data: existingWatering } = await supabase
+    .from('watering_logs')
     .select('id')
-    .eq('goal_id', dto.goal_id)
-    .eq('logged_date', today)
+    .eq('plant_id', plant.id)
+    .eq('watered_date', today)
     .single()
 
-  if (existingLog) {
-    return { success: false, error: 'Already logged today' }
-  }
+  const isFirstLogToday = !existingWatering
 
   // Calculate week number
   const startDate = new Date(goal.started_at)
@@ -222,76 +222,89 @@ export async function logGoalValue(dto: LogGoalDto): Promise<{
     })
     .eq('id', dto.goal_id)
 
-  // Also water the plant (same logic as regular watering)
+  // Calculate XP - goal logs always give base XP + bonus
   const weather = getTodayWeather()
   const plantType = plant.plant_type
-
-  // Calculate streak
-  const lastWateredDate = plant.last_watered_at
-    ? new Date(plant.last_watered_at).toISOString().split('T')[0]
-    : null
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
-
-  let newStreak = 1
-  if (lastWateredDate === yesterday) {
-    newStreak = plant.current_streak + 1
-  }
-
-  // Calculate XP
   const currentHour = new Date().getHours()
   const isMorning = currentHour >= 5 && currentHour < 9
 
-  const { total: baseTotal, breakdown } = calculateWateringXp({
-    streak: newStreak,
-    isMorning,
-    isRainyDay: weather.type === 'rainy',
-    isRainbowDay: weather.type === 'rainbow',
-  })
+  // Base XP for logging (smaller than full watering)
+  let totalXp = 10
 
   // Bonus XP for exceeding target or PR
-  let bonusXp = 0
-  if (isPersonalRecord) bonusXp += 25
-  if (exceededTarget) bonusXp += 10
+  if (isPersonalRecord) totalXp += 25
+  if (exceededTarget) totalXp += 10
 
-  const totalXp = calculateWeatherXp(baseTotal, weather.type) + bonusXp
+  // Apply weather bonus
+  totalXp = calculateWeatherXp(totalXp, weather.type)
 
-  // Calculate new moisture and growth
-  const newMoisture = Math.min(100, plant.current_moisture + plantType.moisture_boost)
-  const baseGrowth = 100 / plantType.maturity_days
-  const weatherGrowth = baseGrowth * weather.growthModifier
-  const newGrowth = Math.min(100, plant.growth_percentage + weatherGrowth)
-  const totalWaterings = plant.total_waterings + 1
-  const hasMatured = newGrowth >= 100 && plant.status === 'growing'
+  // Only do plant watering effects on first log of the day
+  if (isFirstLogToday) {
+    // Calculate streak
+    const lastWateredDate = plant.last_watered_at
+      ? new Date(plant.last_watered_at).toISOString().split('T')[0]
+      : null
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
 
-  // Create watering log
-  await supabase
-    .from('watering_logs')
-    .insert({
-      plant_id: plant.id,
-      user_id: user.id,
-      watered_date: today,
-      xp_earned: totalXp,
-      morning_bonus: isMorning,
-      streak_bonus: breakdown.streakBonus || 0,
+    let newStreak = 1
+    if (lastWateredDate === yesterday) {
+      newStreak = plant.current_streak + 1
+    } else if (lastWateredDate === today) {
+      // Already watered today, keep streak
+      newStreak = plant.current_streak
+    }
+
+    // Add full watering XP for first log
+    const { total: wateringXp, breakdown } = calculateWateringXp({
+      streak: newStreak,
+      isMorning,
+      isRainyDay: weather.type === 'rainy',
+      isRainbowDay: weather.type === 'rainbow',
     })
+    totalXp = calculateWeatherXp(wateringXp, weather.type)
 
-  // Update plant
-  await supabase
-    .from('plants')
-    .update({
-      current_moisture: newMoisture,
-      growth_percentage: newGrowth,
-      total_waterings: totalWaterings,
-      current_streak: newStreak,
-      longest_streak: Math.max(plant.longest_streak, newStreak),
-      last_watered_at: new Date().toISOString(),
-      status: hasMatured ? 'mature' : plant.status,
-      matured_at: hasMatured ? new Date().toISOString() : plant.matured_at,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', plant.id)
+    // Re-add bonuses
+    if (isPersonalRecord) totalXp += 25
+    if (exceededTarget) totalXp += 10
 
-  // Update user XP in profiles table
+    // Calculate new moisture and growth
+    const newMoisture = Math.min(100, plant.current_moisture + plantType.moisture_boost)
+    const baseGrowth = 100 / plantType.maturity_days
+    const weatherGrowth = baseGrowth * weather.growthModifier
+    const newGrowth = Math.min(100, plant.growth_percentage + weatherGrowth)
+    const totalWaterings = plant.total_waterings + 1
+    const hasMatured = newGrowth >= 100 && plant.status === 'growing'
+
+    // Create watering log (only once per day)
+    await supabase
+      .from('watering_logs')
+      .insert({
+        plant_id: plant.id,
+        user_id: user.id,
+        watered_date: today,
+        xp_earned: totalXp,
+        morning_bonus: isMorning,
+        streak_bonus: breakdown.streakBonus || 0,
+      })
+
+    // Update plant
+    await supabase
+      .from('plants')
+      .update({
+        current_moisture: newMoisture,
+        growth_percentage: newGrowth,
+        total_waterings: totalWaterings,
+        current_streak: newStreak,
+        longest_streak: Math.max(plant.longest_streak, newStreak),
+        last_watered_at: new Date().toISOString(),
+        status: hasMatured ? 'mature' : plant.status,
+        matured_at: hasMatured ? new Date().toISOString() : plant.matured_at,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', plant.id)
+  }
+
+  // Update user XP in profiles table (for all logs)
   const { data: currentProfile } = await supabase
     .from('profiles')
     .select('xp')

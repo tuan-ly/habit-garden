@@ -101,9 +101,38 @@ export interface Plant {
   updated_at: string
 }
 
+// Today's goal log (simplified for display)
+export interface TodayGoalLog {
+  id: string
+  value: number
+  notes: string | null
+  logged_at: string
+}
+
+// Goal info embedded in plant (for garden view)
+export interface PlantGoalInfo {
+  id: string
+  goal_mode: GoalMode
+  tracking_metric: string
+  unit: string
+  target_value: number
+  current_value: number
+  weekly_targets: number[] | null
+  current_week_target: number
+  week_number: number
+}
+
 // Plant with type info (joined)
 export interface PlantWithType extends Plant {
   plant_type: PlantType
+  // Optional goal info (populated when plant has goal_mode)
+  goal?: PlantGoalInfo | null
+  // Today's goal logs for this plant
+  today_logs?: TodayGoalLog[]
+  // Computed: today's total log count
+  today_log_count?: number
+  // Computed: today's total value
+  today_value?: number
 }
 
 // Watering logs table

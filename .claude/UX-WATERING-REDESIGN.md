@@ -322,10 +322,13 @@ LIMIT 10;
 - [x] Implement long-press for info card
 - [x] Add plant overlay badge showing today's status
 
-### Phase 2: Multi-Log Support
-- [ ] Remove single-watering-per-day constraint
-- [ ] Create Quick Log Modal for goal plants
-- [ ] Update garden view to show log counts
+### Phase 2: Multi-Log Support ✅ COMPLETE
+- [x] Remove single-watering-per-day constraint for goal plants
+- [x] Create Quick Log Modal for goal plants
+- [x] Update garden view to show log counts
+- [x] Merge goal info into PlantWithType
+- [x] Add logGoal function to PlantsContext
+- [x] Pass today's logs data to QuickLogModal and FloatingPlantCard
 
 ### Phase 3: Floating Info Card
 - [ ] Create FloatingPlantCard component
