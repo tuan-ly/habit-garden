@@ -1,5 +1,14 @@
 'use client'
 
+export interface MultiCellArea {
+  /** Top-left row of the multi-cell plant */
+  row: number
+  /** Top-left col of the multi-cell plant */
+  col: number
+  /** Size of the plant (2 = 2x2, 3 = 3x3, etc.) */
+  size: number
+}
+
 interface GroundPlaneProps {
   gridSize: number
   tileSize: number
@@ -8,6 +17,8 @@ interface GroundPlaneProps {
   dirtColor?: string
   dirtDarkColor?: string
   showGridLines?: boolean
+  /** Multi-cell plant areas - grid lines inside these areas will be hidden */
+  multiCellAreas?: MultiCellArea[]
 }
 
 export function GroundPlane({
@@ -18,6 +29,7 @@ export function GroundPlane({
   dirtColor = '#8d6e4c',
   dirtDarkColor = '#6b5344',
   showGridLines = true,
+  multiCellAreas = [],
 }: GroundPlaneProps) {
   const tileHeight = tileSize * 0.3
 
@@ -47,28 +59,104 @@ export function GroundPlane({
   const leftX = 0
   const leftY = diamondHeight / 2
 
-  // Generate grid lines for tile boundaries
+  // Helper to check if a grid line segment is inside a multi-cell area
+  // Row lines (parallel to top-right edge): line at row i separates row i-1 from row i
+  // Col lines (parallel to top-left edge): line at col i separates col i-1 from col i
+  const isLineInsideMultiCell = (
+    lineIndex: number,
+    lineType: 'row' | 'col',
+    colOrRowIndex: number
+  ): boolean => {
+    for (const area of multiCellAreas) {
+      if (lineType === 'row') {
+        // Row line at index i: check if it's inside the multi-cell area vertically
+        // and the column segment falls within the area horizontally
+        if (
+          lineIndex > area.row &&
+          lineIndex < area.row + area.size &&
+          colOrRowIndex >= area.col &&
+          colOrRowIndex < area.col + area.size
+        ) {
+          return true
+        }
+      } else {
+        // Col line at index i: check if it's inside the multi-cell area horizontally
+        // and the row segment falls within the area vertically
+        if (
+          lineIndex > area.col &&
+          lineIndex < area.col + area.size &&
+          colOrRowIndex >= area.row &&
+          colOrRowIndex < area.row + area.size
+        ) {
+          return true
+        }
+      }
+    }
+    return false
+  }
+
+  // Generate grid lines for tile boundaries (as segments to allow gaps)
   const gridLines: { x1: number; y1: number; x2: number; y2: number }[] = []
 
   if (showGridLines) {
     // Lines parallel to top-right edge (rows)
+    // Each line separates row (i-1) from row (i)
     for (let i = 1; i < gridSize; i++) {
-      const ratio = i / gridSize
-      const startX = topX + (leftX - topX) * ratio
-      const startY = topY + (leftY - topY) * ratio
-      const endX = rightX + (bottomX - rightX) * ratio
-      const endY = rightY + (bottomY - rightY) * ratio
-      gridLines.push({ x1: startX, y1: startY, x2: endX, y2: endY })
+      // Break line into segments per column
+      for (let col = 0; col < gridSize; col++) {
+        // Skip this segment if it's inside a multi-cell area
+        if (isLineInsideMultiCell(i, 'row', col)) {
+          continue
+        }
+
+        const segmentStartRatio = i / gridSize
+        const colStartRatio = col / gridSize
+        const colEndRatio = (col + 1) / gridSize
+
+        // Calculate segment start point
+        const lineStartX = topX + (leftX - topX) * segmentStartRatio
+        const lineStartY = topY + (leftY - topY) * segmentStartRatio
+        const lineEndX = rightX + (bottomX - rightX) * segmentStartRatio
+        const lineEndY = rightY + (bottomY - rightY) * segmentStartRatio
+
+        // Interpolate along the line for this column segment
+        const x1 = lineStartX + (lineEndX - lineStartX) * colStartRatio
+        const y1 = lineStartY + (lineEndY - lineStartY) * colStartRatio
+        const x2 = lineStartX + (lineEndX - lineStartX) * colEndRatio
+        const y2 = lineStartY + (lineEndY - lineStartY) * colEndRatio
+
+        gridLines.push({ x1, y1, x2, y2 })
+      }
     }
 
     // Lines parallel to top-left edge (columns)
+    // Each line separates col (i-1) from col (i)
     for (let i = 1; i < gridSize; i++) {
-      const ratio = i / gridSize
-      const startX = topX + (rightX - topX) * ratio
-      const startY = topY + (rightY - topY) * ratio
-      const endX = leftX + (bottomX - leftX) * ratio
-      const endY = leftY + (bottomY - leftY) * ratio
-      gridLines.push({ x1: startX, y1: startY, x2: endX, y2: endY })
+      // Break line into segments per row
+      for (let row = 0; row < gridSize; row++) {
+        // Skip this segment if it's inside a multi-cell area
+        if (isLineInsideMultiCell(i, 'col', row)) {
+          continue
+        }
+
+        const segmentStartRatio = i / gridSize
+        const rowStartRatio = row / gridSize
+        const rowEndRatio = (row + 1) / gridSize
+
+        // Calculate segment start point
+        const lineStartX = topX + (rightX - topX) * segmentStartRatio
+        const lineStartY = topY + (rightY - topY) * segmentStartRatio
+        const lineEndX = leftX + (bottomX - leftX) * segmentStartRatio
+        const lineEndY = leftY + (bottomY - leftY) * segmentStartRatio
+
+        // Interpolate along the line for this row segment
+        const x1 = lineStartX + (lineEndX - lineStartX) * rowStartRatio
+        const y1 = lineStartY + (lineEndY - lineStartY) * rowStartRatio
+        const x2 = lineStartX + (lineEndX - lineStartX) * rowEndRatio
+        const y2 = lineStartY + (lineEndY - lineStartY) * rowEndRatio
+
+        gridLines.push({ x1, y1, x2, y2 })
+      }
     }
   }
 

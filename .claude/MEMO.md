@@ -1,9 +1,9 @@
 # Habit Garden - Project Memo
 
-> **Last Updated**: 2026-01-18
+> **Last Updated**: 2026-01-19
 > **Current Phase**: Phase 4 - Polish & Launch (IN PROGRESS)
 
-> **Last Session**: Goal Data Integration - Merged goal info into PlantWithType
+> **Last Session**: Multi-Cell Plants Visual Implementation - Grid merging and centering
 
 
 ---
@@ -40,13 +40,48 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 - **NEW: Goal Modification** - Modify goals mid-way with before/after comparison
 - **NEW: Adaptive Layout & Navigation** - Fixed navigation sizing and global scrolling strategy to prevent content overlap.
 - **NEW: Bottom HUD Info Bar** - Plant details moved to fixed bottom position above navigation.
-- **NEW: Multi-Cell Plants Infrastructure** - Plants can occupy multiple grid cells (1x1, 2x2, 3x3) - code ready, migration pending
+- **NEW: Multi-Cell Plants** - Plants can occupy multiple grid cells (1x1, 2x2, 3x3) with merged visual tiles and centered plants
 - **NEW: UX Watering Redesign** - One-tap watering, long-press for info, overlay badges on plants
 - **NEW: Goal Data Integration** - Goal info and today's logs merged into PlantWithType for display
 
 ---
 
 ## Recent Changes (Latest First)
+
+### 2026-01-19: Multi-Cell Plants Visual Implementation
+**Goal**: Cây multi-cell hiển thị ở center của vùng chiếm và các ô bị chiếm hợp thành 1 ô lớn (không có grid lines bên trong)
+
+**Status**: ✅ Complete
+
+**Changes Made:**
+1. **Grid Lines Merging**: Grid lines bên trong vùng multi-cell bị ẩn, tạo hiệu ứng "merged tiles"
+2. **Plant Centering**: Cây multi-cell được di chuyển về center của vùng nó chiếm trong isometric view
+3. **Occupied Cell Handling**: Các ô thuộc multi-cell (không phải anchor) không hiện hover/plus icon
+4. **Click Handling**: Click vào bất kỳ ô nào của multi-cell sẽ tương tác với cây chủ
+
+**Updated Files:**
+| File | Change |
+|------|--------|
+| `src/components/garden/ground-plane.tsx` | UPDATED - Added `multiCellAreas` prop, grid lines split into segments with gap logic |
+| `src/components/garden/isometric-plant.tsx` | UPDATED - Added `tileSize` prop, calculate Y offset to center in multi-cell area |
+| `src/components/garden/isometric-tile.tsx` | UPDATED - Added `isOccupiedByMultiCell` prop, hide hover/plus for occupied cells |
+| `src/components/garden/isometric-garden.tsx` | UPDATED - Pass multiCellAreas to GroundPlane, tileSize to IsometricPlant |
+
+**How Multi-Cell Centering Works:**
+```typescript
+// For NxN cells, offset by (N-1)/2 in isometric Y direction
+const cellOffset = (gridSize - 1) / 2
+const offsetY = cellOffset * (tileSize / 2)
+// Transform: translate(0, calc(12% + ${offsetY}px))
+```
+
+**Test Data:**
+- Plant "2" at position (2,2) set to `grid_size = 2` (2x2)
+- Chiếm 4 ô: (2,2), (2,3), (3,2), (3,3)
+- Grid lines giữa các ô này bị ẩn
+- Cây hiển thị ở center của vùng 2x2
+
+---
 
 ### 2026-01-18: Goal Data Integration (Phase 2 Complete)
 **Goal**: Merge goal info and today's logs vào PlantWithType để hiển thị số lần log trên badge

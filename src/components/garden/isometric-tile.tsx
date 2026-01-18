@@ -9,6 +9,8 @@ interface IsometricTileProps {
   gridSize: number
   isEmpty: boolean
   isHovered: boolean
+  /** True if this cell is occupied by a multi-cell plant but is not the anchor */
+  isOccupiedByMultiCell?: boolean
   onClick: () => void
   onMouseEnter: () => void
   onMouseLeave: () => void
@@ -26,6 +28,7 @@ export function IsometricTile({
   gridSize,
   isEmpty,
   isHovered,
+  isOccupiedByMultiCell = false,
   onClick,
   onMouseEnter,
   onMouseLeave,
@@ -96,8 +99,8 @@ export function IsometricTile({
         />
       </svg>
 
-      {/* Hover highlight effect */}
-      {isHovered && (
+      {/* Hover highlight effect - don't show for multi-cell occupied cells */}
+      {isHovered && !isOccupiedByMultiCell && (
         <svg
           width={tileSize}
           height={tileSize / 2}
@@ -118,8 +121,8 @@ export function IsometricTile({
         </svg>
       )}
 
-      {/* Plus icon for empty tiles */}
-      {isEmpty && isHovered && (
+      {/* Plus icon for empty tiles - don't show for multi-cell occupied cells */}
+      {isEmpty && isHovered && !isOccupiedByMultiCell && (
         <div
           className="absolute flex items-center justify-center pointer-events-none"
           style={{

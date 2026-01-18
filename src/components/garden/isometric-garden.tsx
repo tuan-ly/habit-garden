@@ -5,7 +5,7 @@ import { IsometricTile } from './isometric-tile'
 import { IsometricPlant } from './isometric-plant'
 import { PlantInfoBar } from './plant-tooltip'
 import { FloatingPlantCard } from './floating-plant-card'
-import { GroundPlane } from './ground-plane'
+import { GroundPlane, type MultiCellArea } from './ground-plane'
 import { AddPlantDialog } from '@/components/plants/add-plant-dialog'
 import { PlantDetailSheet } from '@/components/plants/plant-detail-sheet'
 import { QuickLogModal } from '@/components/plants/quick-log-modal'
@@ -91,14 +91,27 @@ export function IsometricGarden({
     return buildOccupiedCellsMap(livingPlants)
   }, [livingPlants])
 
+  // Get multi-cell areas for hiding grid lines
+  const multiCellAreas: MultiCellArea[] = useMemo(() => {
+    return livingPlants
+      .filter((p) => (p.grid_size || 1) > 1)
+      .map((p) => ({
+        row: p.grid_row || 0,
+        col: p.grid_col || 0,
+        size: p.grid_size || 1,
+      }))
+  }, [livingPlants])
+
   // Generate grid tiles
   const tiles = useMemo(() => {
-    const result: { row: number; col: number; plant?: PlantWithType; isAnchor: boolean }[] = []
+    const result: { row: number; col: number; plant?: PlantWithType; isAnchor: boolean; isOccupiedByMultiCell: boolean }[] = []
     for (let row = 0; row < gridSize; row++) {
       for (let col = 0; col < gridSize; col++) {
         const plant = occupiedCells.get(`${row}-${col}`)
         const isAnchor = plant ? isAnchorCell(plant, row, col) : false
-        result.push({ row, col, plant, isAnchor })
+        // Check if this cell is occupied by a multi-cell plant but is not the anchor
+        const isOccupiedByMultiCell = plant !== undefined && !isAnchor && (plant.grid_size || 1) > 1
+        result.push({ row, col, plant, isAnchor, isOccupiedByMultiCell })
       }
     }
     return result
@@ -345,12 +358,16 @@ export function IsometricGarden({
             tileSize={tileSize}
             grassColor={defaultTheme.ground.primary}
             grassDarkColor={defaultTheme.ground.secondary}
+            multiCellAreas={multiCellAreas}
           />
 
           {/* Interactive tile zones */}
-          {tiles.map(({ row, col, plant, isAnchor }) => {
+          {tiles.map(({ row, col, plant, isAnchor, isOccupiedByMultiCell }) => {
             const tileKey = `${row}-${col}`
             const isHovered = hoveredTile === tileKey
+
+            // For multi-cell occupied cells (not anchor), clicking should interact with the parent plant
+            const clickPlant = isOccupiedByMultiCell ? plant : (isAnchor ? plant : undefined)
 
             return (
               <IsometricTile
@@ -358,11 +375,12 @@ export function IsometricGarden({
                 row={row}
                 col={col}
                 gridSize={gridSize}
-                isEmpty={!plant}
+                isEmpty={!plant && !isOccupiedByMultiCell}
                 isHovered={isHovered}
-                onClick={() => handleTileClick(plant)}
-                onContextMenu={(e) => handleContextMenu(e, plant)}
-                onTouchStart={(e) => handleTouchStart(e, plant)}
+                isOccupiedByMultiCell={isOccupiedByMultiCell}
+                onClick={() => handleTileClick(clickPlant)}
+                onContextMenu={(e) => handleContextMenu(e, clickPlant)}
+                onTouchStart={(e) => handleTouchStart(e, clickPlant)}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
                 onMouseEnter={() => handleTileHover(row, col)}
@@ -377,6 +395,7 @@ export function IsometricGarden({
                     showBadge={true}
                     todayLogCount={plant.today_log_count}
                     todayValue={plant.today_value}
+                    tileSize={tileSize}
                   />
                 )}
               </IsometricTile>
