@@ -1,8 +1,8 @@
 # Habit Garden - Project Memo
 
-> **Last Updated**: 2026-01-17
+> **Last Updated**: 2026-01-18
 > **Current Phase**: Phase 4 - Polish & Launch (IN PROGRESS)
-> **Last Session**: UI/UX Refinement & Layout Optimization
+> **Last Session**: Critical Bug Fix - Moisture Decay Cron
 
 ---
 
@@ -42,6 +42,36 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 ---
 
 ## Recent Changes (Latest First)
+
+### 2026-01-18: Critical Bug Fix - Moisture Decay Cron Idempotency
+**Problem**: Cron job `/api/cron/moisture-decay` không có idempotency check, dẫn đến việc nếu cron chạy nhiều lần trong một ngày (do retries hoặc lỗi cấu hình), moisture sẽ bị giảm nhiều lần và cây sẽ chết không đúng.
+
+**Root Cause**:
+- Cron job không kiểm tra xem nó đã xử lý plant hôm nay chưa
+- Mỗi lần chạy sẽ decay moisture, dù đã decay rồi trong cùng ngày
+- Ví dụ: Nếu cron chạy 2 lần, moisture giảm từ 100% → 88% → 76% trong cùng 1 ngày
+
+**Solution**: Thêm idempotency check vào cron job
+- Kiểm tra `updated_at` của plant trước khi decay
+- Nếu `updated_at === today` (UTC) → Skip (đã được update rồi)
+- Điều này bảo vệ cả 2 trường hợp:
+  1. Cron đã chạy hôm nay rồi → Skip để tránh double decay
+  2. User đã water hôm nay rồi → Skip vì user đã hoàn thành habit
+
+**Benefits**:
+- ✅ Cron có thể retry an toàn mà không làm cây chết
+- ✅ Early bird users (water trước khi cron chạy) không bị "phạt"
+- ✅ Better observability với `skipped` counter và detailed logs
+
+**Files Changed**:
+| File | Change |
+|------|--------|
+| `src/app/api/cron/moisture-decay/route.ts` | FIXED - Added idempotency check, skip counter, improved logging |
+| `scripts/test-moisture-decay.md` | NEW - Test scenarios and verification guide |
+
+**Testing**: See `scripts/test-moisture-decay.md` for detailed test scenarios.
+
+---
 
 ### 2026-01-17: Stats Garden Sky Theme Fix
 **Goal**: Ensure the stats preview garden always looks bright and clear by forcing the daytime theme.
@@ -588,6 +618,10 @@ See "2026-01-17: Mood → Energy System Redesign" above for details.
 1. **Cron requires CRON_SECRET**: Set `CRON_SECRET` env var for production
 2. **Service role key needed**: Set `SUPABASE_SERVICE_ROLE_KEY` for cron job
 3. **No push notifications**: Would need PWA setup
+
+## Fixed Issues
+
+1. ✅ **Moisture decay cron idempotency** (2026-01-18): Fixed duplicate decay when cron runs multiple times per day
 
 ## Testing Moisture Decay Locally
 
