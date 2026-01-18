@@ -55,6 +55,7 @@ interface PlantsContextType {
   ) => Promise<GoalLogResult>
   addPlant: (plant: PlantWithType) => void
   removePlant: (plantId: string) => void
+  updatePlant: (plantId: string, updates: Partial<PlantWithType>) => void
   refreshPlants: (newPlants: PlantWithType[]) => void
   getPlant: (plantId: string) => PlantWithType | undefined
 }
@@ -369,6 +370,13 @@ export function PlantsProvider({
     setServerPlants((prev) => prev.filter((p) => p.id !== plantId))
   }, [])
 
+  // Update a plant's properties (for goal creation, etc.)
+  const updatePlant = useCallback((plantId: string, updates: Partial<PlantWithType>) => {
+    setServerPlants((prev) =>
+      prev.map((p) => p.id === plantId ? { ...p, ...updates } : p)
+    )
+  }, [])
+
   // Refresh plants from server
   const refreshPlants = useCallback((newPlants: PlantWithType[]) => {
     setServerPlants(newPlants)
@@ -390,6 +398,7 @@ export function PlantsProvider({
         logGoal,
         addPlant,
         removePlant,
+        updatePlant,
         refreshPlants,
         getPlant,
       }}

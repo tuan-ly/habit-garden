@@ -57,7 +57,7 @@ export function PlantDetailSheet({
   weather,
 }: PlantDetailSheetProps) {
   // Get the latest plant data from context (with optimistic updates)
-  const { plants, waterPlant, isPending, isSyncing } = usePlants()
+  const { plants, waterPlant, updatePlant, isPending, isSyncing } = usePlants()
   const plant = initialPlant ? (plants.find(p => p.id === initialPlant.id) || initialPlant) : null
   
   const [isWatering, setIsWatering] = useState(false)
@@ -137,9 +137,28 @@ export function PlantDetailSheet({
     setTimeout(() => setIsWatering(false), 800)
   }
 
-  const handleGoalComplete = () => {
-    // Refresh goal data
-    getGoalForPlant(plant.id).then(setGoal)
+  const handleGoalComplete = async () => {
+    // Refresh goal data and update plant in context
+    const newGoal = await getGoalForPlant(plant.id)
+    setGoal(newGoal)
+
+    // Update plant in context with goal_mode and goal info
+    if (newGoal) {
+      updatePlant(plant.id, {
+        goal_mode: newGoal.goal_mode,
+        goal: {
+          id: newGoal.id,
+          goal_mode: newGoal.goal_mode,
+          tracking_metric: newGoal.tracking_metric,
+          unit: newGoal.unit,
+          target_value: newGoal.target_value,
+          current_value: newGoal.current_value,
+          weekly_targets: newGoal.weekly_targets,
+          current_week_target: newGoal.currentWeekTarget,
+          week_number: newGoal.weekNumber,
+        },
+      })
+    }
   }
 
   const handleAdaptiveComplete = () => {
