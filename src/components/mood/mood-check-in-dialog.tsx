@@ -7,10 +7,9 @@ import { getAllMoodLevels, type MoodLevel, type MoodConfig } from '@/lib/mood-sy
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
-    DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog'
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 import { Sparkles, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -33,7 +32,10 @@ export function MoodCheckInDialog({ open, onOpenChange }: MoodCheckInDialogProps
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md rounded-3xl border-none bg-slate-50 dark:bg-slate-950 p-0 overflow-hidden shadow-2xl">
+            <DialogContent className="sm:max-w-md rounded-3xl border-none bg-slate-50 dark:bg-slate-950 p-0 overflow-hidden shadow-2xl" aria-describedby={undefined}>
+                <VisuallyHidden>
+                    <DialogTitle>Mood Check-In</DialogTitle>
+                </VisuallyHidden>
                 {/* Header with gradient */}
                 <div className="bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-8 text-white text-center relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-full h-full opacity-10">
