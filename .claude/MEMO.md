@@ -3,7 +3,7 @@
 > **Last Updated**: 2026-01-19
 > **Current Phase**: Phase 4 - Polish & Launch (IN PROGRESS)
 
-> **Last Session**: Multi-Cell Plants Visual Implementation - Grid merging and centering
+> **Last Session**: Critical Bug Fix - Timezone Issue in Moisture Decay Cron
 
 
 ---
@@ -47,6 +47,59 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 ---
 
 ## Recent Changes (Latest First)
+
+### 2026-01-19: Critical Bug Fix - Timezone Issue in Moisture Decay Cron
+**Problem**: Cây chết hàng loạt lúc 0h mỗi ngày dù đã được tưới đầy đủ.
+
+**Root Cause Analysis**:
+1. **Phát hiện**: Database có pg_cron job `update_daily_moisture()` chạy lúc `0 0 * * *` (00:00 UTC = 07:00 VN)
+2. **Logic trong function**:
+   ```sql
+   WHERE p.last_watered_at::date < CURRENT_DATE
+   ```
+3. **Vấn đề timezone**:
+   - User tưới lúc 22:16 VN ngày 18/01 = 15:16 UTC ngày 18/01
+   - `last_watered_at::date` = `2026-01-18` (UTC)
+   - Cron chạy lúc 00:00 UTC ngày 19/01: `CURRENT_DATE` = `2026-01-19`
+   - `2026-01-18 < 2026-01-19` = TRUE → **Decay được apply dù user đã tưới!**
+
+**Solution**: Đổi cron schedule sang 17:00 UTC = 00:00 VN
+- Đảm bảo khi cron chạy, ngày UTC và ngày VN khớp nhau
+- User có cả ngày (theo giờ VN) để tưới cây trước khi decay
+
+**Changes Made**:
+
+| Location | Change |
+|----------|--------|
+| `cron.job` (Supabase) | Changed schedule from `0 0 * * *` to `0 17 * * *` |
+| `vercel.json` | **Disabled** - removed cron config (using pg_cron only) |
+| `src/app/api/cron/moisture-decay/route.ts` | Improved idempotency check logic (kept as backup API) |
+
+**Decision**: Chỉ dùng **Supabase pg_cron** vì:
+- Reliable hơn (chạy trong DB, không phụ thuộc network)
+- Nhanh hơn (không HTTP roundtrip)
+- Đã có logic hoàn chỉnh (notifications, death handling)
+- API route vẫn giữ để test/debug thủ công
+
+**Database Commands Executed**:
+```sql
+SELECT cron.unschedule(1);
+SELECT cron.schedule('daily-moisture-decay', '0 17 * * *', 'SELECT update_daily_moisture()');
+```
+
+**Important Notes**:
+- Có 2 hệ thống cron song song: Vercel cron API và Supabase pg_cron
+- pg_cron là hệ thống chính đang giết cây (gọi `update_daily_moisture()`)
+- Vercel cron (`/api/cron/moisture-decay`) có logic riêng nhưng cũng cần fix timezone
+
+**Timeline để hiểu bug**:
+| Time (UTC) | Time (VN) | Event |
+|------------|-----------|-------|
+| 15:16 18/01 | 22:16 18/01 | User waters plant |
+| 00:00 19/01 | 07:00 19/01 | Old cron runs, sees `last_watered_at::date (18) < CURRENT_DATE (19)` → DECAY |
+| 17:00 19/01 | 00:00 20/01 | New cron time, now UTC date matches VN date |
+
+---
 
 ### 2026-01-19: Multi-Cell Plants Visual Implementation
 **Goal**: Cây multi-cell hiển thị ở center của vùng chiếm và các ô bị chiếm hợp thành 1 ô lớn (không có grid lines bên trong)

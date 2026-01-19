@@ -66,20 +66,31 @@ export async function GET(request: NextRequest) {
 
       if (!plantType) continue
 
-      // Idempotency check: Skip if already updated today
-      // This prevents double decay if cron runs multiple times
-      // Also skips if user already watered today (they're ahead of schedule!)
-      const updatedDate = plant.updated_at
-        ? new Date(plant.updated_at).toISOString().split('T')[0]
-        : null
+      // Idempotency check: Skip if user already watered today
+      // IMPORTANT: Use last_watered_at as the primary check, NOT updated_at
+      // updated_at can be stale or not set properly on plant creation
+      // last_watered_at is the definitive source of truth for watering
       const lastWateredDate = plant.last_watered_at
         ? new Date(plant.last_watered_at).toISOString().split('T')[0]
         : null
 
-      if (updatedDate === today) {
-        // Plant was already updated today (by cron or by user watering)
-        const reason = lastWateredDate === today ? 'watered today' : 'already processed'
-        console.log(`Plant ${plant.id} (${plant.name}) ${reason}, skipping decay`)
+      if (lastWateredDate === today) {
+        // User already watered today - they completed their habit!
+        console.log(`Plant ${plant.id} (${plant.name}) watered today, skipping decay`)
+        results.skipped++
+        continue
+      }
+
+      // Also check if this cron already processed this plant today
+      // by checking if updated_at is today AND moisture was already decayed
+      // (last_watered_at would be yesterday or earlier)
+      const updatedDate = plant.updated_at
+        ? new Date(plant.updated_at).toISOString().split('T')[0]
+        : null
+
+      if (updatedDate === today && lastWateredDate !== today) {
+        // Cron already ran today and decayed this plant
+        console.log(`Plant ${plant.id} (${plant.name}) already processed by cron today, skipping`)
         results.skipped++
         continue
       }
