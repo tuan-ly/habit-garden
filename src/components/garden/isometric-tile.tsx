@@ -195,8 +195,8 @@ export function IsometricTile({
           )}
           style={{
             left: tileSize / 2,
-            // Position at center of merged area (shadow position)
-            top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight),
+            // Position slightly above the center of merged area (shadow position)
+            top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight) - 2,
             // -100% moves bottom to anchor point
             transform: 'translate(-50%, -100%)',
             transformOrigin: 'bottom center',
