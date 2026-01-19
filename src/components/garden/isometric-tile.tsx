@@ -13,7 +13,7 @@ interface IsometricTileProps {
   isOccupiedByMultiCell?: boolean
   /** True if this tile is part of a multi-cell plant (including anchor) */
   isPartOfMultiCell?: boolean
-  /** Plant grid size for shadow scaling (default 1) */
+  /** Plant grid size for positioning and shadow scaling (default 1) */
   plantGridSize?: number
   onClick: () => void
   onMouseEnter: () => void
@@ -24,6 +24,24 @@ interface IsometricTileProps {
   onTouchEnd?: (e: React.TouchEvent) => void
   children?: React.ReactNode
   tileSize?: number
+}
+
+/**
+ * Calculate the Y offset to position elements at the CENTER of a merged multi-cell area.
+ *
+ * ISOMETRIC COORDINATE SYSTEM:
+ * - Anchor tile is at grid position (row, col), rendered at the top of the merged diamond
+ * - Center of NxN area is at grid position (row + (N-1)/2, col + (N-1)/2)
+ * - In screen Y: each +1 row adds tileHitHeight/2, each +1 col adds tileHitHeight/2
+ * - Total Y offset from anchor to center = (N-1)/2 * tileHitHeight/2 * 2 = (N-1) * tileHitHeight / 2
+ *
+ * VALUES:
+ * - 1x1: offset = 0 (center = anchor)
+ * - 2x2: offset = tileHitHeight / 2
+ * - 3x3: offset = tileHitHeight
+ */
+function getMergedAreaCenterOffset(plantGridSize: number, tileHitHeight: number): number {
+  return (plantGridSize - 1) * tileHitHeight / 2
 }
 
 export function IsometricTile({
@@ -150,8 +168,8 @@ export function IsometricTile({
           className="absolute pointer-events-none rounded-full"
           style={{
             left: tileSize / 2,
-            // Shadow stays at center of merged area (half the plant offset)
-            top: tileHitHeight / 2 + (plantGridSize - 1) * tileHitHeight / 2,
+            // Shadow at center of merged area
+            top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight),
             // Shadow scales based on plant grid size (1x1→0.4, 2x2→0.7, 3x3→1.0)
             width: tileSize * (0.4 + (plantGridSize - 1) * 0.3),
             height: tileSize * (0.15 + (plantGridSize - 1) * 0.1),
@@ -161,7 +179,16 @@ export function IsometricTile({
         />
       )}
 
-      {/* Plant container - positioned above the tile center, offset for multi-cell */}
+      {/*
+        Plant container - positioned so the plant's BOTTOM sits at the center of merged area.
+
+        Key insight: We use transform: translate(-50%, -100%) which means:
+        - The container's bottom-center point will be placed at (left, top)
+        - So we position (left, top) at the center of the merged area
+        - The plant grows upward from that point
+        - When the plant scales, it scales from bottom-center (transformOrigin in IsometricPlant)
+        - This keeps the bottom anchored at the center regardless of scale
+      */}
       {children && (
         <div
           className={cn(
@@ -169,16 +196,12 @@ export function IsometricTile({
             isHovered && "scale-110"
           )}
           style={{
-            // For multi-cell plants, offset to center of merged area
-            // In isometric view, to move to center of NxN from anchor (top-left):
-            // - Move (N-1)/2 cells right: no X change (isometric), Y += (N-1)/2 * tileHitHeight/2
-            // - Move (N-1)/2 cells down: no X change (isometric), Y += (N-1)/2 * tileHitHeight/2
-            // Total Y offset = (N-1)/2 * tileHitHeight
-            // But tileHitHeight is the visual height of one tile (tileSize/2)
-            // And we're positioning relative to tile container, so offset in container coords
             left: tileSize / 2,
-            // DEBUG: Testing with larger offset to verify it's working
-            top: tileHitHeight / 2 + (plantGridSize - 1) * tileHitHeight,
+            // Position bottom at center of merged area
+            // For 1x1: center is at tileHitHeight/2 (middle of anchor tile)
+            // For NxN: center is offset by (N-1)/2 * tileHitHeight from anchor center
+            top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight),
+            // translate(-50%, -100%) places the bottom-center at (left, top)
             transform: 'translate(-50%, -100%)',
             transformOrigin: 'bottom center',
           }}
