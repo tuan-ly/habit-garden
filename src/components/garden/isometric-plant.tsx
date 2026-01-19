@@ -1,7 +1,6 @@
 'use client'
 
 import { PlantVisual } from '@/components/plants/plant-visual'
-import { PlantOverlayBadge } from './plant-overlay-badge'
 import type { PlantWithType, WeatherType } from '@/types/database'
 import { cn } from '@/lib/utils'
 import { getPlantSizeScale } from '@/lib/utils/grid-positioning'
@@ -12,12 +11,6 @@ interface IsometricPlantProps {
   showWateringEffect?: boolean
   scale?: number
   className?: string
-  /** Today's log count for goal plants */
-  todayLogCount?: number
-  /** Today's total value for goal plants */
-  todayValue?: number
-  /** Whether to show the overlay badge */
-  showBadge?: boolean
 }
 
 // Map growth percentage to a visual scale (base scale)
@@ -36,9 +29,6 @@ export function IsometricPlant({
   showWateringEffect = false,
   scale = 1,
   className,
-  todayLogCount,
-  todayValue,
-  showBadge = true,
 }: IsometricPlantProps) {
   // Base scale from growth stage
   const growthScale = getGrowthScale(plant.growth_percentage)
@@ -57,9 +47,8 @@ export function IsometricPlant({
         className
       )}
       style={{
-        // Base vertical offset for plant alignment on tile
-        // Note: Multi-cell centering is handled by IsometricTile
-        transform: `translate(0, 12%) scale(${finalScale})`,
+        // Scale the whole container from bottom center
+        transform: `scale(${finalScale})`,
         transformOrigin: 'bottom center',
       }}
     >
@@ -68,16 +57,8 @@ export function IsometricPlant({
         size="xl"
         weather={weather}
         showWateringEffect={showWateringEffect}
+        alignBottom
       />
-
-      {/* Overlay badge showing today's activity */}
-      {showBadge && (
-        <PlantOverlayBadge
-          plant={plant}
-          todayLogCount={todayLogCount}
-          todayValue={todayValue}
-        />
-      )}
     </div>
   )
 }

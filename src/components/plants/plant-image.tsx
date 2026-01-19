@@ -16,11 +16,11 @@ export type GrowthStage = keyof typeof GROWTH_STAGES
 
 // Size configurations - using text sizes for emoji
 const SIZE_CONFIG = {
-    sm: { className: 'w-8 h-8 text-2xl' },
-    md: { className: 'w-10 h-10 text-3xl' },
-    lg: { className: 'w-12 h-12 text-4xl' },
-    xl: { className: 'w-16 h-16 text-5xl' },
-    '2xl': { className: 'w-24 h-24 text-7xl' },
+    sm: { className: 'w-8 h-8 text-2xl', classNameAlignBottom: 'w-8 text-2xl' },
+    md: { className: 'w-10 h-10 text-3xl', classNameAlignBottom: 'w-10 text-3xl' },
+    lg: { className: 'w-12 h-12 text-4xl', classNameAlignBottom: 'w-12 text-4xl' },
+    xl: { className: 'w-16 h-16 text-5xl', classNameAlignBottom: 'w-16 text-5xl' },
+    '2xl': { className: 'w-24 h-24 text-7xl', classNameAlignBottom: 'w-24 text-7xl' },
 } as const
 
 interface PlantImageProps {
@@ -28,6 +28,8 @@ interface PlantImageProps {
     size?: keyof typeof SIZE_CONFIG
     showGrowthTransition?: boolean
     className?: string
+    /** If true, aligns content to bottom (no vertical centering) */
+    alignBottom?: boolean
 }
 
 function getGrowthStage(growthPercentage: number, status: PlantStatus): GrowthStage {
@@ -76,6 +78,7 @@ export function PlantImage({
     size = 'md',
     showGrowthTransition = false,
     className,
+    alignBottom = false,
 }: PlantImageProps) {
     const isDead = plant.status === 'dead'
     const currentStage = getGrowthStage(plant.growth_percentage, plant.status)
@@ -88,15 +91,16 @@ export function PlantImage({
     return (
         <div
             className={cn(
-                'relative inline-flex items-center justify-center',
-                sizeConfig.className,
+                'relative inline-flex justify-center',
+                alignBottom ? 'items-end' : 'items-center',
+                alignBottom ? sizeConfig.classNameAlignBottom : sizeConfig.className,
                 showGrowthTransition && 'animate-growth-burst',
                 className
             )}
         >
             <span
                 className={cn(
-                    'transition-all duration-300 select-none',
+                    'transition-all duration-300 select-none leading-none',
                     isDead && 'grayscale opacity-60'
                 )}
                 role="img"

@@ -101,6 +101,29 @@ SELECT cron.schedule('daily-moisture-decay', '0 17 * * *', 'SELECT update_daily_
 
 ---
 
+### 2026-01-19: Fix Plant Alignment in Garden View
+**Goal**: Plant visual phải nằm ngay chính giữa tile, sát đáy container (không có khoảng trống với cạnh dưới)
+
+**Status**: ✅ Complete
+
+**Problem**: Cây trong garden view có khoảng trống giữa đáy cây và đáy container do:
+1. `PlantVisual` và `PlantImage` có fixed height (`h-16`, `h-28`...) khiến emoji bị căn giữa theo chiều dọc
+2. Emoji có line-height tạo thêm padding
+
+**Solution**:
+- Thêm prop `alignBottom` để bỏ fixed height khi cần cây nằm sát đáy
+- Thêm `leading-none` cho emoji để loại bỏ line-height padding
+- Khi `alignBottom=true`, container chỉ có width, không có height cố định
+
+**Updated Files:**
+| File | Change |
+|------|--------|
+| `src/components/plants/plant-visual.tsx` | UPDATED - `getSizeClasses()` bỏ height khi `alignBottom=true`, truyền `alignBottom` xuống PlantImage |
+| `src/components/plants/plant-image.tsx` | UPDATED - Thêm `classNameAlignBottom` config, thêm `leading-none` cho emoji |
+| `src/components/garden/isometric-tile.tsx` | UPDATED - Xóa debug border đỏ |
+
+---
+
 ### 2026-01-19: Multi-Cell Plants Visual Enhancement (Merged Hover + Centered Plant + Shadow)
 **Goal**: Hover vào multi-cell plant hiện highlight merged, cây đặt ở giữa các merged tiles và có bóng râm scale theo size
 

@@ -2,6 +2,8 @@
 
 import { cn } from '@/lib/utils'
 import { Plus } from 'lucide-react'
+import type { PlantWithType } from '@/types/database'
+import { PlantOverlayBadge } from './plant-overlay-badge'
 
 interface IsometricTileProps {
   row: number
@@ -24,6 +26,8 @@ interface IsometricTileProps {
   onTouchEnd?: (e: React.TouchEvent) => void
   children?: React.ReactNode
   tileSize?: number
+  /** Plant data for badge (optional - only needed when plant exists) */
+  plant?: PlantWithType | null
 }
 
 /**
@@ -62,6 +66,7 @@ export function IsometricTile({
   onTouchEnd,
   children,
   tileSize = 60,
+  plant,
 }: IsometricTileProps) {
   // Isometric tile positioning:
   // The grid's top point (0,0) is at the top-center of the diamond
@@ -180,33 +185,45 @@ export function IsometricTile({
       )}
 
       {/*
-        Plant container - positioned so the plant's BOTTOM sits at the center of merged area.
-
-        Key insight: We use transform: translate(-50%, -100%) which means:
-        - The container's bottom-center point will be placed at (left, top)
-        - So we position (left, top) at the center of the merged area
-        - The plant grows upward from that point
-        - When the plant scales, it scales from bottom-center (transformOrigin in IsometricPlant)
-        - This keeps the bottom anchored at the center regardless of scale
+        Plant container - positioned so the container's BOTTOM is at the shadow center.
       */}
       {children && (
         <div
           className={cn(
-            "absolute pointer-events-none flex flex-col items-center justify-end transition-transform duration-200",
+            "absolute pointer-events-none flex flex-col items-center transition-transform duration-200",
             isHovered && "scale-110"
           )}
           style={{
             left: tileSize / 2,
-            // Position bottom at center of merged area
-            // For 1x1: center is at tileHitHeight/2 (middle of anchor tile)
-            // For NxN: center is offset by (N-1)/2 * tileHitHeight from anchor center
+            // Position at center of merged area (shadow position)
             top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight),
-            // translate(-50%, -100%) places the bottom-center at (left, top)
+            // -100% moves bottom to anchor point
             transform: 'translate(-50%, -100%)',
             transformOrigin: 'bottom center',
           }}
         >
           {children}
+        </div>
+      )}
+
+      {/* Badge - rendered separately at shadow position, not affected by plant scale */}
+      {plant && children && (
+        <div
+          className="absolute pointer-events-none"
+          style={{
+            left: tileSize / 2,
+            // Position at center of merged area (same as shadow)
+            top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight),
+            transform: 'translate(-50%, 2px)', // Slightly below shadow center
+            zIndex: 5,
+          }}
+        >
+          <PlantOverlayBadge
+            plant={plant}
+            todayLogCount={plant.today_log_count}
+            todayValue={plant.today_value}
+            tileSize={tileSize}
+          />
         </div>
       )}
     </div>

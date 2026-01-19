@@ -8,6 +8,8 @@ interface PlantOverlayBadgeProps {
   todayLogCount?: number
   todayValue?: number
   className?: string
+  /** Tile size for scaling the badge (default 60) */
+  tileSize?: number
 }
 
 /**
@@ -20,35 +22,51 @@ export function PlantOverlayBadge({
   todayLogCount = 0,
   todayValue,
   className,
+  tileSize = 60,
 }: PlantOverlayBadgeProps) {
   const hasGoal = !!plant.goal_mode
   const isWateredToday = plant.last_watered_at
     ? new Date(plant.last_watered_at).toDateString() === new Date().toDateString()
     : false
 
+  // Scale badge based on tile size (base size 60, target badge ~30% of tile)
+  const badgeScale = (tileSize / 60) * 0.5
+
   // Simple habit - show checkbox
   if (!hasGoal) {
     return (
       <div
         className={cn(
-          'absolute -bottom-1 left-1/2 -translate-x-1/2 z-10',
           'flex items-center justify-center',
-          'w-6 h-6 rounded-full',
+          'rounded-full',
           'backdrop-blur-md shadow-lg',
           'transition-all duration-300',
           isWateredToday
-            ? 'bg-emerald-500/90 text-white scale-100'
-            : 'bg-slate-800/70 text-slate-400 scale-90 opacity-80',
+            ? 'bg-emerald-500/90 text-white'
+            : 'bg-slate-800/70 text-slate-400 opacity-80',
           isWateredToday && 'animate-in zoom-in-50 duration-300',
           className
         )}
+        style={{
+          width: 18 * badgeScale,
+          height: 18 * badgeScale,
+        }}
       >
         {isWateredToday ? (
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            style={{ width: 10 * badgeScale, height: 10 * badgeScale }}
+          >
             <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         ) : (
-          <span className="w-2.5 h-2.5 rounded-full border-2 border-current" />
+          <span
+            className="rounded-full border-2 border-current"
+            style={{ width: 8 * badgeScale, height: 8 * badgeScale }}
+          />
         )}
       </div>
     )
@@ -60,17 +78,20 @@ export function PlantOverlayBadge({
     return (
       <div
         className={cn(
-          'absolute -bottom-1 left-1/2 -translate-x-1/2 z-10',
           'flex items-center justify-center gap-0.5',
-          'px-2 py-0.5 rounded-full',
+          'rounded-full',
           'bg-slate-800/70 backdrop-blur-md',
-          'text-xs text-slate-400 font-medium',
+          'text-slate-400 font-medium',
           'shadow-lg',
           className
         )}
+        style={{
+          padding: `${2 * badgeScale}px ${6 * badgeScale}px`,
+          fontSize: 10 * badgeScale,
+        }}
       >
         <span className="opacity-60">💧</span>
-        <span className="text-[10px]">0</span>
+        <span>0</span>
       </div>
     )
   }
@@ -79,15 +100,18 @@ export function PlantOverlayBadge({
   return (
     <div
       className={cn(
-        'absolute -bottom-1 left-1/2 -translate-x-1/2 z-10',
         'flex items-center justify-center gap-0.5',
-        'px-2 py-0.5 rounded-full',
+        'rounded-full',
         'bg-emerald-500/90 backdrop-blur-md',
-        'text-xs text-white font-bold',
+        'text-white font-bold',
         'shadow-lg shadow-emerald-500/30',
         'animate-in zoom-in-75 duration-300',
         className
       )}
+      style={{
+        padding: `${2 * badgeScale}px ${6 * badgeScale}px`,
+        fontSize: 10 * badgeScale,
+      }}
     >
       <span>💧</span>
       {todayLogCount > 9 ? (

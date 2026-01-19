@@ -411,15 +411,13 @@ export function IsometricGarden({
                 onMouseEnter={() => handleTileHover(row, col)}
                 onMouseLeave={handleTileLeave}
                 tileSize={tileSize}
+                plant={isAnchor ? plant : null}
               >
                 {/* Only render plant at its anchor position */}
                 {plant && isAnchor && (
                   <IsometricPlant
                     plant={plant}
                     weather={weather}
-                    showBadge={true}
-                    todayLogCount={plant.today_log_count}
-                    todayValue={plant.today_value}
                   />
                 )}
               </IsometricTile>

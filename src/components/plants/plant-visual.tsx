@@ -52,6 +52,8 @@ interface PlantVisualProps {
   className?: string
   /** If true, hides the "needs water" indicator (plant already watered today) */
   isWateredToday?: boolean
+  /** If true, aligns plant to bottom of container (for isometric garden view) */
+  alignBottom?: boolean
 }
 
 function getSpecialEffectClass(plantTypeName: string): string {
@@ -59,13 +61,14 @@ function getSpecialEffectClass(plantTypeName: string): string {
   return SPECIAL_PLANT_EFFECTS[normalizedName] || ''
 }
 
-function getSizeClasses(size: PlantVisualProps['size']) {
+function getSizeClasses(size: PlantVisualProps['size'], alignBottom?: boolean) {
+  // When alignBottom is true, we don't set fixed height so plant sits at bottom naturally
   const sizes = {
-    sm: 'text-2xl w-10 h-10',
-    md: 'text-4xl w-14 h-14',
-    lg: 'text-5xl w-20 h-20',
-    xl: 'text-6xl w-28 h-28',
-    '2xl': 'text-7xl w-36 h-36',
+    sm: alignBottom ? 'text-2xl w-10' : 'text-2xl w-10 h-10',
+    md: alignBottom ? 'text-4xl w-14' : 'text-4xl w-14 h-14',
+    lg: alignBottom ? 'text-5xl w-20' : 'text-5xl w-20 h-20',
+    xl: alignBottom ? 'text-6xl w-28' : 'text-6xl w-28 h-28',
+    '2xl': alignBottom ? 'text-7xl w-36' : 'text-7xl w-36 h-36',
   }
   return sizes[size || 'md']
 }
@@ -93,6 +96,7 @@ export function PlantVisual({
   weather,
   className,
   isWateredToday,
+  alignBottom = false,
 }: PlantVisualProps) {
   // Auto-detect if watered today when not explicitly passed
   const wateredToday = isWateredToday ?? (plant.last_watered_at
@@ -170,7 +174,8 @@ export function PlantVisual({
 
   return (
     <div className={cn(
-      'relative inline-flex items-center justify-center',
+      'relative inline-flex justify-center',
+      alignBottom ? 'items-end' : 'items-center',
       'plant-container',
       className
     )}>
@@ -188,8 +193,9 @@ export function PlantVisual({
       {/* Main plant image with animations */}
       <div
         className={cn(
-          'plant-visual inline-flex items-center justify-center transition-transform duration-300 relative z-10',
-          getSizeClasses(size),
+          'plant-visual inline-flex justify-center transition-transform duration-300 relative z-10',
+          alignBottom ? 'items-end' : 'items-center',
+          getSizeClasses(size, alignBottom),
           specialEffectClass,
           weatherClass,
           isStormShaking && 'weather-stormy', // Apply shake only when active
@@ -203,6 +209,7 @@ export function PlantVisual({
           plant={plant}
           size={size}
           showGrowthTransition={showGrowthBurst}
+          alignBottom={alignBottom}
         />
       </div>
 
