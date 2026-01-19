@@ -18,8 +18,6 @@ interface IsometricPlantProps {
   todayValue?: number
   /** Whether to show the overlay badge */
   showBadge?: boolean
-  /** Tile size for calculating multi-cell offset */
-  tileSize?: number
 }
 
 // Map growth percentage to a visual scale (base scale)
@@ -41,7 +39,6 @@ export function IsometricPlant({
   todayLogCount,
   todayValue,
   showBadge = true,
-  tileSize = 140,
 }: IsometricPlantProps) {
   // Base scale from growth stage
   const growthScale = getGrowthScale(plant.growth_percentage)
@@ -53,18 +50,6 @@ export function IsometricPlant({
   // Combine all scale factors
   const finalScale = scale * growthScale * gridSizeScale
 
-  // Calculate offset to center plant in multi-cell area (isometric coordinates)
-  // For a plant occupying NxN cells, we need to move it to the center of the area
-  // In isometric view:
-  // - Moving 1 cell right (col+1): x += tileSize/2, y += tileSize/4
-  // - Moving 1 cell down (row+1): x -= tileSize/2, y += tileSize/4
-  // To center in NxN: offset by (N-1)/2 cells in both directions
-  const cellOffset = (gridSize - 1) / 2
-  // Combined offset: right direction + down direction
-  // x: (cellOffset * tileSize/2) + (cellOffset * -tileSize/2) = 0
-  // y: (cellOffset * tileSize/4) + (cellOffset * tileSize/4) = cellOffset * tileSize/2
-  const offsetY = cellOffset * (tileSize / 2)
-
   return (
     <div
       className={cn(
@@ -72,7 +57,9 @@ export function IsometricPlant({
         className
       )}
       style={{
-        transform: `translate(0, calc(12% + ${offsetY}px)) scale(${finalScale})`,
+        // Base vertical offset for plant alignment on tile
+        // Note: Multi-cell centering is handled by IsometricTile
+        transform: `translate(0, 12%) scale(${finalScale})`,
         transformOrigin: 'bottom center',
       }}
     >

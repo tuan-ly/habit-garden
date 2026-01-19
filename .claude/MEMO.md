@@ -101,7 +101,60 @@ SELECT cron.schedule('daily-moisture-decay', '0 17 * * *', 'SELECT update_daily_
 
 ---
 
-### 2026-01-19: Multi-Cell Plants Visual Implementation
+### 2026-01-19: Multi-Cell Plants Visual Enhancement (Merged Hover + Centered Plant + Shadow)
+**Goal**: Hover vào multi-cell plant hiện highlight merged, cây đặt ở giữa các merged tiles và có bóng râm scale theo size
+
+**Status**: ✅ Complete
+
+**Changes Made:**
+1. **Merged Hover Highlight**: Khi hover vào bất kỳ tile nào của multi-cell plant, toàn bộ merged area được highlight cùng lúc (polygon lớn thay vì tile riêng lẻ)
+2. **Plant Centering**: Cây multi-cell được di chuyển từ anchor về đáy của merged area (offset Y = `(gridSize - 1) * tileHitHeight`)
+3. **Scaled Shadow**: Shadow của cây scale theo `grid_size` và nằm ở giữa merged area (offset Y = `(gridSize - 1) * tileHitHeight / 2`)
+4. **Smart Hover Detection**: Hover vào tile bất kỳ của multi-cell → set hover về anchor cell → trigger merged highlight
+5. **No Individual Hover**: Các tile thuộc multi-cell không hiện hover highlight riêng (handled by GroundPlane)
+
+**Updated Files:**
+| File | Change |
+|------|--------|
+| `src/components/garden/ground-plane.tsx` | UPDATED - Added `hoveredMultiCellArea` prop, render merged polygon highlight |
+| `src/components/garden/isometric-tile.tsx` | UPDATED - Added `isPartOfMultiCell`, `plantGridSize` props, plant offset to bottom of merged area, shadow centered |
+| `src/components/garden/isometric-garden.tsx` | UPDATED - Smart hover detection for multi-cell, pass `hoveredMultiCellArea` to GroundPlane |
+| `src/components/garden/isometric-plant.tsx` | UPDATED - Removed multi-cell offset (now handled by IsometricTile) |
+
+**How Plant Centering Works:**
+```typescript
+// In IsometricTile - plant container position
+// Plant is offset to bottom of merged area
+top: tileHitHeight / 2 + (plantGridSize - 1) * tileHitHeight
+
+// Shadow is offset to center of merged area
+top: tileHitHeight / 2 + (plantGridSize - 1) * tileHitHeight / 2
+```
+
+**How Merged Hover Works:**
+```typescript
+// When hovering a multi-cell tile, redirect hover to anchor
+const handleTileHover = (row, col) => {
+  const plant = occupiedCells.get(`${row}-${col}`)
+  if (plant && plant.grid_size > 1) {
+    setHoveredTile(`${plant.grid_row}-${plant.grid_col}`) // anchor
+  } else {
+    setHoveredTile(`${row}-${col}`)
+  }
+}
+// GroundPlane renders merged polygon for hoveredMultiCellArea
+```
+
+**How Scaled Shadow Works:**
+```typescript
+// Shadow scales based on plant grid size (1x1→0.4, 2x2→0.7, 3x3→1.0)
+width: tileSize * (0.4 + (plantGridSize - 1) * 0.3)
+height: tileSize * (0.15 + (plantGridSize - 1) * 0.1)
+```
+
+---
+
+### 2026-01-19: Multi-Cell Plants Visual Implementation (Previous)
 **Goal**: Cây multi-cell hiển thị ở center của vùng chiếm và các ô bị chiếm hợp thành 1 ô lớn (không có grid lines bên trong)
 
 **Status**: ✅ Complete

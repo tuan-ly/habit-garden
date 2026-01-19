@@ -309,7 +309,14 @@ export function IsometricGarden({
   }, [floatingCard, handleQuickWater])
 
   const handleTileHover = (row: number, col: number) => {
-    setHoveredTile(`${row}-${col}`)
+    // Check if this tile belongs to a multi-cell plant
+    const plant = occupiedCells.get(`${row}-${col}`)
+    if (plant && (plant.grid_size || 1) > 1) {
+      // Set hover to anchor cell to highlight all tiles of the multi-cell plant
+      setHoveredTile(`${plant.grid_row || 0}-${plant.grid_col || 0}`)
+    } else {
+      setHoveredTile(`${row}-${col}`)
+    }
   }
 
   const handleTileLeave = () => {
@@ -318,6 +325,18 @@ export function IsometricGarden({
 
   // Get hovered plant for info bar
   const hoveredPlant = hoveredTile ? occupiedCells.get(hoveredTile) ?? null : null
+
+  // Get hovered multi-cell area (if hovering a multi-cell plant)
+  const hoveredMultiCellArea = useMemo(() => {
+    if (!hoveredTile) return null
+    const plant = occupiedCells.get(hoveredTile)
+    if (!plant || (plant.grid_size || 1) <= 1) return null
+    return {
+      row: plant.grid_row || 0,
+      col: plant.grid_col || 0,
+      size: plant.grid_size || 1,
+    }
+  }, [hoveredTile, occupiedCells])
 
   // Check if garden is empty
   const isEmpty = livingPlants.length === 0
@@ -359,6 +378,7 @@ export function IsometricGarden({
             grassColor={defaultTheme.ground.primary}
             grassDarkColor={defaultTheme.ground.secondary}
             multiCellAreas={multiCellAreas}
+            hoveredMultiCellArea={hoveredMultiCellArea}
           />
 
           {/* Interactive tile zones */}
@@ -369,6 +389,9 @@ export function IsometricGarden({
             // For multi-cell occupied cells (not anchor), clicking should interact with the parent plant
             const clickPlant = isOccupiedByMultiCell ? plant : (isAnchor ? plant : undefined)
 
+            // Check if this tile is part of a multi-cell plant (anchor or occupied)
+            const isPartOfMultiCell = plant !== undefined && (plant.grid_size || 1) > 1
+
             return (
               <IsometricTile
                 key={tileKey}
@@ -378,6 +401,8 @@ export function IsometricGarden({
                 isEmpty={!plant && !isOccupiedByMultiCell}
                 isHovered={isHovered}
                 isOccupiedByMultiCell={isOccupiedByMultiCell}
+                isPartOfMultiCell={isPartOfMultiCell}
+                plantGridSize={plant?.grid_size || 1}
                 onClick={() => handleTileClick(clickPlant)}
                 onContextMenu={(e) => handleContextMenu(e, clickPlant)}
                 onTouchStart={(e) => handleTouchStart(e, clickPlant)}
@@ -395,7 +420,6 @@ export function IsometricGarden({
                     showBadge={true}
                     todayLogCount={plant.today_log_count}
                     todayValue={plant.today_value}
-                    tileSize={tileSize}
                   />
                 )}
               </IsometricTile>

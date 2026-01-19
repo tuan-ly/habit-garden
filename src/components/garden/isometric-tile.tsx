@@ -11,6 +11,10 @@ interface IsometricTileProps {
   isHovered: boolean
   /** True if this cell is occupied by a multi-cell plant but is not the anchor */
   isOccupiedByMultiCell?: boolean
+  /** True if this tile is part of a multi-cell plant (including anchor) */
+  isPartOfMultiCell?: boolean
+  /** Plant grid size for shadow scaling (default 1) */
+  plantGridSize?: number
   onClick: () => void
   onMouseEnter: () => void
   onMouseLeave: () => void
@@ -29,6 +33,8 @@ export function IsometricTile({
   isEmpty,
   isHovered,
   isOccupiedByMultiCell = false,
+  isPartOfMultiCell = false,
+  plantGridSize = 1,
   onClick,
   onMouseEnter,
   onMouseLeave,
@@ -94,13 +100,14 @@ export function IsometricTile({
           fill="transparent"
           className={cn(
             'transition-all duration-200',
-            isHovered && 'fill-white/10'
+            // Only show hover fill for non-multi-cell tiles (multi-cell handled by GroundPlane)
+            isHovered && !isPartOfMultiCell && 'fill-white/10'
           )}
         />
       </svg>
 
-      {/* Hover highlight effect - don't show for multi-cell occupied cells */}
-      {isHovered && !isOccupiedByMultiCell && (
+      {/* Hover highlight effect - don't show for multi-cell tiles (handled by GroundPlane) */}
+      {isHovered && !isOccupiedByMultiCell && !isPartOfMultiCell && (
         <svg
           width={tileSize}
           height={tileSize / 2}
@@ -137,22 +144,24 @@ export function IsometricTile({
         </div>
       )}
 
-      {/* Plant shadow - centered on tile */}
+      {/* Plant shadow - centered in merged area, scales with plant grid size */}
       {children && (
         <div
           className="absolute pointer-events-none rounded-full"
           style={{
             left: tileSize / 2,
-            top: tileHitHeight / 2,
-            width: tileSize * 0.4,
-            height: tileSize * 0.15,
+            // Shadow stays at center of merged area (half the plant offset)
+            top: tileHitHeight / 2 + (plantGridSize - 1) * tileHitHeight / 2,
+            // Shadow scales based on plant grid size (1x1→0.4, 2x2→0.7, 3x3→1.0)
+            width: tileSize * (0.4 + (plantGridSize - 1) * 0.3),
+            height: tileSize * (0.15 + (plantGridSize - 1) * 0.1),
             transform: 'translate(-50%, -50%)',
             background: 'radial-gradient(ellipse, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.1) 50%, transparent 100%)',
           }}
         />
       )}
 
-      {/* Plant container - positioned above the tile center */}
+      {/* Plant container - positioned above the tile center, offset for multi-cell */}
       {children && (
         <div
           className={cn(
@@ -160,8 +169,16 @@ export function IsometricTile({
             isHovered && "scale-110"
           )}
           style={{
+            // For multi-cell plants, offset to center of merged area
+            // In isometric view, to move to center of NxN from anchor (top-left):
+            // - Move (N-1)/2 cells right: no X change (isometric), Y += (N-1)/2 * tileHitHeight/2
+            // - Move (N-1)/2 cells down: no X change (isometric), Y += (N-1)/2 * tileHitHeight/2
+            // Total Y offset = (N-1)/2 * tileHitHeight
+            // But tileHitHeight is the visual height of one tile (tileSize/2)
+            // And we're positioning relative to tile container, so offset in container coords
             left: tileSize / 2,
-            top: tileHitHeight / 2,
+            // DEBUG: Testing with larger offset to verify it's working
+            top: tileHitHeight / 2 + (plantGridSize - 1) * tileHitHeight,
             transform: 'translate(-50%, -100%)',
             transformOrigin: 'bottom center',
           }}

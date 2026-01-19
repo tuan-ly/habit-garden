@@ -19,6 +19,8 @@ interface GroundPlaneProps {
   showGridLines?: boolean
   /** Multi-cell plant areas - grid lines inside these areas will be hidden */
   multiCellAreas?: MultiCellArea[]
+  /** Currently hovered multi-cell area (for merged hover highlight) */
+  hoveredMultiCellArea?: MultiCellArea | null
 }
 
 export function GroundPlane({
@@ -30,6 +32,7 @@ export function GroundPlane({
   dirtDarkColor = '#6b5344',
   showGridLines = true,
   multiCellAreas = [],
+  hoveredMultiCellArea = null,
 }: GroundPlaneProps) {
   const tileHeight = tileSize * 0.3
 
@@ -257,6 +260,43 @@ export function GroundPlane({
           strokeDasharray="4 8"
         />
       ))}
+
+      {/* Merged hover highlight for multi-cell areas */}
+      {hoveredMultiCellArea && (() => {
+        const { row, col, size } = hoveredMultiCellArea
+        // Calculate the 4 corners of the merged area in isometric coordinates
+        // Top corner: (row, col)
+        // Right corner: (row, col + size)
+        // Bottom corner: (row + size, col + size)
+        // Left corner: (row + size, col)
+
+        const topCornerX = topX + (col - row) * (tileSize / 2)
+        const topCornerY = (col + row) * (tileSize / 4)
+
+        const rightCornerX = topX + ((col + size) - row) * (tileSize / 2)
+        const rightCornerY = ((col + size) + row) * (tileSize / 4)
+
+        const bottomCornerX = topX + ((col + size) - (row + size)) * (tileSize / 2)
+        const bottomCornerY = ((col + size) + (row + size)) * (tileSize / 4)
+
+        const leftCornerX = topX + (col - (row + size)) * (tileSize / 2)
+        const leftCornerY = (col + (row + size)) * (tileSize / 4)
+
+        return (
+          <polygon
+            points={`
+              ${topCornerX},${topCornerY}
+              ${rightCornerX},${rightCornerY}
+              ${bottomCornerX},${bottomCornerY}
+              ${leftCornerX},${leftCornerY}
+            `}
+            fill="rgba(255,255,255,0.15)"
+            stroke="rgba(255,255,255,0.4)"
+            strokeWidth="1.5"
+            className="transition-all duration-200"
+          />
+        )
+      })()}
 
       {/* Border highlight removed */}
 
