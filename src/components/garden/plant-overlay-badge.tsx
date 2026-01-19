@@ -29,8 +29,8 @@ export function PlantOverlayBadge({
     ? new Date(plant.last_watered_at).toDateString() === new Date().toDateString()
     : false
 
-  // Scale badge based on tile size (base size 60, target badge ~30% of tile)
-  const badgeScale = (tileSize / 60) * 0.5
+  // Scale badge based on tile size (min 0.4 to prevent too small on large plants)
+  const badgeScale = Math.max(0.4, (tileSize / 60) * 0.35)
 
   // Simple habit - show checkbox
   if (!hasGoal) {

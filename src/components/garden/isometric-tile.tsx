@@ -200,21 +200,24 @@ export function IsometricTile({
             // -100% moves bottom to anchor point
             transform: 'translate(-50%, -100%)',
             transformOrigin: 'bottom center',
+
+            // DEBUG: red border to see container bounds
+            // border: '2px solid red',
           }}
         >
           {children}
         </div>
       )}
 
-      {/* Badge - rendered separately at shadow position, not affected by plant scale */}
+      {/* Badge - positioned below the plant, scaled with tile size */}
       {plant && children && (
         <div
           className="absolute pointer-events-none"
           style={{
             left: tileSize / 2,
-            // Position at center of merged area (same as shadow)
-            top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight),
-            transform: 'translate(-50%, 2px)', // Slightly below shadow center
+            // Position below the plant (center of merged area + small offset)
+            top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight) + tileSize * 0.05,
+            transform: 'translate(-50%, 0)',
             zIndex: 5,
           }}
         >
