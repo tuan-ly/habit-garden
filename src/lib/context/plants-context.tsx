@@ -10,8 +10,9 @@ import {
   type ReactNode,
 } from 'react'
 import type { PlantWithType, TodayGoalLog } from '@/types/database'
-import { waterPlant as waterPlantAction } from '@/lib/actions/plants'
+import { waterPlant as waterPlantAction, updatePlantPosition as updatePlantPositionAction } from '@/lib/actions/plants'
 import { logGoalValue as logGoalValueAction } from '@/lib/actions/goals'
+import { validatePlantMove } from '@/lib/utils/grid-positioning'
 import { toast } from 'sonner'
 
 // Types for optimistic updates
@@ -21,6 +22,7 @@ type OptimisticAction =
   | { type: 'REMOVE_PLANT'; plantId: string }
   | { type: 'ADD_PLANT'; plant: PlantWithType }
   | { type: 'LOG_GOAL'; plantId: string; value: number; notes?: string }
+  | { type: 'MOVE_PLANT'; plantId: string; gridRow: number; gridCol: number }
 
 interface WaterResult {
   success: boolean
@@ -40,6 +42,11 @@ interface GoalLogResult {
   error?: string
 }
 
+interface MoveResult {
+  success: boolean
+  error?: string
+}
+
 interface PlantsContextType {
   plants: PlantWithType[]
   isPending: boolean
@@ -53,6 +60,11 @@ interface PlantsContextType {
     value: number,
     notes?: string
   ) => Promise<GoalLogResult>
+  movePlant: (
+    plantId: string,
+    gridRow: number,
+    gridCol: number
+  ) => Promise<MoveResult>
   addPlant: (plant: PlantWithType) => void
   removePlant: (plantId: string) => void
   updatePlant: (plantId: string, updates: Partial<PlantWithType>) => void
@@ -153,6 +165,14 @@ function plantsReducer(
 
     case 'ADD_PLANT': {
       return [...state, action.plant]
+    }
+
+    case 'MOVE_PLANT': {
+      return state.map((plant) =>
+        plant.id === action.plantId
+          ? { ...plant, grid_row: action.gridRow, grid_col: action.gridCol }
+          : plant
+      )
     }
 
     default:
@@ -360,6 +380,60 @@ export function PlantsProvider({
     [optimisticPlants, startTransition, addOptimisticUpdate]
   )
 
+  // Move a plant to a new position with optimistic update
+  const movePlant = useCallback(
+    async (
+      plantId: string,
+      gridRow: number,
+      gridCol: number
+    ): Promise<MoveResult> => {
+      // Validate move locally first
+      const validation = validatePlantMove(plantId, gridRow, gridCol, optimisticPlants)
+      if (!validation.valid) {
+        toast.error('Cannot move plant', {
+          description: validation.reason,
+        })
+        return { success: false, error: validation.reason }
+      }
+
+      // Apply optimistic update
+      startTransition(() => {
+        addOptimisticUpdate({ type: 'MOVE_PLANT', plantId, gridRow, gridCol })
+      })
+
+      // Sync with server
+      setIsSyncing(true)
+      try {
+        const result = await updatePlantPositionAction(plantId, gridRow, gridCol)
+
+        if (result.success) {
+          // Update serverPlants to persist
+          setServerPlants((prev) =>
+            prev.map((p) =>
+              p.id === plantId
+                ? { ...p, grid_row: gridRow, grid_col: gridCol }
+                : p
+            )
+          )
+          return { success: true }
+        } else {
+          toast.error('Failed to move plant', {
+            description: result.error,
+          })
+          return { success: false, error: result.error }
+        }
+      } catch {
+        toast.error('Network error', {
+          description: 'Failed to save position',
+        })
+        return { success: false, error: 'Network error' }
+      } finally {
+        setIsSyncing(false)
+      }
+    },
+    [optimisticPlants, startTransition, addOptimisticUpdate]
+  )
+
   // Add a new plant immediately to state
   const addPlant = useCallback((plant: PlantWithType) => {
     setServerPlants((prev) => [...prev, plant])
@@ -396,6 +470,7 @@ export function PlantsProvider({
         isSyncing,
         waterPlant,
         logGoal,
+        movePlant,
         addPlant,
         removePlant,
         updatePlant,

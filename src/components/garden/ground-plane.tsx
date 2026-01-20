@@ -21,6 +21,10 @@ interface GroundPlaneProps {
   multiCellAreas?: MultiCellArea[]
   /** Currently hovered multi-cell area (for merged hover highlight) */
   hoveredMultiCellArea?: MultiCellArea | null
+  /** Target cell for drag-and-drop (shows highlight) */
+  dragTargetCell?: { row: number; col: number } | null
+  /** Whether the drag target is a valid drop location */
+  isDragTargetValid?: boolean
 }
 
 export function GroundPlane({
@@ -33,6 +37,8 @@ export function GroundPlane({
   showGridLines = true,
   multiCellAreas = [],
   hoveredMultiCellArea = null,
+  dragTargetCell = null,
+  isDragTargetValid = false,
 }: GroundPlaneProps) {
   const tileHeight = tileSize * 0.3
 
@@ -260,6 +266,39 @@ export function GroundPlane({
           strokeDasharray="4 8"
         />
       ))}
+
+      {/* Drag target highlight */}
+      {dragTargetCell && (() => {
+        const { row, col } = dragTargetCell
+        // Calculate the 4 corners of the target cell in isometric coordinates
+        const topCornerX = topX + (col - row) * (tileSize / 2)
+        const topCornerY = (col + row) * (tileSize / 4)
+
+        const rightCornerX = topX + ((col + 1) - row) * (tileSize / 2)
+        const rightCornerY = ((col + 1) + row) * (tileSize / 4)
+
+        const bottomCornerX = topX + ((col + 1) - (row + 1)) * (tileSize / 2)
+        const bottomCornerY = ((col + 1) + (row + 1)) * (tileSize / 4)
+
+        const leftCornerX = topX + (col - (row + 1)) * (tileSize / 2)
+        const leftCornerY = (col + (row + 1)) * (tileSize / 4)
+
+        return (
+          <polygon
+            points={`
+              ${topCornerX},${topCornerY}
+              ${rightCornerX},${rightCornerY}
+              ${bottomCornerX},${bottomCornerY}
+              ${leftCornerX},${leftCornerY}
+            `}
+            fill={isDragTargetValid ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'}
+            stroke={isDragTargetValid ? 'rgba(34, 197, 94, 0.8)' : 'rgba(239, 68, 68, 0.8)'}
+            strokeWidth="2"
+            strokeDasharray={isDragTargetValid ? 'none' : '4 4'}
+            className="transition-all duration-150"
+          />
+        )
+      })()}
 
       {/* Merged hover highlight for multi-cell areas */}
       {hoveredMultiCellArea && (() => {

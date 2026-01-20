@@ -3,7 +3,7 @@
 > **Last Updated**: 2026-01-20
 > **Current Phase**: Phase 4 - Polish & Launch (IN PROGRESS)
 
-> **Last Session**: Bottom Navigation & List View Scrolling Fix
+> **Last Session**: Plant Position Management & Drag-and-Drop
 
 
 ---
@@ -45,10 +45,97 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 - **NEW: Goal Data Integration** - Goal info and today's logs merged into PlantWithType for display
 - **NEW: Garden Zoom System** - Zoom in/out controls with pinch-to-zoom on mobile
 - **NEW: Floating Bottom Navigation** - Nav bar now floats over content with transparency, list view scrolling fixed
+- **NEW: Plant Drag-and-Drop** - Long-press to drag plants to new positions, visual feedback for valid/invalid targets
+- **NEW: Dynamic Grid Sizing** - Garden grid auto-expands based on plant positions (e.g., plant at (4,2) → 6x6 grid)
+- **NEW: Plant Growth Conflict Resolution** - When plants grow larger (1x1→2x2→3x3), conflicting plants are auto-relocated
 
 ---
 
 ## Recent Changes (Latest First)
+
+### 2026-01-20: Plant Drag-and-Drop Fix & Visual Feedback
+**Goal**: Fix drag không hoạt động trên mobile, thêm visual feedback khi kéo, không bị overlay items
+
+**Problems Fixed**:
+1. Touch events không hoạt động do React synthetic events là passive
+2. Không có visual feedback khi drag - cây không di chuyển theo ngón tay
+3. Badges, tooltips, info bars che mất cây khi đang drag
+
+**Solution**:
+
+1. **Native Touch Event Listener** ([isometric-garden.tsx](src/components/garden/isometric-garden.tsx)):
+   - Thêm native `touchmove` listener với `{ passive: false }` để có thể `preventDefault()`
+   - Ngăn scroll khi đang drag
+
+2. **Ghost Plant Visual** ([isometric-garden.tsx](src/components/garden/isometric-garden.tsx)):
+   - Thêm `dragPosition` vào drag state để track vị trí cursor
+   - Render ghost plant theo vị trí drag (fixed position, z-9999)
+   - Ẩn plant gốc khi đang được kéo
+
+3. **Hide Overlays During Drag**:
+   - Ẩn `PlantInfoBar` khi dragging
+   - Ẩn `FloatingPlantCard` khi dragging
+   - Ẩn badges trên tiles khi dragging (thêm `hideBadge` prop)
+   - Disable hover highlights khi dragging
+   - Clear floating card và hover state khi bắt đầu drag
+
+4. **Touch Action Control**:
+   - Container có `touch-action: none` khi dragging
+   - Cho phép scroll/pan khi zoom > 1 và không đang drag
+
+**Updated Files**:
+| File | Change |
+|------|--------|
+| `src/components/garden/isometric-garden.tsx` | Ghost plant, native event listener, hide overlays during drag |
+| `src/components/garden/isometric-tile.tsx` | Added `hideBadge` prop |
+
+---
+
+### 2026-01-20: Plant Position Management & Drag-and-Drop (Initial Implementation)
+**Goal**: Lưu vị trí cây khi tạo, cho phép kéo thả cây trong vườn, tự động mở rộng grid theo vị trí cây
+
+**Features Implemented**:
+
+1. **Server Actions** ([plants.ts](src/lib/actions/plants.ts)):
+   - `updatePlantPosition(plantId, gridRow, gridCol)` - Update vị trí cây
+   - `expandPlantSize(plantId, newSize)` - Mở rộng kích thước cây + resolve conflicts
+
+2. **Grid Positioning** ([grid-positioning.ts](src/lib/utils/grid-positioning.ts)):
+   - `calculateRequiredGridSize()` - Tính grid size dựa trên max extent của plants
+   - `validatePlantMove()` - Kiểm tra vị trí mới có hợp lệ không
+   - `canPlacePlantAt()` - Check collision với plants khác
+
+3. **Plants Context** ([plants-context.tsx](src/lib/context/plants-context.tsx)):
+   - Thêm `movePlant()` với optimistic update
+   - Thêm `MOVE_PLANT` action type
+
+4. **Drag-and-Drop UI** ([isometric-garden.tsx](src/components/garden/isometric-garden.tsx)):
+   - Long-press (500ms) để bắt đầu drag mode
+   - Haptic feedback khi bắt đầu drag
+   - Visual indicator hiển thị plant đang được di chuyển
+   - Target cell highlight: xanh = valid, đỏ = invalid
+
+5. **Visual Feedback** ([ground-plane.tsx](src/components/garden/ground-plane.tsx)):
+   - `dragTargetCell` + `isDragTargetValid` props
+   - Highlight cell với màu xanh/đỏ tùy validity
+
+**How It Works**:
+- Tạo cây mới → auto-assign vị trí available
+- Long-press cây → enter drag mode
+- Kéo tới ô mới → hiển thị highlight
+- Thả → validate + save position
+- Grid tự động mở rộng nếu cây ở vị trí xa (vd: (4,2) → grid 6x6)
+
+**Updated Files**:
+| File | Change |
+|------|--------|
+| `src/lib/actions/plants.ts` | updatePlantPosition, expandPlantSize |
+| `src/lib/utils/grid-positioning.ts` | Dynamic grid size, validatePlantMove |
+| `src/lib/context/plants-context.tsx` | movePlant with optimistic update |
+| `src/components/garden/isometric-garden.tsx` | Drag-and-drop handlers |
+| `src/components/garden/ground-plane.tsx` | Drag target highlight |
+
+---
 
 ### 2026-01-20: Bottom Navigation & List View Scrolling Fix
 **Goal**: Cải thiện UX - menu nổi trên khu vườn thay vì tách biệt, list view scroll được đầy đủ

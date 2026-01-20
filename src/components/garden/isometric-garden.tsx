@@ -24,6 +24,7 @@ import {
   calculateRequiredGridSize,
   buildOccupiedCellsMap,
   isAnchorCell,
+  validatePlantMove,
 } from '@/lib/utils/grid-positioning'
 
 interface IsometricGardenProps {
@@ -50,7 +51,7 @@ export function IsometricGarden({
   weather,
 }: IsometricGardenProps) {
   // Get plants from context with optimistic updates
-  const { plants, waterPlant, logGoal } = usePlants()
+  const { plants, waterPlant, logGoal, movePlant } = usePlants()
 
   // Zoom state management
   const {
@@ -78,8 +79,25 @@ export function IsometricGarden({
 
   // Long press tracking
   const longPressTimer = useRef<NodeJS.Timeout | null>(null)
-  const longPressTriggered = useRef(false)
+  const longPressTriggered = useRef<boolean>(false)
   const touchStartPos = useRef<{ x: number; y: number } | null>(null)
+
+  // Drag state for moving plants
+  const [dragState, setDragState] = useState<{
+    isDragging: boolean
+    draggedPlant: PlantWithType | null
+    targetCell: { row: number; col: number } | null
+    isValidTarget: boolean
+    // Current drag position for visual feedback (screen coordinates)
+    dragPosition: { x: number; y: number } | null
+  }>({
+    isDragging: false,
+    draggedPlant: null,
+    targetCell: null,
+    isValidTarget: false,
+    dragPosition: null,
+  })
+  const dragStartPos = useRef<{ x: number; y: number } | null>(null)
 
   // Use default tile size on server, actual size on client
   const [tileSize, setTileSize] = useState(DEFAULT_TILE_SIZE)
@@ -133,6 +151,115 @@ export function IsometricGarden({
   // Calculate container dimensions
   const containerWidth = gridSize * tileSize
   const containerHeight = gridSize * (tileSize / 2) + tileSize * 0.3
+
+  // Ref for the garden container (used for drag position calculations)
+  const gardenContainerRef = useRef<HTMLDivElement>(null)
+
+  // Convert screen coordinates to grid cell
+  const screenToGridCell = useCallback(
+    (clientX: number, clientY: number): { row: number; col: number } | null => {
+      const container = gardenContainerRef.current
+      if (!container) return null
+
+      const rect = container.getBoundingClientRect()
+      const relX = clientX - rect.left
+      const relY = clientY - rect.top
+
+      // Account for zoom
+      const zoomedTileSize = tileSize * zoom
+      const centerX = (containerWidth * zoom) / 2
+
+      const dx = relX - centerX
+      const dy = relY
+
+      // Inverse isometric transformation
+      const col = Math.floor(dx / zoomedTileSize + (2 * dy) / zoomedTileSize)
+      const row = Math.floor((2 * dy) / zoomedTileSize - dx / zoomedTileSize)
+
+      return { row, col }
+    },
+    [tileSize, zoom, containerWidth]
+  )
+
+  // Start drag mode for a plant (triggered by long press)
+  const startPlantDrag = useCallback(
+    (plant: PlantWithType, startPosition: { x: number; y: number }) => {
+      // Haptic feedback
+      if (navigator.vibrate) {
+        navigator.vibrate(50)
+      }
+
+      // Clear any floating card or hover state
+      setFloatingCard(null)
+      setHoveredTile(null)
+
+      setDragState({
+        isDragging: true,
+        draggedPlant: plant,
+        targetCell: { row: plant.grid_row, col: plant.grid_col },
+        isValidTarget: true,
+        dragPosition: startPosition,
+      })
+    },
+    []
+  )
+
+  // Handle drag move
+  const handleDragMove = useCallback(
+    (clientX: number, clientY: number) => {
+      if (!dragState.isDragging || !dragState.draggedPlant) return
+
+      const cell = screenToGridCell(clientX, clientY)
+      if (!cell) return
+
+      // Validate the target position
+      const validation = validatePlantMove(
+        dragState.draggedPlant.id,
+        cell.row,
+        cell.col,
+        livingPlants
+      )
+
+      setDragState((prev) => ({
+        ...prev,
+        targetCell: cell,
+        isValidTarget: validation.valid,
+        dragPosition: { x: clientX, y: clientY },
+      }))
+    },
+    [dragState.isDragging, dragState.draggedPlant, screenToGridCell, livingPlants]
+  )
+
+  // End drag and drop plant
+  const endPlantDrag = useCallback(async () => {
+    if (!dragState.isDragging || !dragState.draggedPlant || !dragState.targetCell) {
+      setDragState({
+        isDragging: false,
+        draggedPlant: null,
+        targetCell: null,
+        isValidTarget: false,
+        dragPosition: null,
+      })
+      return
+    }
+
+    const { row, col } = dragState.targetCell
+    const plant = dragState.draggedPlant
+
+    // Reset drag state first
+    setDragState({
+      isDragging: false,
+      draggedPlant: null,
+      targetCell: null,
+      isValidTarget: false,
+      dragPosition: null,
+    })
+
+    // Only move if valid and position changed
+    if (dragState.isValidTarget && (row !== plant.grid_row || col !== plant.grid_col)) {
+      await movePlant(plant.id, row, col)
+    }
+  }, [dragState, movePlant])
 
   // Check if plant is watered today
   const isWateredToday = useCallback((plant: PlantWithType) => {
@@ -220,55 +347,87 @@ export function IsometricGarden({
     [handleShowInfo]
   )
 
-  // Handle touch start (mobile long-press)
+  // Handle touch start (mobile long-press) - supports both info card and drag mode
   const handleTouchStart = useCallback(
     (e: React.TouchEvent, plant?: PlantWithType) => {
       if (!plant) return
 
       const touch = e.touches[0]
-      touchStartPos.current = { x: touch.clientX, y: touch.clientY }
+      const startPos = { x: touch.clientX, y: touch.clientY }
+      touchStartPos.current = startPos
+      dragStartPos.current = startPos
       longPressTriggered.current = false
 
+      // First timer: 500ms to start drag mode
       longPressTimer.current = setTimeout(() => {
         longPressTriggered.current = true
-        // Haptic feedback if available
-        if (navigator.vibrate) {
-          navigator.vibrate(50)
-        }
-        handleShowInfo(plant, {
-          x: touchStartPos.current?.x ?? touch.clientX,
-          y: touchStartPos.current?.y ?? touch.clientY,
-        })
+        // Start drag mode with current position
+        startPlantDrag(plant, startPos)
       }, LONG_PRESS_THRESHOLD)
     },
-    [handleShowInfo]
+    [startPlantDrag]
   )
 
-  // Handle touch move (cancel long-press if moved)
+  // Handle touch move - supports drag mode
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0]
+
+    // If dragging, update drag position
+    if (dragState.isDragging) {
+      // Note: preventDefault called via native event listener below
+      handleDragMove(touch.clientX, touch.clientY)
+      return
+    }
+
+    // If not dragging yet, check if we should cancel long-press
     if (!touchStartPos.current) return
 
-    const touch = e.touches[0]
     const dx = Math.abs(touch.clientX - touchStartPos.current.x)
     const dy = Math.abs(touch.clientY - touchStartPos.current.y)
 
-    // Cancel if moved more than 10px
+    // Cancel long-press if moved more than 10px
     if (dx > 10 || dy > 10) {
       if (longPressTimer.current) {
         clearTimeout(longPressTimer.current)
         longPressTimer.current = null
       }
     }
-  }, [])
+  }, [dragState.isDragging, handleDragMove])
 
-  // Handle touch end
+  // Native touch event listener to prevent scrolling during drag
+  // This is needed because React synthetic events may be passive
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    const preventScroll = (e: TouchEvent) => {
+      if (dragState.isDragging) {
+        e.preventDefault()
+      }
+    }
+
+    // Add non-passive listener to be able to preventDefault
+    container.addEventListener('touchmove', preventScroll, { passive: false })
+
+    return () => {
+      container.removeEventListener('touchmove', preventScroll)
+    }
+  }, [dragState.isDragging])
+
+  // Handle touch end - complete drag or cancel
   const handleTouchEnd = useCallback(() => {
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current)
       longPressTimer.current = null
     }
     touchStartPos.current = null
-  }, [])
+    dragStartPos.current = null
+
+    // If dragging, complete the drop
+    if (dragState.isDragging) {
+      endPlantDrag()
+    }
+  }, [dragState.isDragging, endPlantDrag])
 
   // Handle goal log
   const handleGoalLog = useCallback(
@@ -322,6 +481,9 @@ export function IsometricGarden({
   }, [floatingCard, handleQuickWater])
 
   const handleTileHover = (row: number, col: number) => {
+    // Don't update hover state when dragging
+    if (dragState.isDragging) return
+
     // Check if this tile belongs to a multi-cell plant
     const plant = occupiedCells.get(`${row}-${col}`)
     if (plant && (plant.grid_size || 1) > 1) {
@@ -333,6 +495,8 @@ export function IsometricGarden({
   }
 
   const handleTileLeave = () => {
+    // Don't clear hover state when dragging
+    if (dragState.isDragging) return
     setHoveredTile(null)
   }
 
@@ -411,10 +575,11 @@ export function IsometricGarden({
         ref={scrollContainerRef}
         className="flex-1 w-full overflow-auto"
         style={{
-          // Allow scrolling when zoomed in
-          touchAction: zoom > 1 ? 'pan-x pan-y' : 'none',
+          // Disable touch actions when dragging to prevent scroll interference
+          // Allow scrolling when zoomed in (and not dragging)
+          touchAction: dragState.isDragging ? 'none' : (zoom > 1 ? 'pan-x pan-y' : 'none'),
         }}
-        {...(zoom <= 1 ? bindPinchGesture : {})}
+        {...(zoom <= 1 && !dragState.isDragging ? bindPinchGesture : {})}
       >
         <div
           className="flex justify-center items-end"
@@ -437,6 +602,7 @@ export function IsometricGarden({
             }}
           >
             <div
+              ref={gardenContainerRef}
               className="origin-top-left transition-transform duration-200 ease-out"
               style={{
                 width: containerWidth,
@@ -452,6 +618,8 @@ export function IsometricGarden({
             grassDarkColor={defaultTheme.ground.secondary}
             multiCellAreas={multiCellAreas}
             hoveredMultiCellArea={hoveredMultiCellArea}
+            dragTargetCell={dragState.isDragging ? dragState.targetCell : null}
+            isDragTargetValid={dragState.isValidTarget}
           />
 
           {/* Interactive tile zones */}
@@ -472,7 +640,7 @@ export function IsometricGarden({
                 col={col}
                 gridSize={gridSize}
                 isEmpty={!plant && !isOccupiedByMultiCell}
-                isHovered={isHovered}
+                isHovered={isHovered && !dragState.isDragging}
                 isOccupiedByMultiCell={isOccupiedByMultiCell}
                 isPartOfMultiCell={isPartOfMultiCell}
                 plantGridSize={plant?.grid_size || 1}
@@ -484,10 +652,12 @@ export function IsometricGarden({
                 onMouseEnter={() => handleTileHover(row, col)}
                 onMouseLeave={handleTileLeave}
                 tileSize={tileSize}
-                plant={isAnchor ? plant : null}
+                plant={isAnchor && !dragState.isDragging ? plant : null}
+                hideBadge={dragState.isDragging}
               >
                 {/* Only render plant at its anchor position */}
-                {plant && isAnchor && (
+                {/* Hide plant if it's being dragged (will show ghost instead) */}
+                {plant && isAnchor && !(dragState.isDragging && dragState.draggedPlant?.id === plant.id) && (
                   <IsometricPlant
                     plant={plant}
                     weather={weather}
@@ -501,25 +671,58 @@ export function IsometricGarden({
         </div>
       </div>
 
-      {/* Interaction hint - shown when not empty */}
-      {!isEmpty && !hoveredPlant && (
+      {/* Interaction hint - shown when not empty, no hover, and not dragging */}
+      {!isEmpty && !hoveredPlant && !dragState.isDragging && !floatingCard && (
         <div className="absolute left-1/2 -translate-x-1/2 top-16 z-20 pointer-events-none">
           <div className="px-4 py-2 bg-slate-900/70 backdrop-blur-md rounded-full text-xs text-slate-400 border border-slate-700/50 shadow-lg">
             <span className="flex items-center gap-2">
               <span>👆</span>
               <span>Tap to water</span>
               <span className="text-slate-600">•</span>
-              <span>Hold for info</span>
+              <span>Hold to move</span>
             </span>
           </div>
         </div>
       )}
 
-      {/* Fixed info bar at bottom - above nav bar */}
-      <PlantInfoBar plant={hoveredPlant} />
+      {/* Drag mode indicator */}
+      {dragState.isDragging && dragState.draggedPlant && (
+        <div className="absolute left-1/2 -translate-x-1/2 top-16 z-30 pointer-events-none">
+          <div className="px-4 py-2 bg-emerald-600/90 backdrop-blur-md rounded-full text-xs text-white border border-emerald-400/50 shadow-lg animate-pulse">
+            <span className="flex items-center gap-2">
+              <span>🌱</span>
+              <span>Moving {dragState.draggedPlant.name}</span>
+              <span className="text-emerald-200">•</span>
+              <span>Release to place</span>
+            </span>
+          </div>
+        </div>
+      )}
 
-      {/* Floating plant card (long-press / right-click) */}
-      {floatingCard && (
+      {/* Dragged plant ghost - follows finger/cursor */}
+      {dragState.isDragging && dragState.draggedPlant && dragState.dragPosition && (
+        <div
+          className="fixed pointer-events-none z-[9999]"
+          style={{
+            left: dragState.dragPosition.x,
+            top: dragState.dragPosition.y,
+            transform: 'translate(-50%, -100%)',
+          }}
+        >
+          <div className="opacity-80 scale-110 drop-shadow-2xl">
+            <IsometricPlant
+              plant={dragState.draggedPlant}
+              weather={weather}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Fixed info bar at bottom - above nav bar - hide when dragging */}
+      {!dragState.isDragging && <PlantInfoBar plant={hoveredPlant} />}
+
+      {/* Floating plant card (long-press / right-click) - hide when dragging */}
+      {floatingCard && !dragState.isDragging && (
         <FloatingPlantCard
           plant={floatingCard.plant}
           position={floatingCard.position}

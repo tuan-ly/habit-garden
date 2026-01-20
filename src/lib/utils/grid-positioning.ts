@@ -35,22 +35,30 @@ export interface PlantForGrid {
 }
 
 /**
- * Calculate minimum grid size needed to fit all plants with buffer
+ * Calculate minimum grid size needed to fit all plants
+ * Grid size is determined by the maximum row/col position of any plant + its size
+ * Example: Plant at (4,2) with size 2x2 means grid needs to be at least 6x6
  */
 export function calculateRequiredGridSize(plants: PlantForGrid[]): number {
   if (plants.length === 0) return 2 // Minimum 2x2
 
-  // Calculate total occupied cells
-  const totalCells = plants.reduce((sum, p) => {
-    const size = p.grid_size || 1
-    return sum + size * size
-  }, 0)
+  // Find the maximum extent of any plant (position + size)
+  let maxExtent = 0
+  for (const plant of plants) {
+    const row = plant.grid_row || 0
+    const col = plant.grid_col || 0
+    const size = plant.grid_size || 1
 
-  // Add buffer for growth and new plants (25% extra space)
-  const withBuffer = Math.ceil(totalCells * 1.25) + 1 // +1 for at least one empty slot
+    // The plant extends from (row, col) to (row + size - 1, col + size - 1)
+    // So the grid needs to be at least (row + size) and (col + size)
+    const rowExtent = row + size
+    const colExtent = col + size
 
-  // Find minimum square grid
-  const gridSize = Math.ceil(Math.sqrt(withBuffer))
+    maxExtent = Math.max(maxExtent, rowExtent, colExtent)
+  }
+
+  // Add 1 buffer cell for adding new plants
+  const gridSize = maxExtent + 1
 
   return Math.max(gridSize, 2) // Minimum 2x2
 }
@@ -176,6 +184,71 @@ export function getPlantSizeScale(gridSize: number): number {
   // 3x3 → 2.5x
   // 4x4 → 3.2x
   return 1 + (gridSize - 1) * 0.8
+}
+
+/**
+ * Check if a plant can be placed at a specific position
+ * Returns true if the position is valid and doesn't collide with other plants
+ */
+export function canPlacePlantAt(
+  plant: PlantForGrid,
+  row: number,
+  col: number,
+  allPlants: PlantForGrid[],
+  gridSize?: number
+): boolean {
+  const plantSize = plant.grid_size || 1
+
+  // Check bounds if gridSize is provided
+  if (gridSize !== undefined) {
+    if (row < 0 || col < 0 || row + plantSize > gridSize || col + plantSize > gridSize) {
+      return false
+    }
+  }
+
+  // Check collision with other plants
+  const testPlant: PlantGridData = {
+    grid_row: row,
+    grid_col: col,
+    grid_size: plantSize,
+  }
+
+  return !hasCollision(testPlant, allPlants, plant.id)
+}
+
+/**
+ * Move a plant to a new position, checking for collisions
+ */
+export function validatePlantMove(
+  plantId: string,
+  newRow: number,
+  newCol: number,
+  allPlants: PlantForGrid[]
+): { valid: boolean; reason?: string } {
+  const plant = allPlants.find(p => p.id === plantId)
+  if (!plant) {
+    return { valid: false, reason: 'Plant not found' }
+  }
+
+  const plantSize = plant.grid_size || 1
+
+  // Check negative positions
+  if (newRow < 0 || newCol < 0) {
+    return { valid: false, reason: 'Position cannot be negative' }
+  }
+
+  // Check collision with other plants
+  const testPlant: PlantGridData = {
+    grid_row: newRow,
+    grid_col: newCol,
+    grid_size: plantSize,
+  }
+
+  if (hasCollision(testPlant, allPlants, plantId)) {
+    return { valid: false, reason: 'Position occupied by another plant' }
+  }
+
+  return { valid: true }
 }
 
 /**

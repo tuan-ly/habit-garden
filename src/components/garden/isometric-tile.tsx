@@ -28,6 +28,8 @@ interface IsometricTileProps {
   tileSize?: number
   /** Plant data for badge (optional - only needed when plant exists) */
   plant?: PlantWithType | null
+  /** Hide badge (e.g., when dragging) */
+  hideBadge?: boolean
 }
 
 /**
@@ -67,6 +69,7 @@ export function IsometricTile({
   children,
   tileSize = 60,
   plant,
+  hideBadge = false,
 }: IsometricTileProps) {
   // Isometric tile positioning:
   // The grid's top point (0,0) is at the top-center of the diamond
@@ -210,7 +213,7 @@ export function IsometricTile({
       )}
 
       {/* Badge - positioned below the plant, scaled with tile size */}
-      {plant && children && (
+      {plant && children && !hideBadge && (
         <div
           className="absolute pointer-events-none"
           style={{

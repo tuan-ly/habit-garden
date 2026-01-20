@@ -763,6 +763,224 @@ function calculateDominantWeather(logs: any[]): WeatherType | null {
   return weatherMap[config.weather] || 'sunny'
 }
 
+/**
+ * Update plant grid position (for drag-and-drop)
+ */
+export async function updatePlantPosition(
+  plantId: string,
+  gridRow: number,
+  gridCol: number
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return { success: false, error: 'Not authenticated' }
+  }
+
+  const { error } = await supabase
+    .from('plants')
+    .update({
+      grid_row: gridRow,
+      grid_col: gridCol,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', plantId)
+    .eq('user_id', user.id)
+
+  if (error) {
+    console.error('Error updating plant position:', error)
+    return { success: false, error: error.message }
+  }
+
+  revalidatePath('/garden')
+  return { success: true }
+}
+
+/**
+ * Expand plant size and resolve conflicts
+ * When a plant grows from 1x1 to 2x2 (or larger), check for collisions
+ * and relocate conflicting plants to available positions
+ */
+export async function expandPlantSize(
+  plantId: string,
+  newSize: number
+): Promise<{ success: boolean; relocatedPlants?: string[]; error?: string }> {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return { success: false, error: 'Not authenticated' }
+  }
+
+  // Get all living plants
+  const { data: allPlants, error: fetchError } = await supabase
+    .from('plants')
+    .select('id, grid_size, grid_row, grid_col')
+    .eq('user_id', user.id)
+    .neq('status', 'dead')
+
+  if (fetchError || !allPlants) {
+    return { success: false, error: 'Failed to fetch plants' }
+  }
+
+  // Find the target plant
+  const targetPlant = allPlants.find(p => p.id === plantId)
+  if (!targetPlant) {
+    return { success: false, error: 'Plant not found' }
+  }
+
+  // Calculate cells that would be occupied after expansion
+  const newOccupiedCells: { row: number; col: number }[] = []
+  for (let r = 0; r < newSize; r++) {
+    for (let c = 0; c < newSize; c++) {
+      newOccupiedCells.push({
+        row: (targetPlant.grid_row || 0) + r,
+        col: (targetPlant.grid_col || 0) + c,
+      })
+    }
+  }
+
+  // Find plants that would collide (excluding the target plant)
+  const conflictingPlants: typeof allPlants = []
+  for (const plant of allPlants) {
+    if (plant.id === plantId) continue // Skip self
+
+    const plantSize = plant.grid_size || 1
+    const plantCells: { row: number; col: number }[] = []
+    for (let r = 0; r < plantSize; r++) {
+      for (let c = 0; c < plantSize; c++) {
+        plantCells.push({
+          row: (plant.grid_row || 0) + r,
+          col: (plant.grid_col || 0) + c,
+        })
+      }
+    }
+
+    // Check for collision
+    const hasCollision = newOccupiedCells.some(nc =>
+      plantCells.some(pc => pc.row === nc.row && pc.col === nc.col)
+    )
+
+    if (hasCollision) {
+      conflictingPlants.push(plant)
+    }
+  }
+
+  // Relocate conflicting plants
+  const relocatedPlantIds: string[] = []
+  const plantsAfterExpansion = allPlants.map(p =>
+    p.id === plantId ? { ...p, grid_size: newSize } : p
+  )
+
+  for (const conflictPlant of conflictingPlants) {
+    // Calculate grid size needed
+    const currentGridSize = Math.max(
+      ...plantsAfterExpansion.map(p =>
+        Math.max(
+          (p.grid_row || 0) + (p.grid_size || 1),
+          (p.grid_col || 0) + (p.grid_size || 1)
+        )
+      ),
+      3 // Minimum grid size
+    )
+
+    // Find new position for the conflicting plant
+    const conflictPlantSize = conflictPlant.grid_size || 1
+    let newPosition: { row: number; col: number } | null = null
+
+    // Try to find position in current grid, then expand if needed
+    for (let gridExpand = 0; gridExpand <= 5; gridExpand++) {
+      const tryGridSize = currentGridSize + gridExpand
+
+      for (let row = 0; row <= tryGridSize - conflictPlantSize; row++) {
+        for (let col = 0; col <= tryGridSize - conflictPlantSize; col++) {
+          // Check if this position would collide
+          let positionClear = true
+
+          for (const plant of plantsAfterExpansion) {
+            if (plant.id === conflictPlant.id) continue
+
+            const pSize = plant.grid_size || 1
+            const pRow = plant.grid_row || 0
+            const pCol = plant.grid_col || 0
+
+            // Check overlap
+            for (let r = 0; r < conflictPlantSize && positionClear; r++) {
+              for (let c = 0; c < conflictPlantSize && positionClear; c++) {
+                const testRow = row + r
+                const testCol = col + c
+
+                for (let pr = 0; pr < pSize; pr++) {
+                  for (let pc = 0; pc < pSize; pc++) {
+                    if (testRow === pRow + pr && testCol === pCol + pc) {
+                      positionClear = false
+                      break
+                    }
+                  }
+                  if (!positionClear) break
+                }
+              }
+            }
+          }
+
+          if (positionClear) {
+            newPosition = { row, col }
+            break
+          }
+        }
+        if (newPosition) break
+      }
+      if (newPosition) break
+    }
+
+    if (newPosition) {
+      // Update plant position in our tracking array
+      const idx = plantsAfterExpansion.findIndex(p => p.id === conflictPlant.id)
+      if (idx !== -1) {
+        plantsAfterExpansion[idx] = {
+          ...plantsAfterExpansion[idx],
+          grid_row: newPosition.row,
+          grid_col: newPosition.col,
+        }
+      }
+
+      // Update in database
+      const { error: relocateError } = await supabase
+        .from('plants')
+        .update({
+          grid_row: newPosition.row,
+          grid_col: newPosition.col,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', conflictPlant.id)
+        .eq('user_id', user.id)
+
+      if (!relocateError) {
+        relocatedPlantIds.push(conflictPlant.id)
+      }
+    }
+  }
+
+  // Update the target plant's size
+  const { error: updateError } = await supabase
+    .from('plants')
+    .update({
+      grid_size: newSize,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', plantId)
+    .eq('user_id', user.id)
+
+  if (updateError) {
+    console.error('Error expanding plant size:', updateError)
+    return { success: false, error: updateError.message }
+  }
+
+  revalidatePath('/garden')
+  return { success: true, relocatedPlants: relocatedPlantIds }
+}
+
 export async function getPlant(plantId: string): Promise<PlantWithType | null> {
   const supabase = await createClient()
 
