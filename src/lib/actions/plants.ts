@@ -174,29 +174,76 @@ export async function createPlant(dto: CreatePlantDto): Promise<{ success: boole
   const gridSize = calculateRequiredGridSize(livingPlants)
   const newPlantSize = 1 // All new plants start as 1x1
 
-  const gridPosition = findNextAvailablePosition(livingPlants, gridSize, newPlantSize)
-
-  // If grid is full, expand and try again
   let finalRow = 0
   let finalCol = 0
 
-  if (!gridPosition) {
-    // Grid is full, expand it
-    const expandedSize = gridSize + 1
-    const expandedPosition = findNextAvailablePosition(livingPlants, expandedSize, newPlantSize)
+  // Check if position was provided in dto
+  if (dto.grid_row !== undefined && dto.grid_col !== undefined) {
+    // User provided a specific position - validate it's available
+    const targetRow = dto.grid_row
+    const targetCol = dto.grid_col
 
-    if (!expandedPosition) {
-      // Should never happen, but handle gracefully
-      console.error('Failed to find position even after expanding grid')
-      finalRow = gridSize
-      finalCol = gridSize
+    // Check if position is valid (within reasonable bounds and not occupied)
+    const maxGrid = Math.max(gridSize, targetRow + 1, targetCol + 1)
+
+    // Check collision with existing plants
+    let isOccupied = false
+    for (const plant of livingPlants) {
+      const pRow = plant.grid_row ?? 0
+      const pCol = plant.grid_col ?? 0
+      const pSize = plant.grid_size ?? 1
+
+      // Check if target cell overlaps with this plant's occupied area
+      if (
+        targetRow >= pRow && targetRow < pRow + pSize &&
+        targetCol >= pCol && targetCol < pCol + pSize
+      ) {
+        isOccupied = true
+        break
+      }
+    }
+
+    if (!isOccupied && targetRow >= 0 && targetCol >= 0) {
+      // Position is valid and available
+      finalRow = targetRow
+      finalCol = targetCol
     } else {
-      finalRow = expandedPosition.row
-      finalCol = expandedPosition.col
+      // Position is occupied or invalid, fall back to auto-assign
+      const gridPosition = findNextAvailablePosition(livingPlants, maxGrid, newPlantSize)
+      if (gridPosition) {
+        finalRow = gridPosition.row
+        finalCol = gridPosition.col
+      } else {
+        // Expand grid and try again
+        const expandedPosition = findNextAvailablePosition(livingPlants, maxGrid + 1, newPlantSize)
+        if (expandedPosition) {
+          finalRow = expandedPosition.row
+          finalCol = expandedPosition.col
+        }
+      }
     }
   } else {
-    finalRow = gridPosition.row
-    finalCol = gridPosition.col
+    // No position provided - auto-assign
+    const gridPosition = findNextAvailablePosition(livingPlants, gridSize, newPlantSize)
+
+    if (!gridPosition) {
+      // Grid is full, expand it
+      const expandedSize = gridSize + 1
+      const expandedPosition = findNextAvailablePosition(livingPlants, expandedSize, newPlantSize)
+
+      if (!expandedPosition) {
+        // Should never happen, but handle gracefully
+        console.error('Failed to find position even after expanding grid')
+        finalRow = gridSize
+        finalCol = gridSize
+      } else {
+        finalRow = expandedPosition.row
+        finalCol = expandedPosition.col
+      }
+    } else {
+      finalRow = gridPosition.row
+      finalCol = gridPosition.col
+    }
   }
 
   const { data: newPlant, error } = await supabase

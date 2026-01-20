@@ -259,6 +259,9 @@ export interface CreatePlantDto {
   habit_description?: string
   reminder_time?: string
   reminder_enabled?: boolean
+  /** Optional grid position - if not provided, will be auto-assigned */
+  grid_row?: number
+  grid_col?: number
 }
 
 export interface UpdatePlantDto {

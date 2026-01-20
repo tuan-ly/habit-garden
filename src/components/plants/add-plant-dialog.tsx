@@ -26,9 +26,11 @@ interface AddPlantDialogProps {
   // Support controlled mode for isometric garden
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  /** Optional grid position - if provided, plant will be placed at this position */
+  gridPosition?: { row: number; col: number } | null
 }
 
-export function AddPlantDialog({ plantTypes, open: controlledOpen, onOpenChange }: AddPlantDialogProps) {
+export function AddPlantDialog({ plantTypes, open: controlledOpen, onOpenChange, gridPosition }: AddPlantDialogProps) {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false)
   const { addPlant } = usePlants()
 
@@ -64,6 +66,8 @@ export function AddPlantDialog({ plantTypes, open: controlledOpen, onOpenChange 
         plant_type_id: selectedType.id,
         name: name.trim(),
         habit_description: description.trim() || undefined,
+        grid_row: gridPosition?.row,
+        grid_col: gridPosition?.col,
       })
 
       if (result.success && result.plant) {

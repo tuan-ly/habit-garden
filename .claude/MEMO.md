@@ -49,10 +49,47 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 - **NEW: Dynamic Grid Sizing** - Garden grid auto-expands based on plant positions (e.g., plant at (4,2) → 6x6 grid)
 - **NEW: Plant Growth Conflict Resolution** - When plants grow larger (1x1→2x2→3x3), conflicting plants are auto-relocated
 - **NEW: Watering Celebration Effect** - 3-second celebration animation when watering plants with splash, sparkles, XP display
+- **NEW: Plant Position Click-to-Place** - Click on empty tile to place plant at exact position
 
 ---
 
 ## Recent Changes (Latest First)
+
+### 2026-01-20: Fix Plant Positioning - Click to Place at Exact Grid Cell
+**Problem**: Khi click vào ô trống để tạo cây, cây được đặt ở vị trí auto-assign thay vì ô được click.
+
+**Root Cause**:
+1. Công thức `screenToGridCell` trong `isometric-garden.tsx` sai - không khớp với công thức positioning của tiles
+2. `AddPlantDialog` không nhận và truyền vị trí grid
+3. `createPlant` action không hỗ trợ vị trí được chỉ định
+
+**Solution**:
+
+1. **Fixed `screenToGridCell` formula** ([isometric-garden.tsx](src/components/garden/isometric-garden.tsx)):
+   - Tile positioning: `x = (col - row) * (tileSize / 2)`, `y = (col + row) * (tileSize / 4)`
+   - Inverse transformation:
+     - `col = (colPlusRow + colMinusRow) / 2`
+     - `row = (colPlusRow - colMinusRow) / 2`
+
+2. **Added grid position to plant creation flow**:
+   - Added `grid_row` and `grid_col` to `CreatePlantDto`
+   - `createPlant` action now uses provided position if available, with collision check
+   - `AddPlantDialog` accepts and passes `gridPosition` prop
+
+3. **Track clicked cell in garden**:
+   - `handleTileClick` now receives row, col parameters
+   - `addDialogPosition` state tracks which cell was clicked
+   - Position is passed to `AddPlantDialog` and cleared on close
+
+**Updated Files**:
+| File | Change |
+|------|--------|
+| `src/components/garden/isometric-garden.tsx` | FIXED - screenToGridCell formula, track clicked cell position |
+| `src/types/database.ts` | UPDATED - Added grid_row, grid_col to CreatePlantDto |
+| `src/lib/actions/plants.ts` | UPDATED - createPlant uses provided position with collision check |
+| `src/components/plants/add-plant-dialog.tsx` | UPDATED - Accept and pass gridPosition prop |
+
+---
 
 ### 2026-01-20: Watering Celebration Effect
 **Goal**: Tạo hiệu ứng chúc mừng khi tưới cây trong khu vườn, kéo dài 3 giây

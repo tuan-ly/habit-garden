@@ -67,6 +67,7 @@ export function IsometricGarden({
   const [selectedPlant, setSelectedPlant] = useState<PlantWithType | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [addDialogPosition, setAddDialogPosition] = useState<{ row: number; col: number } | null>(null)
 
   // New state for enhanced interactions
   const [floatingCard, setFloatingCard] = useState<{
@@ -174,16 +175,32 @@ export function IsometricGarden({
       const relX = clientX - rect.left
       const relY = clientY - rect.top
 
-      // Account for zoom
+      // Account for zoom - the container shows zoomed content
       const zoomedTileSize = tileSize * zoom
       const centerX = (containerWidth * zoom) / 2
 
+      // dx = distance from center (same as tile positioning formula)
+      // dy = distance from top
       const dx = relX - centerX
       const dy = relY
 
-      // Inverse isometric transformation
-      const col = Math.floor(dx / zoomedTileSize + (2 * dy) / zoomedTileSize)
-      const row = Math.floor((2 * dy) / zoomedTileSize - dx / zoomedTileSize)
+      // Isometric tile positioning formulas:
+      //   tileCenterX = centerX + (col - row) * (tileSize / 2)
+      //   tileCenterY = (col + row) * (tileSize / 4)
+      //
+      // Rearranging for inverse:
+      //   dx = (col - row) * (zoomedTileSize / 2)   =>  col - row = dx * 2 / zoomedTileSize
+      //   dy = (col + row) * (zoomedTileSize / 4)   =>  col + row = dy * 4 / zoomedTileSize
+      //
+      // Solving:
+      //   col = (dx * 2 / zoomedTileSize + dy * 4 / zoomedTileSize) / 2
+      //   row = (dy * 4 / zoomedTileSize - dx * 2 / zoomedTileSize) / 2
+
+      const colMinusRow = (dx * 2) / zoomedTileSize
+      const colPlusRow = (dy * 4) / zoomedTileSize
+
+      const col = Math.floor((colPlusRow + colMinusRow) / 2)
+      const row = Math.floor((colPlusRow - colMinusRow) / 2)
 
       return { row, col }
     },
@@ -341,7 +358,7 @@ export function IsometricGarden({
 
   // Handle tile click
   const handleTileClick = useCallback(
-    (plant?: PlantWithType, event?: React.MouseEvent | React.TouchEvent) => {
+    (row: number, col: number, plant?: PlantWithType, event?: React.MouseEvent | React.TouchEvent) => {
       // If long press was triggered, don't handle click
       if (longPressTriggered.current) {
         longPressTriggered.current = false
@@ -361,6 +378,8 @@ export function IsometricGarden({
       if (plant) {
         handlePlantTap(plant, tapPosition)
       } else {
+        // Open add dialog with the clicked cell position
+        setAddDialogPosition({ row, col })
         setAddDialogOpen(true)
       }
     },
@@ -687,7 +706,7 @@ export function IsometricGarden({
                 isOccupiedByMultiCell={isOccupiedByMultiCell}
                 isPartOfMultiCell={isPartOfMultiCell}
                 plantGridSize={plant?.grid_size || 1}
-                onClick={(e) => handleTileClick(clickPlant, e)}
+                onClick={(e) => handleTileClick(row, col, clickPlant, e)}
                 onContextMenu={(e) => handleContextMenu(e, clickPlant)}
                 onTouchStart={(e) => handleTouchStart(e, clickPlant)}
                 onTouchMove={handleTouchMove}
@@ -797,7 +816,13 @@ export function IsometricGarden({
       <AddPlantDialog
         plantTypes={plantTypes}
         open={addDialogOpen}
-        onOpenChange={setAddDialogOpen}
+        onOpenChange={(open) => {
+          setAddDialogOpen(open)
+          if (!open) {
+            setAddDialogPosition(null)
+          }
+        }}
+        gridPosition={addDialogPosition}
       />
 
       {/* Plant detail sheet */}
