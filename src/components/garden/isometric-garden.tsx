@@ -14,7 +14,6 @@ import { QuickLogModal } from '@/components/plants/quick-log-modal'
 import {
   showAlreadyWateredToast,
   showWaterErrorToast,
-  showGoalLogToast,
 } from '@/components/plants/water-toast'
 import { usePlants } from '@/lib/context'
 import { useGardenZoom } from '@/lib/hooks'
@@ -286,27 +285,32 @@ export function IsometricGarden({
         return
       }
 
+      // Optimistic: Show celebration immediately (estimate XP)
+      const estimatedXp = 10 // Base XP, server will return actual
+      const estimatedStreak = plant.current_streak + 1
+      const celebrationPosition = tapPosition || {
+        x: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
+        y: typeof window !== 'undefined' ? window.innerHeight / 2 : 300
+      }
+
+      setCelebration({
+        active: true,
+        position: celebrationPosition,
+        xpEarned: estimatedXp,
+        plantName: plant.name,
+        plantIcon: plant.plant_type.icon,
+        streakCount: estimatedStreak,
+      })
+
+      // Call server in background
       const result = await waterPlant(plant.id)
 
-      if (result.success) {
-        // Trigger celebration animation
-        const xpEarned = result.xpEarned || 10
-        const newStreak = plant.current_streak + 1
-
-        setCelebration({
-          active: true,
-          position: tapPosition || {
-            x: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
-            y: typeof window !== 'undefined' ? window.innerHeight / 2 : 300
-          },
-          xpEarned,
-          plantName: plant.name,
-          plantIcon: plant.plant_type.icon,
-          streakCount: newStreak,
-        })
-      } else {
+      if (!result.success) {
+        // On error, show toast (celebration already shown, will complete naturally)
         showWaterErrorToast(result.error || 'Unknown error')
       }
+      // Note: We don't update celebration with actual XP since it's already animating
+      // The difference is usually small and UX is better with instant feedback
     },
     [waterPlant, isWateredToday]
   )
@@ -461,21 +465,33 @@ export function IsometricGarden({
     async (value: number, notes?: string) => {
       if (!quickLogPlant) return
 
-      const result = await logGoal(quickLogPlant.id, value, notes)
+      // Store plant info before clearing state
+      const plant = quickLogPlant
+      const estimatedXp = 15 // Base XP for goal log
+      const isFirstLogToday = (plant.today_log_count || 0) === 0
+      const estimatedStreak = isFirstLogToday ? plant.current_streak + 1 : plant.current_streak
 
-      if (result.success) {
-        showGoalLogToast({
-          plantName: quickLogPlant.name,
-          plantIcon: quickLogPlant.plant_type.icon,
-          value,
-          unit: quickLogPlant.goal?.unit || '',
-          xpEarned: result.xpEarned || 15,
-          isPersonalRecord: result.isPersonalRecord,
-          exceededTarget: result.exceededTarget,
-        })
-      } else {
+      // Optimistic: Show celebration immediately (use screen center since modal just closed)
+      setCelebration({
+        active: true,
+        position: {
+          x: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
+          y: typeof window !== 'undefined' ? window.innerHeight / 2 : 300,
+        },
+        xpEarned: estimatedXp,
+        plantName: plant.name,
+        plantIcon: plant.plant_type.icon,
+        streakCount: estimatedStreak,
+      })
+
+      // Call server in background
+      const result = await logGoal(plant.id, value, notes)
+
+      if (!result.success) {
         showWaterErrorToast(result.error || 'Failed to log')
       }
+      // Note: Toast with detailed info (PR, exceeded target) could still be shown
+      // but celebration gives immediate visual feedback
     },
     [quickLogPlant, logGoal]
   )
