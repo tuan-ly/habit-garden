@@ -354,8 +354,28 @@ export function IsometricGarden({
   // Check if garden is empty
   const isEmpty = livingPlants.length === 0
 
+  // Ref for scroll container to center on zoom
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+
+  // Auto-center scroll when zoom changes
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container || zoom <= 1) return
+
+    // Calculate center scroll position
+    const scrollWidth = container.scrollWidth - container.clientWidth
+    const scrollHeight = container.scrollHeight - container.clientHeight
+
+    // Scroll to center
+    container.scrollTo({
+      left: scrollWidth / 2,
+      top: scrollHeight / 2,
+      behavior: 'smooth',
+    })
+  }, [zoom])
+
   return (
-    <div className="relative w-full h-full flex flex-col justify-end items-center pb-16">
+    <div className="relative w-full h-full flex flex-col">
       {/* Zoom Controls - fixed position on right side */}
       <ZoomControls
         zoom={zoom}
@@ -388,17 +408,42 @@ export function IsometricGarden({
 
       {/* Garden container with zoom and pinch gesture support */}
       <div
-        className="flex justify-center px-4 overflow-hidden touch-none"
-        {...bindPinchGesture}
+        ref={scrollContainerRef}
+        className="flex-1 w-full overflow-auto"
+        style={{
+          // Allow scrolling when zoomed in
+          touchAction: zoom > 1 ? 'pan-x pan-y' : 'none',
+        }}
+        {...(zoom <= 1 ? bindPinchGesture : {})}
       >
         <div
-          className="relative transition-transform duration-200 ease-out origin-center"
+          className="flex justify-center items-end"
           style={{
-            width: containerWidth,
-            height: containerHeight,
-            transform: `scale(${zoom})`,
+            // Add padding when zoomed to allow scrolling past edges
+            minWidth: zoom > 1 ? `${containerWidth * zoom + 100}px` : '100%',
+            minHeight: zoom > 1 ? `${containerHeight * zoom + 200}px` : '100%',
+            paddingTop: zoom > 1 ? '100px' : '0',
+            paddingBottom: zoom > 1 ? '150px' : '16px',
+            paddingLeft: zoom > 1 ? '50px' : '0',
+            paddingRight: zoom > 1 ? '50px' : '0',
           }}
+          {...(zoom > 1 ? bindPinchGesture : {})}
         >
+          <div
+            className="relative flex-shrink-0"
+            style={{
+              width: containerWidth * zoom,
+              height: containerHeight * zoom,
+            }}
+          >
+            <div
+              className="origin-top-left transition-transform duration-200 ease-out"
+              style={{
+                width: containerWidth,
+                height: containerHeight,
+                transform: `scale(${zoom})`,
+              }}
+            >
           {/* Single unified ground plane */}
           <GroundPlane
             gridSize={gridSize}
@@ -451,6 +496,8 @@ export function IsometricGarden({
               </IsometricTile>
             )
           })}
+            </div>
+          </div>
         </div>
       </div>
 

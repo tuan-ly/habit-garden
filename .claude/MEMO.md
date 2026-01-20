@@ -49,7 +49,29 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 
 ## Recent Changes (Latest First)
 
-### 2026-01-20: Garden Zoom System
+### 2026-01-20: Garden Zoom System Enhancement - Full-Screen Zoom
+**Goal**: Cải thiện zoom để khi zoom in, khu vườn mở rộng toàn màn hình và cho phép scroll/pan
+
+**Problem Solved**:
+- Trước đây khi zoom in, container có `overflow-hidden` nên phần vượt ra bị cắt
+- User không thể xem toàn bộ khu vườn khi zoom lớn
+
+**Solution**:
+- Container mở rộng kích thước theo zoom level (`width * zoom`, `height * zoom`)
+- Cho phép scroll/pan khi zoom > 100%
+- Auto-center scroll khi zoom thay đổi
+- Thêm padding khi zoomed để user có thể scroll thoải mái
+
+**Technical Changes**:
+- Wrapper div có `overflow-auto` thay vì `overflow-hidden`
+- Inner container có dynamic size dựa trên zoom level
+- Sử dụng `transform: scale()` trên content layer
+- `touchAction` thay đổi động: `none` khi ≤100%, `pan-x pan-y` khi >100%
+- Auto-scroll to center khi zoom thay đổi
+
+---
+
+### 2026-01-20: Garden Zoom System (Initial)
 **Goal**: Cho phép user zoom in/out khu vườn để xem chi tiết hoặc tổng quan
 
 **Features**:
