@@ -3,7 +3,7 @@
 > **Last Updated**: 2026-01-20
 > **Current Phase**: Phase 4 - Polish & Launch (IN PROGRESS)
 
-> **Last Session**: Garden Zoom System Implementation
+> **Last Session**: Bottom Navigation & List View Scrolling Fix
 
 
 ---
@@ -44,10 +44,49 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 - **NEW: UX Watering Redesign** - One-tap watering, long-press for info, overlay badges on plants
 - **NEW: Goal Data Integration** - Goal info and today's logs merged into PlantWithType for display
 - **NEW: Garden Zoom System** - Zoom in/out controls with pinch-to-zoom on mobile
+- **NEW: Floating Bottom Navigation** - Nav bar now floats over content with transparency, list view scrolling fixed
 
 ---
 
 ## Recent Changes (Latest First)
+
+### 2026-01-20: Bottom Navigation & List View Scrolling Fix
+**Goal**: Cải thiện UX - menu nổi trên khu vườn thay vì tách biệt, list view scroll được đầy đủ
+
+**Problems Solved**:
+1. Bottom nav tách rời khỏi garden content với padding lớn, không tạo hiệu ứng "nổi"
+2. List view bị cắt ngang nội dung và không scroll được do `overflow-hidden`
+
+**Solution**:
+
+1. **Bottom Nav Floating Effect** ([game-nav.tsx](src/components/game-ui/game-nav.tsx)):
+   - Giảm padding: `pb-4/pb-6` → `pb-2/pb-3`
+   - Tăng transparency: `from-slate-900/95 via-slate-900/90 to-slate-800/85`
+   - Giảm border: `border-2` → `border`
+   - Nav bây giờ "nổi" trên content với backdrop blur
+
+2. **Fix List View Scrolling** ([garden-view.tsx](src/components/garden/garden-view.tsx)):
+   - Bỏ `overflow-hidden` trên container chính
+   - List view: `h-full overflow-y-auto pb-36` để scroll đúng cách
+
+3. **Fix Dashboard Layout** ([layout.tsx](src/app/(dashboard)/layout.tsx)):
+   - Bỏ `overflow-y-auto pb-32` trên `<main>`
+   - Mỗi page tự quản lý scroll và padding
+
+4. **Fix Other Pages** (profile, stats, settings):
+   - Thêm `h-full overflow-y-auto pb-36` để scroll được với đủ padding cho nav
+
+**Updated Files**:
+| File | Change |
+|------|--------|
+| `src/components/game-ui/game-nav.tsx` | Floating nav với transparency |
+| `src/components/garden/garden-view.tsx` | Bỏ overflow-hidden, fix list view scroll |
+| `src/app/(dashboard)/layout.tsx` | Children tự quản lý scroll |
+| `src/app/(dashboard)/profile/page.tsx` | h-full overflow-y-auto pb-36 |
+| `src/app/(dashboard)/stats/page.tsx` | h-full overflow-y-auto pb-36 |
+| `src/app/(dashboard)/settings/page.tsx` | h-full overflow-y-auto pb-36 |
+
+---
 
 ### 2026-01-20: Garden Zoom System Enhancement - Full-Screen Zoom
 **Goal**: Cải thiện zoom để khi zoom in, khu vườn mở rộng toàn màn hình và cho phép scroll/pan

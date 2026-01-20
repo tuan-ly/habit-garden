@@ -11,7 +11,7 @@ export default async function SettingsPage() {
   const { data: { user } } = await supabase.auth.getUser()
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
+    <div className="h-full overflow-y-auto pt-4 px-4 pb-36 space-y-6 max-w-2xl mx-auto">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
         <p className="text-muted-foreground">

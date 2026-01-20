@@ -78,7 +78,7 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
   // Empty state
   if (plants.length === 0) {
     return (
-      <div className="h-full relative overflow-hidden">
+      <div className="h-full relative">
         {/* Sky background */}
         <GardenSky weather={displayWeather} />
 
@@ -103,7 +103,7 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
   }
 
   return (
-    <div className="h-full relative overflow-hidden">
+    <div className="h-full relative">
       {/* Sky background - fills entire screen */}
       {viewMode === 'garden' && <GardenSky weather={displayWeather} />}
 
@@ -131,7 +131,7 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
 
       {/* List View (card grid with game styling) */}
       {viewMode === 'list' && (
-        <div className="flex-1 overflow-auto pt-20 px-4 pb-4 space-y-6">
+        <div className="h-full overflow-y-auto pt-20 px-4 pb-36 space-y-6 bg-gradient-to-br from-sky-200 via-emerald-100 to-green-200 dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950">
           {/* Stats bar */}
           <div className="flex items-center justify-center gap-4">
             <div className="flex items-center gap-2 px-3 py-1.5 bg-green-100 dark:bg-green-900/30 rounded-full">

@@ -63,7 +63,7 @@ export default async function StatsPage() {
   const maxDaily = Math.max(...Object.values(stats?.dailyWaterings ?? {}), 1)
 
   return (
-    <div className="min-h-screen pt-3 px-3 pb-8 sm:pt-4 sm:px-4">
+    <div className="h-full overflow-y-auto pt-3 px-3 pb-36 sm:pt-4 sm:px-4">
       <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">

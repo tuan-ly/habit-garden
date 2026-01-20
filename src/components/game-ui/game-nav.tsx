@@ -54,12 +54,11 @@ export function GameNav({ user }: GameNavProps) {
 
   return (
     <>
-      {/* Bottom Navigation Bar - Game Style */}
-      {/* Bottom Navigation Bar - Game Style */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 px-3 pb-4 sm:px-4 sm:pb-6 pointer-events-none">
-        <div className="max-w-lg mx-auto pointer-events-auto">
-          {/* Main nav container - Dark game style */}
-          <div className="relative bg-gradient-to-t from-slate-900 via-slate-900/98 to-slate-800/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl border-2 border-slate-700/50 shadow-2xl shadow-black/40">
+      {/* Bottom Navigation Bar - Game Style - Floats over content */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none">
+        <div className="max-w-lg mx-auto px-3 pb-2 sm:px-4 sm:pb-3 pointer-events-auto">
+          {/* Main nav container - Dark game style with transparency to see content behind */}
+          <div className="relative bg-gradient-to-t from-slate-900/95 via-slate-900/90 to-slate-800/85 backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-slate-700/40 shadow-2xl shadow-black/50">
             {/* Top glow line */}
             <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-green-500/50 to-transparent" />
 

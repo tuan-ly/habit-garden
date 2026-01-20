@@ -35,7 +35,7 @@ export default async function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen pt-3 px-3 pb-8 sm:pt-4 sm:px-4">
+    <div className="h-full overflow-y-auto pt-3 px-3 pb-36 sm:pt-4 sm:px-4">
       <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
         {/* Profile Header - Game Style */}
         <div className="relative overflow-hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-white/20 dark:border-slate-700/50 shadow-xl">

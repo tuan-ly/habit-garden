@@ -63,8 +63,8 @@ export default async function DashboardLayout({
         <div className="fixed inset-0 opacity-5 dark:opacity-10 pointer-events-none"
           style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)', backgroundSize: '40px 40px' }} />
 
-        {/* Main content area - full screen with scrollable content */}
-        <main className="relative h-dvh overflow-y-auto pb-32 scrollbar-none">
+        {/* Main content area - full screen, children handle their own scrolling */}
+        <main className="relative h-dvh">
           {children}
         </main>
 
