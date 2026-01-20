@@ -3,6 +3,7 @@ import { getProfile, getUserStats, getAchievementsData } from '@/lib/actions/pro
 import { getLevelInfo } from '@/lib/xp-system'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { AchievementsGrid } from '@/components/gamification/achievements-grid'
+import { TimezoneSelector } from '@/components/profile'
 import {
   Flower2,
   Droplets,
@@ -155,6 +156,9 @@ export default async function ProfilePage() {
             </div>
           </div>
         </div>
+
+        {/* Timezone Selector */}
+        <TimezoneSelector currentTimezone={profile?.timezone || 'Asia/Ho_Chi_Minh'} />
 
         {/* Water Reserves - Game Style */}
         <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-xl sm:rounded-2xl p-3 sm:p-5 border border-white/20 dark:border-slate-700/50 shadow-lg">

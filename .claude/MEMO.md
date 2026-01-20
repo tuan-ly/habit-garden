@@ -1,9 +1,9 @@
 # Habit Garden - Project Memo
 
-> **Last Updated**: 2026-01-19
+> **Last Updated**: 2026-01-20
 > **Current Phase**: Phase 4 - Polish & Launch (IN PROGRESS)
 
-> **Last Session**: Critical Bug Fix - Timezone Issue in Moisture Decay Cron
+> **Last Session**: Complete Fix - Moisture Decay Cron Timezone (Function Level)
 
 
 ---
@@ -47,6 +47,59 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 ---
 
 ## Recent Changes (Latest First)
+
+### 2026-01-20: User Timezone Support for Moisture Decay
+**Problem**: Cron job sử dụng fixed Vietnam timezone, nhưng user có thể ở nhiều múi giờ khác nhau.
+
+**Solution**: Implement per-user timezone support:
+
+1. **Database**: Column `timezone` đã có trong `profiles` table (default: `Asia/Ho_Chi_Minh`)
+
+2. **Function `update_daily_moisture()`**: Updated để đọc timezone từng user:
+```sql
+-- Đọc timezone của mỗi user từ profiles
+COALESCE(pr.timezone, 'Asia/Ho_Chi_Minh') as user_timezone
+
+-- So sánh date theo timezone của user
+user_local_date := (NOW() AT TIME ZONE user_tz)::date;
+IF (p.last_watered_at AT TIME ZONE user_tz)::date >= user_local_date THEN
+  -- Skip decay (user watered today in their timezone)
+END IF;
+```
+
+3. **Frontend Auto-Sync**: Component `TimezoneSync` tự detect timezone từ browser và sync về server khi user login.
+
+4. **Manual Selection**: Component `TimezoneSelector` trong Profile page để user chọn timezone thủ công.
+
+**New Files**:
+| File | Purpose |
+|------|---------|
+| `src/components/timezone-sync.tsx` | Auto-detect và sync timezone từ browser |
+| `src/components/profile/timezone-selector.tsx` | UI cho user chọn timezone |
+| `src/components/profile/index.ts` | Export barrel |
+
+**Updated Files**:
+| File | Change |
+|------|--------|
+| `src/lib/actions/profile.ts` | Added `updateTimezone()` server action |
+| `src/app/(dashboard)/layout.tsx` | Integrated `TimezoneSync` component |
+| `src/app/(dashboard)/profile/page.tsx` | Added `TimezoneSelector` |
+
+**Migration Applied**: `update_moisture_decay_user_timezone`
+
+**How It Works**:
+1. User login → `TimezoneSync` detects browser timezone (e.g., `America/New_York`)
+2. If different from stored timezone → auto-update profile
+3. Cron job runs at 17:00 UTC → evaluates each plant against owner's timezone
+4. User in NYC (UTC-5) has until midnight NYC time to water plants
+5. User in Vietnam (UTC+7) has until midnight VN time to water plants
+
+**Current Cron Status**:
+| Job ID | Schedule | Last Run | Status |
+|--------|----------|----------|--------|
+| 2 | `0 17 * * *` | 2026-01-19 17:00 UTC | ✅ Active |
+
+---
 
 ### 2026-01-19: Critical Bug Fix - Timezone Issue in Moisture Decay Cron
 **Problem**: Cây chết hàng loạt lúc 0h mỗi ngày dù đã được tưới đầy đủ.

@@ -6,6 +6,7 @@ import { GameNav } from '@/components/game-ui'
 import { DashboardProviders } from './providers'
 import { getTodayMood } from '@/lib/actions/mood'
 import { MoodProactivePrompt } from '@/components/mood'
+import { TimezoneSync } from '@/components/timezone-sync'
 
 export default async function DashboardLayout({
   children,
@@ -22,6 +23,14 @@ export default async function DashboardLayout({
 
   // Fetch initial mood for the provider
   const initialMood = await getTodayMood()
+
+  // Fetch user's timezone for auto-sync
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('timezone')
+    .eq('id', user.id)
+    .single()
+  const userTimezone = profile?.timezone ?? null
 
   // Fetch initial weeds for all plants
   const { data: plantsWithWeeds } = await supabase
@@ -65,6 +74,7 @@ export default async function DashboardLayout({
         <Toaster />
         <OnboardingModal />
         <MoodProactivePrompt />
+        <TimezoneSync currentTimezone={userTimezone} />
       </div>
     </DashboardProviders>
   )

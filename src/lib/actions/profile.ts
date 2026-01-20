@@ -5,6 +5,36 @@ import type { Profile } from '@/types/database'
 import { ACHIEVEMENTS, type AchievementProgress } from '@/lib/achievements'
 import { getLevelFromXp } from '@/lib/xp-system'
 
+// Update user's timezone
+export async function updateTimezone(timezone: string): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
+
+  // Validate timezone is a valid IANA timezone
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: timezone })
+  } catch {
+    return { success: false, error: 'Invalid timezone' }
+  }
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      timezone,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', user.id)
+
+  if (error) {
+    console.error('Error updating timezone:', error)
+    return { success: false, error: error.message }
+  }
+
+  return { success: true }
+}
+
 // Sync user XP from watering_logs to profiles table
 export async function syncUserXp(): Promise<{ success: boolean; xp?: number; error?: string }> {
   const supabase = await createClient()
