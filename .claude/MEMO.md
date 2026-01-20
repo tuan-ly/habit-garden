@@ -3,7 +3,7 @@
 > **Last Updated**: 2026-01-20
 > **Current Phase**: Phase 4 - Polish & Launch (IN PROGRESS)
 
-> **Last Session**: Complete Fix - Moisture Decay Cron Timezone (Function Level)
+> **Last Session**: Garden Zoom System Implementation
 
 
 ---
@@ -43,10 +43,47 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 - **NEW: Multi-Cell Plants** - Plants can occupy multiple grid cells (1x1, 2x2, 3x3) with merged visual tiles and centered plants
 - **NEW: UX Watering Redesign** - One-tap watering, long-press for info, overlay badges on plants
 - **NEW: Goal Data Integration** - Goal info and today's logs merged into PlantWithType for display
+- **NEW: Garden Zoom System** - Zoom in/out controls with pinch-to-zoom on mobile
 
 ---
 
 ## Recent Changes (Latest First)
+
+### 2026-01-20: Garden Zoom System
+**Goal**: Cho phép user zoom in/out khu vườn để xem chi tiết hoặc tổng quan
+
+**Features**:
+- **Zoom Controls**: Nút +/- ở bên phải màn hình với indicator phần trăm
+- **Zoom Range**: 50% đến 200% (step 25%)
+- **Reset Button**: Nút reset về 100%
+- **Pinch-to-Zoom**: Hỗ trợ pinch gesture trên mobile/tablet
+- **Persistence**: Zoom level được lưu vào localStorage
+
+**New Files**:
+| File | Purpose |
+|------|---------|
+| `src/components/garden/zoom-controls.tsx` | UI controls cho zoom (+/-/reset) |
+| `src/lib/hooks/use-garden-zoom.ts` | Custom hook quản lý zoom state và pinch gesture |
+| `src/lib/hooks/index.ts` | Export barrel cho hooks |
+
+**Updated Files**:
+| File | Change |
+|------|--------|
+| `src/components/garden/isometric-garden.tsx` | Integrated zoom controls và transform |
+
+**How It Works**:
+1. User click +/- buttons → zoom level thay đổi 25%
+2. Zoom được apply bằng CSS `transform: scale(zoom)`
+3. Trên mobile: pinch 2 ngón để zoom in/out
+4. Zoom level tự động lưu vào localStorage
+5. Khi reload page → restore zoom level đã lưu
+
+**Technical Notes**:
+- Sử dụng `transform: scale()` thay vì resize để giữ layout stable
+- `touch-none` class ngăn scroll conflict với pinch gesture
+- `transition-transform` cho smooth zoom animation
+
+---
 
 ### 2026-01-20: User Timezone Support for Moisture Decay
 **Problem**: Cron job sử dụng fixed Vietnam timezone, nhưng user có thể ở nhiều múi giờ khác nhau.

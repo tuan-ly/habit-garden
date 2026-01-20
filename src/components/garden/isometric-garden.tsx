@@ -6,6 +6,7 @@ import { IsometricPlant } from './isometric-plant'
 import { PlantInfoBar } from './plant-tooltip'
 import { FloatingPlantCard } from './floating-plant-card'
 import { GroundPlane, type MultiCellArea } from './ground-plane'
+import { ZoomControls } from './zoom-controls'
 import { AddPlantDialog } from '@/components/plants/add-plant-dialog'
 import { PlantDetailSheet } from '@/components/plants/plant-detail-sheet'
 import { QuickLogModal } from '@/components/plants/quick-log-modal'
@@ -16,6 +17,7 @@ import {
   showGoalLogToast,
 } from '@/components/plants/water-toast'
 import { usePlants } from '@/lib/context'
+import { useGardenZoom } from '@/lib/hooks'
 import type { PlantWithType, PlantType, WeatherType } from '@/types/database'
 import { defaultTheme } from './themes'
 import {
@@ -49,6 +51,17 @@ export function IsometricGarden({
 }: IsometricGardenProps) {
   // Get plants from context with optimistic updates
   const { plants, waterPlant, logGoal } = usePlants()
+
+  // Zoom state management
+  const {
+    zoom,
+    minZoom,
+    maxZoom,
+    zoomIn,
+    zoomOut,
+    resetZoom,
+    bindPinchGesture,
+  } = useGardenZoom()
 
   const [hoveredTile, setHoveredTile] = useState<string | null>(null)
   const [selectedPlant, setSelectedPlant] = useState<PlantWithType | null>(null)
@@ -343,6 +356,17 @@ export function IsometricGarden({
 
   return (
     <div className="relative w-full h-full flex flex-col justify-end items-center pb-16">
+      {/* Zoom Controls - fixed position on right side */}
+      <ZoomControls
+        zoom={zoom}
+        minZoom={minZoom}
+        maxZoom={maxZoom}
+        onZoomIn={zoomIn}
+        onZoomOut={zoomOut}
+        onReset={resetZoom}
+        className="fixed right-3 top-1/2 -translate-y-1/2 z-30"
+      />
+
       {/* Empty state overlay for new users */}
       {isEmpty && (
         <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
@@ -362,13 +386,17 @@ export function IsometricGarden({
         </div>
       )}
 
-      {/* Garden container */}
-      <div className="flex justify-center px-4">
+      {/* Garden container with zoom and pinch gesture support */}
+      <div
+        className="flex justify-center px-4 overflow-hidden touch-none"
+        {...bindPinchGesture}
+      >
         <div
-          className="relative"
+          className="relative transition-transform duration-200 ease-out origin-center"
           style={{
             width: containerWidth,
             height: containerHeight,
+            transform: `scale(${zoom})`,
           }}
         >
           {/* Single unified ground plane */}
