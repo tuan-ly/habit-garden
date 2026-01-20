@@ -7,11 +7,11 @@ import { PlantInfoBar } from './plant-tooltip'
 import { FloatingPlantCard } from './floating-plant-card'
 import { GroundPlane, type MultiCellArea } from './ground-plane'
 import { ZoomControls } from './zoom-controls'
+import { WateringCelebration } from './watering-celebration'
 import { AddPlantDialog } from '@/components/plants/add-plant-dialog'
 import { PlantDetailSheet } from '@/components/plants/plant-detail-sheet'
 import { QuickLogModal } from '@/components/plants/quick-log-modal'
 import {
-  showWaterToast,
   showAlreadyWateredToast,
   showWaterErrorToast,
   showGoalLogToast,
@@ -76,6 +76,16 @@ export function IsometricGarden({
   } | null>(null)
   const [quickLogPlant, setQuickLogPlant] = useState<PlantWithType | null>(null)
   const [quickLogOpen, setQuickLogOpen] = useState(false)
+
+  // Watering celebration state
+  const [celebration, setCelebration] = useState<{
+    active: boolean
+    position: { x: number; y: number }
+    xpEarned: number
+    plantName: string
+    plantIcon: string
+    streakCount: number
+  } | null>(null)
 
   // Long press tracking
   const longPressTimer = useRef<NodeJS.Timeout | null>(null)
@@ -270,7 +280,7 @@ export function IsometricGarden({
 
   // Handle quick water for simple (non-goal) plants
   const handleQuickWater = useCallback(
-    async (plant: PlantWithType) => {
+    async (plant: PlantWithType, tapPosition?: { x: number; y: number }) => {
       if (isWateredToday(plant)) {
         showAlreadyWateredToast(plant.name)
         return
@@ -279,13 +289,20 @@ export function IsometricGarden({
       const result = await waterPlant(plant.id)
 
       if (result.success) {
-        showWaterToast({
+        // Trigger celebration animation
+        const xpEarned = result.xpEarned || 10
+        const newStreak = plant.current_streak + 1
+
+        setCelebration({
+          active: true,
+          position: tapPosition || {
+            x: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
+            y: typeof window !== 'undefined' ? window.innerHeight / 2 : 300
+          },
+          xpEarned,
           plantName: plant.name,
           plantIcon: plant.plant_type.icon,
-          xpEarned: result.xpEarned || 10,
-          xpBreakdown: result.xpBreakdown,
-          streakCount: plant.current_streak + 1,
-          newAchievements: result.newAchievements,
+          streakCount: newStreak,
         })
       } else {
         showWaterErrorToast(result.error || 'Unknown error')
@@ -296,7 +313,7 @@ export function IsometricGarden({
 
   // Handle tap/click on plant
   const handlePlantTap = useCallback(
-    (plant: PlantWithType) => {
+    (plant: PlantWithType, tapPosition?: { x: number; y: number }) => {
       // Check if plant has a goal
       if (plant.goal_mode) {
         // Open quick log modal for goal plants
@@ -304,7 +321,7 @@ export function IsometricGarden({
         setQuickLogOpen(true)
       } else {
         // Quick water for simple plants
-        handleQuickWater(plant)
+        handleQuickWater(plant, tapPosition)
       }
     },
     [handleQuickWater]
@@ -320,15 +337,25 @@ export function IsometricGarden({
 
   // Handle tile click
   const handleTileClick = useCallback(
-    (plant?: PlantWithType) => {
+    (plant?: PlantWithType, event?: React.MouseEvent | React.TouchEvent) => {
       // If long press was triggered, don't handle click
       if (longPressTriggered.current) {
         longPressTriggered.current = false
         return
       }
 
+      // Get tap position for celebration animation
+      let tapPosition: { x: number; y: number } | undefined
+      if (event) {
+        if ('clientX' in event) {
+          tapPosition = { x: event.clientX, y: event.clientY }
+        } else if ('touches' in event && event.touches.length > 0) {
+          tapPosition = { x: event.touches[0].clientX, y: event.touches[0].clientY }
+        }
+      }
+
       if (plant) {
-        handlePlantTap(plant)
+        handlePlantTap(plant, tapPosition)
       } else {
         setAddDialogOpen(true)
       }
@@ -644,7 +671,7 @@ export function IsometricGarden({
                 isOccupiedByMultiCell={isOccupiedByMultiCell}
                 isPartOfMultiCell={isPartOfMultiCell}
                 plantGridSize={plant?.grid_size || 1}
-                onClick={() => handleTileClick(clickPlant)}
+                onClick={(e) => handleTileClick(clickPlant, e)}
                 onContextMenu={(e) => handleContextMenu(e, clickPlant)}
                 onTouchStart={(e) => handleTouchStart(e, clickPlant)}
                 onTouchMove={handleTouchMove}
@@ -762,6 +789,17 @@ export function IsometricGarden({
         plant={selectedPlant}
         open={sheetOpen}
         onOpenChange={setSheetOpen}
+      />
+
+      {/* Watering celebration effect */}
+      <WateringCelebration
+        isActive={celebration?.active ?? false}
+        position={celebration?.position}
+        xpEarned={celebration?.xpEarned}
+        plantName={celebration?.plantName}
+        plantIcon={celebration?.plantIcon}
+        streakCount={celebration?.streakCount}
+        onComplete={() => setCelebration(null)}
       />
     </div>
   )

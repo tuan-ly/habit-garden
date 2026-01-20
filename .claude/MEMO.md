@@ -3,7 +3,7 @@
 > **Last Updated**: 2026-01-20
 > **Current Phase**: Phase 4 - Polish & Launch (IN PROGRESS)
 
-> **Last Session**: Plant Position Management & Drag-and-Drop
+> **Last Session**: Watering Celebration Effect
 
 
 ---
@@ -48,10 +48,56 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 - **NEW: Plant Drag-and-Drop** - Long-press to drag plants to new positions, visual feedback for valid/invalid targets
 - **NEW: Dynamic Grid Sizing** - Garden grid auto-expands based on plant positions (e.g., plant at (4,2) → 6x6 grid)
 - **NEW: Plant Growth Conflict Resolution** - When plants grow larger (1x1→2x2→3x3), conflicting plants are auto-relocated
+- **NEW: Watering Celebration Effect** - 3-second celebration animation when watering plants with splash, sparkles, XP display
 
 ---
 
 ## Recent Changes (Latest First)
+
+### 2026-01-20: Watering Celebration Effect
+**Goal**: Tạo hiệu ứng chúc mừng khi tưới cây trong khu vườn, kéo dài 3 giây
+
+**Features Implemented**:
+1. **WateringCelebration Component** ([watering-celebration.tsx](src/components/garden/watering-celebration.tsx)):
+   - 3-phase animation: Splash (0-0.5s) → Celebrate (0.5-2.5s) → Fadeout (2.5-3s)
+   - Water splash ring effect with expanding circles
+   - Water droplets flying outward
+   - Sparkle particles with random positions
+   - Central celebration card with plant icon, XP earned, streak info
+   - Glow effects and animated XP display
+
+2. **CSS Animations** ([globals.css](src/app/globals.css)):
+   - `animate-water-splash-ring` - Expanding water rings
+   - `animate-water-droplet-fly` - Droplets flying outward
+   - `animate-celebration-pop` - Card pop-in with bounce
+   - `animate-celebration-bounce` - Plant icon bouncing
+   - `animate-celebration-sparkle` - Sparkle burst effect
+   - `animate-xp-glow` - XP text glow pulse
+   - `animate-float-up-fade` - Floating +XP particles
+   - `animate-drip-fade` - Dripping water effect
+
+3. **Integration** ([isometric-garden.tsx](src/components/garden/isometric-garden.tsx)):
+   - Added celebration state to track active celebration
+   - Modified `handleQuickWater` to trigger celebration on successful water
+   - Passes tap position for celebration to appear at plant location
+   - Shows plant icon, name, XP earned, and streak count
+
+**Updated Files**:
+| File | Change |
+|------|--------|
+| `src/components/garden/watering-celebration.tsx` | NEW - Celebration component with 3-phase animation |
+| `src/app/globals.css` | ADDED - 8 new celebration animations |
+| `src/components/garden/isometric-garden.tsx` | UPDATED - Integrated celebration effect |
+| `src/components/garden/isometric-tile.tsx` | UPDATED - onClick now passes event for position |
+
+**How It Works**:
+1. User taps on plant to water
+2. `handleQuickWater` is called with tap position
+3. If watering succeeds, `setCelebration` is called with plant details
+4. `WateringCelebration` renders with 3 phases over 3 seconds
+5. After 3s, `onComplete` callback clears celebration state
+
+---
 
 ### 2026-01-20: Plant Drag-and-Drop Fix & Visual Feedback
 **Goal**: Fix drag không hoạt động trên mobile, thêm visual feedback khi kéo, không bị overlay items

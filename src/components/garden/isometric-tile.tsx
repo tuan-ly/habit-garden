@@ -17,7 +17,7 @@ interface IsometricTileProps {
   isPartOfMultiCell?: boolean
   /** Plant grid size for positioning and shadow scaling (default 1) */
   plantGridSize?: number
-  onClick: () => void
+  onClick: (e: React.MouseEvent) => void
   onMouseEnter: () => void
   onMouseLeave: () => void
   onContextMenu?: (e: React.MouseEvent) => void

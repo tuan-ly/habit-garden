@@ -1495,3 +1495,173 @@
 .animate-target-hit {
   animation: target-hit 0.5s ease-out;
 }
+
+/* ============================================
+   Watering Celebration Animations
+   ============================================ */
+
+/* Water splash ring expanding outward */
+@keyframes water-splash-ring-expand {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+
+  70% {
+    opacity: 0.6;
+  }
+
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+.animate-water-splash-ring {
+  animation: water-splash-ring-expand 0.6s ease-out forwards;
+}
+
+/* Water droplets flying outward */
+@keyframes water-droplet-fly {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(var(--drop-x, 50px), -80px) scale(0.5);
+    opacity: 0;
+  }
+}
+
+.animate-water-droplet-fly {
+  animation: water-droplet-fly 0.7s ease-out forwards;
+}
+
+/* Celebration card pop in */
+@keyframes celebration-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+
+  50% {
+    transform: scale(1.15);
+  }
+
+  70% {
+    transform: scale(0.95);
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-celebration-pop {
+  animation: celebration-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Celebration bounce for plant icon */
+@keyframes celebration-bounce {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+
+  25% {
+    transform: translateY(-10px) scale(1.1);
+  }
+
+  50% {
+    transform: translateY(0) scale(1);
+  }
+
+  75% {
+    transform: translateY(-5px) scale(1.05);
+  }
+}
+
+.animate-celebration-bounce {
+  animation: celebration-bounce 1s ease-in-out infinite;
+}
+
+/* Sparkle burst effect */
+@keyframes celebration-sparkle {
+  0% {
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+
+  20% {
+    transform: scale(1.2) rotate(180deg);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1) rotate(360deg);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(0) rotate(540deg);
+    opacity: 0;
+  }
+}
+
+.animate-celebration-sparkle {
+  animation: celebration-sparkle 2s ease-out forwards;
+}
+
+/* XP glow pulse */
+@keyframes xp-glow {
+  0%, 100% {
+    text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+  }
+
+  50% {
+    text-shadow: 0 0 20px rgba(251, 191, 36, 0.8), 0 0 30px rgba(251, 191, 36, 0.5);
+  }
+}
+
+.animate-xp-glow {
+  animation: xp-glow 1s ease-in-out infinite;
+}
+
+/* Float up and fade */
+@keyframes float-up-fade {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(-40px);
+    opacity: 0;
+  }
+}
+
+.animate-float-up-fade {
+  animation: float-up-fade 2s ease-out forwards;
+}
+
+/* Drip fade effect */
+@keyframes drip-fade {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+}
+
+.animate-drip-fade {
+  animation: drip-fade 1.5s ease-out forwards;
+}
