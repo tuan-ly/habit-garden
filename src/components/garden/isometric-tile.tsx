@@ -1,10 +1,8 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { Plus } from 'lucide-react'
 import type { PlantWithType } from '@/types/database'
 import { PlantOverlayBadge } from './plant-overlay-badge'
-import type { GardenMode } from './garden-mode-toolbar'
 
 interface IsometricTileProps {
   row: number
@@ -34,8 +32,6 @@ interface IsometricTileProps {
   plant?: PlantWithType | null
   /** Hide badge (e.g., when dragging) */
   hideBadge?: boolean
-  /** Current garden mode - controls add plant effect visibility */
-  mode?: GardenMode
 }
 
 /**
@@ -79,7 +75,6 @@ export function IsometricTile({
   tileSize = 60,
   plant,
   hideBadge = false,
-  mode = 'edit',
 }: IsometricTileProps) {
   // Isometric tile positioning:
   // The grid's top point (0,0) is at the top-center of the diamond
@@ -211,8 +206,8 @@ export function IsometricTile({
         </svg>
       )}
 
-      {/* Plus icon for empty tiles - only show in edit mode */}
-      {isEmpty && isHovered && !isOccupiedByMultiCell && mode === 'edit' && (
+      {/* Subtle hint for empty tiles - double tap to add plant */}
+      {isEmpty && isHovered && !isOccupiedByMultiCell && (
         <div
           className="absolute flex items-center justify-center pointer-events-none"
           style={{
@@ -221,9 +216,7 @@ export function IsometricTile({
             transform: 'translate(-50%, -50%)',
           }}
         >
-          <div className="bg-gradient-to-br from-white to-green-50 rounded-full p-2 shadow-xl border-2 border-green-300/80 animate-plus-bounce backdrop-blur-sm">
-            <Plus className="h-5 w-5 text-green-600 drop-shadow-sm" />
-          </div>
+          <div className="text-2xl opacity-40 animate-pulse">🌱</div>
         </div>
       )}
 

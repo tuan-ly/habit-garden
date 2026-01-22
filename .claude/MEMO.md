@@ -3,7 +3,7 @@
 > **Last Updated**: 2026-01-22
 > **Current Phase**: Phase 4 - Polish & Launch (IN PROGRESS)
 
-> **Last Session**: Garden Interaction Modes & Zoom/Pan Fix
+> **Last Session**: Gesture-Based UX Redesign (No Modes)
 
 
 ---
@@ -51,61 +51,64 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 - **NEW: Watering Celebration Effect** - 3-second celebration animation when watering plants with splash, sparkles, XP display
 - **NEW: Plant Position Click-to-Place** - Click on empty tile to place plant at exact position
 - **NEW: Garden Visual Enhancement** - Decorations around garden, ambient particles, improved hover effects
-- **NEW: Garden Interaction Modes** - Three modes: Explore (pan/zoom/info), Water (tap to water), Edit (drag to move)
+- **NEW: Gesture-Based UX** - No modes needed! Tap=water, Double-tap=details/add, Long-press=info/drag, Drag=pan
 
 ---
 
 ## Recent Changes (Latest First)
 
-### 2026-01-22: Garden Interaction Modes & Zoom/Pan Fix
-**Goal**: Thêm các chế độ tương tác rõ ràng cho khu vườn và sửa lỗi zoom nhảy/không thể pan
+### 2026-01-22: Gesture-Based UX Redesign (No Modes)
+**Goal**: Sửa bug drag trigger add plant, simplify UX bằng gesture-based model thay vì 3 modes phức tạp
 
 **Problems Fixed**:
-1. Zoom animation bị nhảy (janky) do CSS transition kết hợp với container size changes
-2. Không thể pan khi zoom in
-3. Thiếu chế độ tương tác rõ ràng - người dùng không biết khi nào water, khi nào move
+1. Bug: Hold chuột trái để drag lại trigger "add plant" và làm mouse bị lock
+2. UX phức tạp với 3 modes (Explore/Water/Edit) - user phải nhớ mode nào làm gì
+3. Pan gesture không có threshold - click bị hiểu nhầm là pan
 
-**Features Implemented**:
+**Solution - Gesture-Based UX**:
+Loại bỏ hoàn toàn 3 modes, thay bằng gesture model thống nhất:
 
-1. **Garden Interaction Modes** ([garden-mode-toolbar.tsx](src/components/garden/garden-mode-toolbar.tsx)):
-   - **Explore Mode** 🔍: Pan/zoom tự do, tap hiện info card
-   - **Water Mode** 💧: Tap để water/log goal, long-press hiện info
-   - **Edit Mode** ✏️: Long-press để drag plants, tap hiện detail sheet
-   - Mode được lưu vào localStorage
-   - Hint tooltip khi đổi mode
+| Gesture | On Plant | On Empty Tile |
+|---------|----------|---------------|
+| **Tap** | Water / Log goal | Nothing |
+| **Double-tap** | Open detail sheet | Add plant |
+| **Long press** | Show info card | Nothing |
+| **Long press + drag** | Move plant | N/A |
+| **Drag** | Pan view | Pan view |
+| **Pinch/Wheel** | Zoom | Zoom |
 
-2. **Improved Zoom System** ([use-garden-zoom.ts](src/lib/hooks/use-garden-zoom.ts)):
-   - Smooth zoom animation với `requestAnimationFrame` và ease-out cubic
-   - Pan gesture support (touch + mouse)
-   - Pinch-to-zoom trên mobile
-   - Mouse wheel zoom trên desktop
-   - Combined gesture handler cho cả pan và pinch
-   - `willChange: 'transform'` cho GPU acceleration
+**Technical Fixes**:
 
-3. **Pan Support**:
-   - Drag để pan trong Explore mode hoặc khi zoom > 1
-   - Cursor thay đổi (grab/grabbing) theo trạng thái
-   - Reset pan khi reset zoom
+1. **Pan Threshold** ([use-garden-zoom.ts](src/lib/hooks/use-garden-zoom.ts)):
+   - Added `PAN_THRESHOLD = 8px` - pan chỉ bắt đầu sau khi move > 8px
+   - Added `didPan` flag - track nếu user thực sự pan (để prevent click after drag)
+   - `resetDidPan()` - reset flag sau khi xử lý click
 
-4. **Better UX**:
-   - Mode hint hiện 3 giây khi đổi mode
-   - Không trigger click khi đang pan
-   - Visual feedback cho mode đang active
+2. **Double-tap Detection** ([isometric-garden.tsx](src/components/garden/isometric-garden.tsx)):
+   - Track `lastTapTime` và `lastTapPlantId` cho double-tap trên plant
+   - Track `lastEmptyTapTime` và `lastEmptyTapCell` cho double-tap trên empty tile
+   - Threshold: 300ms
+
+3. **Unified Gesture Handling**:
+   - Long press trên plant shows info card first
+   - If user moves while long-pressing, starts drag
+   - Pan always enabled (không cần mode)
+
+4. **First-time User Hint** ([gesture-hint.tsx](src/components/garden/gesture-hint.tsx)):
+   - Shows gesture instructions once for new users
+   - Auto-dismiss after 8 seconds
+   - Persisted in localStorage
 
 **Updated Files**:
 | File | Change |
 |------|--------|
-| `src/components/garden/garden-mode-toolbar.tsx` | NEW - Mode selector với 3 modes |
-| `src/lib/hooks/use-garden-zoom.ts` | UPDATED - Smooth zoom + pan support |
-| `src/components/garden/isometric-garden.tsx` | UPDATED - Integrated modes và improved zoom/pan |
-| `src/app/globals.css` | UPDATED - Added slide-down, pulse-slow animations |
+| `src/lib/hooks/use-garden-zoom.ts` | UPDATED - Pan threshold, didPan flag |
+| `src/components/garden/isometric-garden.tsx` | REWRITTEN - Gesture-based UX, no modes |
+| `src/components/garden/isometric-tile.tsx` | UPDATED - Removed mode prop, subtle plant hint on hover |
+| `src/components/garden/gesture-hint.tsx` | NEW - First-time gesture hint |
 
-**How It Works**:
-1. Mode toolbar ở top-center của garden
-2. Chọn mode → behavior thay đổi tương ứng
-3. Explore mode: gesture handlers cho pan/zoom active
-4. Water mode: tap = water, không có pan (trừ khi zoom > 1)
-5. Edit mode: long-press = drag plant, tap = edit details
+**Removed Files** (no longer needed):
+- Mode toolbar component no longer used in garden
 
 ---
 

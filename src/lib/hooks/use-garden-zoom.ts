@@ -83,9 +83,11 @@ export function useGardenZoom(options: UseGardenZoomOptions = {}): UseGardenZoom
 
   // Pan state
   const [isPanning, setIsPanning] = useState(false)
+  const [didPan, setDidPan] = useState(false) // True if user actually moved more than threshold
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
   const panStartPos = useRef<{ x: number; y: number } | null>(null)
   const panStartOffset = useRef({ x: 0, y: 0 })
+  const panThresholdMet = useRef(false) // Track if we've exceeded threshold
 
   // Pinch gesture tracking
   const initialDistance = useRef<number | null>(null)
@@ -191,6 +193,11 @@ export function useGardenZoom(options: UseGardenZoomOptions = {}): UseGardenZoom
     setPanOffset({ x: 0, y: 0 })
   }, [])
 
+  // Reset didPan flag (call after handling click to allow next drag detection)
+  const resetDidPan = useCallback(() => {
+    setDidPan(false)
+  }, [])
+
   // Calculate distance between two touch points
   const getTouchDistance = (touches: React.TouchList): number => {
     const dx = touches[0].clientX - touches[1].clientX
@@ -255,7 +262,8 @@ export function useGardenZoom(options: UseGardenZoomOptions = {}): UseGardenZoom
           y: e.touches[0].clientY,
         }
         panStartOffset.current = { ...panOffset }
-        setIsPanning(true)
+        panThresholdMet.current = false
+        // Don't set isPanning yet - wait for threshold
       }
     },
     [panOffset]
@@ -263,33 +271,46 @@ export function useGardenZoom(options: UseGardenZoomOptions = {}): UseGardenZoom
 
   const handlePanTouchMove = useCallback(
     (e: React.TouchEvent) => {
-      if (e.touches.length === 1 && panStartPos.current && isPanning) {
+      if (e.touches.length === 1 && panStartPos.current) {
         const dx = e.touches[0].clientX - panStartPos.current.x
         const dy = e.touches[0].clientY - panStartPos.current.y
+        const distance = Math.sqrt(dx * dx + dy * dy)
 
-        setPanOffset({
-          x: panStartOffset.current.x + dx,
-          y: panStartOffset.current.y + dy,
-        })
+        // Only start panning after threshold is met
+        if (!panThresholdMet.current && distance >= PAN_THRESHOLD) {
+          panThresholdMet.current = true
+          setIsPanning(true)
+          setDidPan(true)
+        }
+
+        if (panThresholdMet.current) {
+          setPanOffset({
+            x: panStartOffset.current.x + dx,
+            y: panStartOffset.current.y + dy,
+          })
+        }
       }
     },
-    [isPanning]
+    []
   )
 
   const handlePanTouchEnd = useCallback(() => {
     panStartPos.current = null
+    panThresholdMet.current = false
     setIsPanning(false)
+    // Note: didPan is NOT reset here - it's reset by the consumer after handling click
   }, [])
 
   // Pan gesture handlers - Mouse
   const handlePanMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      // Middle mouse button or when in explore mode
-      if (e.button === 1 || e.button === 0) {
-        e.preventDefault()
+      // Left mouse button (0) or middle mouse button (1)
+      if (e.button === 0 || e.button === 1) {
         panStartPos.current = { x: e.clientX, y: e.clientY }
         panStartOffset.current = { ...panOffset }
-        setIsPanning(true)
+        panThresholdMet.current = false
+        // Don't set isPanning yet - wait for threshold
+        // Don't preventDefault here to allow click events to work
       }
     },
     [panOffset]
@@ -297,22 +318,34 @@ export function useGardenZoom(options: UseGardenZoomOptions = {}): UseGardenZoom
 
   const handlePanMouseMove = useCallback(
     (e: React.MouseEvent) => {
-      if (panStartPos.current && isPanning) {
+      if (panStartPos.current) {
         const dx = e.clientX - panStartPos.current.x
         const dy = e.clientY - panStartPos.current.y
+        const distance = Math.sqrt(dx * dx + dy * dy)
 
-        setPanOffset({
-          x: panStartOffset.current.x + dx,
-          y: panStartOffset.current.y + dy,
-        })
+        // Only start panning after threshold is met
+        if (!panThresholdMet.current && distance >= PAN_THRESHOLD) {
+          panThresholdMet.current = true
+          setIsPanning(true)
+          setDidPan(true)
+        }
+
+        if (panThresholdMet.current) {
+          setPanOffset({
+            x: panStartOffset.current.x + dx,
+            y: panStartOffset.current.y + dy,
+          })
+        }
       }
     },
-    [isPanning]
+    []
   )
 
   const handlePanMouseUp = useCallback(() => {
     panStartPos.current = null
+    panThresholdMet.current = false
     setIsPanning(false)
+    // Note: didPan is NOT reset here - it's reset by the consumer after handling click
   }, [])
 
   // Debounce timer for persisting zoom
@@ -398,6 +431,7 @@ export function useGardenZoom(options: UseGardenZoomOptions = {}): UseGardenZoom
     setZoom,
     isZooming,
     isPanning,
+    didPan,
     panOffset,
     bindPanGesture: {
       onTouchStart: handlePanTouchStart,
@@ -424,5 +458,6 @@ export function useGardenZoom(options: UseGardenZoomOptions = {}): UseGardenZoom
       onWheel: handleWheel,
     },
     resetPan,
+    resetDidPan,
   }
 }
