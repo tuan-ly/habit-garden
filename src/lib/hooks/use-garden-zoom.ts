@@ -65,6 +65,8 @@ interface UseGardenZoomReturn {
   resetPan: () => void
   // Reset didPan flag (call after handling click)
   resetDidPan: () => void
+  // Cancel any ongoing pan gesture (call when external drag ends)
+  cancelPan: () => void
 }
 
 export function useGardenZoom(options: UseGardenZoomOptions = {}): UseGardenZoomReturn {
@@ -195,6 +197,14 @@ export function useGardenZoom(options: UseGardenZoomOptions = {}): UseGardenZoom
 
   // Reset didPan flag (call after handling click to allow next drag detection)
   const resetDidPan = useCallback(() => {
+    setDidPan(false)
+  }, [])
+
+  // Cancel any ongoing pan gesture (call when external drag ends to prevent ghost pan)
+  const cancelPan = useCallback(() => {
+    panStartPos.current = null
+    panThresholdMet.current = false
+    setIsPanning(false)
     setDidPan(false)
   }, [])
 
@@ -459,5 +469,6 @@ export function useGardenZoom(options: UseGardenZoomOptions = {}): UseGardenZoom
     },
     resetPan,
     resetDidPan,
+    cancelPan,
   }
 }

@@ -10,8 +10,9 @@ import { GardenDecorations } from './garden-decorations'
 import { AmbientParticles } from './ambient-particles'
 import { ZoomControls } from './zoom-controls'
 import { WateringCelebration } from './watering-celebration'
-import { GestureHint } from './gesture-hint'
+import { ModeToolbar, type GardenMode } from './mode-toolbar'
 import { getTimeOfDay, type TimeOfDay } from './themes'
+// GestureHint removed - now using mode-based UI
 import { AddPlantDialog } from '@/components/plants/add-plant-dialog'
 import { PlantDetailSheet } from '@/components/plants/plant-detail-sheet'
 import { QuickLogModal } from '@/components/plants/quick-log-modal'
@@ -49,7 +50,7 @@ function getClientTileSize(): number {
 // Long press threshold in milliseconds
 const LONG_PRESS_THRESHOLD = 500
 
-// Double tap threshold in milliseconds
+// Double tap threshold for opening detail sheet (still useful in view mode)
 const DOUBLE_TAP_THRESHOLD = 300
 
 export function IsometricGarden({
@@ -73,7 +74,11 @@ export function IsometricGarden({
     bindGestures,
     resetPan,
     resetDidPan,
+    cancelPan,
   } = useGardenZoom()
+
+  // Garden mode state
+  const [mode, setMode] = useState<GardenMode>('view')
 
   const [hoveredTile, setHoveredTile] = useState<string | null>(null)
   const [selectedPlant, setSelectedPlant] = useState<PlantWithType | null>(null)
@@ -271,6 +276,8 @@ export function IsometricGarden({
         isValidTarget: false,
         dragPosition: null,
       })
+      // Cancel any ongoing pan gesture to prevent ghost pan after drag
+      cancelPan()
       return
     }
 
@@ -285,10 +292,13 @@ export function IsometricGarden({
       dragPosition: null,
     })
 
+    // Cancel any ongoing pan gesture to prevent ghost pan after drag
+    cancelPan()
+
     if (dragState.isValidTarget && (row !== plant.grid_row || col !== plant.grid_col)) {
       await movePlant(plant.id, row, col)
     }
-  }, [dragState, movePlant])
+  }, [dragState, movePlant, cancelPan])
 
   // Check if plant is watered today
   const isWateredToday = useCallback((plant: PlantWithType) => {
@@ -375,11 +385,8 @@ export function IsometricGarden({
     []
   )
 
-  // Track last empty tile tap for double-tap to add plant
-  const lastEmptyTapTime = useRef<number>(0)
-  const lastEmptyTapCell = useRef<string | null>(null)
-
-  // Handle tile click
+  
+  // Handle tile click - behavior depends on current mode
   const handleTileClick = useCallback(
     (row: number, col: number, plant?: PlantWithType, event?: React.MouseEvent | React.TouchEvent) => {
       // If long press was triggered, don't handle click
@@ -406,29 +413,41 @@ export function IsometricGarden({
         }
       }
 
-      if (plant) {
-        handlePlantTap(plant, tapPosition)
-      } else {
-        // Empty tile - double tap to add plant
-        const now = Date.now()
-        const cellKey = `${row}-${col}`
-        const timeSinceLastTap = now - lastEmptyTapTime.current
-        const sameCell = lastEmptyTapCell.current === cellKey
+      // Mode-based interaction logic
+      switch (mode) {
+        case 'view':
+          // View mode: tap plant to water/log, tap empty does nothing
+          if (plant) {
+            handlePlantTap(plant, tapPosition)
+          }
+          // Empty tile tap does nothing in view mode
+          break
 
-        if (sameCell && timeSinceLastTap < DOUBLE_TAP_THRESHOLD) {
-          // Double tap on empty tile - open add plant dialog
-          lastEmptyTapTime.current = 0
-          lastEmptyTapCell.current = null
-          setAddDialogPosition({ row, col })
-          setAddDialogOpen(true)
-        } else {
-          // Single tap - just record for double-tap detection
-          lastEmptyTapTime.current = now
-          lastEmptyTapCell.current = cellKey
-        }
+        case 'drag':
+          // Drag mode: tap shows info, actual drag handled by long-press
+          if (plant) {
+            // Show info on tap in drag mode
+            if (event && 'clientX' in event) {
+              handleShowInfo(plant, { x: event.clientX, y: event.clientY })
+            }
+          }
+          break
+
+        case 'add':
+          // Add mode: tap empty to add plant, tap plant to edit goal/details
+          if (plant) {
+            // Open detail sheet to adjust goal
+            setSelectedPlant(plant)
+            setSheetOpen(true)
+          } else {
+            // Single tap on empty tile opens add dialog
+            setAddDialogPosition({ row, col })
+            setAddDialogOpen(true)
+          }
+          break
       }
     },
-    [handlePlantTap, didPan, resetDidPan]
+    [mode, handlePlantTap, handleShowInfo, didPan, resetDidPan]
   )
 
   // Handle right-click (desktop)
@@ -449,31 +468,41 @@ export function IsometricGarden({
   // Track plant for potential drag
   const longPressingPlant = useRef<PlantWithType | null>(null)
 
-  // Handle touch start (mobile long-press)
-  // Long press on plant = show info card initially, then drag if moved
+  // Handle touch start (mobile)
+  // In drag mode: Instant drag enabled (no long-press needed)
+  // In other modes: Long press shows info card
   const handleTouchStart = useCallback(
     (e: React.TouchEvent, plant?: PlantWithType) => {
       const touch = e.touches[0]
       const startPos = { x: touch.clientX, y: touch.clientY }
       touchStartPos.current = startPos
       dragStartPos.current = startPos
-      longPressTriggered.current = false
       // eslint-disable-next-line react-hooks/immutability
       longPressingPlant.current = plant ?? null
 
-      if (plant) {
-        // Long press on plant triggers drag mode after threshold
-        // We moved handleShowInfo to only ContextMenu (right click) to avoid conflict with moving
+      if (plant && mode === 'drag') {
+        // In drag mode, enable instant drag (no long-press needed)
+        longPressTriggered.current = true
+        // Light haptic feedback
+        if (navigator.vibrate) {
+          navigator.vibrate(30)
+        }
+      } else if (plant) {
+        // In other modes, use long-press for info card
+        longPressTriggered.current = false
         longPressTimer.current = setTimeout(() => {
           longPressTriggered.current = true
           // Haptic feedback to indicate long-press triggered
           if (navigator.vibrate) {
             navigator.vibrate(50)
           }
+          handleShowInfo(plant, startPos)
         }, LONG_PRESS_THRESHOLD)
+      } else {
+        longPressTriggered.current = false
       }
     },
-    []
+    [mode, handleShowInfo]
   )
 
   // Handle touch move
@@ -500,15 +529,15 @@ export function IsometricGarden({
         longPressTimer.current = null
       }
 
-      // If long-press was already triggered and we have a plant, start dragging
-      if (longPressTriggered.current && longPressingPlant.current) {
+      // Only allow dragging in drag mode
+      if (mode === 'drag' && longPressTriggered.current && longPressingPlant.current) {
         setFloatingCard(null) // Close info card if open
         startPlantDrag(longPressingPlant.current, { x: touch.clientX, y: touch.clientY })
         // eslint-disable-next-line react-hooks/immutability
         longPressingPlant.current = null
       }
     }
-  }, [dragState.isDragging, handleDragMove, startPlantDrag])
+  }, [mode, dragState.isDragging, handleDragMove, startPlantDrag])
 
   // Native touch event listener to prevent scrolling during drag
   useEffect(() => {
@@ -568,27 +597,28 @@ export function IsometricGarden({
     }
   }, [dragState.isDragging, endPlantDrag])
 
-  // Handle mouse down for drag (long-press to drag)
+  // Handle mouse down for drag
+  // In drag mode: instant drag (no long-press needed)
+  // In other modes: no drag
   const handleMouseDown = useCallback(
     (e: React.MouseEvent, plant?: PlantWithType) => {
       const startPos = { x: e.clientX, y: e.clientY }
       dragStartPos.current = startPos
-      longPressTriggered.current = false
       // eslint-disable-next-line react-hooks/immutability
       longPressingPlant.current = plant ?? null
 
-      if (plant) {
-        // Start long press timer - will allow dragging if moved
-        longPressTimer.current = setTimeout(() => {
-          longPressTriggered.current = true
-          // Haptic feedback for desktop (if supported/wanted)
-          if (navigator.vibrate) {
-            navigator.vibrate(50)
-          }
-        }, LONG_PRESS_THRESHOLD)
+      if (plant && mode === 'drag') {
+        // In drag mode, enable instant drag (no long-press needed)
+        longPressTriggered.current = true
+        // Haptic feedback
+        if (navigator.vibrate) {
+          navigator.vibrate(30)
+        }
+      } else {
+        longPressTriggered.current = false
       }
     },
-    []
+    [mode]
   )
 
   // Handle mouse move for drag
@@ -613,15 +643,15 @@ export function IsometricGarden({
         longPressTimer.current = null
       }
 
-      // If long-press was already triggered and we have a plant, start dragging
-      if (longPressTriggered.current && longPressingPlant.current) {
+      // Only allow dragging in drag mode
+      if (mode === 'drag' && longPressTriggered.current && longPressingPlant.current) {
         setFloatingCard(null) // Close info card if open
         startPlantDrag(longPressingPlant.current, { x: e.clientX, y: e.clientY })
         // eslint-disable-next-line react-hooks/immutability
         longPressingPlant.current = null
       }
     }
-  }, [dragState.isDragging, handleDragMove, startPlantDrag])
+  }, [mode, dragState.isDragging, handleDragMove, startPlantDrag])
 
   // Handle mouse up to end drag
   const handleMouseUp = useCallback(() => {
@@ -739,8 +769,12 @@ export function IsometricGarden({
 
   return (
     <div className="relative w-full h-full flex flex-col">
-      {/* Gesture hints - shown once for new users */}
-      <GestureHint />
+      {/* Mode toolbar - fixed position on left side */}
+      <ModeToolbar
+        mode={mode}
+        onModeChange={setMode}
+        className="fixed left-3 top-1/2 -translate-y-1/2 z-30"
+      />
 
       {/* Zoom Controls - fixed position on right side */}
       <ZoomControls
@@ -765,11 +799,11 @@ export function IsometricGarden({
             </div>
             <h3 className="text-lg sm:text-xl font-bold mb-2">Your Garden Awaits!</h3>
             <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 mb-4">
-              Double-tap any empty tile to plant your first habit and watch it grow as you build consistency.
+              Switch to <span className="font-semibold text-emerald-600">Add mode</span> using the toolbar on the left, then tap any tile to plant your first habit!
             </p>
             <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-emerald-600 dark:text-emerald-400">
-              <span className="animate-bounce">👆👆</span>
-              <span>Double-tap a tile to start</span>
+              <span className="animate-bounce">👈</span>
+              <span>Use the ➕ button to start</span>
             </div>
           </div>
         </div>
@@ -868,6 +902,7 @@ export function IsometricGarden({
                   tileSize={tileSize}
                   plant={isAnchor && !dragState.isDragging ? plant : null}
                   hideBadge={dragState.isDragging}
+                  showAddHint={mode === 'add'}
                 >
                   {plant && isAnchor && !(dragState.isDragging && dragState.draggedPlant?.id === plant.id) && (
                     <IsometricPlant

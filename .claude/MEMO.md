@@ -1,9 +1,9 @@
 # Habit Garden - Project Memo
 
-> **Last Updated**: 2026-01-22
+> **Last Updated**: 2026-01-23
 > **Current Phase**: Phase 4 - Polish & Launch (IN PROGRESS)
 
-> **Last Session**: Gesture-Based UX Redesign (No Modes)
+> **Last Session**: Drag Mode UX Improvements
 
 
 ---
@@ -51,13 +51,90 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 - **NEW: Watering Celebration Effect** - 3-second celebration animation when watering plants with splash, sparkles, XP display
 - **NEW: Plant Position Click-to-Place** - Click on empty tile to place plant at exact position
 - **NEW: Garden Visual Enhancement** - Decorations around garden, ambient particles, improved hover effects
-- **NEW: Gesture-Based UX** - No modes needed! Tap=water, Double-tap=details/add, Long-press=info/drag, Drag=pan
+- **NEW: Mode-Based Garden UI** - 3 modes (View/Move/Add) with toolbar on left side
 
 ---
 
 ## Recent Changes (Latest First)
 
-### 2026-01-22: Gesture-Based UX Redesign (No Modes)
+### 2026-01-23: Drag Mode UX Improvements
+**Goal**: Fix drag/pan conflict, add instant drag, update icons to garden theme
+
+**Problems Fixed**:
+1. **Drag/Pan Conflict**: When holding to drag and releasing, pan state wasn't reset properly, causing subsequent clicks to be blocked
+2. **Long-press requirement in drag mode**: User had to hold 500ms before dragging - now instant
+
+**Changes Made**:
+
+1. **Instant Drag in Drag Mode** ([isometric-garden.tsx](src/components/garden/isometric-garden.tsx)):
+   - In drag mode, clicking on a plant immediately enables dragging (no 500ms long-press needed)
+   - Other modes still use long-press for info card
+   - Light haptic feedback (30ms) on drag start
+
+2. **Fixed Drag/Pan Conflict** ([isometric-garden.tsx](src/components/garden/isometric-garden.tsx)):
+   - Reset `didPan` state when drag ends to prevent blocking next interaction
+   - Pan gesture properly ignored during drag
+
+3. **Garden-Themed Icons** ([mode-toolbar.tsx](src/components/garden/mode-toolbar.tsx)):
+   - Changed from emojis to Lucide React icons
+   - View → **Droplets** icon (💧) with label "Water"
+   - Move → **Hand** icon (✋) with label "Move"
+   - Add → **Sprout** icon (🌱) with label "Plant"
+
+**Updated Files**:
+| File | Change |
+|------|--------|
+| `src/components/garden/isometric-garden.tsx` | Fixed drag/pan conflict, instant drag in drag mode |
+| `src/components/garden/mode-toolbar.tsx` | Garden-themed Lucide icons |
+
+**UX Summary**:
+| Mode | Icon | Click on Plant | Drag |
+|------|------|----------------|------|
+| Water | 💧 Droplets | Water/Log | N/A |
+| Move | ✋ Hand | Show info | Instant (just drag) |
+| Plant | 🌱 Sprout | Edit details | N/A |
+
+---
+
+### 2026-01-23: Mode-Based Garden UI (3 Modes)
+**Goal**: Implement clear 3-mode system với toolbar ở bên trái màn hình
+
+**3 Modes**:
+| Mode | Icon | Description |
+|------|------|-------------|
+| **View** | 👁️ | Xem và tưới nước. Tap plant = water/log goal. Không thể thêm hay di chuyển cây |
+| **Move** | ✋ | Di chuyển cây. Long-press + drag để di chuyển. Tap plant = show info |
+| **Add** | ➕ | Thêm cây. Tap empty tile = add plant. Tap plant = open detail sheet để điều chỉnh mục tiêu |
+
+**Interaction Logic per Mode**:
+
+| Action | View Mode | Move Mode | Add Mode |
+|--------|-----------|-----------|----------|
+| Tap plant | Water/Log | Show info | Open details |
+| Tap empty | Nothing | Nothing | Add plant |
+| Long-press plant | Show info | Enable drag | Show info |
+| Long-press + drag | N/A | Move plant | N/A |
+
+**New Files**:
+| File | Purpose |
+|------|---------|
+| `src/components/garden/mode-toolbar.tsx` | Vertical toolbar on left side với 3 mode buttons |
+
+**Updated Files**:
+| File | Change |
+|------|--------|
+| `src/components/garden/isometric-garden.tsx` | Added mode state, mode-based interaction logic |
+| `src/components/garden/isometric-tile.tsx` | Added `showAddHint` prop for plus icon in add mode |
+
+**Technical Notes**:
+- ModeToolbar displays fixed on left side of screen (`left-3 top-1/2`)
+- Empty tiles show plus icon only in Add mode
+- Drag only works in Move mode
+- Double-tap detection kept for View mode (tap plant → water, double-tap → details)
+
+---
+
+### 2026-01-22: Gesture-Based UX Redesign (No Modes) [SUPERSEDED]
 **Goal**: Sửa bug drag trigger add plant, simplify UX bằng gesture-based model thay vì 3 modes phức tạp
 
 **Problems Fixed**:
