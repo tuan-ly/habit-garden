@@ -10,7 +10,7 @@ interface GardenDecorationsProps {
 }
 
 // Decorative element types
-type DecoType = 'tree-pine' | 'tree-oak' | 'bush' | 'rock' | 'mushroom' | 'flower-patch' | 'fence-post' | 'lantern'
+type DecoType = 'bush' | 'rock' | 'mushroom' | 'flower-patch' | 'fence-post' | 'lantern'
 
 interface DecoElement {
   type: DecoType
@@ -35,7 +35,8 @@ function generateDecorations(gridSize: number, tileSize: number, seed: number = 
   const diamondHeight = gridSize * (tileSize / 2)
   const centerX = diamondWidth / 2
 
-  // Add trees around the edges
+  /* 
+  // Add trees around the edges - Disabled as they cause confusion with growing plants
   const treeCount = Math.max(4, Math.floor(gridSize * 1.5))
   for (let i = 0; i < treeCount; i++) {
     const angle = (i / treeCount) * Math.PI * 2
@@ -56,6 +57,7 @@ function generateDecorations(gridSize: number, tileSize: number, seed: number = 
       zIndex: Math.floor(y),
     })
   }
+  */
 
   // Add bushes
   const bushCount = Math.floor(gridSize * 1.2)
@@ -260,8 +262,9 @@ function DecorationElement({ deco, timeOfDay }: { deco: DecoElement; timeOfDay: 
       transform={`translate(${deco.x}, ${deco.y})`}
       style={{ opacity: isNight ? 0.7 : 1 }}
     >
-      {deco.type === 'tree-pine' && <PineTree scale={deco.scale} flip={deco.flip} />}
-      {deco.type === 'tree-oak' && <OakTree scale={deco.scale} flip={deco.flip} />}
+      {/* Trees disabled to avoid confusion with growing plants */}
+      {/* deco.type === 'tree-pine' && <PineTree scale={deco.scale} flip={deco.flip} /> */}
+      {/* deco.type === 'tree-oak' && <OakTree scale={deco.scale} flip={deco.flip} /> */}
       {deco.type === 'bush' && <Bush scale={deco.scale} flip={deco.flip} />}
       {deco.type === 'rock' && <Rock scale={deco.scale} flip={deco.flip} />}
       {deco.type === 'mushroom' && <Mushroom scale={deco.scale} flip={deco.flip} />}
