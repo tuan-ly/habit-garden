@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import type { WeatherType } from '@/types/database'
 
@@ -13,16 +13,27 @@ interface WeatherEffectsProps {
 
 export function WeatherEffects({ weather, className, contained }: WeatherEffectsProps) {
     const [showLightning, setShowLightning] = useState(false)
+    const [rainDrops, setRainDrops] = useState<Array<{
+        id: number;
+        left: string;
+        delay: string;
+        duration: string;
+    }>>([]);
 
-    const rainDrops = useMemo(() => {
-        if (weather !== 'rainy' && weather !== 'stormy') return [];
+    // Generate rain drops only on client to avoid hydration mismatch
+    useEffect(() => {
+        if (weather !== 'rainy' && weather !== 'stormy') {
+            setRainDrops([]);
+            return;
+        }
         const count = weather === 'stormy' ? 80 : 30;
-        return Array.from({ length: count }).map((_, i) => ({
+        const drops = Array.from({ length: count }).map((_, i) => ({
             id: i,
             left: `${Math.random() * 100}%`,
             delay: `${Math.random() * 2}s`,
             duration: `${(weather === 'stormy' ? 0.3 : 0.6) + Math.random() * 0.4}s`,
         }));
+        setRainDrops(drops);
     }, [weather]);
 
     // Lightning effect logic

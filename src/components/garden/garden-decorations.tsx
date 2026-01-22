@@ -27,7 +27,8 @@ function generateDecorations(gridSize: number, tileSize: number, seed: number = 
 
   const random = (i: number) => {
     const x = Math.sin(seed + i * 1234) * 10000
-    return x - Math.floor(x)
+    // Round to 6 decimal places to avoid SSR/client hydration mismatch
+    return Math.round((x - Math.floor(x)) * 1000000) / 1000000
   }
 
   const diamondWidth = gridSize * tileSize

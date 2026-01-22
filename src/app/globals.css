@@ -1304,6 +1304,27 @@
   animation: fade-in 0.5s ease-out forwards;
 }
 
+/* Slide down animation for hints/tooltips */
+@keyframes slide-down {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.animate-slide-down {
+  animation: slide-down 0.3s ease-out forwards;
+}
+
+/* Slow pulse animation */
+.animate-pulse-slow {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 /* Shine effect for badges/buttons */
 @keyframes shine {
   0% {

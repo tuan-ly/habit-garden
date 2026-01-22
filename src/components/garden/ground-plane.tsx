@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useId } from 'react'
 
 export interface MultiCellArea {
   /** Top-left row of the multi-cell plant */
@@ -42,7 +42,7 @@ function generateGrassDetails(gridSize: number, tileSize: number, seed: number =
   // Use deterministic pseudo-random for consistent rendering
   const random = (i: number) => {
     const x = Math.sin(seed + i * 9999) * 10000
-    return x - Math.floor(x)
+    return Math.round((x - Math.floor(x)) * 1000000) / 1000000
   }
 
   const diamondWidth = gridSize * tileSize
@@ -233,8 +233,8 @@ export function GroundPlane({
     }
   }
 
-  // Unique ID suffix for this component instance
-  const uniqueId = useMemo(() => Math.random().toString(36).slice(2, 8), [])
+  // Unique ID suffix for this component instance (hydration-safe)
+  const uniqueId = useId().replace(/:/g, '')
 
   return (
     <svg

@@ -3,7 +3,7 @@
 > **Last Updated**: 2026-01-22
 > **Current Phase**: Phase 4 - Polish & Launch (IN PROGRESS)
 
-> **Last Session**: Garden UI Visual Enhancement
+> **Last Session**: Garden Interaction Modes & Zoom/Pan Fix
 
 
 ---
@@ -51,10 +51,63 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 - **NEW: Watering Celebration Effect** - 3-second celebration animation when watering plants with splash, sparkles, XP display
 - **NEW: Plant Position Click-to-Place** - Click on empty tile to place plant at exact position
 - **NEW: Garden Visual Enhancement** - Decorations around garden, ambient particles, improved hover effects
+- **NEW: Garden Interaction Modes** - Three modes: Explore (pan/zoom/info), Water (tap to water), Edit (drag to move)
 
 ---
 
 ## Recent Changes (Latest First)
+
+### 2026-01-22: Garden Interaction Modes & Zoom/Pan Fix
+**Goal**: Thêm các chế độ tương tác rõ ràng cho khu vườn và sửa lỗi zoom nhảy/không thể pan
+
+**Problems Fixed**:
+1. Zoom animation bị nhảy (janky) do CSS transition kết hợp với container size changes
+2. Không thể pan khi zoom in
+3. Thiếu chế độ tương tác rõ ràng - người dùng không biết khi nào water, khi nào move
+
+**Features Implemented**:
+
+1. **Garden Interaction Modes** ([garden-mode-toolbar.tsx](src/components/garden/garden-mode-toolbar.tsx)):
+   - **Explore Mode** 🔍: Pan/zoom tự do, tap hiện info card
+   - **Water Mode** 💧: Tap để water/log goal, long-press hiện info
+   - **Edit Mode** ✏️: Long-press để drag plants, tap hiện detail sheet
+   - Mode được lưu vào localStorage
+   - Hint tooltip khi đổi mode
+
+2. **Improved Zoom System** ([use-garden-zoom.ts](src/lib/hooks/use-garden-zoom.ts)):
+   - Smooth zoom animation với `requestAnimationFrame` và ease-out cubic
+   - Pan gesture support (touch + mouse)
+   - Pinch-to-zoom trên mobile
+   - Mouse wheel zoom trên desktop
+   - Combined gesture handler cho cả pan và pinch
+   - `willChange: 'transform'` cho GPU acceleration
+
+3. **Pan Support**:
+   - Drag để pan trong Explore mode hoặc khi zoom > 1
+   - Cursor thay đổi (grab/grabbing) theo trạng thái
+   - Reset pan khi reset zoom
+
+4. **Better UX**:
+   - Mode hint hiện 3 giây khi đổi mode
+   - Không trigger click khi đang pan
+   - Visual feedback cho mode đang active
+
+**Updated Files**:
+| File | Change |
+|------|--------|
+| `src/components/garden/garden-mode-toolbar.tsx` | NEW - Mode selector với 3 modes |
+| `src/lib/hooks/use-garden-zoom.ts` | UPDATED - Smooth zoom + pan support |
+| `src/components/garden/isometric-garden.tsx` | UPDATED - Integrated modes và improved zoom/pan |
+| `src/app/globals.css` | UPDATED - Added slide-down, pulse-slow animations |
+
+**How It Works**:
+1. Mode toolbar ở top-center của garden
+2. Chọn mode → behavior thay đổi tương ứng
+3. Explore mode: gesture handlers cho pan/zoom active
+4. Water mode: tap = water, không có pan (trừ khi zoom > 1)
+5. Edit mode: long-press = drag plant, tap = edit details
+
+---
 
 ### 2026-01-22: Garden UI Visual Enhancement
 **Goal**: Cải thiện visual của khu vườn với decorations, particles, và hover effects đẹp hơn
