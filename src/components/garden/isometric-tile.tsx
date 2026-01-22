@@ -209,8 +209,8 @@ export function IsometricTile({
         </svg>
       )}
 
-      {/* Hint for empty tiles - shows plus in add mode */}
-      {isEmpty && !isOccupiedByMultiCell && showAddHint && (
+      {/* Hint for empty tiles - shows plus only on hover in add mode */}
+      {isEmpty && !isOccupiedByMultiCell && showAddHint && isHovered && (
         <div
           className="absolute flex items-center justify-center pointer-events-none"
           style={{
@@ -219,12 +219,7 @@ export function IsometricTile({
             transform: 'translate(-50%, -50%)',
           }}
         >
-          <div className={cn(
-            "w-8 h-8 rounded-full flex items-center justify-center text-lg font-bold transition-all",
-            isHovered
-              ? "bg-emerald-500 text-white scale-110 shadow-lg shadow-emerald-500/40"
-              : "bg-emerald-500/30 text-emerald-300"
-          )}>
+          <div className="w-8 h-8 rounded-full flex items-center justify-center text-lg font-bold bg-emerald-500 text-white scale-110 shadow-lg shadow-emerald-500/40 animate-pulse">
             +
           </div>
         </div>

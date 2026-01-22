@@ -815,7 +815,15 @@ export function IsometricGarden({
         className="flex-1 w-full overflow-hidden"
         style={{
           touchAction: dragState.isDragging ? 'none' : 'manipulation',
-          cursor: isPanning ? 'grabbing' : 'default',
+          cursor: dragState.isDragging
+            ? 'grabbing'
+            : isPanning
+              ? 'grabbing'
+              : mode === 'drag'
+                ? 'grab'
+                : mode === 'add'
+                  ? 'cell'
+                  : 'default',
         }}
         onWheel={bindGestures.onWheel}
         {...(!dragState.isDragging ? {
@@ -861,6 +869,7 @@ export function IsometricGarden({
               multiCellAreas={multiCellAreas}
               hoveredMultiCellArea={hoveredMultiCellArea}
               dragTargetCell={dragState.isDragging ? dragState.targetCell : null}
+              dragPlantSize={dragState.draggedPlant?.grid_size || 1}
               isDragTargetValid={dragState.isValidTarget}
             />
 

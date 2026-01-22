@@ -25,6 +25,8 @@ interface GroundPlaneProps {
   hoveredMultiCellArea?: MultiCellArea | null
   /** Target cell for drag-and-drop (shows highlight) */
   dragTargetCell?: { row: number; col: number } | null
+  /** Size of the plant being dragged (for multi-cell highlight) */
+  dragPlantSize?: number
   /** Whether the drag target is a valid drop location */
   isDragTargetValid?: boolean
 }
@@ -96,6 +98,7 @@ export function GroundPlane({
   multiCellAreas = [],
   hoveredMultiCellArea = null,
   dragTargetCell = null,
+  dragPlantSize = 1,
   isDragTargetValid = false,
 }: GroundPlaneProps) {
   const tileHeight = tileSize * 0.35 // Slightly taller for more depth
@@ -507,21 +510,23 @@ export function GroundPlane({
         />
       ))}
 
-      {/* Drag target highlight */}
+      {/* Drag target highlight - shows full area for multi-cell plants */}
       {dragTargetCell && (() => {
         const { row, col } = dragTargetCell
-        // Calculate the 4 corners of the target cell in isometric coordinates
+        const size = dragPlantSize
+        // Calculate the 4 corners of the target area in isometric coordinates
+        // For multi-cell plants, highlight the entire NxN area
         const topCornerX = topX + (col - row) * (tileSize / 2)
         const topCornerY = (col + row) * (tileSize / 4)
 
-        const rightCornerX = topX + ((col + 1) - row) * (tileSize / 2)
-        const rightCornerY = ((col + 1) + row) * (tileSize / 4)
+        const rightCornerX = topX + ((col + size) - row) * (tileSize / 2)
+        const rightCornerY = ((col + size) + row) * (tileSize / 4)
 
-        const bottomCornerX = topX + ((col + 1) - (row + 1)) * (tileSize / 2)
-        const bottomCornerY = ((col + 1) + (row + 1)) * (tileSize / 4)
+        const bottomCornerX = topX + ((col + size) - (row + size)) * (tileSize / 2)
+        const bottomCornerY = ((col + size) + (row + size)) * (tileSize / 4)
 
-        const leftCornerX = topX + (col - (row + 1)) * (tileSize / 2)
-        const leftCornerY = (col + (row + 1)) * (tileSize / 4)
+        const leftCornerX = topX + (col - (row + size)) * (tileSize / 2)
+        const leftCornerY = (col + (row + size)) * (tileSize / 4)
 
         return (
           <polygon
