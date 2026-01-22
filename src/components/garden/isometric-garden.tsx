@@ -222,11 +222,6 @@ export function IsometricGarden({
   // Start drag mode for a plant (triggered by long-press + move)
   const startPlantDrag = useCallback(
     (plant: PlantWithType, startPosition: { x: number; y: number }) => {
-      // Haptic feedback
-      if (navigator.vibrate) {
-        navigator.vibrate(50)
-      }
-
       setFloatingCard(null)
       setHoveredTile(null)
 
@@ -440,6 +435,10 @@ export function IsometricGarden({
   const handleContextMenu = useCallback(
     (e: React.MouseEvent, plant?: PlantWithType) => {
       e.preventDefault()
+      // Disable info card on mobile/touch devices to avoid conflict with dragging
+      if (typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches) {
+        return
+      }
       if (plant) {
         handleShowInfo(plant, { x: e.clientX, y: e.clientY })
       }
@@ -463,16 +462,18 @@ export function IsometricGarden({
       longPressingPlant.current = plant ?? null
 
       if (plant) {
-        // Long press on plant shows info card first
-        // If user moves while long-pressing, it becomes a drag
+        // Long press on plant triggers drag mode after threshold
+        // We moved handleShowInfo to only ContextMenu (right click) to avoid conflict with moving
         longPressTimer.current = setTimeout(() => {
           longPressTriggered.current = true
-          // Show info card on long press
-          handleShowInfo(plant, startPos)
+          // Haptic feedback to indicate long-press triggered
+          if (navigator.vibrate) {
+            navigator.vibrate(50)
+          }
         }, LONG_PRESS_THRESHOLD)
       }
     },
-    [handleShowInfo]
+    []
   )
 
   // Handle touch move
@@ -577,15 +578,17 @@ export function IsometricGarden({
       longPressingPlant.current = plant ?? null
 
       if (plant) {
-        // Start long press timer - will show info card first, then drag if moved
+        // Start long press timer - will allow dragging if moved
         longPressTimer.current = setTimeout(() => {
           longPressTriggered.current = true
-          // Show info card on long press
-          handleShowInfo(plant, startPos)
+          // Haptic feedback for desktop (if supported/wanted)
+          if (navigator.vibrate) {
+            navigator.vibrate(50)
+          }
         }, LONG_PRESS_THRESHOLD)
       }
     },
-    [handleShowInfo]
+    []
   )
 
   // Handle mouse move for drag
