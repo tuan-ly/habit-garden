@@ -153,6 +153,22 @@ export function IsometricGarden({
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
+  // Prevent browser zoom on Ctrl+scroll globally
+  useEffect(() => {
+    const preventBrowserZoom = (e: WheelEvent) => {
+      if (e.ctrlKey) {
+        e.preventDefault()
+      }
+    }
+
+    // Use passive: false to allow preventDefault
+    document.addEventListener('wheel', preventBrowserZoom, { passive: false })
+
+    return () => {
+      document.removeEventListener('wheel', preventBrowserZoom)
+    }
+  }, [])
+
   // Filter out dead plants for the garden view
   const livingPlants = plants.filter((p) => p.status !== 'dead')
 
@@ -408,9 +424,12 @@ export function IsometricGarden({
       if (plant) {
         handlePlantTap(plant, tapPosition)
       } else {
-        // Open add dialog with the clicked cell position
-        setAddDialogPosition({ row, col })
-        setAddDialogOpen(true)
+        // Only allow adding plants in edit mode
+        if (mode === 'edit') {
+          setAddDialogPosition({ row, col })
+          setAddDialogOpen(true)
+        }
+        // In explore/water mode, clicking empty tile does nothing
       }
     },
     [handlePlantTap, isPanning]
@@ -499,6 +518,32 @@ export function IsometricGarden({
     }
   }, [dragState.isDragging])
 
+  // Global mouse event listeners for drag (when mouse moves outside tiles)
+  useEffect(() => {
+    if (!dragState.isDragging) return
+
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      handleDragMove(e.clientX, e.clientY)
+    }
+
+    const handleGlobalMouseUp = () => {
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current)
+        longPressTimer.current = null
+      }
+      dragStartPos.current = null
+      endPlantDrag()
+    }
+
+    document.addEventListener('mousemove', handleGlobalMouseMove)
+    document.addEventListener('mouseup', handleGlobalMouseUp)
+
+    return () => {
+      document.removeEventListener('mousemove', handleGlobalMouseMove)
+      document.removeEventListener('mouseup', handleGlobalMouseUp)
+    }
+  }, [dragState.isDragging, handleDragMove, endPlantDrag])
+
   // Handle touch end
   const handleTouchEnd = useCallback(() => {
     if (longPressTimer.current) {
@@ -506,6 +551,60 @@ export function IsometricGarden({
       longPressTimer.current = null
     }
     touchStartPos.current = null
+    dragStartPos.current = null
+
+    if (dragState.isDragging) {
+      endPlantDrag()
+    }
+  }, [dragState.isDragging, endPlantDrag])
+
+  // Handle mouse down for drag (edit mode only)
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent, plant?: PlantWithType) => {
+      if (!plant || mode !== 'edit') return
+
+      const startPos = { x: e.clientX, y: e.clientY }
+      dragStartPos.current = startPos
+      longPressTriggered.current = false
+
+      // Start long press timer for drag initiation
+      longPressTimer.current = setTimeout(() => {
+        longPressTriggered.current = true
+        startPlantDrag(plant, startPos)
+      }, LONG_PRESS_THRESHOLD)
+    },
+    [mode, startPlantDrag]
+  )
+
+  // Handle mouse move for drag
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    // If dragging, update drag position
+    if (dragState.isDragging) {
+      handleDragMove(e.clientX, e.clientY)
+      return
+    }
+
+    // If not dragging yet, check if we should cancel long-press
+    if (!dragStartPos.current) return
+
+    const dx = Math.abs(e.clientX - dragStartPos.current.x)
+    const dy = Math.abs(e.clientY - dragStartPos.current.y)
+
+    // Cancel long-press if moved more than 10px
+    if (dx > 10 || dy > 10) {
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current)
+        longPressTimer.current = null
+      }
+    }
+  }, [dragState.isDragging, handleDragMove])
+
+  // Handle mouse up to end drag
+  const handleMouseUp = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
     dragStartPos.current = null
 
     if (dragState.isDragging) {
@@ -678,7 +777,17 @@ export function IsometricGarden({
           touchAction: dragState.isDragging ? 'none' : (shouldEnablePan ? 'none' : 'auto'),
           cursor: shouldEnablePan && isPanning ? 'grabbing' : (shouldEnablePan ? 'grab' : 'default'),
         }}
-        {...(shouldEnablePan && !dragState.isDragging ? bindGestures : {})}
+        // Always attach wheel handler for zoom, pan handlers only when shouldEnablePan
+        onWheel={bindGestures.onWheel}
+        {...(shouldEnablePan && !dragState.isDragging ? {
+          onTouchStart: bindGestures.onTouchStart,
+          onTouchMove: bindGestures.onTouchMove,
+          onTouchEnd: bindGestures.onTouchEnd,
+          onMouseDown: bindGestures.onMouseDown,
+          onMouseMove: bindGestures.onMouseMove,
+          onMouseUp: bindGestures.onMouseUp,
+          onMouseLeave: bindGestures.onMouseLeave,
+        } : {})}
       >
         <div
           className="flex justify-center items-end w-full h-full"
@@ -746,11 +855,15 @@ export function IsometricGarden({
                   onTouchStart={(e) => handleTouchStart(e, clickPlant)}
                   onTouchMove={handleTouchMove}
                   onTouchEnd={handleTouchEnd}
+                  onMouseDown={(e) => handleMouseDown(e, clickPlant)}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
                   onMouseEnter={() => handleTileHover(row, col)}
                   onMouseLeave={handleTileLeave}
                   tileSize={tileSize}
                   plant={isAnchor && !dragState.isDragging ? plant : null}
                   hideBadge={dragState.isDragging}
+                  mode={mode}
                 >
                   {plant && isAnchor && !(dragState.isDragging && dragState.draggedPlant?.id === plant.id) && (
                     <IsometricPlant

@@ -11,6 +11,9 @@ const ZOOM_STEP = 0.25
 // Smooth zoom animation duration
 const ZOOM_ANIMATION_DURATION = 150
 
+// Minimum distance to start panning (prevents accidental pan on tap)
+const PAN_THRESHOLD = 8
+
 interface UseGardenZoomOptions {
   minZoom?: number
   maxZoom?: number
@@ -30,6 +33,8 @@ interface UseGardenZoomReturn {
   isZooming: boolean
   // For pan gesture
   isPanning: boolean
+  // True if user actually dragged (moved more than threshold) - use to prevent click after drag
+  didPan: boolean
   panOffset: { x: number; y: number }
   bindPanGesture: {
     onTouchStart: (e: React.TouchEvent) => void
@@ -58,6 +63,8 @@ interface UseGardenZoomReturn {
     onWheel: (e: React.WheelEvent) => void
   }
   resetPan: () => void
+  // Reset didPan flag (call after handling click)
+  resetDidPan: () => void
 }
 
 export function useGardenZoom(options: UseGardenZoomOptions = {}): UseGardenZoomReturn {
@@ -308,14 +315,37 @@ export function useGardenZoom(options: UseGardenZoomOptions = {}): UseGardenZoom
     setIsPanning(false)
   }, [])
 
-  // Mouse wheel zoom
+  // Debounce timer for persisting zoom
+  const persistTimer = useRef<NodeJS.Timeout | null>(null)
+
+  // Mouse wheel zoom - smooth continuous zooming
   const handleWheel = useCallback(
     (e: React.WheelEvent) => {
+      // Always prevent default to stop browser zoom (especially on Ctrl+scroll)
       e.preventDefault()
-      const delta = e.deltaY > 0 ? -step / 2 : step / 2
-      setZoom(targetZoom + delta)
+      e.stopPropagation()
+
+      // Use deltaY directly for smooth continuous zooming
+      // Normalize deltaY for different browsers/devices (typically 100-120 per scroll tick)
+      const normalizedDelta = e.deltaY / 500
+      const zoomDelta = -normalizedDelta * step * 2
+      const newZoom = clampZoom(zoom + zoomDelta)
+
+      // Update zoom directly without animation for immediate response
+      setZoomState(newZoom)
+      setTargetZoom(newZoom)
+
+      // Debounce persistence to avoid excessive writes
+      if (persistTimer.current) {
+        clearTimeout(persistTimer.current)
+      }
+      if (persist && typeof window !== 'undefined') {
+        persistTimer.current = setTimeout(() => {
+          localStorage.setItem(ZOOM_STORAGE_KEY, newZoom.toString())
+        }, 300)
+      }
     },
-    [targetZoom, step, setZoom]
+    [zoom, step, clampZoom, persist]
   )
 
   // Combined touch handler (pinch takes priority over pan)

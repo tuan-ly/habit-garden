@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import { Plus } from 'lucide-react'
 import type { PlantWithType } from '@/types/database'
 import { PlantOverlayBadge } from './plant-overlay-badge'
+import type { GardenMode } from './garden-mode-toolbar'
 
 interface IsometricTileProps {
   row: number
@@ -24,12 +25,17 @@ interface IsometricTileProps {
   onTouchStart?: (e: React.TouchEvent) => void
   onTouchMove?: (e: React.TouchEvent) => void
   onTouchEnd?: (e: React.TouchEvent) => void
+  onMouseDown?: (e: React.MouseEvent) => void
+  onMouseMove?: (e: React.MouseEvent) => void
+  onMouseUp?: (e: React.MouseEvent) => void
   children?: React.ReactNode
   tileSize?: number
   /** Plant data for badge (optional - only needed when plant exists) */
   plant?: PlantWithType | null
   /** Hide badge (e.g., when dragging) */
   hideBadge?: boolean
+  /** Current garden mode - controls add plant effect visibility */
+  mode?: GardenMode
 }
 
 /**
@@ -66,10 +72,14 @@ export function IsometricTile({
   onTouchStart,
   onTouchMove,
   onTouchEnd,
+  onMouseDown,
+  onMouseMove,
+  onMouseUp,
   children,
   tileSize = 60,
   plant,
   hideBadge = false,
+  mode = 'edit',
 }: IsometricTileProps) {
   // Isometric tile positioning:
   // The grid's top point (0,0) is at the top-center of the diamond
@@ -106,6 +116,9 @@ export function IsometricTile({
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
+      onMouseDown={onMouseDown}
+      onMouseMove={onMouseMove}
+      onMouseUp={onMouseUp}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
@@ -198,8 +211,8 @@ export function IsometricTile({
         </svg>
       )}
 
-      {/* Plus icon for empty tiles - don't show for multi-cell occupied cells */}
-      {isEmpty && isHovered && !isOccupiedByMultiCell && (
+      {/* Plus icon for empty tiles - only show in edit mode */}
+      {isEmpty && isHovered && !isOccupiedByMultiCell && mode === 'edit' && (
         <div
           className="absolute flex items-center justify-center pointer-events-none"
           style={{
