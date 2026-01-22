@@ -1,9 +1,9 @@
 # Habit Garden - Project Memo
 
-> **Last Updated**: 2026-01-20
+> **Last Updated**: 2026-01-22
 > **Current Phase**: Phase 4 - Polish & Launch (IN PROGRESS)
 
-> **Last Session**: Watering Celebration Effect
+> **Last Session**: Garden UI Visual Enhancement
 
 
 ---
@@ -50,10 +50,70 @@ The project has completed Phase 1 (MVP Core), Phase 2 (Gamification), Phase 3 (G
 - **NEW: Plant Growth Conflict Resolution** - When plants grow larger (1x1→2x2→3x3), conflicting plants are auto-relocated
 - **NEW: Watering Celebration Effect** - 3-second celebration animation when watering plants with splash, sparkles, XP display
 - **NEW: Plant Position Click-to-Place** - Click on empty tile to place plant at exact position
+- **NEW: Garden Visual Enhancement** - Decorations around garden, ambient particles, improved hover effects
 
 ---
 
 ## Recent Changes (Latest First)
+
+### 2026-01-22: Garden UI Visual Enhancement
+**Goal**: Cải thiện visual của khu vườn với decorations, particles, và hover effects đẹp hơn
+
+**Features Implemented**:
+
+1. **GardenDecorations Component** ([garden-decorations.tsx](src/components/garden/garden-decorations.tsx)):
+   - SVG-based decorations xung quanh vườn
+   - Pine trees, oak trees với foliage layers
+   - Bushes với berries
+   - Rocks với moss details
+   - Mushrooms với spots
+   - Flower patches với multiple flower types
+   - Deterministic random placement based on grid size
+   - Night mode support với dimmed opacity
+
+2. **AmbientParticles Component** ([ambient-particles.tsx](src/components/garden/ambient-particles.tsx)):
+   - Weather-aware particle system
+   - Sunny day: Butterflies, pollen, dandelion seeds
+   - Cloudy/rainy: Falling leaves
+   - Night: Fireflies với glow effect
+   - Rainbow: Sparkle particles với rainbow colors
+   - Each particle type có unique animation
+
+3. **Enhanced Tile Hover Effect** ([isometric-tile.tsx](src/components/garden/isometric-tile.tsx)):
+   - Gradient fill với green tint
+   - Outer glow effect với pulse
+   - Inner shine line
+   - SVG filter for soft glow
+   - Improved plus button với gradient và bounce animation
+
+4. **New CSS Animations** ([globals.css](src/app/globals.css)):
+   - `animate-tile-glow` - Tile hover glow pulse
+   - `animate-tile-shimmer` - Tile shimmer effect
+   - `animate-plus-bounce` - Plus button bounce
+   - `animate-leaf-fall` - Falling leaf animation
+   - `animate-butterfly-float` - Butterfly floating path
+   - `animate-butterfly-wing` - Wing flapping
+   - `animate-pollen-drift` - Pollen drifting
+   - `animate-firefly-glow` - Firefly glow and movement
+   - `animate-sparkle-twinkle` - Sparkle rotation and fade
+   - `animate-dandelion-float` - Dandelion seed floating
+
+**Updated Files**:
+| File | Change |
+|------|--------|
+| `src/components/garden/garden-decorations.tsx` | NEW - SVG decorations around garden |
+| `src/components/garden/ambient-particles.tsx` | NEW - Weather-aware particle system |
+| `src/components/garden/isometric-tile.tsx` | UPDATED - Enhanced hover effect with glow |
+| `src/components/garden/isometric-garden.tsx` | UPDATED - Integrated decorations and particles |
+| `src/app/globals.css` | UPDATED - New animations for particles and effects |
+
+**How It Works**:
+1. `GardenDecorations` generates SVG elements around the garden perimeter
+2. `AmbientParticles` spawns particles based on weather and time of day
+3. `IsometricTile` shows enhanced hover effect with glow and gradient
+4. All components are integrated into `IsometricGarden`
+
+---
 
 ### 2026-01-20: Fix Plant Positioning - Click to Place at Exact Grid Cell
 **Problem**: Khi click vào ô trống để tạo cây, cây được đặt ở vị trí auto-assign thay vì ô được click.

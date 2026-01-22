@@ -1,5 +1,7 @@
 'use client'
 
+import { useMemo } from 'react'
+
 export interface MultiCellArea {
   /** Top-left row of the multi-cell plant */
   row: number
@@ -27,20 +29,76 @@ interface GroundPlaneProps {
   isDragTargetValid?: boolean
 }
 
+// Generate random grass detail positions
+function generateGrassDetails(gridSize: number, tileSize: number, seed: number = 42) {
+  const details: Array<{
+    x: number
+    y: number
+    type: 'grass' | 'flower' | 'clover' | 'mushroom'
+    scale: number
+    rotation: number
+  }> = []
+
+  // Use deterministic pseudo-random for consistent rendering
+  const random = (i: number) => {
+    const x = Math.sin(seed + i * 9999) * 10000
+    return x - Math.floor(x)
+  }
+
+  const diamondWidth = gridSize * tileSize
+  const diamondHeight = gridSize * (tileSize / 2)
+  const centerX = diamondWidth / 2
+
+  // Generate scattered grass/flower details
+  const detailCount = Math.floor(gridSize * gridSize * 1.5)
+  for (let i = 0; i < detailCount; i++) {
+    // Random position in diamond
+    const r1 = random(i * 2)
+    const r2 = random(i * 2 + 1)
+
+    // Map to diamond coordinates
+    const x = centerX + (r1 - 0.5) * diamondWidth * 0.85
+    const y = diamondHeight * 0.1 + r2 * diamondHeight * 0.8
+
+    // Check if point is inside diamond
+    const dx = Math.abs(x - centerX) / (diamondWidth / 2)
+    const dy = Math.abs(y - diamondHeight / 2) / (diamondHeight / 2)
+    if (dx + dy > 0.9) continue
+
+    // Determine type
+    const typeRand = random(i * 3)
+    let type: 'grass' | 'flower' | 'clover' | 'mushroom'
+    if (typeRand < 0.6) type = 'grass'
+    else if (typeRand < 0.8) type = 'flower'
+    else if (typeRand < 0.95) type = 'clover'
+    else type = 'mushroom'
+
+    details.push({
+      x,
+      y,
+      type,
+      scale: 0.5 + random(i * 4) * 0.5,
+      rotation: random(i * 5) * 360,
+    })
+  }
+
+  return details
+}
+
 export function GroundPlane({
   gridSize,
   tileSize,
   grassColor = '#7cb342',
-  grassDarkColor = '#689f38',
+  grassDarkColor = '#558b2f',
   dirtColor = '#8d6e4c',
-  dirtDarkColor = '#6b5344',
+  dirtDarkColor = '#5d4037',
   showGridLines = true,
   multiCellAreas = [],
   hoveredMultiCellArea = null,
   dragTargetCell = null,
   isDragTargetValid = false,
 }: GroundPlaneProps) {
-  const tileHeight = tileSize * 0.3
+  const tileHeight = tileSize * 0.35 // Slightly taller for more depth
 
   // Each isometric tile:
   // - Width on screen: tileSize (from left point to right point)
@@ -67,6 +125,12 @@ export function GroundPlane({
   const bottomY = diamondHeight
   const leftX = 0
   const leftY = diamondHeight / 2
+
+  // Generate grass details (memoized)
+  const grassDetails = useMemo(
+    () => generateGrassDetails(gridSize, tileSize, 42),
+    [gridSize, tileSize]
+  )
 
   // Helper to check if a grid line segment is inside a multi-cell area
   // Row lines (parallel to top-right edge): line at row i separates row i-1 from row i
@@ -169,6 +233,9 @@ export function GroundPlane({
     }
   }
 
+  // Unique ID suffix for this component instance
+  const uniqueId = useMemo(() => Math.random().toString(36).slice(2, 8), [])
+
   return (
     <svg
       width={svgWidth}
@@ -181,57 +248,168 @@ export function GroundPlane({
       }}
     >
       <defs>
-        {/* Gradient for grass top surface */}
-        <linearGradient id="grassGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor={grassColor} />
-          <stop offset="50%" stopColor={grassDarkColor} />
-          <stop offset="100%" stopColor={grassColor} />
+        {/* Enhanced gradient for grass top surface - more natural look */}
+        <linearGradient id={`grassGradient-${uniqueId}`} x1="20%" y1="0%" x2="80%" y2="100%">
+          <stop offset="0%" stopColor="#8bc34a" />
+          <stop offset="25%" stopColor={grassColor} />
+          <stop offset="50%" stopColor="#7cb342" />
+          <stop offset="75%" stopColor={grassDarkColor} />
+          <stop offset="100%" stopColor="#689f38" />
         </linearGradient>
 
+        {/* Radial highlight for center glow effect */}
+        <radialGradient id={`grassHighlight-${uniqueId}`} cx="40%" cy="30%" r="60%">
+          <stop offset="0%" stopColor="#9ccc65" stopOpacity="0.6" />
+          <stop offset="50%" stopColor="#8bc34a" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="transparent" stopOpacity="0" />
+        </radialGradient>
+
         {/* Clip path to constrain texture within diamond shape */}
-        <clipPath id="grassClip">
+        <clipPath id={`grassClip-${uniqueId}`}>
           <polygon
             points={`${topX},${topY} ${rightX},${rightY} ${bottomX},${bottomY} ${leftX},${leftY}`}
           />
         </clipPath>
 
-        {/* Subtle noise pattern for texture */}
-        <filter id="grassTexture">
+        {/* Enhanced noise pattern for grass texture */}
+        <filter id={`grassTexture-${uniqueId}`} x="-20%" y="-20%" width="140%" height="140%">
           <feTurbulence
             type="fractalNoise"
-            baseFrequency="0.9"
-            numOctaves="4"
+            baseFrequency="1.2"
+            numOctaves="6"
+            seed="5"
             result="noise"
           />
           <feDiffuseLighting
             in="noise"
-            lightingColor={grassColor}
-            surfaceScale="1.5"
+            lightingColor="#9ccc65"
+            surfaceScale="2"
             result="diffLight"
           >
-            <feDistantLight azimuth="45" elevation="60" />
+            <feDistantLight azimuth="225" elevation="50" />
+          </feDiffuseLighting>
+          <feBlend in="SourceGraphic" in2="diffLight" mode="soft-light" />
+        </filter>
+
+        {/* Dirt texture filter */}
+        <filter id={`dirtTexture-${uniqueId}`}>
+          <feTurbulence
+            type="turbulence"
+            baseFrequency="0.05"
+            numOctaves="3"
+            seed="10"
+            result="noise"
+          />
+          <feDiffuseLighting
+            in="noise"
+            lightingColor="#8d6e4c"
+            surfaceScale="1"
+            result="diffLight"
+          >
+            <feDistantLight azimuth="135" elevation="45" />
           </feDiffuseLighting>
           <feBlend in="SourceGraphic" in2="diffLight" mode="multiply" />
         </filter>
+
+        {/* Subtle drop shadow for depth */}
+        <filter id={`groundShadow-${uniqueId}`} x="-10%" y="-10%" width="120%" height="130%">
+          <feDropShadow dx="0" dy="4" stdDeviation="8" floodColor="#1a1a1a" floodOpacity="0.25" />
+        </filter>
       </defs>
 
-      {/* Main grass surface - single connected plane */}
-      <g clipPath="url(#grassClip)">
-        <polygon
-          points={`${topX},${topY} ${rightX},${rightY} ${bottomX},${bottomY} ${leftX},${leftY}`}
-          fill="url(#grassGradient)"
-          filter="url(#grassTexture)"
-        />
-      </g>
-
-      {/* Grass surface overlay for depth */}
-      <polygon
-        points={`${topX},${topY} ${rightX},${rightY} ${bottomX},${bottomY} ${leftX},${leftY}`}
-        fill={grassColor}
-        opacity="0.3"
+      {/* Drop shadow under the island */}
+      <ellipse
+        cx={bottomX}
+        cy={bottomY + tileHeight + 10}
+        rx={diamondWidth * 0.45}
+        ry={diamondHeight * 0.15}
+        fill="rgba(0,0,0,0.2)"
+        className="blur-sm"
       />
 
-      {/* Left dirt face */}
+      {/* Main grass surface - single connected plane */}
+      <g clipPath={`url(#grassClip-${uniqueId})`}>
+        {/* Base grass layer */}
+        <polygon
+          points={`${topX},${topY} ${rightX},${rightY} ${bottomX},${bottomY} ${leftX},${leftY}`}
+          fill={`url(#grassGradient-${uniqueId})`}
+          filter={`url(#grassTexture-${uniqueId})`}
+        />
+
+        {/* Highlight overlay for lush effect */}
+        <polygon
+          points={`${topX},${topY} ${rightX},${rightY} ${bottomX},${bottomY} ${leftX},${leftY}`}
+          fill={`url(#grassHighlight-${uniqueId})`}
+        />
+
+        {/* Grass detail decorations */}
+        {grassDetails.map((detail, i) => (
+          <g key={i} transform={`translate(${detail.x}, ${detail.y})`}>
+            {detail.type === 'grass' && (
+              <g transform={`scale(${detail.scale}) rotate(${detail.rotation})`}>
+                <path
+                  d="M0,0 Q-2,-8 0,-12 Q2,-8 0,0"
+                  fill="#4a7c23"
+                  opacity="0.7"
+                />
+                <path
+                  d="M-2,0 Q-4,-6 -2,-10"
+                  fill="none"
+                  stroke="#558b2f"
+                  strokeWidth="1"
+                  opacity="0.5"
+                />
+                <path
+                  d="M2,0 Q4,-6 2,-10"
+                  fill="none"
+                  stroke="#558b2f"
+                  strokeWidth="1"
+                  opacity="0.5"
+                />
+              </g>
+            )}
+            {detail.type === 'flower' && (
+              <g transform={`scale(${detail.scale * 0.8})`}>
+                {/* Flower petals */}
+                <circle cx="0" cy="-6" r="2.5" fill={i % 3 === 0 ? '#fff176' : i % 3 === 1 ? '#f48fb1' : '#81d4fa'} opacity="0.9" />
+                <circle cx="2" cy="-4" r="2" fill={i % 3 === 0 ? '#fff59d' : i % 3 === 1 ? '#f8bbd9' : '#b3e5fc'} opacity="0.8" />
+                <circle cx="-2" cy="-4" r="2" fill={i % 3 === 0 ? '#fff59d' : i % 3 === 1 ? '#f8bbd9' : '#b3e5fc'} opacity="0.8" />
+                {/* Flower center */}
+                <circle cx="0" cy="-5" r="1.5" fill="#ffb74d" />
+                {/* Stem */}
+                <line x1="0" y1="0" x2="0" y2="-3" stroke="#66bb6a" strokeWidth="1" />
+              </g>
+            )}
+            {detail.type === 'clover' && (
+              <g transform={`scale(${detail.scale * 0.6})`}>
+                <circle cx="-2" cy="-3" r="2" fill="#43a047" opacity="0.7" />
+                <circle cx="2" cy="-3" r="2" fill="#43a047" opacity="0.7" />
+                <circle cx="0" cy="-5" r="2" fill="#43a047" opacity="0.8" />
+              </g>
+            )}
+            {detail.type === 'mushroom' && (
+              <g transform={`scale(${detail.scale * 0.7})`}>
+                <ellipse cx="0" cy="-4" rx="4" ry="2.5" fill={i % 2 === 0 ? '#ef5350' : '#ffb74d'} opacity="0.85" />
+                <rect x="-1.5" y="-3" width="3" height="4" fill="#f5f5f5" rx="1" />
+                {/* Spots */}
+                <circle cx="-1.5" cy="-5" r="0.8" fill="#fff" opacity="0.9" />
+                <circle cx="1.5" cy="-4" r="0.6" fill="#fff" opacity="0.9" />
+              </g>
+            )}
+          </g>
+        ))}
+      </g>
+
+      {/* Edge grass line for definition */}
+      <polygon
+        points={`${topX},${topY} ${rightX},${rightY} ${bottomX},${bottomY} ${leftX},${leftY}`}
+        fill="none"
+        stroke="#558b2f"
+        strokeWidth="2"
+        opacity="0.4"
+      />
+
+      {/* Left dirt face with enhanced texture */}
       <polygon
         points={`
           ${leftX},${leftY}
@@ -241,8 +419,19 @@ export function GroundPlane({
         `}
         fill={dirtDarkColor}
       />
+      {/* Left face highlight */}
+      <polygon
+        points={`
+          ${leftX},${leftY}
+          ${bottomX},${bottomY}
+          ${bottomX},${bottomY + tileHeight * 0.3}
+          ${leftX},${leftY + tileHeight * 0.3}
+        `}
+        fill="#6d4c41"
+        opacity="0.3"
+      />
 
-      {/* Right dirt face */}
+      {/* Right dirt face with enhanced texture */}
       <polygon
         points={`
           ${bottomX},${bottomY}
@@ -251,6 +440,57 @@ export function GroundPlane({
           ${bottomX},${bottomY + tileHeight}
         `}
         fill={dirtColor}
+      />
+      {/* Right face highlight */}
+      <polygon
+        points={`
+          ${bottomX},${bottomY}
+          ${rightX},${rightY}
+          ${rightX},${rightY + tileHeight * 0.3}
+          ${bottomX},${bottomY + tileHeight * 0.3}
+        `}
+        fill="#a1887f"
+        opacity="0.3"
+      />
+
+      {/* Bottom edge shadow */}
+      <line
+        x1={leftX}
+        y1={leftY + tileHeight}
+        x2={bottomX}
+        y2={bottomY + tileHeight}
+        stroke="rgba(0,0,0,0.4)"
+        strokeWidth="2"
+      />
+      <line
+        x1={bottomX}
+        y1={bottomY + tileHeight}
+        x2={rightX}
+        y2={rightY + tileHeight}
+        stroke="rgba(0,0,0,0.3)"
+        strokeWidth="2"
+      />
+
+      {/* Dirt layers/strata lines for realism */}
+      <line
+        x1={leftX}
+        y1={leftY + tileHeight * 0.5}
+        x2={bottomX}
+        y2={bottomY + tileHeight * 0.5}
+        stroke="#5d4037"
+        strokeWidth="1"
+        opacity="0.4"
+        strokeDasharray="8 4"
+      />
+      <line
+        x1={bottomX}
+        y1={bottomY + tileHeight * 0.5}
+        x2={rightX}
+        y2={rightY + tileHeight * 0.5}
+        stroke="#6d4c41"
+        strokeWidth="1"
+        opacity="0.4"
+        strokeDasharray="8 4"
       />
 
       {/* Subtle grid lines */}
@@ -337,22 +577,6 @@ export function GroundPlane({
         )
       })()}
 
-      {/* Border highlight removed */}
-
-
-      {/* Shadow on bottom edges */}
-      <line
-        x1={leftX} y1={leftY}
-        x2={bottomX} y2={bottomY}
-        stroke="rgba(0,0,0,0.2)"
-        strokeWidth="1"
-      />
-      <line
-        x1={rightX} y1={rightY}
-        x2={bottomX} y2={bottomY}
-        stroke="rgba(0,0,0,0.15)"
-        strokeWidth="1"
-      />
     </svg>
   )
 }

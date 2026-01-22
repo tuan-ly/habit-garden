@@ -132,14 +132,31 @@ export function IsometricTile({
         />
       </svg>
 
-      {/* Hover highlight effect - don't show for multi-cell tiles (handled by GroundPlane) */}
+      {/* Enhanced hover highlight effect with glow - don't show for multi-cell tiles (handled by GroundPlane) */}
       {isHovered && !isOccupiedByMultiCell && !isPartOfMultiCell && (
         <svg
           width={tileSize}
           height={tileSize / 2}
           viewBox={`0 0 ${tileSize} ${tileSize / 2}`}
-          className="absolute top-0 left-0 pointer-events-none"
+          className="absolute top-0 left-0 pointer-events-none animate-tile-glow"
         >
+          <defs>
+            {/* Gradient fill for hover */}
+            <linearGradient id="hoverGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="rgba(255,255,255,0.25)" />
+              <stop offset="50%" stopColor="rgba(134,239,172,0.2)" />
+              <stop offset="100%" stopColor="rgba(255,255,255,0.15)" />
+            </linearGradient>
+            {/* Glow filter */}
+            <filter id="tileGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          {/* Outer glow */}
           <polygon
             points={`
               ${tileSize / 2},0
@@ -147,9 +164,36 @@ export function IsometricTile({
               ${tileSize / 2},${tileSize / 2}
               0,${tileSize / 4}
             `}
-            fill="rgba(255,255,255,0.15)"
-            stroke="rgba(255,255,255,0.4)"
+            fill="none"
+            stroke="rgba(134,239,172,0.6)"
+            strokeWidth="4"
+            filter="url(#tileGlow)"
+            className="animate-pulse-slow"
+          />
+          {/* Main highlight */}
+          <polygon
+            points={`
+              ${tileSize / 2},0
+              ${tileSize},${tileSize / 4}
+              ${tileSize / 2},${tileSize / 2}
+              0,${tileSize / 4}
+            `}
+            fill="url(#hoverGradient)"
+            stroke="rgba(255,255,255,0.6)"
             strokeWidth="1.5"
+            className="animate-tile-shimmer"
+          />
+          {/* Inner shine line */}
+          <polygon
+            points={`
+              ${tileSize / 2},4
+              ${tileSize - 8},${tileSize / 4}
+              ${tileSize / 2},${tileSize / 2 - 4}
+              8,${tileSize / 4}
+            `}
+            fill="none"
+            stroke="rgba(255,255,255,0.3)"
+            strokeWidth="1"
           />
         </svg>
       )}
@@ -164,8 +208,8 @@ export function IsometricTile({
             transform: 'translate(-50%, -50%)',
           }}
         >
-          <div className="bg-white/95 rounded-full p-1.5 shadow-lg border border-green-200 animate-in zoom-in-50 duration-200">
-            <Plus className="h-4 w-4 text-green-600" />
+          <div className="bg-gradient-to-br from-white to-green-50 rounded-full p-2 shadow-xl border-2 border-green-300/80 animate-plus-bounce backdrop-blur-sm">
+            <Plus className="h-5 w-5 text-green-600 drop-shadow-sm" />
           </div>
         </div>
       )}

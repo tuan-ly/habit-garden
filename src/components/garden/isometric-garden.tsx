@@ -6,8 +6,11 @@ import { IsometricPlant } from './isometric-plant'
 import { PlantInfoBar } from './plant-tooltip'
 import { FloatingPlantCard } from './floating-plant-card'
 import { GroundPlane, type MultiCellArea } from './ground-plane'
+import { GardenDecorations } from './garden-decorations'
+import { AmbientParticles } from './ambient-particles'
 import { ZoomControls } from './zoom-controls'
 import { WateringCelebration } from './watering-celebration'
+import { getTimeOfDay, type TimeOfDay } from './themes'
 import { AddPlantDialog } from '@/components/plants/add-plant-dialog'
 import { PlantDetailSheet } from '@/components/plants/plant-detail-sheet'
 import { QuickLogModal } from '@/components/plants/quick-log-modal'
@@ -580,6 +583,15 @@ export function IsometricGarden({
   // Check if garden is empty
   const isEmpty = livingPlants.length === 0
 
+  // Track time of day for decorations and particles
+  const [currentTimeOfDay, setCurrentTimeOfDay] = useState<TimeOfDay>('day')
+
+  useEffect(() => {
+    setCurrentTimeOfDay(getTimeOfDay())
+    const interval = setInterval(() => setCurrentTimeOfDay(getTimeOfDay()), 60000)
+    return () => clearInterval(interval)
+  }, [])
+
   // Ref for scroll container to center on zoom
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
@@ -672,6 +684,13 @@ export function IsometricGarden({
                 transform: `scale(${zoom})`,
               }}
             >
+          {/* Garden decorations (trees, rocks, flowers around the garden) */}
+          <GardenDecorations
+            gridSize={gridSize}
+            tileSize={tileSize}
+            timeOfDay={currentTimeOfDay}
+          />
+
           {/* Single unified ground plane */}
           <GroundPlane
             gridSize={gridSize}
@@ -682,6 +701,12 @@ export function IsometricGarden({
             hoveredMultiCellArea={hoveredMultiCellArea}
             dragTargetCell={dragState.isDragging ? dragState.targetCell : null}
             isDragTargetValid={dragState.isValidTarget}
+          />
+
+          {/* Ambient particles (butterflies, pollen, fireflies) */}
+          <AmbientParticles
+            weather={weather}
+            timeOfDay={currentTimeOfDay}
           />
 
           {/* Interactive tile zones */}

@@ -771,6 +771,61 @@
   animation: cloud-drift 8s ease-in-out infinite alternate;
 }
 
+/* Enhanced cloud drift - moves across entire screen */
+@keyframes cloud-drift-enhanced {
+  0% {
+    transform: translateX(-10vw);
+  }
+
+  100% {
+    transform: translateX(110vw);
+  }
+}
+
+/* Sun glow pulse animation */
+@keyframes sun-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.5));
+    transform: scale(1);
+  }
+
+  50% {
+    filter: drop-shadow(0 0 35px rgba(251, 191, 36, 0.7));
+    transform: scale(1.05);
+  }
+}
+
+.animate-sun-glow {
+  animation: sun-glow 4s ease-in-out infinite;
+}
+
+/* Bird flying animation */
+@keyframes bird-fly {
+  0% {
+    transform: translateX(0) translateY(0);
+  }
+
+  25% {
+    transform: translateX(30px) translateY(-10px);
+  }
+
+  50% {
+    transform: translateX(60px) translateY(0);
+  }
+
+  75% {
+    transform: translateX(90px) translateY(-5px);
+  }
+
+  100% {
+    transform: translateX(120px) translateY(0);
+  }
+}
+
+.animate-bird-fly {
+  animation: bird-fly 15s linear infinite;
+}
+
 /* Star twinkle animation */
 @keyframes twinkle {
 
@@ -1664,4 +1719,225 @@
 
 .animate-drip-fade {
   animation: drip-fade 1.5s ease-out forwards;
+}
+
+/* ============================================
+   Garden Decorations & Ambient Particles
+   ============================================ */
+
+/* Tile hover glow effect */
+@keyframes tile-glow {
+  0%, 100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-tile-glow {
+  animation: tile-glow 1.5s ease-in-out infinite;
+}
+
+/* Tile shimmer effect */
+@keyframes tile-shimmer {
+  0% {
+    fill-opacity: 0.15;
+  }
+  50% {
+    fill-opacity: 0.25;
+  }
+  100% {
+    fill-opacity: 0.15;
+  }
+}
+
+.animate-tile-shimmer {
+  animation: tile-shimmer 2s ease-in-out infinite;
+}
+
+/* Plus button bounce */
+@keyframes plus-bounce {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+}
+
+.animate-plus-bounce {
+  animation: plus-bounce 0.8s ease-in-out infinite;
+}
+
+/* Leaf falling animation */
+@keyframes leaf-fall {
+  0% {
+    transform: translateY(0) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) translateX(50px) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.animate-leaf-fall {
+  animation: leaf-fall linear infinite;
+}
+
+/* Butterfly floating animation */
+@keyframes butterfly-float {
+  0% {
+    transform: translateX(0) translateY(0);
+  }
+  25% {
+    transform: translateX(30px) translateY(-20px);
+  }
+  50% {
+    transform: translateX(60px) translateY(10px);
+  }
+  75% {
+    transform: translateX(90px) translateY(-15px);
+  }
+  100% {
+    transform: translateX(120px) translateY(0);
+  }
+}
+
+.animate-butterfly-float {
+  animation: butterfly-float ease-in-out infinite;
+}
+
+/* Butterfly wing flapping */
+@keyframes butterfly-wing {
+  0%, 100% {
+    transform: scaleX(1);
+  }
+  50% {
+    transform: scaleX(0.7);
+  }
+}
+
+.animate-butterfly-wing {
+  animation: butterfly-wing 0.2s ease-in-out infinite;
+}
+
+/* Pollen drift animation */
+@keyframes pollen-drift {
+  0% {
+    transform: translateX(0) translateY(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  90% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateX(100px) translateY(-50px);
+    opacity: 0;
+  }
+}
+
+.animate-pollen-drift {
+  animation: pollen-drift ease-in-out infinite;
+}
+
+/* Firefly glow animation */
+@keyframes firefly-glow {
+  0%, 100% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  10% {
+    opacity: 1;
+  }
+  25% {
+    transform: translate(10px, -15px);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translate(-5px, -25px);
+    opacity: 1;
+  }
+  75% {
+    transform: translate(15px, -10px);
+    opacity: 0.6;
+  }
+  90% {
+    opacity: 0.3;
+  }
+}
+
+.animate-firefly-glow {
+  animation: firefly-glow ease-in-out infinite;
+}
+
+/* Sparkle twinkle animation */
+@keyframes sparkle-twinkle {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  25% {
+    opacity: 1;
+    transform: scale(1.2) rotate(90deg);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1) rotate(180deg);
+  }
+  75% {
+    opacity: 1;
+    transform: scale(1.1) rotate(270deg);
+  }
+}
+
+.animate-sparkle-twinkle {
+  animation: sparkle-twinkle ease-in-out infinite;
+}
+
+/* Dandelion seed floating */
+@keyframes dandelion-float {
+  0% {
+    transform: translateX(0) translateY(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.9;
+  }
+  50% {
+    transform: translateX(80px) translateY(-40px) rotate(180deg);
+  }
+  90% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateX(150px) translateY(-80px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.animate-dandelion-float {
+  animation: dandelion-float ease-in-out infinite;
+}
+
+/* Tree sway animation for decorations */
+@keyframes tree-sway {
+  0%, 100% {
+    transform: rotate(-1deg);
+  }
+  50% {
+    transform: rotate(1deg);
+  }
+}
+
+.animate-tree-sway {
+  animation: tree-sway 4s ease-in-out infinite;
+  transform-origin: bottom center;
 }
