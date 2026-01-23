@@ -9,6 +9,7 @@ import { GroundPlane, type MultiCellArea } from './ground-plane'
 import { GroundPlaneCanvas } from './ground-plane-canvas'
 import { GardenDecorations } from './garden-decorations'
 import { AmbientParticles } from './ambient-particles'
+import { AmbientParticlesCanvas } from './ambient-particles-canvas'
 import { ZoomControls } from './zoom-controls'
 import { WateringCelebration } from './watering-celebration'
 import { ModeToolbar, type GardenMode } from './mode-toolbar'
@@ -22,7 +23,7 @@ import {
   showWaterErrorToast,
 } from '@/components/plants/water-toast'
 import { usePlants, useGardenSettingsOptional } from '@/lib/context'
-import { useGardenZoom } from '@/lib/hooks'
+import { useGardenZoom, useVisibleTiles } from '@/lib/hooks'
 import type { PlantWithType, PlantType, WeatherType } from '@/types/database'
 import { defaultTheme } from './themes'
 import {
@@ -132,8 +133,14 @@ export function IsometricGarden({
   // Use default tile size on server, actual size on client
   const [tileSize, setTileSize] = useState(DEFAULT_TILE_SIZE)
 
+  // Track viewport dimensions for tile virtualization
+  const [viewportSize, setViewportSize] = useState({ width: 1200, height: 800 })
+
   useEffect(() => {
-    const handleResize = () => setTileSize(getClientTileSize())
+    const handleResize = () => {
+      setTileSize(getClientTileSize())
+      setViewportSize({ width: window.innerWidth, height: window.innerHeight })
+    }
     handleResize()
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
@@ -207,6 +214,17 @@ export function IsometricGarden({
   // Calculate container dimensions
   const containerWidth = gridSize * tileSize
   const containerHeight = gridSize * (tileSize / 2) + tileSize * 0.3
+
+  // Calculate visible tiles for virtualization (large grids only)
+  const visibleTileKeys = useVisibleTiles({
+    gridSize,
+    tileSize,
+    zoom,
+    panOffset,
+    viewportWidth: viewportSize.width,
+    viewportHeight: viewportSize.height,
+    buffer: 2,
+  })
 
   // Ref for the garden container
   const gardenContainerRef = useRef<HTMLDivElement>(null)
@@ -687,17 +705,30 @@ export function IsometricGarden({
               />
             )}
 
-            {/* Ambient particles - reduced for performance */}
+            {/* Ambient particles - Canvas or CSS based on settings */}
             {gardenSettings.showParticles && (
-              <AmbientParticles
-                weather={gardenSettings.showWeatherEffects ? weather : null}
-                timeOfDay={currentTimeOfDay}
-              />
+              gardenSettings.useCanvasRenderer ? (
+                <AmbientParticlesCanvas
+                  weather={gardenSettings.showWeatherEffects ? weather : null}
+                  timeOfDay={currentTimeOfDay}
+                  width={containerWidth}
+                  height={containerHeight}
+                />
+              ) : (
+                <AmbientParticles
+                  weather={gardenSettings.showWeatherEffects ? weather : null}
+                  timeOfDay={currentTimeOfDay}
+                />
+              )
             )}
 
-            {/* Interactive tile zones */}
+            {/* Interactive tile zones - filtered by visibility for performance */}
             {tiles.map(({ row, col, plant, isAnchor, isOccupiedByMultiCell }) => {
               const tileKey = `${row}-${col}`
+
+              // Skip rendering tiles outside visible area (for large grids)
+              if (!visibleTileKeys.has(tileKey)) return null
+
               const isHovered = hoveredTile === tileKey
               const clickPlant = isOccupiedByMultiCell ? plant : (isAnchor ? plant : undefined)
               const isPartOfMultiCell = plant !== undefined && (plant.grid_size || 1) > 1

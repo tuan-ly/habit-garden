@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import { PlantVisual } from '@/components/plants/plant-visual'
 import type { PlantWithType, WeatherType } from '@/types/database'
 import { cn } from '@/lib/utils'
@@ -23,7 +24,7 @@ function getGrowthScale(growthPercentage: number): number {
   return 1.0 // Mature
 }
 
-export function IsometricPlant({
+function IsometricPlantComponent({
   plant,
   weather,
   showWateringEffect = false,
@@ -62,3 +63,5 @@ export function IsometricPlant({
     </div>
   )
 }
+
+export const IsometricPlant = memo(IsometricPlantComponent)

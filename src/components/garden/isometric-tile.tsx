@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import { cn } from '@/lib/utils'
 import type { PlantWithType } from '@/types/database'
 import { PlantOverlayBadge } from './plant-overlay-badge'
@@ -54,7 +55,7 @@ function getMergedAreaCenterOffset(plantGridSize: number, tileHitHeight: number)
   return (plantGridSize - 1) * tileHitHeight / 2
 }
 
-export function IsometricTile({
+function IsometricTileComponent({
   row,
   col,
   gridSize,
@@ -247,3 +248,5 @@ export function IsometricTile({
     </div>
   )
 }
+
+export const IsometricTile = memo(IsometricTileComponent)

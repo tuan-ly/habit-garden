@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import { cn } from '@/lib/utils'
 import type { PlantWithType } from '@/types/database'
 
@@ -17,7 +18,7 @@ interface PlantOverlayBadgeProps {
  * - Simple Habits: Shows ✓ if watered, ○ if not
  * - Goal Plants: Shows action count (💧×3) or today's value (📖 45p)
  */
-export function PlantOverlayBadge({
+function PlantOverlayBadgeComponent({
   plant,
   todayLogCount = 0,
   todayValue,
@@ -125,6 +126,8 @@ export function PlantOverlayBadge({
   )
 }
 
+export const PlantOverlayBadge = memo(PlantOverlayBadgeComponent)
+
 /**
  * Compact badge showing just a dot indicator for the list view.
  */
@@ -148,8 +151,8 @@ export function PlantStatusDot({
         isWateredToday
           ? 'bg-emerald-500'
           : isThirsty
-          ? 'bg-red-500 animate-pulse'
-          : 'bg-slate-400',
+            ? 'bg-red-500 animate-pulse'
+            : 'bg-slate-400',
         className
       )}
     />
