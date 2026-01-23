@@ -141,14 +141,22 @@ export function IsometricGarden({
   // Track viewport dimensions for tile virtualization
   const [viewportSize, setViewportSize] = useState({ width: 1200, height: 800 })
 
+  // Track if device is touch-only (for disabling hover info bar)
+  const [isTouchDevice, setIsTouchDevice] = useState(false)
+
   useEffect(() => {
-    const handleResize = () => {
+    const updateDeviceInfo = () => {
       setTileSize(getClientTileSize())
       setViewportSize({ width: window.innerWidth, height: window.innerHeight })
+
+      // Detect touch device: check if primary pointer is coarse (touch, not mouse)
+      // This is more accurate than screen width - tablets with mouse/trackpad will still show hover
+      const isTouchPrimary = window.matchMedia('(pointer: coarse)').matches
+      setIsTouchDevice(isTouchPrimary)
     }
-    handleResize()
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
+    updateDeviceInfo()
+    window.addEventListener('resize', updateDeviceInfo)
+    return () => window.removeEventListener('resize', updateDeviceInfo)
   }, [])
 
   // Prevent browser zoom on Ctrl+scroll and pinch-to-zoom globally
@@ -818,8 +826,8 @@ export function IsometricGarden({
         </div>
       )}
 
-      {/* Fixed info bar at bottom */}
-      <PlantInfoBar plant={hoveredPlant} />
+      {/* Fixed info bar at bottom - disabled on touch devices since hover requires a mouse */}
+      {!isTouchDevice && <PlantInfoBar plant={hoveredPlant} />}
 
       {/* Floating plant card */}
       {floatingCard && (
