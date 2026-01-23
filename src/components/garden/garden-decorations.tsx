@@ -71,9 +71,9 @@ function generateDecorations(gridSize: number, tileSize: number, seed: number = 
 
     decos.push({
       type: 'bush',
-      x,
-      y,
-      scale: 0.5 + random(i + 101) * 0.3,
+      x: Math.round(x * 10000) / 10000,
+      y: Math.round(y * 10000) / 10000,
+      scale: Math.round((0.5 + random(i + 101) * 0.3) * 10000) / 10000,
       flip: random(i + 102) > 0.5,
       zIndex: Math.floor(y),
     })
@@ -91,9 +91,9 @@ function generateDecorations(gridSize: number, tileSize: number, seed: number = 
 
     decos.push({
       type: 'rock',
-      x,
-      y,
-      scale: 0.4 + random(i + 201) * 0.4,
+      x: Math.round(x * 10000) / 10000,
+      y: Math.round(y * 10000) / 10000,
+      scale: Math.round((0.4 + random(i + 201) * 0.4) * 10000) / 10000,
       flip: random(i + 202) > 0.5,
       zIndex: Math.floor(y),
     })
@@ -111,9 +111,9 @@ function generateDecorations(gridSize: number, tileSize: number, seed: number = 
 
     decos.push({
       type: 'mushroom',
-      x,
-      y,
-      scale: 0.3 + random(i + 301) * 0.25,
+      x: Math.round(x * 10000) / 10000,
+      y: Math.round(y * 10000) / 10000,
+      scale: Math.round((0.3 + random(i + 301) * 0.25) * 10000) / 10000,
       flip: random(i + 302) > 0.5,
       zIndex: Math.floor(y),
     })
@@ -131,9 +131,9 @@ function generateDecorations(gridSize: number, tileSize: number, seed: number = 
 
     decos.push({
       type: 'flower-patch',
-      x,
-      y,
-      scale: 0.35 + random(i + 401) * 0.2,
+      x: Math.round(x * 10000) / 10000,
+      y: Math.round(y * 10000) / 10000,
+      scale: Math.round((0.35 + random(i + 401) * 0.2) * 10000) / 10000,
       flip: random(i + 402) > 0.5,
       zIndex: Math.floor(y),
     })
