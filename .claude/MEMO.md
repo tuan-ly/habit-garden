@@ -22,6 +22,19 @@
 
 ## Recent Sessions
 
+### 2026-01-23: Performance Optimization - Click-to-Move
+**Changes**:
+- Replaced drag-and-drop with click-to-select, click-to-place for better performance
+- Reduced ambient particles (butterflies 3→1, pollen 15→5, fireflies 20→8, sparkles 20→6)
+- Simplified hover effects (removed SVG filters, gradients, animations)
+- Added faded plant preview when hovering target tile in move mode
+- Removed complex touch/mouse event handlers
+
+**Key files changed**:
+- [isometric-garden.tsx](src/components/garden/isometric-garden.tsx) - Simplified move logic
+- [isometric-tile.tsx](src/components/garden/isometric-tile.tsx) - Added preview, simplified hover
+- [ambient-particles.tsx](src/components/garden/ambient-particles.tsx) - Reduced particle count
+
 ### 2026-01-23: Mode-Based Garden UI
 **Changes**:
 - Added 3-mode toolbar (Water/Move/Plant) with Lucide icons

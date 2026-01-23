@@ -47,9 +47,6 @@ function getClientTileSize(): number {
   return 140 // Desktop
 }
 
-// Long press threshold in milliseconds
-const LONG_PRESS_THRESHOLD = 500
-
 // Double tap threshold for opening detail sheet (still useful in view mode)
 const DOUBLE_TAP_THRESHOLD = 300
 
@@ -74,11 +71,21 @@ export function IsometricGarden({
     bindGestures,
     resetPan,
     resetDidPan,
-    cancelPan,
   } = useGardenZoom()
 
   // Garden mode state
-  const [mode, setMode] = useState<GardenMode>('view')
+  const [mode, setModeInternal] = useState<GardenMode>('view')
+
+  // Wrap setMode to cancel move selection when changing modes
+  const setMode = useCallback((newMode: GardenMode) => {
+    setModeInternal(newMode)
+    // Reset move state when changing modes
+    setMoveState({
+      selectedPlant: null,
+      previewCell: null,
+      isValidPreview: false,
+    })
+  }, [])
 
   const [hoveredTile, setHoveredTile] = useState<string | null>(null)
   const [selectedPlant, setSelectedPlant] = useState<PlantWithType | null>(null)
@@ -104,26 +111,16 @@ export function IsometricGarden({
     streakCount: number
   } | null>(null)
 
-  // Long press tracking
-  const longPressTimer = useRef<NodeJS.Timeout | null>(null)
-  const longPressTriggered = useRef<boolean>(false)
-  const touchStartPos = useRef<{ x: number; y: number } | null>(null)
-
-  // Drag state for moving plants (only in edit mode)
-  const [dragState, setDragState] = useState<{
-    isDragging: boolean
-    draggedPlant: PlantWithType | null
-    targetCell: { row: number; col: number } | null
-    isValidTarget: boolean
-    dragPosition: { x: number; y: number } | null
+  // Click-to-move state: click to select plant, then click to place
+  const [moveState, setMoveState] = useState<{
+    selectedPlant: PlantWithType | null
+    previewCell: { row: number; col: number } | null
+    isValidPreview: boolean
   }>({
-    isDragging: false,
-    draggedPlant: null,
-    targetCell: null,
-    isValidTarget: false,
-    dragPosition: null,
+    selectedPlant: null,
+    previewCell: null,
+    isValidPreview: false,
   })
-  const dragStartPos = useRef<{ x: number; y: number } | null>(null)
 
   // Use default tile size on server, actual size on client
   const [tileSize, setTileSize] = useState(DEFAULT_TILE_SIZE)
@@ -193,112 +190,68 @@ export function IsometricGarden({
   const containerWidth = gridSize * tileSize
   const containerHeight = gridSize * (tileSize / 2) + tileSize * 0.3
 
-  // Ref for the garden container (used for drag position calculations)
+  // Ref for the garden container
   const gardenContainerRef = useRef<HTMLDivElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
-  // Convert screen coordinates to grid cell
-  const screenToGridCell = useCallback(
-    (clientX: number, clientY: number): { row: number; col: number } | null => {
-      const container = gardenContainerRef.current
-      if (!container) return null
+  // Select a plant to move (click-to-select)
+  const selectPlantForMove = useCallback((plant: PlantWithType) => {
+    setFloatingCard(null)
+    setHoveredTile(null)
+    // Haptic feedback
+    if (navigator.vibrate) navigator.vibrate(30)
+    setMoveState({
+      selectedPlant: plant,
+      previewCell: null,
+      isValidPreview: false,
+    })
+  }, [])
 
-      const rect = container.getBoundingClientRect()
-      const relX = clientX - rect.left
-      const relY = clientY - rect.top
+  // Cancel move selection
+  const cancelMoveSelection = useCallback(() => {
+    setMoveState({
+      selectedPlant: null,
+      previewCell: null,
+      isValidPreview: false,
+    })
+  }, [])
 
-      const zoomedTileSize = tileSize * zoom
-      const centerX = (containerWidth * zoom) / 2
+  // Update preview cell when hovering
+  const updateMovePreview = useCallback((row: number, col: number) => {
+    if (!moveState.selectedPlant) return
 
-      const dx = relX - centerX
-      const dy = relY
+    const validation = validatePlantMove(
+      moveState.selectedPlant.id,
+      row,
+      col,
+      livingPlants
+    )
 
-      const colMinusRow = (dx * 2) / zoomedTileSize
-      const colPlusRow = (dy * 4) / zoomedTileSize
+    setMoveState((prev) => ({
+      ...prev,
+      previewCell: { row, col },
+      isValidPreview: validation.valid,
+    }))
+  }, [moveState.selectedPlant, livingPlants])
 
-      const col = Math.floor((colPlusRow + colMinusRow) / 2)
-      const row = Math.floor((colPlusRow - colMinusRow) / 2)
+  // Confirm move to selected cell
+  const confirmMove = useCallback(async (row: number, col: number) => {
+    if (!moveState.selectedPlant) return
 
-      return { row, col }
-    },
-    [tileSize, zoom, containerWidth]
-  )
+    const plant = moveState.selectedPlant
+    const validation = validatePlantMove(plant.id, row, col, livingPlants)
 
-  // Start drag mode for a plant (triggered by long-press + move)
-  const startPlantDrag = useCallback(
-    (plant: PlantWithType, startPosition: { x: number; y: number }) => {
-      setFloatingCard(null)
-      setHoveredTile(null)
-
-      setDragState({
-        isDragging: true,
-        draggedPlant: plant,
-        targetCell: { row: plant.grid_row, col: plant.grid_col },
-        isValidTarget: true,
-        dragPosition: startPosition,
-      })
-    },
-    []
-  )
-
-  // Handle drag move
-  const handleDragMove = useCallback(
-    (clientX: number, clientY: number) => {
-      if (!dragState.isDragging || !dragState.draggedPlant) return
-
-      const cell = screenToGridCell(clientX, clientY)
-      if (!cell) return
-
-      const validation = validatePlantMove(
-        dragState.draggedPlant.id,
-        cell.row,
-        cell.col,
-        livingPlants
-      )
-
-      setDragState((prev) => ({
-        ...prev,
-        targetCell: cell,
-        isValidTarget: validation.valid,
-        dragPosition: { x: clientX, y: clientY },
-      }))
-    },
-    [dragState.isDragging, dragState.draggedPlant, screenToGridCell, livingPlants]
-  )
-
-  // End drag and drop plant
-  const endPlantDrag = useCallback(async () => {
-    if (!dragState.isDragging || !dragState.draggedPlant || !dragState.targetCell) {
-      setDragState({
-        isDragging: false,
-        draggedPlant: null,
-        targetCell: null,
-        isValidTarget: false,
-        dragPosition: null,
-      })
-      // Cancel any ongoing pan gesture to prevent ghost pan after drag
-      cancelPan()
-      return
-    }
-
-    const { row, col } = dragState.targetCell
-    const plant = dragState.draggedPlant
-
-    setDragState({
-      isDragging: false,
-      draggedPlant: null,
-      targetCell: null,
-      isValidTarget: false,
-      dragPosition: null,
+    // Reset state first
+    setMoveState({
+      selectedPlant: null,
+      previewCell: null,
+      isValidPreview: false,
     })
 
-    // Cancel any ongoing pan gesture to prevent ghost pan after drag
-    cancelPan()
-
-    if (dragState.isValidTarget && (row !== plant.grid_row || col !== plant.grid_col)) {
+    if (validation.valid && (row !== plant.grid_row || col !== plant.grid_col)) {
       await movePlant(plant.id, row, col)
     }
-  }, [dragState, movePlant, cancelPan])
+  }, [moveState.selectedPlant, livingPlants, movePlant])
 
   // Check if plant is watered today
   const isWateredToday = useCallback((plant: PlantWithType) => {
@@ -385,19 +338,10 @@ export function IsometricGarden({
     []
   )
 
-  
   // Handle tile click - behavior depends on current mode
   const handleTileClick = useCallback(
     (row: number, col: number, plant?: PlantWithType, event?: React.MouseEvent | React.TouchEvent) => {
-      // If long press was triggered, don't handle click
-      if (longPressTriggered.current) {
-        longPressTriggered.current = false
-        // eslint-disable-next-line react-hooks/immutability
-        longPressingPlant.current = null
-        return
-      }
-
-      // If user panned/dragged, don't handle click
+      // If user panned, don't handle click
       if (didPan) {
         resetDidPan()
         return
@@ -420,251 +364,50 @@ export function IsometricGarden({
           if (plant) {
             handlePlantTap(plant, tapPosition)
           }
-          // Empty tile tap does nothing in view mode
           break
 
         case 'drag':
-          // Drag mode: tap shows info, actual drag handled by long-press
-          if (plant) {
-            // Show info on tap in drag mode
-            if (event && 'clientX' in event) {
-              handleShowInfo(plant, { x: event.clientX, y: event.clientY })
+          // Move mode: click-to-select, click-to-place
+          if (moveState.selectedPlant) {
+            // A plant is already selected - try to place it here
+            if (moveState.selectedPlant.id === plant?.id) {
+              // Clicked same plant - deselect
+              cancelMoveSelection()
+            } else {
+              // Try to place at this location
+              confirmMove(row, col)
             }
+          } else if (plant) {
+            // No plant selected - select this one
+            selectPlantForMove(plant)
           }
           break
 
         case 'add':
           // Add mode: tap empty to add plant, tap plant to edit goal/details
           if (plant) {
-            // Open detail sheet to adjust goal
             setSelectedPlant(plant)
             setSheetOpen(true)
           } else {
-            // Single tap on empty tile opens add dialog
             setAddDialogPosition({ row, col })
             setAddDialogOpen(true)
           }
           break
       }
     },
-    [mode, handlePlantTap, handleShowInfo, didPan, resetDidPan]
+    [mode, handlePlantTap, didPan, resetDidPan, moveState.selectedPlant, selectPlantForMove, cancelMoveSelection, confirmMove]
   )
 
-  // Handle right-click (desktop)
+  // Handle right-click (desktop) - show info card
   const handleContextMenu = useCallback(
     (e: React.MouseEvent, plant?: PlantWithType) => {
       e.preventDefault()
-      // Disable info card on mobile/touch devices to avoid conflict with dragging
-      if (typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches) {
-        return
-      }
       if (plant) {
         handleShowInfo(plant, { x: e.clientX, y: e.clientY })
       }
     },
     [handleShowInfo]
   )
-
-  // Track plant for potential drag
-  const longPressingPlant = useRef<PlantWithType | null>(null)
-
-  // Handle touch start (mobile)
-  // In drag mode: Instant drag enabled (no long-press needed)
-  // In other modes: Long press shows info card
-  const handleTouchStart = useCallback(
-    (e: React.TouchEvent, plant?: PlantWithType) => {
-      const touch = e.touches[0]
-      const startPos = { x: touch.clientX, y: touch.clientY }
-      touchStartPos.current = startPos
-      dragStartPos.current = startPos
-      // eslint-disable-next-line react-hooks/immutability
-      longPressingPlant.current = plant ?? null
-
-      if (plant && mode === 'drag') {
-        // In drag mode, enable instant drag (no long-press needed)
-        longPressTriggered.current = true
-        // Light haptic feedback
-        if (navigator.vibrate) {
-          navigator.vibrate(30)
-        }
-      } else if (plant) {
-        // In other modes, use long-press for info card
-        longPressTriggered.current = false
-        longPressTimer.current = setTimeout(() => {
-          longPressTriggered.current = true
-          // Haptic feedback to indicate long-press triggered
-          if (navigator.vibrate) {
-            navigator.vibrate(50)
-          }
-          handleShowInfo(plant, startPos)
-        }, LONG_PRESS_THRESHOLD)
-      } else {
-        longPressTriggered.current = false
-      }
-    },
-    [mode, handleShowInfo]
-  )
-
-  // Handle touch move
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    const touch = e.touches[0]
-
-    // If dragging, update drag position
-    if (dragState.isDragging) {
-      handleDragMove(touch.clientX, touch.clientY)
-      return
-    }
-
-    // If not dragging yet, check if we should cancel long-press or start drag
-    if (!touchStartPos.current) return
-
-    const dx = Math.abs(touch.clientX - touchStartPos.current.x)
-    const dy = Math.abs(touch.clientY - touchStartPos.current.y)
-
-    // If moved more than 10px
-    if (dx > 10 || dy > 10) {
-      // Cancel the long-press timer
-      if (longPressTimer.current) {
-        clearTimeout(longPressTimer.current)
-        longPressTimer.current = null
-      }
-
-      // Only allow dragging in drag mode
-      if (mode === 'drag' && longPressTriggered.current && longPressingPlant.current) {
-        setFloatingCard(null) // Close info card if open
-        startPlantDrag(longPressingPlant.current, { x: touch.clientX, y: touch.clientY })
-        // eslint-disable-next-line react-hooks/immutability
-        longPressingPlant.current = null
-      }
-    }
-  }, [mode, dragState.isDragging, handleDragMove, startPlantDrag])
-
-  // Native touch event listener to prevent scrolling during drag
-  useEffect(() => {
-    const container = scrollContainerRef.current
-    if (!container) return
-
-    const preventScroll = (e: TouchEvent) => {
-      if (dragState.isDragging) {
-        e.preventDefault()
-      }
-    }
-
-    container.addEventListener('touchmove', preventScroll, { passive: false })
-
-    return () => {
-      container.removeEventListener('touchmove', preventScroll)
-    }
-  }, [dragState.isDragging])
-
-  // Global mouse event listeners for drag (when mouse moves outside tiles)
-  useEffect(() => {
-    if (!dragState.isDragging) return
-
-    const handleGlobalMouseMove = (e: MouseEvent) => {
-      handleDragMove(e.clientX, e.clientY)
-    }
-
-    const handleGlobalMouseUp = () => {
-      if (longPressTimer.current) {
-        clearTimeout(longPressTimer.current)
-        longPressTimer.current = null
-      }
-      dragStartPos.current = null
-      endPlantDrag()
-    }
-
-    document.addEventListener('mousemove', handleGlobalMouseMove)
-    document.addEventListener('mouseup', handleGlobalMouseUp)
-
-    return () => {
-      document.removeEventListener('mousemove', handleGlobalMouseMove)
-      document.removeEventListener('mouseup', handleGlobalMouseUp)
-    }
-  }, [dragState.isDragging, handleDragMove, endPlantDrag])
-
-  // Handle touch end
-  const handleTouchEnd = useCallback(() => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current)
-      longPressTimer.current = null
-    }
-    touchStartPos.current = null
-    dragStartPos.current = null
-
-    if (dragState.isDragging) {
-      endPlantDrag()
-    }
-  }, [dragState.isDragging, endPlantDrag])
-
-  // Handle mouse down for drag
-  // In drag mode: instant drag (no long-press needed)
-  // In other modes: no drag
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent, plant?: PlantWithType) => {
-      const startPos = { x: e.clientX, y: e.clientY }
-      dragStartPos.current = startPos
-      // eslint-disable-next-line react-hooks/immutability
-      longPressingPlant.current = plant ?? null
-
-      if (plant && mode === 'drag') {
-        // In drag mode, enable instant drag (no long-press needed)
-        longPressTriggered.current = true
-        // Haptic feedback
-        if (navigator.vibrate) {
-          navigator.vibrate(30)
-        }
-      } else {
-        longPressTriggered.current = false
-      }
-    },
-    [mode]
-  )
-
-  // Handle mouse move for drag
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    // If dragging, update drag position
-    if (dragState.isDragging) {
-      handleDragMove(e.clientX, e.clientY)
-      return
-    }
-
-    // If not dragging yet, check if we should cancel long-press or start drag
-    if (!dragStartPos.current) return
-
-    const dx = Math.abs(e.clientX - dragStartPos.current.x)
-    const dy = Math.abs(e.clientY - dragStartPos.current.y)
-
-    // If moved more than 10px
-    if (dx > 10 || dy > 10) {
-      // Cancel the long-press timer
-      if (longPressTimer.current) {
-        clearTimeout(longPressTimer.current)
-        longPressTimer.current = null
-      }
-
-      // Only allow dragging in drag mode
-      if (mode === 'drag' && longPressTriggered.current && longPressingPlant.current) {
-        setFloatingCard(null) // Close info card if open
-        startPlantDrag(longPressingPlant.current, { x: e.clientX, y: e.clientY })
-        // eslint-disable-next-line react-hooks/immutability
-        longPressingPlant.current = null
-      }
-    }
-  }, [mode, dragState.isDragging, handleDragMove, startPlantDrag])
-
-  // Handle mouse up to end drag
-  const handleMouseUp = useCallback(() => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current)
-      longPressTimer.current = null
-    }
-    dragStartPos.current = null
-
-    if (dragState.isDragging) {
-      endPlantDrag()
-    }
-  }, [dragState.isDragging, endPlantDrag])
 
   // Handle goal log
   const handleGoalLog = useCallback(
@@ -725,18 +468,20 @@ export function IsometricGarden({
   }, [floatingCard, handleQuickWater])
 
   const handleTileHover = (row: number, col: number) => {
-    if (dragState.isDragging) return
-
     const plant = occupiedCells.get(`${row}-${col}`)
     if (plant && (plant.grid_size || 1) > 1) {
       setHoveredTile(`${plant.grid_row || 0}-${plant.grid_col || 0}`)
     } else {
       setHoveredTile(`${row}-${col}`)
     }
+
+    // Update move preview when in move mode with selected plant
+    if (mode === 'drag' && moveState.selectedPlant) {
+      updateMovePreview(row, col)
+    }
   }
 
   const handleTileLeave = () => {
-    if (dragState.isDragging) return
     setHoveredTile(null)
   }
 
@@ -809,32 +554,28 @@ export function IsometricGarden({
         </div>
       )}
 
-      {/* Garden container with zoom and pan gesture support - pan always enabled */}
+      {/* Garden container with zoom and pan gesture support */}
       <div
         ref={scrollContainerRef}
         className="flex-1 w-full overflow-hidden"
         style={{
-          touchAction: dragState.isDragging ? 'none' : 'manipulation',
-          cursor: dragState.isDragging
+          touchAction: 'manipulation',
+          cursor: isPanning
             ? 'grabbing'
-            : isPanning
-              ? 'grabbing'
-              : mode === 'drag'
-                ? 'grab'
-                : mode === 'add'
-                  ? 'cell'
-                  : 'default',
+            : mode === 'drag'
+              ? (moveState.selectedPlant ? 'crosshair' : 'grab')
+              : mode === 'add'
+                ? 'cell'
+                : 'default',
         }}
         onWheel={bindGestures.onWheel}
-        {...(!dragState.isDragging ? {
-          onTouchStart: bindGestures.onTouchStart,
-          onTouchMove: bindGestures.onTouchMove,
-          onTouchEnd: bindGestures.onTouchEnd,
-          onMouseDown: bindGestures.onMouseDown,
-          onMouseMove: bindGestures.onMouseMove,
-          onMouseUp: bindGestures.onMouseUp,
-          onMouseLeave: bindGestures.onMouseLeave,
-        } : {})}
+        onTouchStart={bindGestures.onTouchStart}
+        onTouchMove={bindGestures.onTouchMove}
+        onTouchEnd={bindGestures.onTouchEnd}
+        onMouseDown={bindGestures.onMouseDown}
+        onMouseMove={bindGestures.onMouseMove}
+        onMouseUp={bindGestures.onMouseUp}
+        onMouseLeave={bindGestures.onMouseLeave}
       >
         <div
           className="flex justify-center items-end w-full h-full"
@@ -868,12 +609,12 @@ export function IsometricGarden({
               grassDarkColor={defaultTheme.ground.secondary}
               multiCellAreas={multiCellAreas}
               hoveredMultiCellArea={hoveredMultiCellArea}
-              dragTargetCell={dragState.isDragging ? dragState.targetCell : null}
-              dragPlantSize={dragState.draggedPlant?.grid_size || 1}
-              isDragTargetValid={dragState.isValidTarget}
+              dragTargetCell={moveState.selectedPlant ? moveState.previewCell : null}
+              dragPlantSize={moveState.selectedPlant?.grid_size || 1}
+              isDragTargetValid={moveState.isValidPreview}
             />
 
-            {/* Ambient particles */}
+            {/* Ambient particles - reduced for performance */}
             <AmbientParticles
               weather={weather}
               timeOfDay={currentTimeOfDay}
@@ -883,9 +624,13 @@ export function IsometricGarden({
             {tiles.map(({ row, col, plant, isAnchor, isOccupiedByMultiCell }) => {
               const tileKey = `${row}-${col}`
               const isHovered = hoveredTile === tileKey
-
               const clickPlant = isOccupiedByMultiCell ? plant : (isAnchor ? plant : undefined)
               const isPartOfMultiCell = plant !== undefined && (plant.grid_size || 1) > 1
+
+              // Check if this plant is selected for moving
+              const isSelectedForMove = moveState.selectedPlant?.id === plant?.id
+              // Check if this tile is the preview destination
+              const isPreviewTile = moveState.previewCell?.row === row && moveState.previewCell?.col === col
 
               return (
                 <IsometricTile
@@ -894,30 +639,28 @@ export function IsometricGarden({
                   col={col}
                   gridSize={gridSize}
                   isEmpty={!plant && !isOccupiedByMultiCell}
-                  isHovered={isHovered && !dragState.isDragging}
+                  isHovered={isHovered}
                   isOccupiedByMultiCell={isOccupiedByMultiCell}
                   isPartOfMultiCell={isPartOfMultiCell}
                   plantGridSize={plant?.grid_size || 1}
                   onClick={(e) => handleTileClick(row, col, clickPlant, e)}
                   onContextMenu={(e) => handleContextMenu(e, clickPlant)}
-                  onTouchStart={(e) => handleTouchStart(e, clickPlant)}
-                  onTouchMove={handleTouchMove}
-                  onTouchEnd={handleTouchEnd}
-                  onMouseDown={(e) => handleMouseDown(e, clickPlant)}
-                  onMouseMove={handleMouseMove}
-                  onMouseUp={handleMouseUp}
                   onMouseEnter={() => handleTileHover(row, col)}
                   onMouseLeave={handleTileLeave}
                   tileSize={tileSize}
-                  plant={isAnchor && !dragState.isDragging ? plant : null}
-                  hideBadge={dragState.isDragging}
+                  plant={isAnchor ? plant : null}
+                  hideBadge={isSelectedForMove}
                   showAddHint={mode === 'add'}
+                  isSelectedForMove={isSelectedForMove}
+                  previewPlant={isPreviewTile && moveState.selectedPlant && moveState.isValidPreview ? moveState.selectedPlant : undefined}
                 >
-                  {plant && isAnchor && !(dragState.isDragging && dragState.draggedPlant?.id === plant.id) && (
-                    <IsometricPlant
-                      plant={plant}
-                      weather={weather}
-                    />
+                  {plant && isAnchor && (
+                    <div className={isSelectedForMove ? 'opacity-40 scale-95 transition-all' : ''}>
+                      <IsometricPlant
+                        plant={plant}
+                        weather={weather}
+                      />
+                    </div>
                   )}
                 </IsometricTile>
               )
@@ -926,44 +669,25 @@ export function IsometricGarden({
         </div>
       </div>
 
-      {/* Drag mode indicator */}
-      {dragState.isDragging && dragState.draggedPlant && (
+      {/* Move mode indicator */}
+      {moveState.selectedPlant && (
         <div className="absolute left-1/2 -translate-x-1/2 top-20 z-30 pointer-events-none">
-          <div className="px-4 py-2 bg-emerald-600/90 backdrop-blur-md rounded-full text-xs text-white border border-emerald-400/50 shadow-lg animate-pulse">
+          <div className="px-4 py-2 bg-emerald-600/90 backdrop-blur-md rounded-full text-xs text-white border border-emerald-400/50 shadow-lg">
             <span className="flex items-center gap-2">
               <span>🌱</span>
-              <span>Moving {dragState.draggedPlant.name}</span>
+              <span>Di chuyển {moveState.selectedPlant.name}</span>
               <span className="text-emerald-200">•</span>
-              <span>Release to place</span>
+              <span>Chọn ô để đặt</span>
             </span>
           </div>
         </div>
       )}
 
-      {/* Dragged plant ghost */}
-      {dragState.isDragging && dragState.draggedPlant && dragState.dragPosition && (
-        <div
-          className="fixed pointer-events-none z-[9999]"
-          style={{
-            left: dragState.dragPosition.x,
-            top: dragState.dragPosition.y,
-            transform: 'translate(-50%, -100%)',
-          }}
-        >
-          <div className="opacity-80 scale-110 drop-shadow-2xl">
-            <IsometricPlant
-              plant={dragState.draggedPlant}
-              weather={weather}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Fixed info bar at bottom - hide when dragging */}
-      {!dragState.isDragging && <PlantInfoBar plant={hoveredPlant} />}
+      {/* Fixed info bar at bottom */}
+      <PlantInfoBar plant={hoveredPlant} />
 
       {/* Floating plant card */}
-      {floatingCard && !dragState.isDragging && (
+      {floatingCard && (
         <FloatingPlantCard
           plant={floatingCard.plant}
           position={floatingCard.position}

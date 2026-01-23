@@ -39,92 +39,77 @@ function generateParticles(
 
   let id = 0
 
-  // Sunny day: butterflies, pollen, dandelion seeds
+  // Sunny day: reduced particles for performance
   if (timeOfDay === 'day' && (weather === 'sunny' || weather === 'rainbow' || !weather)) {
-    // Butterflies (rare)
-    for (let i = 0; i < 3; i++) {
-      particles.push({
-        id: id++,
-        type: 'butterfly',
-        x: random(i * 10) * 100,
-        y: 20 + random(i * 11) * 40,
-        size: 12 + random(i * 12) * 8,
-        duration: 15 + random(i * 13) * 10,
-        delay: random(i * 14) * 10,
-        color: ['#f8bbd0', '#b3e5fc', '#fff59d', '#c5cae9'][Math.floor(random(i * 15) * 4)],
-      })
-    }
+    // Butterflies (very rare - reduced from 3 to 1)
+    particles.push({
+      id: id++,
+      type: 'butterfly',
+      x: random(10) * 100,
+      y: 20 + random(11) * 40,
+      size: 14,
+      duration: 20,
+      delay: random(14) * 10,
+      color: '#f8bbd0',
+    })
 
-    // Pollen particles
-    for (let i = 0; i < 15; i++) {
+    // Pollen particles (reduced from 15 to 5)
+    for (let i = 0; i < 5; i++) {
       particles.push({
         id: id++,
         type: 'pollen',
         x: random(i * 20) * 100,
         y: random(i * 21) * 80,
-        size: 2 + random(i * 22) * 3,
-        duration: 8 + random(i * 23) * 6,
+        size: 3,
+        duration: 10 + random(i * 23) * 5,
         delay: random(i * 24) * 8,
-      })
-    }
-
-    // Dandelion seeds
-    for (let i = 0; i < 5; i++) {
-      particles.push({
-        id: id++,
-        type: 'dandelion',
-        x: random(i * 30) * 100,
-        y: random(i * 31) * 60,
-        size: 8 + random(i * 32) * 4,
-        duration: 12 + random(i * 33) * 8,
-        delay: random(i * 34) * 12,
       })
     }
   }
 
-  // Cloudy/rainy: falling leaves
+  // Cloudy/rainy: falling leaves (reduced from 12 to 4)
   if (weather === 'cloudy' || weather === 'rainy') {
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 4; i++) {
       particles.push({
         id: id++,
         type: 'leaf',
         x: random(i * 40) * 100,
         y: -10,
-        size: 10 + random(i * 41) * 10,
-        duration: 6 + random(i * 42) * 4,
+        size: 12,
+        duration: 8,
         delay: random(i * 43) * 6,
-        color: ['#8bc34a', '#689f38', '#ff9800', '#f44336', '#ffeb3b'][Math.floor(random(i * 44) * 5)],
+        color: ['#8bc34a', '#689f38', '#ff9800'][Math.floor(random(i * 44) * 3)],
       })
     }
   }
 
-  // Night: fireflies
+  // Night: fireflies (reduced from 20 to 8)
   if (timeOfDay === 'night') {
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 8; i++) {
       particles.push({
         id: id++,
         type: 'firefly',
         x: random(i * 50) * 100,
         y: 20 + random(i * 51) * 60,
-        size: 3 + random(i * 52) * 3,
-        duration: 3 + random(i * 53) * 4,
+        size: 4,
+        duration: 4,
         delay: random(i * 54) * 5,
       })
     }
   }
 
-  // Rainbow: extra sparkles
+  // Rainbow: sparkles (reduced from 20 to 6)
   if (weather === 'rainbow') {
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 6; i++) {
       particles.push({
         id: id++,
         type: 'sparkle',
         x: random(i * 60) * 100,
         y: random(i * 61) * 70,
-        size: 4 + random(i * 62) * 6,
-        duration: 2 + random(i * 63) * 2,
+        size: 6,
+        duration: 3,
         delay: random(i * 64) * 4,
-        color: ['#ff5252', '#ff9800', '#ffeb3b', '#4caf50', '#2196f3', '#9c27b0'][Math.floor(random(i * 65) * 6)],
+        color: ['#ff5252', '#ffeb3b', '#4caf50', '#2196f3'][Math.floor(random(i * 65) * 4)],
       })
     }
   }

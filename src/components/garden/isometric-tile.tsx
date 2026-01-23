@@ -3,6 +3,7 @@
 import { cn } from '@/lib/utils'
 import type { PlantWithType } from '@/types/database'
 import { PlantOverlayBadge } from './plant-overlay-badge'
+import { IsometricPlant } from './isometric-plant'
 import { Plus } from 'lucide-react'
 
 interface IsometricTileProps {
@@ -21,12 +22,6 @@ interface IsometricTileProps {
   onMouseEnter: () => void
   onMouseLeave: () => void
   onContextMenu?: (e: React.MouseEvent) => void
-  onTouchStart?: (e: React.TouchEvent) => void
-  onTouchMove?: (e: React.TouchEvent) => void
-  onTouchEnd?: (e: React.TouchEvent) => void
-  onMouseDown?: (e: React.MouseEvent) => void
-  onMouseMove?: (e: React.MouseEvent) => void
-  onMouseUp?: (e: React.MouseEvent) => void
   children?: React.ReactNode
   tileSize?: number
   /** Plant data for badge (optional - only needed when plant exists) */
@@ -35,6 +30,10 @@ interface IsometricTileProps {
   hideBadge?: boolean
   /** Show add hint on empty tiles (when in add mode) */
   showAddHint?: boolean
+  /** True if this plant is selected for moving (show "lifted" effect) */
+  isSelectedForMove?: boolean
+  /** Preview plant to show faded on this tile (for move preview) */
+  previewPlant?: PlantWithType
 }
 
 /**
@@ -68,17 +67,13 @@ export function IsometricTile({
   onMouseEnter,
   onMouseLeave,
   onContextMenu,
-  onTouchStart,
-  onTouchMove,
-  onTouchEnd,
-  onMouseDown,
-  onMouseMove,
-  onMouseUp,
   children,
   tileSize = 60,
   plant,
   hideBadge = false,
   showAddHint = false,
+  isSelectedForMove = false,
+  previewPlant,
 }: IsometricTileProps) {
   // Isometric tile positioning:
   // The grid's top point (0,0) is at the top-center of the diamond
@@ -112,12 +107,6 @@ export function IsometricTile({
       }}
       onClick={onClick}
       onContextMenu={onContextMenu}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
-      onMouseDown={onMouseDown}
-      onMouseMove={onMouseMove}
-      onMouseUp={onMouseUp}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
@@ -144,31 +133,14 @@ export function IsometricTile({
         />
       </svg>
 
-      {/* Enhanced hover highlight effect with glow - don't show for multi-cell tiles (handled by GroundPlane) */}
+      {/* Simple hover highlight - no filters, no gradients */}
       {isHovered && !isOccupiedByMultiCell && !isPartOfMultiCell && (
         <svg
           width={tileSize}
           height={tileSize / 2}
           viewBox={`0 0 ${tileSize} ${tileSize / 2}`}
-          className="absolute top-0 left-0 pointer-events-none animate-tile-glow"
+          className="absolute top-0 left-0 pointer-events-none"
         >
-          <defs>
-            {/* Gradient fill for hover */}
-            <linearGradient id="hoverGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="rgba(255,255,255,0.25)" />
-              <stop offset="50%" stopColor="rgba(134,239,172,0.2)" />
-              <stop offset="100%" stopColor="rgba(255,255,255,0.15)" />
-            </linearGradient>
-            {/* Glow filter */}
-            <filter id="tileGlow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="3" result="blur" />
-              <feMerge>
-                <feMergeNode in="blur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
-          {/* Outer glow */}
           <polygon
             points={`
               ${tileSize / 2},0
@@ -176,36 +148,9 @@ export function IsometricTile({
               ${tileSize / 2},${tileSize / 2}
               0,${tileSize / 4}
             `}
-            fill="none"
-            stroke="rgba(134,239,172,0.6)"
-            strokeWidth="4"
-            filter="url(#tileGlow)"
-            className="animate-pulse-slow"
-          />
-          {/* Main highlight */}
-          <polygon
-            points={`
-              ${tileSize / 2},0
-              ${tileSize},${tileSize / 4}
-              ${tileSize / 2},${tileSize / 2}
-              0,${tileSize / 4}
-            `}
-            fill="url(#hoverGradient)"
-            stroke="rgba(255,255,255,0.6)"
-            strokeWidth="1.5"
-            className="animate-tile-shimmer"
-          />
-          {/* Inner shine line */}
-          <polygon
-            points={`
-              ${tileSize / 2},4
-              ${tileSize - 8},${tileSize / 4}
-              ${tileSize / 2},${tileSize / 2 - 4}
-              8,${tileSize / 4}
-            `}
-            fill="none"
-            stroke="rgba(255,255,255,0.3)"
-            strokeWidth="1"
+            fill="rgba(134,239,172,0.15)"
+            stroke="rgba(255,255,255,0.5)"
+            strokeWidth="2"
           />
         </svg>
       )}
@@ -220,9 +165,8 @@ export function IsometricTile({
             transform: 'translate(-50%, -50%)',
           }}
         >
-
-          <div className="w-8 h-8 rounded-full flex items-center justify-center text-lg bg-emerald-500 text-white scale-110 shadow-lg shadow-emerald-500/40 animate-pulse">
-            <Plus className="h-5 w-5 drop-shadow-sm" />
+          <div className="w-7 h-7 rounded-full flex items-center justify-center bg-emerald-500 text-white shadow-md">
+            <Plus className="h-4 w-4" />
           </div>
         </div>
       )}
@@ -250,22 +194,33 @@ export function IsometricTile({
       {children && (
         <div
           className={cn(
-            "absolute pointer-events-none flex flex-col items-center transition-transform duration-200",
-            isHovered && "scale-110"
+            "absolute pointer-events-none flex flex-col items-center transition-all duration-200",
+            isHovered && !isSelectedForMove && "scale-105",
+            isSelectedForMove && "scale-90 -translate-y-2"
           )}
           style={{
             left: tileSize / 2,
-            // Position slightly above the center of merged area (shadow position)
             top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight) - 2,
-            // -100% moves bottom to anchor point
             transform: 'translate(-50%, -100%)',
             transformOrigin: 'bottom center',
-
-            // DEBUG: red border to see container bounds
-            // border: '2px solid red',
           }}
         >
           {children}
+        </div>
+      )}
+
+      {/* Preview plant - faded ghost showing where plant will be placed */}
+      {previewPlant && !children && (
+        <div
+          className="absolute pointer-events-none flex flex-col items-center opacity-50"
+          style={{
+            left: tileSize / 2,
+            top: tileHitHeight / 2 + getMergedAreaCenterOffset(previewPlant.grid_size || 1, tileHitHeight) - 2,
+            transform: 'translate(-50%, -100%)',
+            transformOrigin: 'bottom center',
+          }}
+        >
+          <IsometricPlant plant={previewPlant} />
         </div>
       )}
 
