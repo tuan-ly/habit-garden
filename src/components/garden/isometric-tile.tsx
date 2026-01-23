@@ -134,25 +134,30 @@ function IsometricTileComponent({
         />
       </svg>
 
-      {/* Simple hover highlight - no filters, no gradients */}
+      {/* Simple hover highlight - scales for multi-cell plants */}
       {isHovered && !isOccupiedByMultiCell && !isPartOfMultiCell && (
         <svg
           width={tileSize}
           height={tileSize / 2}
           viewBox={`0 0 ${tileSize} ${tileSize / 2}`}
-          className="absolute top-0 left-0 pointer-events-none"
+          className="absolute top-0 left-0 pointer-events-none overflow-visible"
         >
-          <polygon
-            points={`
-              ${tileSize / 2},0
-              ${tileSize},${tileSize / 4}
-              ${tileSize / 2},${tileSize / 2}
-              0,${tileSize / 4}
-            `}
-            fill="rgba(134,239,172,0.15)"
-            stroke="rgba(255,255,255,0.5)"
-            strokeWidth="2"
-          />
+          {(() => {
+            const size = previewPlant?.grid_size || 1
+            const top = ` ${tileSize / 2},0`
+            const right = ` ${tileSize / 2 + size * tileSize / 2},${size * tileSize / 4}`
+            const bottom = ` ${tileSize / 2},${size * tileSize / 2}`
+            const left = ` ${tileSize / 2 - size * tileSize / 2},${size * tileSize / 4}`
+
+            return (
+              <polygon
+                points={`${top} ${right} ${bottom} ${left}`}
+                fill="rgba(134,239,172,0.15)"
+                stroke="rgba(255,255,255,0.5)"
+                strokeWidth="2"
+              />
+            )
+          })()}
         </svg>
       )}
 
