@@ -18,6 +18,7 @@ import { getTimeOfDay, type TimeOfDay } from './themes'
 import { AddPlantDialog } from '@/components/plants/add-plant-dialog'
 import { PlantDetailSheet } from '@/components/plants/plant-detail-sheet'
 import { QuickLogModal } from '@/components/plants/quick-log-modal'
+import { WateringModal } from '@/components/plants/watering-modal'
 import {
   showAlreadyWateredToast,
   showWaterErrorToast,
@@ -105,6 +106,10 @@ export function IsometricGarden({
   } | null>(null)
   const [quickLogPlant, setQuickLogPlant] = useState<PlantWithType | null>(null)
   const [quickLogOpen, setQuickLogOpen] = useState(false)
+
+  // Watering modal state
+  const [wateringPlant, setWateringPlant] = useState<PlantWithType | null>(null)
+  const [wateringModalOpen, setWateringModalOpen] = useState(false)
 
   // Watering celebration state
   const [celebration, setCelebration] = useState<{
@@ -296,16 +301,30 @@ export function IsometricGarden({
       : false
   }, [])
 
-  // Handle quick water for simple (non-goal) plants
-  const handleQuickWater = useCallback(
-    async (plant: PlantWithType, tapPosition?: { x: number; y: number }) => {
-      // Check cooldown to prevent rapid clicking
-      if (actionCooldown.current.has(plant.id)) {
+  // Handle quick water request - opens modal instead of immediate action
+  const handleQuickWaterRequest = useCallback(
+    (plant: PlantWithType) => {
+      // Check if already watered
+      if (isWateredToday(plant)) {
+        showAlreadyWateredToast(plant.name)
         return
       }
 
-      if (isWateredToday(plant)) {
-        showAlreadyWateredToast(plant.name)
+      setWateringPlant(plant)
+      setWateringModalOpen(true)
+    },
+    [isWateredToday]
+  )
+
+  // Actual watering action (called from modal)
+  const handleWaterConfirm = useCallback(
+    async (notes?: string) => {
+      if (!wateringPlant) return
+
+      const plant = wateringPlant
+
+      // Check cooldown to prevent rapid clicking
+      if (actionCooldown.current.has(plant.id)) {
         return
       }
 
@@ -314,7 +333,7 @@ export function IsometricGarden({
 
       const estimatedXp = 10
       const estimatedStreak = plant.current_streak + 1
-      const celebrationPosition = tapPosition || {
+      const celebrationPosition = {
         x: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
         y: typeof window !== 'undefined' ? window.innerHeight / 2 : 300
       }
@@ -332,7 +351,7 @@ export function IsometricGarden({
       }
 
       try {
-        const result = await waterPlant(plant.id)
+        const result = await waterPlant(plant.id, { notes })
 
         if (!result.success) {
           showWaterErrorToast(result.error || 'Unknown error')
@@ -344,7 +363,7 @@ export function IsometricGarden({
         }, 3000)
       }
     },
-    [waterPlant, isWateredToday, gardenSettings.showCelebrations]
+    [wateringPlant, waterPlant, gardenSettings.showCelebrations]
   )
 
   // Track last tap time for double-tap detection
@@ -358,6 +377,7 @@ export function IsometricGarden({
       const now = Date.now()
       const timeSinceLastTap = now - lastTapTime.current
       const sameTarget = lastTapPlantId.current === plant.id
+      const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024 // Considering tablet as mobile touch target for behavior
 
       // Double-tap detection
       if (sameTarget && timeSinceLastTap < DOUBLE_TAP_THRESHOLD) {
@@ -373,15 +393,24 @@ export function IsometricGarden({
       lastTapTime.current = now
       lastTapPlantId.current = plant.id
 
-      // Single tap - water or log goal
+      // Mobile behavior: Tap opens card first (unless it's a goal log which might be direct? No, stay consistent)
+      if (isMobile) {
+        setFloatingCard({
+          plant,
+          position: tapPosition || { x: window.innerWidth / 2, y: window.innerHeight / 2 }
+        })
+        return
+      }
+
+      // Desktop behavior: Click directly opens action
       if (plant.goal_mode) {
         setQuickLogPlant(plant)
         setQuickLogOpen(true)
       } else {
-        handleQuickWater(plant, tapPosition)
+        handleQuickWaterRequest(plant)
       }
     },
-    [handleQuickWater]
+    [handleQuickWaterRequest]
   )
 
   // Handle right-click / long-press to show info card (all modes)
@@ -534,11 +563,11 @@ export function IsometricGarden({
         setQuickLogPlant(floatingCard.plant)
         setQuickLogOpen(true)
       } else {
-        handleQuickWater(floatingCard.plant)
+        handleQuickWaterRequest(floatingCard.plant)
       }
       setFloatingCard(null)
     }
-  }, [floatingCard, handleQuickWater])
+  }, [floatingCard, handleQuickWaterRequest])
 
   const handleTileHover = (row: number, col: number) => {
     const plant = occupiedCells.get(`${row}-${col}`)
@@ -819,6 +848,15 @@ export function IsometricGarden({
         todayValue={quickLogPlant?.today_value}
         unit={quickLogPlant?.goal?.unit || ''}
         estimatedXp={15}
+      />
+
+      {/* Watering modal for standard plants */}
+      <WateringModal
+        plant={wateringPlant}
+        open={wateringModalOpen}
+        onOpenChange={setWateringModalOpen}
+        onWater={handleWaterConfirm}
+        estimatedXp={10}
       />
 
       {/* Add plant dialog */}
