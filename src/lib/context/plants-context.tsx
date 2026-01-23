@@ -387,8 +387,11 @@ export function PlantsProvider({
       gridRow: number,
       gridCol: number
     ): Promise<MoveResult> => {
+      // Filter out dead plants for validation (consistent with isometric-garden)
+      const livingPlants = optimisticPlants.filter(p => p.status !== 'dead')
+
       // Validate move locally first
-      const validation = validatePlantMove(plantId, gridRow, gridCol, optimisticPlants)
+      const validation = validatePlantMove(plantId, gridRow, gridCol, livingPlants)
       if (!validation.valid) {
         toast.error('Cannot move plant', {
           description: validation.reason,
