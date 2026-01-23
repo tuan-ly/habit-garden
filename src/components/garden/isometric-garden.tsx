@@ -6,6 +6,7 @@ import { IsometricPlant } from './isometric-plant'
 import { PlantInfoBar } from './plant-tooltip'
 import { FloatingPlantCard } from './floating-plant-card'
 import { GroundPlane, type MultiCellArea } from './ground-plane'
+import { GroundPlaneCanvas } from './ground-plane-canvas'
 import { GardenDecorations } from './garden-decorations'
 import { AmbientParticles } from './ambient-particles'
 import { ZoomControls } from './zoom-controls'
@@ -659,18 +660,32 @@ export function IsometricGarden({
               />
             )}
 
-            {/* Single unified ground plane */}
-            <GroundPlane
-              gridSize={gridSize}
-              tileSize={tileSize}
-              grassColor={defaultTheme.ground.primary}
-              grassDarkColor={defaultTheme.ground.secondary}
-              multiCellAreas={multiCellAreas}
-              hoveredMultiCellArea={hoveredMultiCellArea}
-              dragTargetCell={moveState.selectedPlant ? moveState.previewCell : null}
-              dragPlantSize={moveState.selectedPlant?.grid_size || 1}
-              isDragTargetValid={moveState.isValidPreview}
-            />
+            {/* Single unified ground plane - Canvas or SVG based on settings */}
+            {gardenSettings.useCanvasRenderer ? (
+              <GroundPlaneCanvas
+                gridSize={gridSize}
+                tileSize={tileSize}
+                grassColor={defaultTheme.ground.primary}
+                grassDarkColor={defaultTheme.ground.secondary}
+                multiCellAreas={multiCellAreas}
+                hoveredMultiCellArea={hoveredMultiCellArea}
+                dragTargetCell={moveState.selectedPlant ? moveState.previewCell : null}
+                dragPlantSize={moveState.selectedPlant?.grid_size || 1}
+                isDragTargetValid={moveState.isValidPreview}
+              />
+            ) : (
+              <GroundPlane
+                gridSize={gridSize}
+                tileSize={tileSize}
+                grassColor={defaultTheme.ground.primary}
+                grassDarkColor={defaultTheme.ground.secondary}
+                multiCellAreas={multiCellAreas}
+                hoveredMultiCellArea={hoveredMultiCellArea}
+                dragTargetCell={moveState.selectedPlant ? moveState.previewCell : null}
+                dragPlantSize={moveState.selectedPlant?.grid_size || 1}
+                isDragTargetValid={moveState.isValidPreview}
+              />
+            )}
 
             {/* Ambient particles - reduced for performance */}
             {gardenSettings.showParticles && (
