@@ -3,6 +3,7 @@
 import { cn } from '@/lib/utils'
 import type { PlantWithType } from '@/types/database'
 import { PlantOverlayBadge } from './plant-overlay-badge'
+import { Plus } from 'lucide-react'
 
 interface IsometricTileProps {
   row: number
@@ -219,8 +220,9 @@ export function IsometricTile({
             transform: 'translate(-50%, -50%)',
           }}
         >
-          <div className="w-8 h-8 rounded-full flex items-center justify-center text-lg font-bold bg-emerald-500 text-white scale-110 shadow-lg shadow-emerald-500/40 animate-pulse">
-            +
+
+          <div className="w-8 h-8 rounded-full flex items-center justify-center text-lg bg-emerald-500 text-white scale-110 shadow-lg shadow-emerald-500/40 animate-pulse">
+            <Plus className="h-5 w-5 drop-shadow-sm" />
           </div>
         </div>
       )}
