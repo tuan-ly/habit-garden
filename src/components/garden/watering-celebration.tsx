@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { cn } from '@/lib/utils'
 
 interface WateringCelebrationProps {
@@ -36,6 +36,10 @@ export function WateringCelebration({
   const [phase, setPhase] = useState<'idle' | 'splash' | 'celebrate' | 'fadeout'>('idle')
   const [sparkles, setSparkles] = useState<Array<{ id: number; x: number; y: number; delay: number }>>([])
   const [waterDrops, setWaterDrops] = useState<Array<{ id: number; x: number; delay: number }>>([])
+
+  // Use ref for onComplete to avoid re-triggering effect when callback changes
+  const onCompleteRef = useRef(onComplete)
+  onCompleteRef.current = onComplete
 
   useEffect(() => {
     if (!isActive) {
@@ -76,7 +80,7 @@ export function WateringCelebration({
     // Complete (3s)
     const completeTimer = setTimeout(() => {
       setPhase('idle')
-      onComplete?.()
+      onCompleteRef.current?.()
     }, 3000)
 
     return () => {
@@ -84,7 +88,7 @@ export function WateringCelebration({
       clearTimeout(fadeoutTimer)
       clearTimeout(completeTimer)
     }
-  }, [isActive, onComplete])
+  }, [isActive])
 
   if (phase === 'idle') return null
 

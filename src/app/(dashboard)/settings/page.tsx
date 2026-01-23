@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { User, Bell, Shield, Palette } from 'lucide-react'
+import { PerformanceSettings } from '@/components/settings/performance-settings'
 
 export default async function SettingsPage() {
   const supabase = await createClient()
@@ -117,6 +118,9 @@ export default async function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Performance */}
+      <PerformanceSettings />
 
       {/* Security */}
       <Card>

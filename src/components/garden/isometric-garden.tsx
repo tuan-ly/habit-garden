@@ -20,7 +20,7 @@ import {
   showAlreadyWateredToast,
   showWaterErrorToast,
 } from '@/components/plants/water-toast'
-import { usePlants } from '@/lib/context'
+import { usePlants, useGardenSettingsOptional } from '@/lib/context'
 import { useGardenZoom } from '@/lib/hooks'
 import type { PlantWithType, PlantType, WeatherType } from '@/types/database'
 import { defaultTheme } from './themes'
@@ -56,6 +56,9 @@ export function IsometricGarden({
 }: IsometricGardenProps) {
   // Get plants from context with optimistic updates
   const { plants, waterPlant, logGoal, movePlant } = usePlants()
+
+  // Get garden settings for performance optimization
+  const gardenSettings = useGardenSettingsOptional()
 
   // Zoom and pan state management
   const {
@@ -122,6 +125,9 @@ export function IsometricGarden({
     isValidPreview: false,
   })
 
+  // Cooldown tracking to prevent multiple rapid watering/logging clicks
+  const actionCooldown = useRef<Set<string>>(new Set())
+
   // Use default tile size on server, actual size on client
   const [tileSize, setTileSize] = useState(DEFAULT_TILE_SIZE)
 
@@ -132,7 +138,7 @@ export function IsometricGarden({
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Prevent browser zoom on Ctrl+scroll globally
+  // Prevent browser zoom on Ctrl+scroll and pinch-to-zoom globally
   useEffect(() => {
     const preventBrowserZoom = (e: WheelEvent) => {
       if (e.ctrlKey) {
@@ -140,11 +146,22 @@ export function IsometricGarden({
       }
     }
 
+    // Prevent browser pinch-to-zoom on touch devices
+    const preventTouchZoom = (e: TouchEvent) => {
+      if (e.touches.length >= 2) {
+        e.preventDefault()
+      }
+    }
+
     // Use passive: false to allow preventDefault
     document.addEventListener('wheel', preventBrowserZoom, { passive: false })
+    document.addEventListener('touchmove', preventTouchZoom, { passive: false })
+    document.addEventListener('touchstart', preventTouchZoom, { passive: false })
 
     return () => {
       document.removeEventListener('wheel', preventBrowserZoom)
+      document.removeEventListener('touchmove', preventTouchZoom)
+      document.removeEventListener('touchstart', preventTouchZoom)
     }
   }, [])
 
@@ -263,10 +280,18 @@ export function IsometricGarden({
   // Handle quick water for simple (non-goal) plants
   const handleQuickWater = useCallback(
     async (plant: PlantWithType, tapPosition?: { x: number; y: number }) => {
+      // Check cooldown to prevent rapid clicking
+      if (actionCooldown.current.has(plant.id)) {
+        return
+      }
+
       if (isWateredToday(plant)) {
         showAlreadyWateredToast(plant.name)
         return
       }
+
+      // Add to cooldown immediately
+      actionCooldown.current.add(plant.id)
 
       const estimatedXp = 10
       const estimatedStreak = plant.current_streak + 1
@@ -275,22 +300,32 @@ export function IsometricGarden({
         y: typeof window !== 'undefined' ? window.innerHeight / 2 : 300
       }
 
-      setCelebration({
-        active: true,
-        position: celebrationPosition,
-        xpEarned: estimatedXp,
-        plantName: plant.name,
-        plantIcon: plant.plant_type.icon,
-        streakCount: estimatedStreak,
-      })
+      // Only show celebration if enabled
+      if (gardenSettings.showCelebrations) {
+        setCelebration({
+          active: true,
+          position: celebrationPosition,
+          xpEarned: estimatedXp,
+          plantName: plant.name,
+          plantIcon: plant.plant_type.icon,
+          streakCount: estimatedStreak,
+        })
+      }
 
-      const result = await waterPlant(plant.id)
+      try {
+        const result = await waterPlant(plant.id)
 
-      if (!result.success) {
-        showWaterErrorToast(result.error || 'Unknown error')
+        if (!result.success) {
+          showWaterErrorToast(result.error || 'Unknown error')
+        }
+      } finally {
+        // Remove from cooldown after 3 seconds (celebration duration)
+        setTimeout(() => {
+          actionCooldown.current.delete(plant.id)
+        }, 3000)
       }
     },
-    [waterPlant, isWateredToday]
+    [waterPlant, isWateredToday, gardenSettings.showCelebrations]
   )
 
   // Track last tap time for double-tap detection
@@ -415,29 +450,48 @@ export function IsometricGarden({
       if (!quickLogPlant) return
 
       const plant = quickLogPlant
+
+      // Check cooldown to prevent rapid clicking
+      if (actionCooldown.current.has(plant.id)) {
+        return
+      }
+
+      // Add to cooldown immediately
+      actionCooldown.current.add(plant.id)
+
       const estimatedXp = 15
       const isFirstLogToday = (plant.today_log_count || 0) === 0
       const estimatedStreak = isFirstLogToday ? plant.current_streak + 1 : plant.current_streak
 
-      setCelebration({
-        active: true,
-        position: {
-          x: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
-          y: typeof window !== 'undefined' ? window.innerHeight / 2 : 300,
-        },
-        xpEarned: estimatedXp,
-        plantName: plant.name,
-        plantIcon: plant.plant_type.icon,
-        streakCount: estimatedStreak,
-      })
+      // Only show celebration if enabled
+      if (gardenSettings.showCelebrations) {
+        setCelebration({
+          active: true,
+          position: {
+            x: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
+            y: typeof window !== 'undefined' ? window.innerHeight / 2 : 300,
+          },
+          xpEarned: estimatedXp,
+          plantName: plant.name,
+          plantIcon: plant.plant_type.icon,
+          streakCount: estimatedStreak,
+        })
+      }
 
-      const result = await logGoal(plant.id, value, notes)
+      try {
+        const result = await logGoal(plant.id, value, notes)
 
-      if (!result.success) {
-        showWaterErrorToast(result.error || 'Failed to log')
+        if (!result.success) {
+          showWaterErrorToast(result.error || 'Failed to log')
+        }
+      } finally {
+        // Remove from cooldown after 3 seconds (celebration duration)
+        setTimeout(() => {
+          actionCooldown.current.delete(plant.id)
+        }, 3000)
       }
     },
-    [quickLogPlant, logGoal]
+    [quickLogPlant, logGoal, gardenSettings.showCelebrations]
   )
 
   // Close floating card
@@ -513,7 +567,7 @@ export function IsometricGarden({
   }, [])
 
   return (
-    <div className="relative w-full h-full flex flex-col">
+    <div className="relative w-full h-full flex flex-col select-none">
       {/* Mode toolbar - fixed position on left side */}
       <ModeToolbar
         mode={mode}
@@ -567,6 +621,8 @@ export function IsometricGarden({
               : mode === 'add'
                 ? 'cell'
                 : 'default',
+          WebkitUserSelect: 'none',
+          WebkitTouchCallout: 'none',
         }}
         onWheel={bindGestures.onWheel}
         onTouchStart={bindGestures.onTouchStart}
@@ -595,11 +651,13 @@ export function IsometricGarden({
             }}
           >
             {/* Garden decorations */}
-            <GardenDecorations
-              gridSize={gridSize}
-              tileSize={tileSize}
-              timeOfDay={currentTimeOfDay}
-            />
+            {gardenSettings.showDecorations && (
+              <GardenDecorations
+                gridSize={gridSize}
+                tileSize={tileSize}
+                timeOfDay={currentTimeOfDay}
+              />
+            )}
 
             {/* Single unified ground plane */}
             <GroundPlane
@@ -615,10 +673,12 @@ export function IsometricGarden({
             />
 
             {/* Ambient particles - reduced for performance */}
-            <AmbientParticles
-              weather={weather}
-              timeOfDay={currentTimeOfDay}
-            />
+            {gardenSettings.showParticles && (
+              <AmbientParticles
+                weather={gardenSettings.showWeatherEffects ? weather : null}
+                timeOfDay={currentTimeOfDay}
+              />
+            )}
 
             {/* Interactive tile zones */}
             {tiles.map(({ row, col, plant, isAnchor, isOccupiedByMultiCell }) => {
@@ -736,15 +796,17 @@ export function IsometricGarden({
       />
 
       {/* Watering celebration effect */}
-      <WateringCelebration
-        isActive={celebration?.active ?? false}
-        position={celebration?.position}
-        xpEarned={celebration?.xpEarned}
-        plantName={celebration?.plantName}
-        plantIcon={celebration?.plantIcon}
-        streakCount={celebration?.streakCount}
-        onComplete={() => setCelebration(null)}
-      />
+      {gardenSettings.showCelebrations && (
+        <WateringCelebration
+          isActive={celebration?.active ?? false}
+          position={celebration?.position}
+          xpEarned={celebration?.xpEarned}
+          plantName={celebration?.plantName}
+          plantIcon={celebration?.plantIcon}
+          streakCount={celebration?.streakCount}
+          onComplete={() => setCelebration(null)}
+        />
+      )}
     </div>
   )
 }

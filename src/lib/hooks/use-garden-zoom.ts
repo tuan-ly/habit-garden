@@ -227,6 +227,9 @@ export function useGardenZoom(options: UseGardenZoomOptions = {}): UseGardenZoom
   const handlePinchTouchStart = useCallback(
     (e: React.TouchEvent) => {
       if (e.touches.length === 2) {
+        // Prevent browser zoom on pinch start
+        e.preventDefault()
+
         initialDistance.current = getTouchDistance(e.touches)
         initialZoom.current = zoom
         pinchCenter.current = getTouchCenter(e.touches)
@@ -239,6 +242,9 @@ export function useGardenZoom(options: UseGardenZoomOptions = {}): UseGardenZoom
   const handlePinchTouchMove = useCallback(
     (e: React.TouchEvent) => {
       if (e.touches.length === 2 && initialDistance.current !== null) {
+        // Prevent browser zoom on pinch
+        e.preventDefault()
+
         const currentDistance = getTouchDistance(e.touches)
         const scale = currentDistance / initialDistance.current
         const newZoom = clampZoom(initialZoom.current * scale)
@@ -395,6 +401,8 @@ export function useGardenZoom(options: UseGardenZoomOptions = {}): UseGardenZoom
   const handleCombinedTouchStart = useCallback(
     (e: React.TouchEvent) => {
       if (e.touches.length === 2) {
+        // Prevent browser zoom - handle app zoom instead
+        e.preventDefault()
         handlePinchTouchStart(e)
         setIsPanning(false)
         panStartPos.current = null
@@ -408,6 +416,8 @@ export function useGardenZoom(options: UseGardenZoomOptions = {}): UseGardenZoom
   const handleCombinedTouchMove = useCallback(
     (e: React.TouchEvent) => {
       if (e.touches.length === 2) {
+        // Prevent browser zoom - handle app zoom instead
+        e.preventDefault()
         handlePinchTouchMove(e)
       } else if (e.touches.length === 1) {
         handlePanTouchMove(e)

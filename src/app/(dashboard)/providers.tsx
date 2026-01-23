@@ -2,6 +2,7 @@
 
 import { MoodProvider } from '@/lib/context/mood-context'
 import { WeedsProvider } from '@/lib/context/weeds-context'
+import { GardenSettingsProvider } from '@/lib/context/garden-settings-context'
 import type { MoodLevel } from '@/lib/mood-system'
 import type { ReactNode } from 'react'
 
@@ -18,7 +19,9 @@ export function DashboardProviders({
 }: DashboardProvidersProps) {
   return (
     <MoodProvider initialMood={initialMood}>
-      <WeedsProvider initialWeeds={initialWeeds}>{children}</WeedsProvider>
+      <WeedsProvider initialWeeds={initialWeeds}>
+        <GardenSettingsProvider>{children}</GardenSettingsProvider>
+      </WeedsProvider>
     </MoodProvider>
   )
 }

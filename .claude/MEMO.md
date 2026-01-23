@@ -22,6 +22,21 @@
 
 ## Recent Sessions
 
+### 2026-01-23: Performance Settings & Mobile UX Fixes
+**Changes**:
+- Added GardenSettings context for toggling visual effects (particles, decorations, celebrations)
+- Created Performance settings UI in settings page with toggle switches
+- Fixed watering animation bug (multiple clicks causing repeated animations) with cooldown mechanism
+- Prevented text selection on garden page (`select-none`, `WebkitTouchCallout`)
+- Prevented browser pinch-to-zoom (app zoom only) with `preventDefault` on touch events
+
+**Key files changed**:
+- [garden-settings-context.tsx](src/lib/context/garden-settings-context.tsx) - NEW
+- [performance-settings.tsx](src/components/settings/performance-settings.tsx) - NEW
+- [switch.tsx](src/components/ui/switch.tsx) - NEW
+- [isometric-garden.tsx](src/components/garden/isometric-garden.tsx) - Integrated settings, cooldown fix, selection prevention
+- [use-garden-zoom.ts](src/lib/hooks/use-garden-zoom.ts) - Prevent browser pinch zoom
+
 ### 2026-01-23: Performance Optimization - Click-to-Move
 **Changes**:
 - Replaced drag-and-drop with click-to-select, click-to-place for better performance
