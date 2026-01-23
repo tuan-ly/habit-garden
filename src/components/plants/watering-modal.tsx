@@ -11,7 +11,9 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Droplets, Loader2, Sprout } from 'lucide-react'
+import { Droplets, Loader2, Sprout, ArrowUpRight, Move } from 'lucide-react'
+import { resolveGrowthConflict } from '@/lib/actions/plants'
+import { toast } from "sonner"
 
 interface WateringModalProps {
     plant: PlantWithType | null
@@ -34,6 +36,7 @@ export function WateringModal({
 }: WateringModalProps) {
     const [notes, setNotes] = useState('')
     const [isWatering, setIsWatering] = useState(false)
+    const [isResolving, setIsResolving] = useState(false)
     const notesRef = useRef<HTMLTextAreaElement>(null)
 
     // Reset state when modal opens
@@ -57,6 +60,30 @@ export function WateringModal({
             onOpenChange(false)
         } finally {
             setIsWatering(false)
+        }
+    }
+
+    const handleResolveConflict = async () => {
+        if (isResolving || !plant) return
+        setIsResolving(true)
+        try {
+            const result = await resolveGrowthConflict(plant.id)
+            if (result.success) {
+                toast.success("Garden Rearranged!", {
+                    description: `${plant.name} has grown and neighbors have been moved.`
+                })
+                onOpenChange(false)
+            } else {
+                toast.error("Could not expand", {
+                    description: result.error || "Failed to rearrange garden."
+                })
+            }
+        } catch (error) {
+            toast.error("Error", {
+                description: "Something went wrong."
+            })
+        } finally {
+            setIsResolving(false)
         }
     }
 
@@ -88,6 +115,41 @@ export function WateringModal({
                     <div className="p-3 rounded-lg bg-emerald-900/20 border border-emerald-500/20 text-sm text-emerald-200">
                         <p>Taking a moment to nurture your habit helps it grow strong.</p>
                     </div>
+
+                    {/* Growth Conflict Resolution */}
+                    {plant.growth_blocked && (
+                        <div className="p-4 rounded-lg bg-amber-900/20 border border-amber-500/20 space-y-3">
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 bg-amber-500/10 rounded-full">
+                                    <Move className="w-5 h-5 text-amber-500" />
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-semibold text-amber-200">Needs Space to Grow!</h4>
+                                    <p className="text-xs text-amber-200/70 mt-1">
+                                        This plant is ready to expand but is blocked by neighbors.
+                                    </p>
+                                </div>
+                            </div>
+                            <Button
+                                onClick={handleResolveConflict}
+                                disabled={isResolving}
+                                className="w-full bg-amber-600 hover:bg-amber-700 text-white border-amber-500"
+                                size="sm"
+                            >
+                                {isResolving ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        Rearranging...
+                                    </>
+                                ) : (
+                                    <>
+                                        <ArrowUpRight className="w-4 h-4 mr-2" />
+                                        Expand & Auto-Arrange
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                    )}
 
                     {/* Notes */}
                     <div>

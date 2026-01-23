@@ -10,6 +10,8 @@ import { calculateXpWithMood, getMoodBonusXp, getMoodConfig } from '@/lib/mood-s
 import {
   calculateRequiredGridSize,
   findNextAvailablePosition,
+  hasCollision,
+  findDisplacementMoves,
 } from '@/lib/utils/grid-positioning'
 
 export async function getPlants(): Promise<PlantWithType[]> {
@@ -398,6 +400,48 @@ export async function waterPlant(
   // Determine if plant has matured
   const hasMatured = newGrowth >= 100 && plant.status === 'growing'
 
+  // Calculate potential grid size expansion
+  // Logic: Mature -> 2x2, 1 Year -> 3x3, 2 Years -> 4x4
+  let targetGridSize = 1
+  if (totalWaterings >= 730) targetGridSize = 4 // 2 years (~730 days)
+  else if (totalWaterings >= 365) targetGridSize = 3 // 1 year
+  else if (newGrowth >= 100) targetGridSize = 2 // Mature
+
+  // Only attempt to grow, never shrink
+  targetGridSize = Math.max(targetGridSize, plant.grid_size)
+
+  let finalGridSize = plant.grid_size
+
+  // If growth is needed, check for space
+  if (targetGridSize > plant.grid_size) {
+    // Fetch all plants to check for collision
+    const { data: livingPlants } = await supabase
+      .from('plants')
+      .select('id, grid_row, grid_col, grid_size')
+      .eq('user_id', user.id)
+      .neq('status', 'dead')
+
+    if (livingPlants) {
+      const testPlant = {
+        grid_row: plant.grid_row,
+        grid_col: plant.grid_col,
+        grid_size: targetGridSize,
+      }
+
+      // Check violation excluding itself
+      const collision = hasCollision(testPlant, livingPlants, plant.id)
+      
+      if (!collision) {
+        finalGridSize = targetGridSize
+      } 
+      // NEW: If collision exists, we don't grow yet, but we mark it as blocked ONLY if it SHOULD grow
+      // This will trigger the UI to show the "Needs Space" indicator
+      else {
+         // It keeps current size, but we'll flag it in the update
+      }
+    }
+  }
+
   // Create watering log
   const { error: logError } = await supabase
     .from('watering_logs')
@@ -429,6 +473,9 @@ export async function waterPlant(
       last_watered_at: new Date().toISOString(),
       status: hasMatured ? 'mature' : plant.status,
       matured_at: hasMatured ? new Date().toISOString() : plant.matured_at,
+      grid_size: finalGridSize,
+      // Flag as blocked if we wanted to grow but couldn't
+      growth_blocked: targetGridSize > finalGridSize, 
       updated_at: new Date().toISOString(),
     })
     .eq('id', plantId)
@@ -472,6 +519,85 @@ export async function waterPlant(
     moodBonusXp: moodBonusXp > 0 ? moodBonusXp : undefined,
     newAchievements,
   }
+}
+
+/**
+ * Attempt to resolve a growth conflict by moving neighbors
+ */
+export async function resolveGrowthConflict(plantId: string): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
+
+  // 1. Get the plant
+  const { data: plant } = await supabase
+    .from('plants')
+    .select('*, plant_type:plant_types(*)')
+    .eq('id', plantId)
+    .single()
+
+  if (!plant) return { success: false, error: 'Plant not found' }
+
+  // 2. Determine target size (re-calculate to be safe)
+  // Logic duplication from waterPlant - ideally refactor grid logic to shared helper
+  let targetGridSize = 1
+  if (plant.total_waterings >= 730) targetGridSize = 4
+  else if (plant.total_waterings >= 365) targetGridSize = 3
+  else if (plant.growth_percentage >= 100) targetGridSize = 2
+  
+  targetGridSize = Math.max(targetGridSize, plant.grid_size)
+
+  if (targetGridSize <= plant.grid_size) {
+    return { success: false, error: 'Plant does not need to grow' }
+  }
+
+  // 3. Get all plants
+  const { data: livingPlants } = await supabase
+    .from('plants')
+    .select('id, grid_row, grid_col, grid_size')
+    .eq('user_id', user.id)
+    .neq('status', 'dead')
+
+  if (!livingPlants) return { success: false, error: 'Could not fetch garden data' }
+
+  // 4. Calculate moves
+  const targetArea = {
+    grid_row: plant.grid_row,
+    grid_col: plant.grid_col,
+    grid_size: targetGridSize
+  }
+
+  const moves = findDisplacementMoves(targetArea, livingPlants, plant.id)
+
+  if (!moves) {
+    return { success: false, error: 'Could not find space for neighbors. Garden might be too full.' }
+  }
+
+  // 5. Execute moves
+  // We'll do this serially for now. In a real tx we'd use rpc or batched updates.
+  /* 
+    TODO: If we have many moves, this might be slow or partial-fail. 
+    However, for < 50 plants, it's fast enough. 
+  */
+  for (const [id, pos] of moves.entries()) {
+    await supabase.from('plants').update({
+      grid_row: pos.row,
+      grid_col: pos.col
+    }).eq('id', id)
+  }
+
+  // 6. Grow the main plant and clear blocked flag
+  const { error: updateError } = await supabase.from('plants').update({
+    grid_size: targetGridSize,
+    growth_blocked: false
+  }).eq('id', plantId)
+
+  if (updateError) {
+    return { success: false, error: 'Failed to update plant size' }
+  }
+
+  revalidatePath('/garden')
+  return { success: true }
 }
 
 // Check and unlock achievements after an action

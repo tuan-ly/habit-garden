@@ -60,6 +60,17 @@ function IsometricPlantComponent({
         showWateringEffect={showWateringEffect}
         alignBottom
       />
+
+      {/* Growth Blocked Indicator */}
+      {plant.growth_blocked && (
+        <div
+          className="absolute -top-12 left-1/2 -translate-x-1/2 z-20 animate-bounce pointer-events-none"
+        >
+          <div className="bg-rose-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg border border-rose-400 whitespace-nowrap flex items-center gap-1">
+            <span>⚠️</span> Needs Space!
+          </div>
+        </div>
+      )}
     </div>
   )
 }

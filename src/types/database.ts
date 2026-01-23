@@ -93,6 +93,8 @@ export interface Plant {
   grid_size: number // Number of cells in one dimension (1 = 1x1, 2 = 2x2, etc.)
   grid_row: number // Top-left row position in garden grid
   grid_col: number // Top-left col position in garden grid
+  // Conflict status
+  growth_blocked?: boolean // Computed flag: true if plant wants to grow but is blocked
   // Weeds system
   weed_count: number
   last_weed_added: string | null
