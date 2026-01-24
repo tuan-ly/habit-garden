@@ -77,16 +77,18 @@ export function WateringModal({
         }
     }, [open])
 
-    const handleWater = async () => {
+    const handleWater = () => {
         if (isWatering) return
 
         setIsWatering(true)
-        try {
-            await onWater(notes.trim() || undefined)
-            onOpenChange(false)
-        } finally {
+
+        // Close modal immediately for snappy UX (optimistic)
+        onOpenChange(false)
+
+        // Fire and forget - let celebration start while server processes
+        onWater(notes.trim() || undefined).finally(() => {
             setIsWatering(false)
-        }
+        })
     }
 
     const handleResolveConflict = async () => {
