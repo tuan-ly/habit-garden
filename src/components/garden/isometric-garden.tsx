@@ -341,31 +341,37 @@ export function IsometricGarden({
       // Add to cooldown immediately
       actionCooldown.current.add(plant.id)
 
-      const estimatedXp = 10
-      const estimatedStreak = plant.current_streak + 1
       const celebrationPosition = {
         x: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
         y: typeof window !== 'undefined' ? window.innerHeight / 2 : 300
       }
 
-      // Only show celebration if enabled
-      if (gardenSettings.showCelebrations) {
-        setCelebration({
-          active: true,
-          position: celebrationPosition,
-          xpEarned: estimatedXp,
-          plantName: plant.name,
-          plantIcon: plant.plant_type.icon,
-          streakCount: estimatedStreak,
-        })
-      }
-
       try {
+        // Call server FIRST, then show celebration with actual values
         const result = await waterPlant(plant.id, { notes })
 
-        if (!result.success) {
-          showWaterErrorToast(result.error || 'Unknown error')
+        if (result.success) {
+          // Only show celebration on success with actual XP from server
+          if (gardenSettings.showCelebrations) {
+            setCelebration({
+              active: true,
+              position: celebrationPosition,
+              xpEarned: result.xpEarned || 10,
+              plantName: plant.name,
+              plantIcon: plant.plant_type.icon,
+              streakCount: plant.current_streak + 1,
+            })
+          }
+        } else {
+          // Show appropriate error
+          if (result.error === 'Already watered today') {
+            showAlreadyWateredToast(plant.name)
+          } else {
+            showWaterErrorToast(result.error || 'Unknown error')
+          }
         }
+      } catch (error) {
+        showWaterErrorToast('Failed to water plant')
       } finally {
         // Remove from cooldown after 3 seconds (celebration duration)
         setTimeout(() => {
@@ -517,31 +523,32 @@ export function IsometricGarden({
       // Add to cooldown immediately
       actionCooldown.current.add(plant.id)
 
-      const estimatedXp = 15
       const isFirstLogToday = (plant.today_log_count || 0) === 0
-      const estimatedStreak = isFirstLogToday ? plant.current_streak + 1 : plant.current_streak
-
-      // Only show celebration if enabled
-      if (gardenSettings.showCelebrations) {
-        setCelebration({
-          active: true,
-          position: {
-            x: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
-            y: typeof window !== 'undefined' ? window.innerHeight / 2 : 300,
-          },
-          xpEarned: estimatedXp,
-          plantName: plant.name,
-          plantIcon: plant.plant_type.icon,
-          streakCount: estimatedStreak,
-        })
-      }
 
       try {
+        // Call server FIRST, then show celebration with actual values
         const result = await logGoal(plant.id, value, notes)
 
-        if (!result.success) {
+        if (result.success) {
+          // Only show celebration on success with actual XP from server
+          if (gardenSettings.showCelebrations) {
+            setCelebration({
+              active: true,
+              position: {
+                x: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
+                y: typeof window !== 'undefined' ? window.innerHeight / 2 : 300,
+              },
+              xpEarned: result.xpEarned || 15,
+              plantName: plant.name,
+              plantIcon: plant.plant_type.icon,
+              streakCount: isFirstLogToday ? plant.current_streak + 1 : plant.current_streak,
+            })
+          }
+        } else {
           showWaterErrorToast(result.error || 'Failed to log')
         }
+      } catch (error) {
+        showWaterErrorToast('Failed to log progress')
       } finally {
         // Remove from cooldown after 3 seconds (celebration duration)
         setTimeout(() => {
@@ -866,7 +873,16 @@ export function IsometricGarden({
         open={wateringModalOpen}
         onOpenChange={setWateringModalOpen}
         onWater={handleWaterConfirm}
-        estimatedXp={10}
+        estimatedXp={(() => {
+          // Calculate better estimate based on streak
+          const streak = (wateringPlant?.current_streak || 0) + 1
+          let xp = 10 // Base
+          if (streak >= 30) xp += 50
+          else if (streak >= 14) xp += 30
+          else if (streak >= 7) xp += 15
+          else if (streak >= 3) xp += 5
+          return xp
+        })()}
         journalStreak={journalStreak}
       />
 
