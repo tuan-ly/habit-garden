@@ -91,6 +91,7 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
         <IsometricGarden
           plantTypes={plantTypes}
           weather={displayWeather}
+          journalStreak={profile?.journal_streak ?? 0}
         />
 
         <AddPlantDialog
@@ -125,6 +126,7 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
           <IsometricGarden
             plantTypes={plantTypes}
             weather={displayWeather}
+            journalStreak={profile?.journal_streak ?? 0}
           />
         </div>
       )}

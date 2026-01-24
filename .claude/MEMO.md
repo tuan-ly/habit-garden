@@ -1,6 +1,6 @@
 # Habit Garden - Project Memo
 
-> **Last Updated**: 2026-01-23
+> **Last Updated**: 2026-01-24
 > **Phase**: 4 - Polish & Launch
 > **Stack**: Next.js 16, Supabase, Tailwind CSS 4, shadcn/ui
 
@@ -13,7 +13,7 @@
 | Auth | ✅ Complete |
 | Garden/Plants | ✅ Complete |
 | Watering System | ✅ Complete |
-| Gamification | ✅ Complete (XP, achievements, weather, streaks) |
+| Gamification | ✅ Complete (XP, achievements, weather, streaks, **journal rewards**) |
 | Goal Tracking | ✅ Complete (Build Capacity + Total Progress modes) |
 | Adaptive Goals | ✅ Complete |
 | PWA/UI Polish | ✅ Mostly complete |
@@ -21,6 +21,28 @@
 ---
 
 ## Recent Sessions
+
+### 2026-01-24: Journal/Notes Reward System & Database Fixes
+**Changes**:
+- Added `growth_blocked` column to plants table (fix watering error)
+- Created journal/notes reward system with XP bonuses:
+  - +3 XP for any note, +2 for >50 chars, +2 for >100 chars
+  - Journal streak tracking with bonus XP (3/5/8/12 for 3/7/14/30 days)
+- Added 8 new journal achievements to database
+- Updated watering modal UX with note bonus indicators and tips
+- Added journal_streak, longest_journal_streak, last_journal_date, total_journal_entries to profiles
+
+**Key files changed**:
+- [plants.ts](src/lib/actions/plants.ts) - Note bonus XP, journal streak tracking
+- [xp-system.ts](src/lib/xp-system.ts) - Added calculateNoteBonus function
+- [watering-modal.tsx](src/components/plants/watering-modal.tsx) - Journal UX with bonus tiers
+- [database.ts](src/types/database.ts) - Added journal fields to Profile type
+- [garden-view.tsx](src/components/garden/garden-view.tsx) - Pass journalStreak prop
+- [isometric-garden.tsx](src/components/garden/isometric-garden.tsx) - Accept journalStreak prop
+
+**Database migrations applied**:
+- `add_growth_blocked_column` - plants.growth_blocked BOOLEAN
+- `add_journal_tracking_system` - profiles journal fields + achievements
 
 ### 2026-01-23: Performance Settings & Mobile UX Fixes
 **Changes**:

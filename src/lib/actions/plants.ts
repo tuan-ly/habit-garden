@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import type { CreatePlantDto, PlantWithType, PlantType, Difficulty, WeatherType, PlantGoalInfo, TodayGoalLog } from '@/types/database'
 import { getTodayWeather, calculateWeatherXp } from '@/lib/weather-system'
-import { calculateWateringXp } from '@/lib/xp-system'
+import { calculateWateringXp, calculateNoteBonus } from '@/lib/xp-system'
 import { getTodayMood } from '@/lib/actions/mood'
 import { calculateXpWithMood, getMoodBonusXp, getMoodConfig } from '@/lib/mood-system'
 import {
@@ -313,6 +313,8 @@ export async function waterPlant(
   weatherType?: string
   moodWeather?: string
   moodBonusXp?: number
+  noteBonusXp?: number
+  journalStreak?: number
   newAchievements?: string[]
   error?: string
 }> {
@@ -387,8 +389,42 @@ export async function waterPlant(
   const weatherXp = calculateWeatherXp(baseTotal, weather.type)
 
   // Apply mood XP bonus (tough days earn more XP!)
-  const totalXp = calculateXpWithMood(weatherXp, todayMood)
+  const baseXpWithMood = calculateXpWithMood(weatherXp, todayMood)
   const moodBonusXp = getMoodBonusXp(weatherXp, todayMood)
+
+  // Get current journal streak for note bonus calculation
+  const { data: journalProfile } = await supabase
+    .from('profiles')
+    .select('journal_streak, longest_journal_streak, last_journal_date, total_journal_entries')
+    .eq('id', user.id)
+    .single()
+
+  const lastJournalDate = journalProfile?.last_journal_date
+  const currentJournalStreak = journalProfile?.journal_streak || 0
+
+  // Calculate note bonus if notes provided
+  let noteBonusXp = 0
+  let newJournalStreak = currentJournalStreak
+  const hasNote = options?.notes && options.notes.trim().length > 0
+
+  if (hasNote) {
+    // Calculate new journal streak
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+    if (lastJournalDate === yesterday) {
+      newJournalStreak = currentJournalStreak + 1
+    } else if (lastJournalDate !== today) {
+      newJournalStreak = 1 // Reset streak if not consecutive
+    }
+    // If already wrote today, keep current streak
+
+    const noteResult = calculateNoteBonus({
+      noteLength: options!.notes!.trim().length,
+      journalStreak: newJournalStreak,
+    })
+    noteBonusXp = noteResult.total
+  }
+
+  const totalXp = baseXpWithMood + noteBonusXp
 
   // Calculate new moisture and growth with weather modifiers
   const newMoisture = Math.min(100, plant.current_moisture + plantType.moisture_boost)
@@ -454,6 +490,7 @@ export async function waterPlant(
       xp_earned: totalXp,
       morning_bonus: isMorning,
       streak_bonus: breakdown.streakBonus || 0,
+      note_bonus: noteBonusXp,
     })
 
   if (logError) {
@@ -485,20 +522,33 @@ export async function waterPlant(
     return { success: false, error: updateError.message }
   }
 
-  // Update user XP in profiles table
-  const { data: currentProfile } = await supabase
+  // Update user XP and journal streak in profiles table
+  const { data: profileForXp } = await supabase
     .from('profiles')
-    .select('xp')
+    .select('xp, total_journal_entries')
     .eq('id', user.id)
     .single()
 
-  if (currentProfile) {
+  if (profileForXp) {
+    const profileUpdate: Record<string, unknown> = {
+      xp: profileForXp.xp + totalXp,
+      updated_at: new Date().toISOString(),
+    }
+
+    // Update journal tracking if note was provided
+    if (hasNote) {
+      profileUpdate.journal_streak = newJournalStreak
+      profileUpdate.longest_journal_streak = Math.max(
+        newJournalStreak,
+        journalProfile?.longest_journal_streak || 0
+      )
+      profileUpdate.last_journal_date = today
+      profileUpdate.total_journal_entries = (profileForXp.total_journal_entries || 0) + 1
+    }
+
     const { error: xpError } = await supabase
       .from('profiles')
-      .update({
-        xp: currentProfile.xp + totalXp,
-        updated_at: new Date().toISOString(),
-      })
+      .update(profileUpdate)
       .eq('id', user.id)
 
     if (xpError) {
@@ -517,6 +567,8 @@ export async function waterPlant(
     weatherType: weather.type,
     moodWeather: moodConfig.weather,
     moodBonusXp: moodBonusXp > 0 ? moodBonusXp : undefined,
+    noteBonusXp: noteBonusXp > 0 ? noteBonusXp : undefined,
+    journalStreak: hasNote ? newJournalStreak : undefined,
     newAchievements,
   }
 }
@@ -613,7 +665,7 @@ async function checkAndUnlockAchievements(userId: string): Promise<string[]> {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('xp, level')
+    .select('xp, level, journal_streak, longest_journal_streak, total_journal_entries')
     .eq('id', userId)
     .single()
 
@@ -663,6 +715,15 @@ async function checkAndUnlockAchievements(userId: string): Promise<string[]> {
     { id: 'level_10', condition: (profile?.level || 1) >= 10 },
     { id: 'level_15', condition: (profile?.level || 1) >= 15 },
     { id: 'early_bird', condition: (morningWaterings || 0) >= 10 },
+    // Journal achievements
+    { id: 'first_journal', condition: (profile?.total_journal_entries || 0) >= 1 },
+    { id: 'journal_10', condition: (profile?.total_journal_entries || 0) >= 10 },
+    { id: 'journal_50', condition: (profile?.total_journal_entries || 0) >= 50 },
+    { id: 'journal_100', condition: (profile?.total_journal_entries || 0) >= 100 },
+    { id: 'journal_streak_3', condition: (profile?.longest_journal_streak || 0) >= 3 },
+    { id: 'journal_streak_7', condition: (profile?.longest_journal_streak || 0) >= 7 },
+    { id: 'journal_streak_14', condition: (profile?.longest_journal_streak || 0) >= 14 },
+    { id: 'journal_streak_30', condition: (profile?.longest_journal_streak || 0) >= 30 },
   ]
 
   // Check and unlock new achievements

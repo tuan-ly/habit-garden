@@ -42,6 +42,11 @@ export interface Profile {
   level: number
   water_reserves: number
   timezone: string
+  // Journal tracking
+  journal_streak: number
+  longest_journal_streak: number
+  last_journal_date: string | null
+  total_journal_entries: number
   created_at: string
   updated_at: string
 }

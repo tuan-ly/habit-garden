@@ -167,6 +167,51 @@ export const XP_REWARDS = {
   // Special events
   RAINBOW_DAY_BONUS: 20,
   RAINY_DAY_BONUS: 5,
+
+  // Journal/Notes bonuses - encourage reflection
+  NOTE_BASE_BONUS: 3,           // Any note adds +3 XP
+  NOTE_THOUGHTFUL_BONUS: 2,     // Notes > 50 chars add +2 more
+  NOTE_DETAILED_BONUS: 2,       // Notes > 100 chars add +2 more (total +7)
+  JOURNAL_STREAK_3_BONUS: 3,    // 3-day journal streak
+  JOURNAL_STREAK_7_BONUS: 5,    // 7-day journal streak
+  JOURNAL_STREAK_14_BONUS: 8,   // 14-day journal streak
+  JOURNAL_STREAK_30_BONUS: 12,  // 30-day journal streak
+}
+
+/**
+ * Calculate XP bonus for writing a note
+ */
+export function calculateNoteBonus(params: {
+  noteLength: number
+  journalStreak: number
+}): { total: number; breakdown: Record<string, number> } {
+  const breakdown: Record<string, number> = {}
+
+  if (params.noteLength > 0) {
+    breakdown.noteBase = XP_REWARDS.NOTE_BASE_BONUS
+
+    if (params.noteLength > 50) {
+      breakdown.thoughtfulNote = XP_REWARDS.NOTE_THOUGHTFUL_BONUS
+    }
+
+    if (params.noteLength > 100) {
+      breakdown.detailedNote = XP_REWARDS.NOTE_DETAILED_BONUS
+    }
+
+    // Journal streak bonus (only if writing a note today)
+    if (params.journalStreak >= 30) {
+      breakdown.journalStreakBonus = XP_REWARDS.JOURNAL_STREAK_30_BONUS
+    } else if (params.journalStreak >= 14) {
+      breakdown.journalStreakBonus = XP_REWARDS.JOURNAL_STREAK_14_BONUS
+    } else if (params.journalStreak >= 7) {
+      breakdown.journalStreakBonus = XP_REWARDS.JOURNAL_STREAK_7_BONUS
+    } else if (params.journalStreak >= 3) {
+      breakdown.journalStreakBonus = XP_REWARDS.JOURNAL_STREAK_3_BONUS
+    }
+  }
+
+  const total = Object.values(breakdown).reduce((a, b) => a + b, 0)
+  return { total, breakdown }
 }
 
 /**

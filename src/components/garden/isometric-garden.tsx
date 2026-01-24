@@ -37,6 +37,7 @@ import {
 interface IsometricGardenProps {
   plantTypes: PlantType[]
   weather?: WeatherType | null
+  journalStreak?: number
 }
 
 // Get responsive tile size - returns default for SSR, actual for client
@@ -56,6 +57,7 @@ const DOUBLE_TAP_THRESHOLD = 300
 export function IsometricGarden({
   plantTypes,
   weather,
+  journalStreak = 0,
 }: IsometricGardenProps) {
   // Get plants from context with optimistic updates
   const { plants, waterPlant, logGoal, movePlant } = usePlants()
@@ -865,6 +867,7 @@ export function IsometricGarden({
         onOpenChange={setWateringModalOpen}
         onWater={handleWaterConfirm}
         estimatedXp={10}
+        journalStreak={journalStreak}
       />
 
       {/* Add plant dialog */}
