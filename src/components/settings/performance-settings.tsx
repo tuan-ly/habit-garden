@@ -18,7 +18,7 @@ export function PerformanceSettings() {
           Performance
         </CardTitle>
         <CardDescription>
-          Tắt các hiệu ứng để cải thiện hiệu năng trên thiết bị cấu hình thấp
+          Disable effects to improve performance on low-end devices
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -31,7 +31,7 @@ export function PerformanceSettings() {
             className="flex-1"
           >
             <Sparkles className="h-4 w-4 mr-2" />
-            Bật tất cả
+            Enable All
           </Button>
           <Button
             variant="outline"
@@ -40,7 +40,7 @@ export function PerformanceSettings() {
             className="flex-1"
           >
             <Gauge className="h-4 w-4 mr-2" />
-            Tắt tất cả
+            Disable All
           </Button>
         </div>
 
@@ -51,9 +51,9 @@ export function PerformanceSettings() {
           <div className="flex items-center gap-3">
             <Sparkles className="h-5 w-5 text-yellow-500" />
             <div>
-              <p className="font-medium">Hiệu ứng hạt</p>
+              <p className="font-medium">Particle Effects</p>
               <p className="text-sm text-muted-foreground">
-                Bướm, đom đóm, phấn hoa
+                Butterflies, fireflies, pollen
               </p>
             </div>
           </div>
@@ -70,9 +70,9 @@ export function PerformanceSettings() {
           <div className="flex items-center gap-3">
             <TreeDeciduous className="h-5 w-5 text-green-500" />
             <div>
-              <p className="font-medium">Trang trí vườn</p>
+              <p className="font-medium">Garden Decorations</p>
               <p className="text-sm text-muted-foreground">
-                Bụi cây, đá, nấm, hoa
+                Bushes, rocks, mushrooms, flowers
               </p>
             </div>
           </div>
@@ -89,9 +89,9 @@ export function PerformanceSettings() {
           <div className="flex items-center gap-3">
             <PartyPopper className="h-5 w-5 text-purple-500" />
             <div>
-              <p className="font-medium">Hiệu ứng chúc mừng</p>
+              <p className="font-medium">Celebration Effects</p>
               <p className="text-sm text-muted-foreground">
-                Popup XP, pháo hoa khi tưới
+                XP popup, fireworks on watering
               </p>
             </div>
           </div>
@@ -108,9 +108,9 @@ export function PerformanceSettings() {
           <div className="flex items-center gap-3">
             <Cloud className="h-5 w-5 text-blue-500" />
             <div>
-              <p className="font-medium">Hiệu ứng thời tiết</p>
+              <p className="font-medium">Weather Effects</p>
               <p className="text-sm text-muted-foreground">
-                Mưa, lá rơi theo thời tiết
+                Rain, falling leaves by weather
               </p>
             </div>
           </div>
@@ -129,7 +129,7 @@ export function PerformanceSettings() {
             <div>
               <p className="font-medium">Canvas Renderer</p>
               <p className="text-sm text-muted-foreground">
-                Dùng Canvas thay SVG (nhanh hơn)
+                Use Canvas instead of SVG (faster)
               </p>
             </div>
           </div>
@@ -146,9 +146,9 @@ export function PerformanceSettings() {
           <div className="flex items-center gap-3">
             <Gauge className="h-5 w-5 text-slate-500" />
             <div>
-              <p className="font-medium">Giảm chuyển động</p>
+              <p className="font-medium">Reduced Motion</p>
               <p className="text-sm text-muted-foreground">
-                Tắt hầu hết animation
+                Disable most animations
               </p>
             </div>
           </div>

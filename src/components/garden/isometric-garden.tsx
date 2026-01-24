@@ -818,9 +818,9 @@ export function IsometricGarden({
           <div className="px-4 py-2 bg-emerald-600/90 backdrop-blur-md rounded-full text-xs text-white border border-emerald-400/50 shadow-lg">
             <span className="flex items-center gap-2">
               <span>🌱</span>
-              <span>Di chuyển {moveState.selectedPlant.name}</span>
+              <span>Moving {moveState.selectedPlant.name}</span>
               <span className="text-emerald-200">•</span>
-              <span>Chọn ô để đặt</span>
+              <span>Select a spot to place</span>
             </span>
           </div>
         </div>

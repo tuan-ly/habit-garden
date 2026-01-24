@@ -384,13 +384,13 @@ export function generateSuggestion(
       return {
         id,
         type: 'increase',
-        title: 'Bạn đang làm tuyệt vời!',
-        description: `${analysis.weeklyScores.length} tuần qua bạn vượt target với hiệu suất trung bình ${analysis.averageScore}%`,
+        title: "You're doing great!",
+        description: `Over the past ${analysis.weeklyScores.length} weeks you exceeded your target with an average performance of ${analysis.averageScore}%`,
         options: [
           {
             id: 'increase_target',
-            label: 'Tăng mục tiêu',
-            description: `Tăng mục tiêu từ ${goal.target_value}${goal.unit} lên ${newFinalTarget}${goal.unit}`,
+            label: 'Increase target',
+            description: `Increase target from ${goal.target_value}${goal.unit} to ${newFinalTarget}${goal.unit}`,
             isRecommended: true,
             changes: [
               { field: 'target_value', oldValue: goal.target_value, newValue: newFinalTarget },
@@ -398,16 +398,16 @@ export function generateSuggestion(
           },
           {
             id: 'shorten_timeline',
-            label: 'Hoàn thành sớm',
-            description: `Rút ngắn từ ${goal.duration_weeks} tuần còn ${reducedWeeks} tuần`,
+            label: 'Finish early',
+            description: `Shorten from ${goal.duration_weeks} weeks to ${reducedWeeks} weeks`,
             changes: [
               { field: 'duration_weeks', oldValue: goal.duration_weeks, newValue: reducedWeeks },
             ],
           },
           {
             id: 'keep',
-            label: 'Giữ nguyên',
-            description: 'Tiếp tục với kế hoạch hiện tại',
+            label: 'Keep as is',
+            description: 'Continue with current plan',
             changes: [],
           },
         ],
@@ -425,13 +425,13 @@ export function generateSuggestion(
       return {
         id,
         type: 'decrease',
-        title: 'Điều chỉnh kế hoạch nhé?',
-        description: `Có vẻ bạn đang gặp khó khăn trong ${analysis.consecutiveBelow80} tuần qua. Điều chỉnh là hoàn toàn bình thường!`,
+        title: 'Adjust your plan?',
+        description: `It looks like you've been struggling over the past ${analysis.consecutiveBelow80} weeks. Adjusting is completely normal!`,
         options: [
           {
             id: 'extend_timeline',
-            label: 'Kéo dài thời gian',
-            description: `Tăng từ ${goal.duration_weeks} lên ${extendedWeeks} tuần`,
+            label: 'Extend timeline',
+            description: `Increase from ${goal.duration_weeks} to ${extendedWeeks} weeks`,
             isRecommended: trigger.reason === 'downward_trend',
             changes: [
               { field: 'duration_weeks', oldValue: goal.duration_weeks, newValue: extendedWeeks },
@@ -439,8 +439,8 @@ export function generateSuggestion(
           },
           {
             id: 'reduce_target',
-            label: 'Giảm mục tiêu',
-            description: `Giảm từ ${goal.target_value}${goal.unit} xuống ${newFinalTarget}${goal.unit}`,
+            label: 'Reduce target',
+            description: `Reduce from ${goal.target_value}${goal.unit} to ${newFinalTarget}${goal.unit}`,
             isRecommended: trigger.reason === 'struggling_3_weeks',
             changes: [
               { field: 'target_value', oldValue: goal.target_value, newValue: newFinalTarget },
@@ -448,16 +448,16 @@ export function generateSuggestion(
           },
           {
             id: 'recovery_week',
-            label: 'Nghỉ recovery 1 tuần',
-            description: 'Tuần tới target giảm 50%, không tính vào trend',
+            label: 'Take recovery week',
+            description: 'Next week target reduced by 50%, not counted in trend',
             changes: [
               { field: 'recovery_week', oldValue: false, newValue: true },
             ],
           },
           {
             id: 'keep',
-            label: 'Giữ nguyên',
-            description: 'Tôi ổn, tiếp tục nào!',
+            label: 'Keep as is',
+            description: "I'm fine, let's continue!",
             changes: [],
           },
         ],
@@ -470,13 +470,13 @@ export function generateSuggestion(
       return {
         id,
         type: 'recovery_week',
-        title: 'Nghỉ ngơi một chút?',
-        description: 'Recovery week giúp bạn phục hồi mà không mất streak',
+        title: 'Take a break?',
+        description: 'Recovery week helps you recover without losing your streak',
         options: [
           {
             id: 'take_recovery',
-            label: 'Nghỉ recovery week',
-            description: 'Target tuần tới giảm 50%, giữ streak',
+            label: 'Take recovery week',
+            description: 'Next week target reduced by 50%, keeps streak',
             isRecommended: true,
             changes: [
               { field: 'recovery_week', oldValue: false, newValue: true },
@@ -484,8 +484,8 @@ export function generateSuggestion(
           },
           {
             id: 'keep',
-            label: 'Tiếp tục bình thường',
-            description: 'Tôi có thể handle được!',
+            label: 'Continue normally',
+            description: 'I can handle it!',
             changes: [],
           },
         ],
@@ -495,15 +495,15 @@ export function generateSuggestion(
     }
 
     case 'warning': {
-      let title = 'Một vài gợi ý'
+      let title = 'Some suggestions'
       let description = ''
 
       if (trigger.reason === 'valley_of_death') {
         title = 'Valley of Death'
-        description = 'Tuần 2-4 thường là khó nhất. Hãy kiên trì, bạn sẽ vượt qua!'
+        description = 'Weeks 2-4 are usually the hardest. Stay strong, you will get through this!'
       } else if (trigger.reason === 'high_variance') {
-        title = 'Kết quả không ổn định'
-        description = 'Cố gắng duy trì sự đều đặn để đạt kết quả tốt hơn'
+        title = 'Inconsistent results'
+        description = 'Try to maintain consistency for better results'
       }
 
       return {
@@ -514,8 +514,8 @@ export function generateSuggestion(
         options: [
           {
             id: 'acknowledge',
-            label: 'Đã hiểu',
-            description: 'Cảm ơn nhắc nhở!',
+            label: 'Got it',
+            description: 'Thanks for the reminder!',
             changes: [],
           },
         ],
