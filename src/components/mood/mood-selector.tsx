@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { useMood } from '@/lib/context/mood-context'
-import { getAllMoodLevels, type MoodLevel, type MoodConfig } from '@/lib/mood-system'
+import { getAllMoodLevels, type MoodLevel, type MoodConfig, DEFAULT_MOOD } from '@/lib/mood-system'
 import {
   Sheet,
   SheetContent,
@@ -19,14 +19,24 @@ interface MoodSelectorProps {
 }
 
 export function MoodSelector({ className }: MoodSelectorProps) {
-  const { mood, setMood, xpMultiplier, isToughDay, isLoading } = useMood()
+  const { mood, setMood, xpMultiplier, isToughDay, isLoading, isMoodSet } = useMood()
   const [isOpen, setIsOpen] = useState(false)
   const [isSelecting, setIsSelecting] = useState(false)
+  const moodSelectedRef = useRef(false)
 
   const moodLevels = getAllMoodLevels()
   const currentMood = moodLevels.find((m) => m.level === mood)!
 
+  // Reset moodSelectedRef when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      moodSelectedRef.current = false
+    }
+  }, [isOpen])
+
   const handleSelectMood = async (selectedLevel: MoodLevel) => {
+    moodSelectedRef.current = true
+
     if (selectedLevel === mood) {
       setIsOpen(false)
       return
@@ -36,6 +46,16 @@ export function MoodSelector({ className }: MoodSelectorProps) {
     await setMood(selectedLevel)
     setIsSelecting(false)
     setIsOpen(false)
+  }
+
+  // Handle modal close - set default mood if user didn't select anything
+  const handleOpenChange = async (open: boolean) => {
+    if (!open && !moodSelectedRef.current && !isMoodSet) {
+      // Modal is closing, user didn't select anything, and mood wasn't set today
+      // Set default mood
+      await setMood(DEFAULT_MOOD)
+    }
+    setIsOpen(open)
   }
 
   if (isLoading) {
@@ -53,7 +73,7 @@ export function MoodSelector({ className }: MoodSelectorProps) {
   }
 
   return (
-    <Sheet open={isOpen} onOpenChange={setIsOpen}>
+    <Sheet open={isOpen} onOpenChange={handleOpenChange}>
       <SheetTrigger asChild>
         <button
           className={cn(
@@ -82,7 +102,7 @@ export function MoodSelector({ className }: MoodSelectorProps) {
             How's your weather today?
           </SheetTitle>
           <SheetDescription>
-            Tough days earn bonus XP - you're stronger than you think!
+            Check in with yourself - how are you feeling right now?
           </SheetDescription>
         </SheetHeader>
 
@@ -143,9 +163,6 @@ function MoodOption({
   onSelect: () => void
   disabled: boolean
 }) {
-  const bonusPercent = Math.round((config.xpMultiplier - 1) * 100)
-  const hasBonus = bonusPercent > 0
-
   return (
     <button
       onClick={onSelect}
@@ -176,27 +193,6 @@ function MoodOption({
           <span className="font-medium">{config.weather}</span>
         </div>
         <p className="text-xs text-muted-foreground">{config.description}</p>
-      </div>
-
-      {/* XP bonus */}
-      <div className="flex-shrink-0 text-right">
-        {hasBonus ? (
-          <span
-            className={cn(
-              'text-xs font-bold px-2 py-1 rounded-full',
-              'bg-gradient-to-r',
-              config.level === 1
-                ? 'from-purple-500 to-violet-600 text-white'
-                : config.level === 2
-                  ? 'from-blue-500 to-indigo-600 text-white'
-                  : 'from-slate-400 to-slate-500 text-white'
-            )}
-          >
-            +{bonusPercent}% XP
-          </span>
-        ) : (
-          <span className="text-xs text-muted-foreground px-2 py-1">Base XP</span>
-        )}
       </div>
     </button>
   )

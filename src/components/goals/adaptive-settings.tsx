@@ -80,11 +80,11 @@ export function AdaptiveSettings({ goal, className, onUpdate }: AdaptiveSettings
   const getModeDescription = (m: AdaptiveMode) => {
     switch (m) {
       case 'off':
-        return 'Không điều chỉnh tự động. Target cố định.'
+        return 'No automatic adjustment. Fixed target.'
       case 'suggest':
-        return 'Nhận đề xuất điều chỉnh khi phù hợp. Bạn quyết định.'
+        return 'Receive adjustment suggestions when appropriate. You decide.'
       case 'auto':
-        return 'Tự động điều chỉnh target dựa trên performance.'
+        return 'Automatically adjust target based on performance.'
     }
   }
 
