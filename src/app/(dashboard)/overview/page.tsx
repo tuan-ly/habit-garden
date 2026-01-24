@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect, useTransition } from 'react'
+import { useState, useEffect, useTransition, useCallback } from 'react'
 import { ChevronLeft, ChevronRight, Droplets, Sparkles, TreeDeciduous } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { StatsGarden } from '@/components/garden/stats-garden'
-import { getGardenStats, type GardenStatsData } from '@/lib/actions/plants'
-import { getTimeOfDay } from '@/components/garden/themes'
+import { StatsDetailSheet } from '@/components/garden/stats-detail-sheet'
+import { getAggregatedGardenStats, type AggregatedGardenStats, type PlantPeriodStats } from '@/lib/actions/plants'
 
 type Period = 'day' | 'week' | 'month' | 'year'
 
@@ -74,14 +74,18 @@ function navigateDate(date: Date, period: Period, direction: 'prev' | 'next'): D
 export default function OverviewPage() {
   const [period, setPeriod] = useState<Period>('month')
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [stats, setStats] = useState<GardenStatsData | null>(null)
+  const [stats, setStats] = useState<AggregatedGardenStats | null>(null)
   const [isPending, startTransition] = useTransition()
+
+  // Detail sheet state
+  const [selectedPlant, setSelectedPlant] = useState<PlantPeriodStats | null>(null)
+  const [detailOpen, setDetailOpen] = useState(false)
 
   // Load stats when period or date changes
   useEffect(() => {
     startTransition(async () => {
       const dateStr = formatDateLocal(currentDate)
-      const data = await getGardenStats(period, dateStr)
+      const data = await getAggregatedGardenStats(period, dateStr)
       setStats(data)
     })
   }, [period, currentDate])
@@ -98,8 +102,15 @@ export default function OverviewPage() {
     }
   }
 
+  const handlePlantClick = useCallback((plant: PlantPeriodStats) => {
+    setSelectedPlant(plant)
+    setDetailOpen(true)
+  }, [])
+
   // Check if we can go to next (not future)
   const canGoNext = navigateDate(currentDate, period, 'next') <= new Date()
+
+  const periodLabel = formatPeriodDisplay(period, currentDate)
 
   return (
     <div className="h-full flex flex-col relative">
@@ -144,7 +155,7 @@ export default function OverviewPage() {
               </Button>
 
               <span className="text-sm sm:text-base font-black text-white tracking-tight drop-shadow-sm truncate px-2">
-                {formatPeriodDisplay(period, currentDate)}
+                {periodLabel}
               </span>
 
               <Button
@@ -197,12 +208,12 @@ export default function OverviewPage() {
           </div>
         ) : stats ? (
           <StatsGarden
-            waterings={stats.waterings}
+            plants={stats.plants}
             weather={stats.weather}
-            maxDisplay={period === 'year' ? 100 : period === 'month' ? 50 : 30}
             className="h-full"
             skyContained={false}
             timeOfDay="day"
+            onPlantClick={handlePlantClick}
           />
         ) : (
           <div className="h-full flex items-center justify-center relative z-10">
@@ -216,6 +227,14 @@ export default function OverviewPage() {
           </div>
         )}
       </div>
+
+      {/* Detail sheet */}
+      <StatsDetailSheet
+        stats={selectedPlant}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        periodLabel={periodLabel}
+      />
     </div>
   )
 }

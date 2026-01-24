@@ -1,22 +1,24 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { GardenSky } from './garden-sky'
 import { WeatherEffects } from './weather-effects'
-import { GroundPlane } from './ground-plane'
-import type { WateringLogWithPlant } from '@/lib/actions/plants'
-import type { WeatherType } from '@/types/database'
+import { GroundPlaneCanvas } from './ground-plane-canvas'
+import { StatsBadge } from './stats-badge'
+import { PlantImage, getGrowthStage } from '@/components/plants/plant-image'
+import type { PlantPeriodStats } from '@/lib/actions/plants'
+import type { WeatherType, PlantStatus } from '@/types/database'
 import type { TimeOfDay } from './themes'
 import { defaultTheme } from './themes'
 import { cn } from '@/lib/utils'
 
 interface StatsGardenProps {
-  waterings: WateringLogWithPlant[]
+  plants: PlantPeriodStats[]
   weather?: WeatherType | null
-  maxDisplay?: number // Max trees to display (default 50)
   className?: string
   skyContained?: boolean
   timeOfDay?: TimeOfDay
+  onPlantClick?: (plant: PlantPeriodStats) => void
 }
 
 // Calculate grid size based on plant count
@@ -27,74 +29,218 @@ function getGridSize(plantCount: number): number {
 }
 
 // Get responsive tile size
-const DEFAULT_TILE_SIZE = 80
+const DEFAULT_TILE_SIZE = 100
 
 function getClientTileSize(): number {
   if (typeof window === 'undefined') return DEFAULT_TILE_SIZE
   const width = window.innerWidth
-  if (width < 640) return 50 // Mobile
-  if (width < 1024) return 65 // Tablet
-  return 80 // Desktop
+  if (width < 640) return 70 // Mobile
+  if (width < 1024) return 85 // Tablet
+  return 100 // Desktop
 }
 
-// Mini plant visual - simple version for stats display
-function MiniPlant({ watering }: { watering: WateringLogWithPlant }) {
-  const icon = watering.plant?.plant_type?.icon || '🌱'
+// Get center offset for multi-cell plants
+function getMergedAreaCenterOffset(plantGridSize: number, tileHitHeight: number): number {
+  return (plantGridSize - 1) * tileHitHeight / 2
+}
+
+// Map growth percentage to visual scale
+function getGrowthScale(growthPercentage: number): number {
+  if (growthPercentage < 10) return 0.6
+  if (growthPercentage < 25) return 0.7
+  if (growthPercentage < 50) return 0.8
+  if (growthPercentage < 75) return 0.9
+  if (growthPercentage < 100) return 0.95
+  return 1.0
+}
+
+// Stats plant visual - simplified version for stats
+function StatsPlantVisual({ stats, tileSize }: { stats: PlantPeriodStats; tileSize: number }) {
+  const growthScale = getGrowthScale(stats.growth_percentage)
+  const gridSizeScale = 1 + (stats.grid_size - 1) * 0.4
+
+  // Create a minimal plant-like object for PlantImage
+  const plantForImage = {
+    growth_percentage: stats.growth_percentage,
+    status: stats.status as PlantStatus,
+    plant_type: {
+      name: stats.plant_type_name,
+      icon: stats.plant_icon,
+    },
+  }
 
   return (
-    <div className="flex flex-col items-center justify-center transition-transform hover:scale-110 origin-bottom -translate-y-[35%]">
-      <span className="text-2xl sm:text-3xl drop-shadow-md">{icon}</span>
+    <div
+      className="relative transition-transform duration-200 hover:scale-105"
+      style={{
+        transform: `scale(${growthScale * gridSizeScale})`,
+        transformOrigin: 'bottom center',
+      }}
+    >
+      <PlantImage
+        plant={plantForImage as any}
+        size="lg"
+        alignBottom
+      />
     </div>
   )
 }
 
-// Isometric tile for stats view
+// Stats tile - reuses isometric positioning logic
 function StatsTile({
   row,
   col,
   gridSize,
-  watering,
+  stats,
   tileSize,
+  isHovered,
+  onMouseEnter,
+  onMouseLeave,
+  onClick,
 }: {
   row: number
   col: number
   gridSize: number
-  watering?: WateringLogWithPlant
+  stats?: PlantPeriodStats
   tileSize: number
+  isHovered: boolean
+  onMouseEnter: () => void
+  onMouseLeave: () => void
+  onClick: () => void
 }) {
-  // Calculate isometric position
-  const x = (col - row) * (tileSize / 2) + (gridSize * tileSize) / 2 - tileSize / 2
-  const y = (col + row) * (tileSize / 4)
+  const containerWidth = gridSize * tileSize
+  const centerX = containerWidth / 2
+
+  // Isometric position
+  const tileCenterX = centerX + (col - row) * (tileSize / 2)
+  const tileCenterY = (col + row) * (tileSize / 4)
+  const tileHitHeight = tileSize / 2
+
+  const plantGridSize = stats?.grid_size || 1
 
   return (
     <div
-      className="absolute flex items-center justify-center cursor-pointer"
+      className={cn(
+        'absolute cursor-pointer transition-all duration-200',
+        stats && 'hover:z-50'
+      )}
       style={{
-        left: x,
-        top: y,
+        left: tileCenterX,
+        top: tileCenterY,
         width: tileSize,
-        height: tileSize / 2,
-        zIndex: row + col,
+        height: tileHitHeight,
+        transform: 'translate(-50%, 0)',
+        zIndex: row + col + 10,
       }}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      onClick={onClick}
     >
-      {watering ? (
-        <MiniPlant watering={watering} />
-      ) : (
-        <div className="w-2 h-2 rounded-full bg-green-300/30" />
+      {/* Hit area */}
+      <svg
+        width={tileSize}
+        height={tileSize / 2}
+        viewBox={`0 0 ${tileSize} ${tileSize / 2}`}
+        className="absolute top-0 left-0"
+      >
+        <polygon
+          points={`
+            ${tileSize / 2},0
+            ${tileSize},${tileSize / 4}
+            ${tileSize / 2},${tileSize / 2}
+            0,${tileSize / 4}
+          `}
+          fill="transparent"
+          className={cn(
+            'transition-all duration-200',
+            isHovered && stats && 'fill-white/15'
+          )}
+        />
+      </svg>
+
+      {/* Hover highlight */}
+      {isHovered && stats && (
+        <svg
+          width={tileSize}
+          height={tileSize / 2}
+          viewBox={`0 0 ${tileSize} ${tileSize / 2}`}
+          className="absolute top-0 left-0 pointer-events-none overflow-visible"
+        >
+          <polygon
+            points={`
+              ${tileSize / 2},0
+              ${tileSize},${tileSize / 4}
+              ${tileSize / 2},${tileSize / 2}
+              0,${tileSize / 4}
+            `}
+            fill="rgba(134,239,172,0.15)"
+            stroke="rgba(255,255,255,0.5)"
+            strokeWidth="2"
+          />
+        </svg>
+      )}
+
+      {/* Plant shadow */}
+      {stats && (
+        <div
+          className="absolute pointer-events-none rounded-full"
+          style={{
+            left: tileSize / 2,
+            top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight),
+            width: tileSize * (0.4 + (plantGridSize - 1) * 0.3),
+            height: tileSize * (0.15 + (plantGridSize - 1) * 0.1),
+            transform: 'translate(-50%, -50%)',
+            background: 'radial-gradient(ellipse, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.1) 50%, transparent 100%)',
+          }}
+        />
+      )}
+
+      {/* Plant visual */}
+      {stats && (
+        <div
+          className={cn(
+            "absolute pointer-events-none flex flex-col items-center transition-all duration-200",
+            isHovered && "scale-110"
+          )}
+          style={{
+            left: tileSize / 2,
+            top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight) - 2,
+            transform: 'translate(-50%, -100%)',
+            transformOrigin: 'bottom center',
+          }}
+        >
+          <StatsPlantVisual stats={stats} tileSize={tileSize} />
+        </div>
+      )}
+
+      {/* Stats badge */}
+      {stats && (
+        <div
+          className="absolute pointer-events-none"
+          style={{
+            left: tileSize / 2,
+            top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight) + tileSize * 0.05,
+            transform: 'translate(-50%, 0)',
+            zIndex: 5,
+          }}
+        >
+          <StatsBadge stats={stats} tileSize={tileSize} />
+        </div>
       )}
     </div>
   )
 }
 
 export function StatsGarden({
-  waterings,
+  plants,
   weather,
-  maxDisplay = 50,
   className,
   skyContained = true,
   timeOfDay,
+  onPlantClick,
 }: StatsGardenProps) {
   const [tileSize, setTileSize] = useState(DEFAULT_TILE_SIZE)
+  const [hoveredTile, setHoveredTile] = useState<string | null>(null)
 
   useEffect(() => {
     const handleResize = () => setTileSize(getClientTileSize())
@@ -103,42 +249,45 @@ export function StatsGarden({
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Limit displayed waterings
-  const displayedWaterings = waterings.slice(0, maxDisplay)
-
-  // Calculate grid size based on waterings count
+  // Calculate grid size based on plants count
   const gridSize = useMemo(() => {
-    return getGridSize(displayedWaterings.length)
-  }, [displayedWaterings.length])
+    return getGridSize(plants.length)
+  }, [plants.length])
 
-  // Generate tiles with waterings
+  // Generate tiles with plants
   const tiles = useMemo(() => {
-    const result: { row: number; col: number; watering?: WateringLogWithPlant }[] = []
-    let wateringIndex = 0
+    const result: { row: number; col: number; stats?: PlantPeriodStats }[] = []
+    let plantIndex = 0
 
     for (let row = 0; row < gridSize; row++) {
       for (let col = 0; col < gridSize; col++) {
-        const watering = displayedWaterings[wateringIndex]
-        result.push({ row, col, watering })
-        wateringIndex++
+        const stats = plants[plantIndex]
+        result.push({ row, col, stats })
+        plantIndex++
       }
     }
     return result
-  }, [gridSize, displayedWaterings])
+  }, [gridSize, plants])
 
-  // Calculate container dimensions
+  // Container dimensions
   const containerWidth = gridSize * tileSize
-  const containerHeight = gridSize * (tileSize / 2) + tileSize * 0.3
+  const containerHeight = gridSize * (tileSize / 2) + tileSize * 0.35
+
+  const handleTileClick = useCallback((stats?: PlantPeriodStats) => {
+    if (stats && onPlantClick) {
+      onPlantClick(stats)
+    }
+  }, [onPlantClick])
 
   // Empty state
-  if (waterings.length === 0) {
+  if (plants.length === 0) {
     return (
       <div className="relative w-full h-full flex flex-col overflow-hidden">
         <GardenSky weather={weather} contained timeOfDay={timeOfDay} />
         <div className="flex-1 flex items-center justify-center relative z-10">
           <div className="text-center text-muted-foreground">
             <span className="text-4xl mb-2 block">🏜️</span>
-            <p className="text-sm">No waterings in this period</p>
+            <p className="text-sm">No activity in this period</p>
           </div>
         </div>
       </div>
@@ -147,13 +296,13 @@ export function StatsGarden({
 
   return (
     <div className={cn("relative w-full min-h-0 flex flex-col", className)}>
-      {/* Sky background - contained within this component */}
+      {/* Sky background */}
       <GardenSky weather={weather} contained={skyContained} timeOfDay={timeOfDay} />
 
       {/* Weather effects */}
       {weather && <WeatherEffects weather={weather} contained={skyContained} />}
 
-      {/* Garden container - above sky */}
+      {/* Garden container */}
       <div
         className="flex-1 flex items-center justify-center py-8 overflow-x-auto overflow-y-visible relative z-10 custom-scrollbar"
         style={{ minHeight: containerHeight + 100 }}
@@ -165,8 +314,8 @@ export function StatsGarden({
             height: containerHeight,
           }}
         >
-          {/* Ground plane */}
-          <GroundPlane
+          {/* Canvas ground plane */}
+          <GroundPlaneCanvas
             gridSize={gridSize}
             tileSize={tileSize}
             grassColor={defaultTheme.ground.primary}
@@ -174,14 +323,18 @@ export function StatsGarden({
           />
 
           {/* Tiles with plants */}
-          {tiles.map(({ row, col, watering }) => (
+          {tiles.map(({ row, col, stats }) => (
             <StatsTile
               key={`${row}-${col}`}
               row={row}
               col={col}
               gridSize={gridSize}
-              watering={watering}
+              stats={stats}
               tileSize={tileSize}
+              isHovered={hoveredTile === `${row}-${col}`}
+              onMouseEnter={() => setHoveredTile(`${row}-${col}`)}
+              onMouseLeave={() => setHoveredTile(null)}
+              onClick={() => handleTileClick(stats)}
             />
           ))}
         </div>
