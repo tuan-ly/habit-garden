@@ -1,6 +1,6 @@
 # Habit Garden - Project Memo
 
-> **Last Updated**: 2026-01-24
+> **Last Updated**: 2026-01-25
 > **Phase**: 4 - Polish & Launch
 > **Stack**: Next.js 16, Supabase, Tailwind CSS 4, shadcn/ui
 
@@ -21,6 +21,17 @@
 ---
 
 ## Recent Sessions
+
+### 2026-01-25: Optimistic Celebration UX
+**Changes**:
+- Watering/goal logging now shows celebration immediately (optimistic update)
+- Client-side XP estimation using `calculateWateringXp` and `calculateNoteBonus`
+- Error handling: cancel celebration and show toast if server rejects
+
+**Key files changed**:
+- [isometric-garden.tsx](src/components/garden/isometric-garden.tsx) - Optimistic celebration for `handleWaterConfirm` and `handleGoalLog`
+
+---
 
 ### 2026-01-24: Journal/Notes Reward System & Database Fixes
 **Changes**:

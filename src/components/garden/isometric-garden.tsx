@@ -24,6 +24,7 @@ import {
   showWaterErrorToast,
 } from '@/components/plants/water-toast'
 import { usePlants, useGardenSettingsOptional } from '@/lib/context'
+import { calculateWateringXp, calculateNoteBonus } from '@/lib/xp-system'
 import { useGardenZoom, useVisibleTiles } from '@/lib/hooks'
 import type { PlantWithType, PlantType, WeatherType } from '@/types/database'
 import { defaultTheme } from './themes'
@@ -346,23 +347,42 @@ export function IsometricGarden({
         y: typeof window !== 'undefined' ? window.innerHeight / 2 : 300
       }
 
+      // Calculate estimated XP client-side for optimistic celebration
+      const newStreak = plant.current_streak + 1
+      const isMorning = new Date().getHours() < 9
+      const wateringXp = calculateWateringXp({
+        streak: newStreak,
+        isMorning,
+        isRainyDay: weather === 'rainy',
+        isRainbowDay: weather === 'rainbow',
+      })
+      const noteBonus = notes?.trim()
+        ? calculateNoteBonus({
+            noteLength: notes.trim().length,
+            journalStreak: journalStreak,
+          })
+        : { total: 0 }
+      const estimatedXp = wateringXp.total + noteBonus.total
+
+      // Show celebration IMMEDIATELY (optimistic)
+      if (gardenSettings.showCelebrations) {
+        setCelebration({
+          active: true,
+          position: celebrationPosition,
+          xpEarned: estimatedXp,
+          plantName: plant.name,
+          plantIcon: plant.plant_type.icon,
+          streakCount: newStreak,
+        })
+      }
+
       try {
-        // Call server FIRST, then show celebration with actual values
+        // Call server in background
         const result = await waterPlant(plant.id, { notes })
 
-        if (result.success) {
-          // Only show celebration on success with actual XP from server
-          if (gardenSettings.showCelebrations) {
-            setCelebration({
-              active: true,
-              position: celebrationPosition,
-              xpEarned: result.xpEarned || 10,
-              plantName: plant.name,
-              plantIcon: plant.plant_type.icon,
-              streakCount: plant.current_streak + 1,
-            })
-          }
-        } else {
+        if (!result.success) {
+          // Cancel celebration on error
+          setCelebration(null)
           // Show appropriate error
           if (result.error === 'Already watered today') {
             showAlreadyWateredToast(plant.name)
@@ -370,7 +390,10 @@ export function IsometricGarden({
             showWaterErrorToast(result.error || 'Unknown error')
           }
         }
+        // On success: celebration already showing, no action needed
       } catch (error) {
+        // Cancel celebration on error
+        setCelebration(null)
         showWaterErrorToast('Failed to water plant')
       } finally {
         // Remove from cooldown after 3 seconds (celebration duration)
@@ -379,7 +402,7 @@ export function IsometricGarden({
         }, 3000)
       }
     },
-    [wateringPlant, waterPlant, gardenSettings.showCelebrations]
+    [wateringPlant, waterPlant, gardenSettings.showCelebrations, weather, journalStreak]
   )
 
   // Track last tap time for double-tap detection
@@ -524,30 +547,46 @@ export function IsometricGarden({
       actionCooldown.current.add(plant.id)
 
       const isFirstLogToday = (plant.today_log_count || 0) === 0
+      const newStreak = isFirstLogToday ? plant.current_streak + 1 : plant.current_streak
+
+      // Calculate estimated XP for optimistic celebration
+      // Goal logging gives base 15 XP + streak bonus
+      let estimatedXp = 15
+      if (newStreak >= 30) estimatedXp += 50
+      else if (newStreak >= 14) estimatedXp += 30
+      else if (newStreak >= 7) estimatedXp += 15
+      else if (newStreak >= 3) estimatedXp += 5
+
+      const celebrationPosition = {
+        x: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
+        y: typeof window !== 'undefined' ? window.innerHeight / 2 : 300,
+      }
+
+      // Show celebration IMMEDIATELY (optimistic)
+      if (gardenSettings.showCelebrations) {
+        setCelebration({
+          active: true,
+          position: celebrationPosition,
+          xpEarned: estimatedXp,
+          plantName: plant.name,
+          plantIcon: plant.plant_type.icon,
+          streakCount: newStreak,
+        })
+      }
 
       try {
-        // Call server FIRST, then show celebration with actual values
+        // Call server in background
         const result = await logGoal(plant.id, value, notes)
 
-        if (result.success) {
-          // Only show celebration on success with actual XP from server
-          if (gardenSettings.showCelebrations) {
-            setCelebration({
-              active: true,
-              position: {
-                x: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
-                y: typeof window !== 'undefined' ? window.innerHeight / 2 : 300,
-              },
-              xpEarned: result.xpEarned || 15,
-              plantName: plant.name,
-              plantIcon: plant.plant_type.icon,
-              streakCount: isFirstLogToday ? plant.current_streak + 1 : plant.current_streak,
-            })
-          }
-        } else {
+        if (!result.success) {
+          // Cancel celebration on error
+          setCelebration(null)
           showWaterErrorToast(result.error || 'Failed to log')
         }
+        // On success: celebration already showing, no action needed
       } catch (error) {
+        // Cancel celebration on error
+        setCelebration(null)
         showWaterErrorToast('Failed to log progress')
       } finally {
         // Remove from cooldown after 3 seconds (celebration duration)

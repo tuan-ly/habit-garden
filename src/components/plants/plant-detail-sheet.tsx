@@ -9,7 +9,6 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
 import {
   Droplets,
   Flame,
@@ -20,10 +19,10 @@ import {
   Target,
   Plus,
   BarChart3,
+  Sparkles,
+  Zap,
 } from 'lucide-react'
 import type { PlantWithType, WeatherType } from '@/types/database'
-import { MoistureBar } from './moisture-bar'
-import { GrowthProgress } from './growth-progress'
 import { PlantVisual, XpPopup } from './plant-visual'
 import { usePlants } from '@/lib/context'
 import { getGoalForPlant, getGoalStats, type GoalWithStats, type GoalStatistics } from '@/lib/actions/goals'
@@ -40,7 +39,6 @@ import {
   AdjustmentHistory,
 } from '@/components/goals'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
 interface PlantDetailSheetProps {
@@ -173,95 +171,190 @@ export function PlantDetailSheet({
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent className="overflow-y-auto p-0">
-          {/* Header with gradient background */}
-          <div className="bg-gradient-to-br from-emerald-50 via-green-50 to-lime-50 dark:from-emerald-950/50 dark:via-green-950/50 dark:to-lime-950/50 px-6 pt-6 pb-8">
-            <SheetHeader className="mb-0">
-              <div className="flex items-start gap-4">
-                <div className="relative flex-shrink-0">
-                  <div className="p-3 rounded-2xl bg-white/80 dark:bg-slate-800/80 shadow-lg backdrop-blur-sm">
+        <SheetContent className="overflow-y-auto p-0 w-full sm:max-w-md">
+          {/* Hero Header - Centered plant visual */}
+          <div className="relative">
+            {/* Background gradient */}
+            <div className={cn(
+              'absolute inset-0 bg-gradient-to-b',
+              plant.status === 'dead'
+                ? 'from-slate-200 to-slate-100 dark:from-slate-800 dark:to-slate-900'
+                : plant.status === 'mature'
+                ? 'from-emerald-100 via-green-50 to-white dark:from-emerald-900/40 dark:via-green-950/30 dark:to-slate-900'
+                : 'from-sky-100 via-emerald-50 to-white dark:from-sky-900/30 dark:via-emerald-950/20 dark:to-slate-900'
+            )} />
+
+            <div className="relative pt-8 pb-6 px-6">
+              <SheetHeader className="text-center space-y-4">
+                {/* Plant Image - Hero Style */}
+                <div className="relative mx-auto">
+                  <div className={cn(
+                    'relative w-28 h-28 mx-auto rounded-3xl flex items-center justify-center',
+                    'bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm',
+                    'shadow-xl shadow-black/5 dark:shadow-black/20',
+                    'ring-1 ring-white/50 dark:ring-white/10'
+                  )}>
                     <PlantVisual
                       plant={plant}
                       size="xl"
                       showWateringEffect={isWatering}
                       weather={weather}
                     />
+                    <XpPopup amount={earnedXp} show={showXp} />
                   </div>
-                  <XpPopup amount={earnedXp} show={showXp} />
-                </div>
-                <div className="flex-1 min-w-0 pt-1">
-                  <SheetTitle className="text-xl font-bold text-slate-800 dark:text-slate-100 truncate">
-                    {plant.name}
-                  </SheetTitle>
-                  <SheetDescription className="flex flex-wrap items-center gap-2 mt-1">
-                    <span className="text-slate-600 dark:text-slate-400">{plant.plant_type.name}</span>
-                    {hasGoal && goal && (
-                      <GoalModeBadge mode={goal.goal_mode} />
-                    )}
-                  </SheetDescription>
-                  {/* Status Badge - inline with header */}
-                  <div className="mt-3">
+
+                  {/* Status badge floating */}
+                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
                     <span
                       className={cn(
-                        'inline-flex items-center px-3 py-1 rounded-full text-sm font-medium shadow-sm',
+                        'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold',
+                        'shadow-lg shadow-black/10',
                         plant.status === 'growing' && 'bg-emerald-500 text-white',
-                        plant.status === 'mature' && 'bg-green-600 text-white',
-                        plant.status === 'dead' && 'bg-gray-500 text-white'
+                        plant.status === 'mature' && 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white',
+                        plant.status === 'dead' && 'bg-slate-400 text-white'
                       )}
                     >
-                      {plant.status === 'growing' && '🌱 Growing'}
-                      {plant.status === 'mature' && '🌳 Mature'}
-                      {plant.status === 'dead' && '💀 Dead'}
+                      {plant.status === 'growing' && <Sparkles className="h-3 w-3" />}
+                      {plant.status === 'mature' && <Trophy className="h-3 w-3" />}
+                      {plant.status === 'growing' && 'Growing'}
+                      {plant.status === 'mature' && 'Mature'}
+                      {plant.status === 'dead' && 'Wilted'}
                     </span>
                   </div>
                 </div>
-              </div>
-            </SheetHeader>
+
+                {/* Name & Type */}
+                <div className="pt-2">
+                  <SheetTitle className="text-2xl font-bold text-slate-800 dark:text-slate-100">
+                    {plant.name}
+                  </SheetTitle>
+                  <SheetDescription className="flex items-center justify-center gap-2 mt-1">
+                    <span className="text-slate-500 dark:text-slate-400">{plant.plant_type.name}</span>
+                    {hasGoal && goal && <GoalModeBadge mode={goal.goal_mode} />}
+                  </SheetDescription>
+                </div>
+              </SheetHeader>
+            </div>
           </div>
 
-          <div className="px-6 py-6 space-y-6">
+          <div className="px-5 pb-8 space-y-5">
+            {/* Progress Section - Unified Card */}
+            <div className="rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 p-4 space-y-4">
+              {/* Moisture */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={cn(
+                      'p-1.5 rounded-lg',
+                      plant.current_moisture >= 70 ? 'bg-blue-100 dark:bg-blue-900/50' :
+                      plant.current_moisture >= 40 ? 'bg-amber-100 dark:bg-amber-900/50' :
+                      'bg-red-100 dark:bg-red-900/50'
+                    )}>
+                      <Droplets className={cn(
+                        'h-4 w-4',
+                        plant.current_moisture >= 70 ? 'text-blue-500' :
+                        plant.current_moisture >= 40 ? 'text-amber-500' :
+                        'text-red-500'
+                      )} />
+                    </div>
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Moisture</span>
+                  </div>
+                  <span className={cn(
+                    'text-sm font-bold',
+                    plant.current_moisture >= 70 ? 'text-blue-600 dark:text-blue-400' :
+                    plant.current_moisture >= 40 ? 'text-amber-600 dark:text-amber-400' :
+                    'text-red-600 dark:text-red-400'
+                  )}>
+                    {Math.round(plant.current_moisture)}%
+                  </span>
+                </div>
+                <div className="h-2.5 rounded-full bg-slate-200/70 dark:bg-slate-700/50 overflow-hidden">
+                  <div
+                    className={cn(
+                      'h-full rounded-full transition-all duration-700',
+                      plant.current_moisture >= 70 ? 'bg-gradient-to-r from-blue-400 to-cyan-400' :
+                      plant.current_moisture >= 40 ? 'bg-gradient-to-r from-amber-400 to-yellow-400' :
+                      'bg-gradient-to-r from-red-400 to-orange-400'
+                    )}
+                    style={{ width: `${Math.max(0, Math.min(100, plant.current_moisture))}%` }}
+                  />
+                </div>
+              </div>
 
-            {/* Progress Bars - Card style */}
-            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 space-y-4">
-              <MoistureBar value={plant.current_moisture} size="md" />
-              <GrowthProgress
-                value={plant.growth_percentage}
-                status={plant.status}
-                maturityDays={plant.plant_type.maturity_days}
-                size="md"
-              />
+              {/* Growth */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/50">
+                      <TrendingUp className="h-4 w-4 text-emerald-500" />
+                    </div>
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Growth</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400">
+                      {plant.status === 'mature' ? 'Complete!' : `~${Math.ceil(plant.plant_type.maturity_days * (100 - plant.growth_percentage) / 100)}d left`}
+                    </span>
+                    <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                      {Math.round(plant.growth_percentage)}%
+                    </span>
+                  </div>
+                </div>
+                <div className="h-2.5 rounded-full bg-slate-200/70 dark:bg-slate-700/50 overflow-hidden relative">
+                  <div
+                    className={cn(
+                      'h-full rounded-full transition-all duration-700',
+                      plant.status === 'dead' ? 'bg-slate-400' :
+                      plant.status === 'mature' ? 'bg-gradient-to-r from-emerald-400 via-green-400 to-teal-400' :
+                      'bg-gradient-to-r from-lime-400 to-emerald-500'
+                    )}
+                    style={{ width: `${Math.max(0, Math.min(100, plant.growth_percentage))}%` }}
+                  />
+                  {/* Subtle milestone markers */}
+                  <div className="absolute inset-0 flex pointer-events-none">
+                    {[25, 50, 75].map((mark) => (
+                      <div
+                        key={mark}
+                        className="absolute top-0 bottom-0 w-px bg-white/30 dark:bg-black/20"
+                        style={{ left: `${mark}%` }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Goal Progress */}
+            {/* Goal Progress - If exists */}
             {goal && (
-              <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 space-y-3">
+              <div className="rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/30 p-4 space-y-3 ring-1 ring-indigo-100 dark:ring-indigo-900/50">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-semibold flex items-center gap-2 text-blue-800 dark:text-blue-200">
-                    <Target className="h-4 w-4" />
-                    Goal Progress
-                  </h4>
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-900/50">
+                      <Target className="h-4 w-4 text-indigo-500" />
+                    </div>
+                    <span className="text-sm font-semibold text-indigo-800 dark:text-indigo-200">Goal Progress</span>
+                  </div>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-100 dark:text-blue-300"
+                    className="h-8 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-100 dark:text-indigo-300 dark:hover:bg-indigo-900/50"
                     onClick={() => setShowGoalStats(true)}
                   >
-                    <BarChart3 className="h-4 w-4 mr-1" />
-                    Stats
+                    <BarChart3 className="h-3.5 w-3.5 mr-1" />
+                    Details
                   </Button>
                 </div>
                 <GoalProgress goal={goal} />
               </div>
             )}
 
-            {/* Action Buttons */}
-            <div className="space-y-2">
+            {/* Primary Action Button */}
+            <div className="space-y-2.5">
               {hasGoal && goal ? (
                 <Button
                   className={cn(
-                    'w-full h-12 text-base font-medium shadow-md',
+                    'w-full h-12 text-base font-semibold rounded-xl shadow-lg transition-all',
                     isWatering && 'animate-pulse',
-                    !isWateredToday && !isDead && 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700'
+                    !isWateredToday && !isDead && 'bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 shadow-indigo-500/25'
                   )}
                   size="lg"
                   variant={isWateredToday ? 'secondary' : 'default'}
@@ -269,14 +362,14 @@ export function PlantDetailSheet({
                   disabled={isPending || isWateredToday || isDead}
                 >
                   <Plus className="h-5 w-5 mr-2" />
-                  {isDead ? 'Plant is dead' : isWateredToday ? 'Already logged today' : 'Log Progress'}
+                  {isDead ? 'Plant has wilted' : isWateredToday ? 'Logged for today' : 'Log Progress'}
                 </Button>
               ) : (
                 <Button
                   className={cn(
-                    'w-full h-12 text-base font-medium shadow-md',
+                    'w-full h-12 text-base font-semibold rounded-xl shadow-lg transition-all',
                     isWatering && 'animate-pulse',
-                    !isWateredToday && !isDead && 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600'
+                    !isWateredToday && !isDead && 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-blue-500/25'
                   )}
                   size="lg"
                   variant={isWateredToday ? 'secondary' : 'default'}
@@ -284,15 +377,15 @@ export function PlantDetailSheet({
                   disabled={isPending || isWatering || isWateredToday || isDead}
                 >
                   <Droplets className={cn('h-5 w-5 mr-2', isWatering && 'text-blue-200')} />
-                  {isDead ? 'Plant is dead' : isWateredToday ? 'Already watered today' : isWatering ? 'Watering...' : 'Water Plant'}
+                  {isDead ? 'Plant has wilted' : isWateredToday ? 'Watered today' : isWatering ? 'Watering...' : 'Water Plant'}
                 </Button>
               )}
 
-              {/* Add Goal button if no goal exists */}
+              {/* Add Goal - Secondary */}
               {!hasGoal && !isDead && (
                 <Button
                   variant="outline"
-                  className="w-full h-11"
+                  className="w-full h-11 rounded-xl font-medium border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
                   onClick={() => setShowGoalWizard(true)}
                 >
                   <Target className="h-4 w-4 mr-2" />
@@ -301,84 +394,91 @@ export function PlantDetailSheet({
               )}
             </div>
 
-            {/* Stats - Better layout with icons */}
+            {/* Statistics - Compact Row Style */}
             <div className="space-y-3">
-              <h4 className="font-semibold text-slate-800 dark:text-slate-200">Statistics</h4>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 border border-orange-100 dark:border-orange-900/50">
-                  <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/50">
-                    <Flame className="h-5 w-5 text-orange-500" />
+              <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                <Zap className="h-4 w-4 text-amber-500" />
+                Statistics
+              </h4>
+
+              <div className="grid grid-cols-4 gap-2">
+                {/* Current Streak - Highlighted */}
+                <div className={cn(
+                  'col-span-2 p-3 rounded-xl text-center',
+                  'bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/40 dark:to-amber-950/40',
+                  'ring-1 ring-orange-200/50 dark:ring-orange-800/30'
+                )}>
+                  <div className="flex items-center justify-center gap-1.5 mb-1">
+                    <Flame className="h-4 w-4 text-orange-500" />
+                    <span className="text-[10px] uppercase tracking-wide font-medium text-orange-600/80 dark:text-orange-400/80">Streak</span>
                   </div>
-                  <div>
-                    <p className="text-xs text-orange-600/80 dark:text-orange-400/80">Current Streak</p>
-                    <p className="font-bold text-orange-700 dark:text-orange-300">{plant.current_streak} days</p>
-                  </div>
+                  <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{plant.current_streak}</p>
+                  <p className="text-[10px] text-orange-500/70 dark:text-orange-400/60">days</p>
                 </div>
 
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-br from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/30 border border-yellow-100 dark:border-yellow-900/50">
-                  <div className="p-2 rounded-lg bg-yellow-100 dark:bg-yellow-900/50">
-                    <Trophy className="h-5 w-5 text-yellow-500" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-yellow-600/80 dark:text-yellow-400/80">Best Streak</p>
-                    <p className="font-bold text-yellow-700 dark:text-yellow-300">{plant.longest_streak} days</p>
-                  </div>
+                {/* Best Streak */}
+                <div className="p-2.5 rounded-xl text-center bg-slate-100/80 dark:bg-slate-800/60">
+                  <Trophy className="h-3.5 w-3.5 text-yellow-500 mx-auto mb-0.5" />
+                  <p className="text-lg font-bold text-slate-700 dark:text-slate-300">{plant.longest_streak}</p>
+                  <p className="text-[9px] text-slate-400 uppercase">Best</p>
                 </div>
 
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border border-blue-100 dark:border-blue-900/50">
-                  <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/50">
-                    <Droplets className="h-5 w-5 text-blue-500" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-blue-600/80 dark:text-blue-400/80">Total Waterings</p>
-                    <p className="font-bold text-blue-700 dark:text-blue-300">{plant.total_waterings}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border border-green-100 dark:border-green-900/50">
-                  <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/50">
-                    <TrendingUp className="h-5 w-5 text-green-500" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-green-600/80 dark:text-green-400/80">Days Active</p>
-                    <p className="font-bold text-green-700 dark:text-green-300">{daysActive}</p>
-                  </div>
+                {/* Total Waterings */}
+                <div className="p-2.5 rounded-xl text-center bg-slate-100/80 dark:bg-slate-800/60">
+                  <Droplets className="h-3.5 w-3.5 text-blue-500 mx-auto mb-0.5" />
+                  <p className="text-lg font-bold text-slate-700 dark:text-slate-300">{plant.total_waterings}</p>
+                  <p className="text-[9px] text-slate-400 uppercase">Waters</p>
                 </div>
               </div>
             </div>
 
-            {/* Info - Cleaner design */}
+            {/* Details - Compact & Clean */}
             <div className="space-y-3">
-              <h4 className="font-semibold text-slate-800 dark:text-slate-200">Details</h4>
+              <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Details</h4>
 
-              {plant.habit_description && (
-                <p className="text-sm text-slate-600 dark:text-slate-400 italic bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3">
-                  &ldquo;{plant.habit_description}&rdquo;
-                </p>
-              )}
+              <div className="rounded-xl bg-slate-50/80 dark:bg-slate-800/40 divide-y divide-slate-200/50 dark:divide-slate-700/50">
+                {plant.habit_description && (
+                  <div className="p-3">
+                    <p className="text-sm text-slate-600 dark:text-slate-400 italic leading-relaxed">
+                      &ldquo;{plant.habit_description}&rdquo;
+                    </p>
+                  </div>
+                )}
 
-              <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400">
-                <Calendar className="h-4 w-4 text-slate-400" />
-                <span>Started {startedDate}</span>
+                <div className="flex items-center gap-3 p-3">
+                  <Calendar className="h-4 w-4 text-slate-400 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-slate-400">Started</p>
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{startedDate}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-3">
+                  <Clock className="h-4 w-4 text-slate-400 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-slate-400">Maturity</p>
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{plant.plant_type.maturity_days} days</p>
+                  </div>
+                </div>
               </div>
 
-              <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400">
-                <Clock className="h-4 w-4 text-slate-400" />
-                <span>{plant.plant_type.maturity_days} days to mature</span>
-              </div>
-
+              {/* Special Ability - Highlighted */}
               {plant.plant_type.special_effect && (
-                <div className="p-3 rounded-xl bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-950/30 dark:to-violet-950/30 border border-purple-100 dark:border-purple-900/50">
-                  <p className="text-sm text-purple-700 dark:text-purple-300 font-semibold flex items-center gap-2">
-                    ✨ Special Ability
-                  </p>
-                  <p className="text-xs text-purple-600 dark:text-purple-400 mt-1 capitalize">
+                <div className={cn(
+                  'p-3.5 rounded-xl',
+                  'bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/40 dark:to-purple-950/40',
+                  'ring-1 ring-purple-200/50 dark:ring-purple-800/30'
+                )}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Sparkles className="h-4 w-4 text-purple-500" />
+                    <span className="text-sm font-semibold text-purple-700 dark:text-purple-300">Special Ability</span>
+                  </div>
+                  <p className="text-sm text-purple-600 dark:text-purple-400 capitalize">
                     {plant.plant_type.special_effect.type.replace(/_/g, ' ')}
                   </p>
                 </div>
               )}
             </div>
-
           </div>
         </SheetContent>
       </Sheet>
