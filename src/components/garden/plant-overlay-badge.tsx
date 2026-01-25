@@ -16,7 +16,7 @@ interface PlantOverlayBadgeProps {
 /**
  * Shows today's activity directly on plant in garden view.
  * - Simple Habits: Shows ✓ if watered, ○ if not
- * - Goal Plants: Shows action count (💧×3) or today's value (📖 45p)
+ * - Goal Plants: Shows progress (value / target) with target icon when not reached
  */
 function PlantOverlayBadgeComponent({
   plant,
@@ -26,6 +26,7 @@ function PlantOverlayBadgeComponent({
   tileSize = 60,
 }: PlantOverlayBadgeProps) {
   const hasGoal = !!plant.goal_mode
+  const goal = plant.goal
   const isWateredToday = plant.last_watered_at
     ? new Date(plant.last_watered_at).toDateString() === new Date().toDateString()
     : false
@@ -73,17 +74,34 @@ function PlantOverlayBadgeComponent({
     )
   }
 
-  // Goal plant - show log count or value
+  // Goal plant - show progress vs target
+  const currentWeekTarget = Math.round(goal?.current_week_target || 0)
+  const displayValue = todayValue ?? 0
+  const hasReachedTarget = currentWeekTarget > 0 && displayValue >= currentWeekTarget
+  const trackingMetric = goal?.tracking_metric || 'total'
+
+  // Determine what value to show based on tracking metric
+  const getDisplayLabel = () => {
+    if (todayLogCount === 0) return '0'
+    if (trackingMetric === 'max') {
+      // For max: show best value today
+      return `${displayValue}`
+    }
+    // For total/min/avg: show accumulated value
+    return `${displayValue}`
+  }
+
+  // No logs today - show target icon to encourage logging
   if (todayLogCount === 0) {
-    // No logs today - show empty state
     return (
       <div
         className={cn(
           'flex items-center justify-center gap-0.5',
           'rounded-full',
-          'bg-slate-800/70 backdrop-blur-md',
-          'text-slate-400 font-medium',
-          'shadow-lg',
+          'bg-amber-500/80 backdrop-blur-md',
+          'text-white font-medium',
+          'shadow-lg shadow-amber-500/30',
+          'animate-pulse',
           className
         )}
         style={{
@@ -91,36 +109,43 @@ function PlantOverlayBadgeComponent({
           fontSize: 10 * badgeScale,
         }}
       >
-        <span className="opacity-60">💧</span>
-        <span>0</span>
+        <span>🎯</span>
+        <span>{currentWeekTarget > 0 ? currentWeekTarget : '?'}</span>
       </div>
     )
   }
 
-  // Has logs today
+  // Has logs today - show progress
   return (
     <div
       className={cn(
         'flex items-center justify-center gap-0.5',
         'rounded-full',
-        'bg-emerald-500/90 backdrop-blur-md',
-        'text-white font-bold',
-        'shadow-lg shadow-emerald-500/30',
+        'backdrop-blur-md',
+        'font-bold',
+        'shadow-lg',
         'animate-in zoom-in-75 duration-300',
+        hasReachedTarget
+          ? 'bg-emerald-500/90 text-white shadow-emerald-500/30'
+          : 'bg-blue-500/90 text-white shadow-blue-500/30',
         className
       )}
       style={{
         padding: `${2 * badgeScale}px ${6 * badgeScale}px`,
-        fontSize: 10 * badgeScale,
+        fontSize: 9 * badgeScale,
       }}
     >
-      <span>💧</span>
-      {todayLogCount > 9 ? (
-        <span>9+</span>
-      ) : todayValue !== undefined ? (
-        <span>{todayValue}</span>
+      {hasReachedTarget ? (
+        <>
+          <span>✓</span>
+          <span>{getDisplayLabel()}</span>
+        </>
       ) : (
-        <span>×{todayLogCount}</span>
+        <>
+          <span>{getDisplayLabel()}</span>
+          <span className="opacity-70">/</span>
+          <span className="opacity-70">{currentWeekTarget}</span>
+        </>
       )}
     </div>
   )

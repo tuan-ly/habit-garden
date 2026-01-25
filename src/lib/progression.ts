@@ -16,33 +16,43 @@ export function calculateTarget(params: ProgressionParams): number {
   const range = endValue - startValue;
   const progress = currentWeek / totalWeeks;
 
+  let target: number;
+
   switch (type) {
     case 'linear':
-      return startValue + range * progress;
+      target = startValue + range * progress;
+      break;
 
     case 'exponential':
       // Chậm đầu, nhanh sau
-      return startValue + range * Math.pow(progress, 2);
+      target = startValue + range * Math.pow(progress, 2);
+      break;
 
     case 'logarithmic':
       // Nhanh đầu, chậm sau
       if (currentWeek === 0) return startValue;
-      return startValue + range * (Math.log(currentWeek + 1) / Math.log(totalWeeks + 1));
+      target = startValue + range * (Math.log(currentWeek + 1) / Math.log(totalWeeks + 1));
+      break;
 
     case 's-curve':
       // Sigmoid: chậm - nhanh - chậm
       const sigmoid = 1 / (1 + Math.exp(-10 * (progress - 0.5)));
-      return startValue + range * sigmoid;
+      target = startValue + range * sigmoid;
+      break;
 
     case 'step':
       // Bậc thang
       const steps = Math.floor(totalWeeks / stepSize);
       const currentStep = Math.floor(currentWeek / stepSize);
-      return startValue + (range / steps) * currentStep;
+      target = startValue + (range / steps) * currentStep;
+      break;
 
     default:
-      return startValue + range * progress;
+      target = startValue + range * progress;
   }
+
+  // Làm tròn để không có số thập phân dài trong mục tiêu
+  return Math.round(target);
 }
 
 // Generate full progression plan

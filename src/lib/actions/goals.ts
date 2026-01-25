@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import type { Goal, GoalLog, CreateGoalDto, LogGoalDto, GoalMode, ProgressionType } from '@/types/database'
 import { calculateTarget, generateProgressionPlan, type ProgressionType as ProgType } from '@/lib/progression'
-import { calculateWateringXp } from '@/lib/xp-system'
+import { calculateWateringXp, calculateNoteBonus } from '@/lib/xp-system'
 import { getTodayWeather, calculateWeatherXp } from '@/lib/weather-system'
 
 export interface GoalWithStats extends Goal {
@@ -222,21 +222,44 @@ export async function logGoalValue(dto: LogGoalDto): Promise<{
     })
     .eq('id', dto.goal_id)
 
-  // Calculate XP - goal logs always give base XP + bonus
+  // Calculate XP - first log gets full XP, subsequent logs only get note XP
   const weather = getTodayWeather()
   const plantType = plant.plant_type
   const currentHour = new Date().getHours()
   const isMorning = currentHour >= 5 && currentHour < 9
 
-  // Base XP for logging (smaller than full watering)
-  let totalXp = 10
+  // Get journal streak for note bonus
+  const { data: journalProfile } = await supabase
+    .from('profiles')
+    .select('journal_streak, longest_journal_streak, last_journal_date, total_journal_entries, xp')
+    .eq('id', user.id)
+    .single()
 
-  // Bonus XP for exceeding target or PR
-  if (isPersonalRecord) totalXp += 25
-  if (exceededTarget) totalXp += 10
+  const lastJournalDate = journalProfile?.last_journal_date
+  const currentJournalStreak = journalProfile?.journal_streak || 0
 
-  // Apply weather bonus
-  totalXp = calculateWeatherXp(totalXp, weather.type)
+  // Calculate note bonus if notes provided
+  let noteXp = 0
+  let newJournalStreak = currentJournalStreak
+  const hasNote = dto.notes && dto.notes.trim().length > 0
+
+  if (hasNote) {
+    // Calculate new journal streak
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+    if (lastJournalDate === yesterday) {
+      newJournalStreak = currentJournalStreak + 1
+    } else if (lastJournalDate !== today) {
+      newJournalStreak = 1 // Reset streak if not consecutive
+    }
+
+    const noteResult = calculateNoteBonus({
+      noteLength: dto.notes!.trim().length,
+      journalStreak: newJournalStreak,
+    })
+    noteXp = noteResult.total
+  }
+
+  let totalXp = 0
 
   // Only do plant watering effects on first log of the day
   if (isFirstLogToday) {
@@ -263,9 +286,12 @@ export async function logGoalValue(dto: LogGoalDto): Promise<{
     })
     totalXp = calculateWeatherXp(wateringXp, weather.type)
 
-    // Re-add bonuses
+    // Add bonuses for first log only
     if (isPersonalRecord) totalXp += 25
     if (exceededTarget) totalXp += 10
+
+    // Add note XP
+    totalXp += noteXp
 
     // Calculate new moisture and growth
     const newMoisture = Math.min(100, plant.current_moisture + plantType.moisture_boost)
@@ -285,6 +311,7 @@ export async function logGoalValue(dto: LogGoalDto): Promise<{
         xp_earned: totalXp,
         morning_bonus: isMorning,
         streak_bonus: breakdown.streakBonus || 0,
+        note_bonus: noteXp,
       })
 
     // Update plant
@@ -302,27 +329,52 @@ export async function logGoalValue(dto: LogGoalDto): Promise<{
         updated_at: new Date().toISOString(),
       })
       .eq('id', plant.id)
+  } else {
+    // Subsequent logs: only note XP (no base watering XP)
+    totalXp = noteXp
   }
 
-  // Update user XP in profiles table (for all logs)
-  const { data: currentProfile } = await supabase
-    .from('profiles')
-    .select('xp')
-    .eq('id', user.id)
-    .single()
+  // Update user XP and journal tracking in profiles table
+  if (journalProfile && totalXp > 0) {
+    const profileUpdate: Record<string, unknown> = {
+      xp: journalProfile.xp + totalXp,
+      updated_at: new Date().toISOString(),
+    }
 
-  if (currentProfile) {
+    // Update journal tracking if note was provided
+    if (hasNote) {
+      profileUpdate.journal_streak = newJournalStreak
+      profileUpdate.longest_journal_streak = Math.max(
+        newJournalStreak,
+        journalProfile.longest_journal_streak || 0
+      )
+      profileUpdate.last_journal_date = today
+      profileUpdate.total_journal_entries = (journalProfile.total_journal_entries || 0) + 1
+    }
+
     const { error: xpError } = await supabase
       .from('profiles')
-      .update({
-        xp: currentProfile.xp + totalXp,
-        updated_at: new Date().toISOString(),
-      })
+      .update(profileUpdate)
       .eq('id', user.id)
 
     if (xpError) {
       console.error('Error updating user XP:', xpError)
     }
+  } else if (journalProfile && hasNote) {
+    // Even if totalXp is 0, still update journal tracking
+    await supabase
+      .from('profiles')
+      .update({
+        journal_streak: newJournalStreak,
+        longest_journal_streak: Math.max(
+          newJournalStreak,
+          journalProfile.longest_journal_streak || 0
+        ),
+        last_journal_date: today,
+        total_journal_entries: (journalProfile.total_journal_entries || 0) + 1,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', user.id)
   }
 
   revalidatePath('/garden')
