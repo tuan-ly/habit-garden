@@ -19,6 +19,8 @@ interface UseGardenZoomOptions {
   maxZoom?: number
   step?: number
   persist?: boolean
+  /** Custom storage key for persisting zoom level */
+  storageKey?: string
 }
 
 interface UseGardenZoomReturn {
@@ -75,6 +77,7 @@ export function useGardenZoom(options: UseGardenZoomOptions = {}): UseGardenZoom
     maxZoom = MAX_ZOOM,
     step = ZOOM_STEP,
     persist = true,
+    storageKey = ZOOM_STORAGE_KEY,
   } = options
 
   // Current displayed zoom (animated)
@@ -102,7 +105,7 @@ export function useGardenZoom(options: UseGardenZoomOptions = {}): UseGardenZoom
   // Load persisted zoom on mount
   useEffect(() => {
     if (persist && typeof window !== 'undefined') {
-      const saved = localStorage.getItem(ZOOM_STORAGE_KEY)
+      const saved = localStorage.getItem(storageKey)
       if (saved) {
         const parsed = parseFloat(saved)
         if (!isNaN(parsed) && parsed >= minZoom && parsed <= maxZoom) {
@@ -142,7 +145,7 @@ export function useGardenZoom(options: UseGardenZoomOptions = {}): UseGardenZoom
           setIsZooming(false)
           // Persist final value
           if (persist && typeof window !== 'undefined') {
-            localStorage.setItem(ZOOM_STORAGE_KEY, to.toString())
+            localStorage.setItem(storageKey, to.toString())
           }
         }
       }
@@ -167,7 +170,7 @@ export function useGardenZoom(options: UseGardenZoomOptions = {}): UseGardenZoom
       } else {
         setZoomState(clamped)
         if (persist && typeof window !== 'undefined') {
-          localStorage.setItem(ZOOM_STORAGE_KEY, clamped.toString())
+          localStorage.setItem(storageKey, clamped.toString())
         }
       }
     },
@@ -262,7 +265,7 @@ export function useGardenZoom(options: UseGardenZoomOptions = {}): UseGardenZoom
     if (initialDistance.current !== null) {
       // Persist zoom value after pinch ends
       if (persist && typeof window !== 'undefined') {
-        localStorage.setItem(ZOOM_STORAGE_KEY, zoom.toString())
+        localStorage.setItem(storageKey, zoom.toString())
       }
     }
     initialDistance.current = null
@@ -390,7 +393,7 @@ export function useGardenZoom(options: UseGardenZoomOptions = {}): UseGardenZoom
       }
       if (persist && typeof window !== 'undefined') {
         persistTimer.current = setTimeout(() => {
-          localStorage.setItem(ZOOM_STORAGE_KEY, newZoom.toString())
+          localStorage.setItem(storageKey, newZoom.toString())
         }, 300)
       }
     },
