@@ -114,9 +114,9 @@ export function GroundPlane({
   const diamondWidth = gridSize * tileSize
   const diamondHeight = gridSize * (tileSize / 2)
 
-  // SVG viewBox dimensions (add space for dirt extrusion at bottom)
+  // SVG viewBox dimensions (add space for dirt extrusion at bottom + shadow)
   const svgWidth = diamondWidth
-  const svgHeight = diamondHeight + tileHeight
+  const svgHeight = diamondHeight + tileHeight + 300 // Extra space for shadow to prevent clipping
 
   // Diamond corner points (grass surface)
   // The diamond is centered horizontally in the SVG
@@ -323,11 +323,11 @@ export function GroundPlane({
       {/* Drop shadow under the island */}
       <ellipse
         cx={bottomX}
-        cy={bottomY + tileHeight + 10}
-        rx={diamondWidth * 0.45}
-        ry={diamondHeight * 0.15}
-        fill="rgba(0,0,0,0.2)"
-        className="blur-sm"
+        cy={bottomY + tileHeight + 20}
+        rx={diamondWidth * 0.4}
+        ry={diamondHeight * 0.12}
+        fill="rgba(0,0,0,0.15)"
+        className="blur-xl"
       />
 
       {/* Main grass surface - single connected plane */}

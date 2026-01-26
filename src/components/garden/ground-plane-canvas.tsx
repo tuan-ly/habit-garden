@@ -166,7 +166,7 @@ function GroundPlaneCanvasComponent({
     const diamondWidth = gridSize * tileSize
     const diamondHeight = gridSize * (tileSize / 2)
     const svgWidth = diamondWidth
-    const svgHeight = diamondHeight + tileHeight
+    const svgHeight = diamondHeight + tileHeight + 300 // Extra space for shadow to prevent clipping
 
     // Diamond corner points
     const topX = svgWidth / 2
@@ -279,11 +279,14 @@ function GroundPlaneCanvasComponent({
 
         ctx.clearRect(0, 0, svgWidth, svgHeight)
 
-        // Draw shadow ellipse
-        ctx.fillStyle = 'rgba(0,0,0,0.2)'
+        // Draw shadow ellipse with blur
+        ctx.save()
+        ctx.filter = 'blur(20px)'
+        ctx.fillStyle = 'rgba(0,0,0,0.15)'
         ctx.beginPath()
-        ctx.ellipse(bottomX, bottomY + tileHeight + 10, diamondWidth * 0.45, diamondHeight * 0.15, 0, 0, Math.PI * 2)
+        ctx.ellipse(bottomX, bottomY + tileHeight + 20, diamondWidth * 0.4, diamondHeight * 0.12, 0, 0, Math.PI * 2)
         ctx.fill()
+        ctx.restore()
 
         // Draw grass surface with gradient
         const gradient = ctx.createLinearGradient(svgWidth * 0.2, 0, svgWidth * 0.8, diamondHeight)
