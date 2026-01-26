@@ -13,16 +13,60 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Habit Garden - Grow Your Habits",
-  description: "Build habits through gamification. Each habit is a plant that needs daily care to grow.",
+  metadataBase: new URL("https://habien.com"),
+  title: {
+    default: "Habien - Gamify Your Habits & Grow Your Life",
+    template: "%s | Habien",
+  },
+  description: "Build better habits through gamification. Plant seeds, water them daily, and watch your personal garden flourish as you achieve your goals.",
+  keywords: ["habit tracker", "gamified habits", "productivity", "self-improvement", "digital garden", "habit building", "goal tracking"],
+  authors: [{ name: "Habien Team" }],
+  creator: "Habien",
+  publisher: "Habien",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Habit Garden",
+    title: "Habien",
   },
-  formatDetection: {
-    telephone: false,
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  openGraph: {
+    title: "Habien - Gamify Your Habits",
+    description: "Turn your daily routines into a thriving digital garden. Join thousands of users growing their habits today.",
+    url: "https://habien.com",
+    siteName: "Habien",
+    locale: "en_US",
+    type: "website",
+    images: [
+      {
+        url: "/og-image.png", // We might need to generate this or ensure it exists, but usually having the path is good start
+        width: 1200,
+        height: 630,
+        alt: "Habien Preview",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Habien - Gamify Your Habits",
+    description: "Build better habits through gamification. Plant seeds, water them daily, and watch your garden grow.",
+    creator: "@habien", // Placeholder handle
+    images: ["/og-image.png"],
   },
   icons: {
     icon: [

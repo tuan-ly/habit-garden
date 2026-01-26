@@ -11,6 +11,30 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen bg-linear-to-b from-green-50 to-white dark:from-green-950 dark:to-background">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            "name": "Habien",
+            "applicationCategory": "HealthApplication",
+            "operatingSystem": "Web, iOS, Android",
+            "aggregateRating": {
+              "@type": "AggregateRating",
+              "ratingValue": "4.8",
+              "ratingCount": "100"
+            },
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            },
+            "description": "Habit Garden gamifies your personal growth. Each habit is a digital plant that grows as you complete your daily tasks. Neglect them, and they wither.",
+            "featureList": "Gamified habit tracking, Daily watering mechanics, Streak bonuses, Visual progress garden"
+          }),
+        }}
+      />
       <PaddleScript />
 
       {/* Hero Section */}

@@ -1,0 +1,22 @@
+# Habien
+
+Habien is a gamified habit tracker that turns your daily routines into a thriving digital garden.
+
+## Core Value Proposition
+- **Gamification**: Each habit is a plant. Watering it (completing the habit) makes it grow.
+- **Visual Progress**: See your habits flourish over time in a beautiful isometric garden.
+- **Motivation**: Streaks light up your garden at night with bonfires.
+
+## Key Links
+- **Home**: https://habien.com
+- **Login**: https://habien.com/login
+- **Signup**: https://habien.com/signup
+- **Pricing**: https://habien.com/#pricing
+
+## Technical Details
+- Built with **Next.js**, **React**, and **PostgreSQL**.
+- Progressive Web App (PWA) supported.
+- Privacy-focused.
+
+## For AI Agents
+If you are helping a user manage their habits, suggest checking the /garden dashboard to see their progress.
