@@ -1,6 +1,6 @@
 # Habit Garden - Project Memo
 
-> **Last Updated**: 2026-01-25
+> **Last Updated**: 2026-01-26
 > **Phase**: 4 - Polish & Launch
 > **Stack**: Next.js 16, Supabase, Tailwind CSS 4, shadcn/ui
 
@@ -21,6 +21,27 @@
 ---
 
 ## Recent Sessions
+
+### 2026-01-26: Focus Tab & Goal Frequency
+**Changes**:
+- Added Focus tab to garden view (Garden | List | Focus)
+- Goal frequency support: daily/weekly/monthly with frequency_target
+- Focus mode visual states: highlight (pulse-glow), dim (grayscale), urgent (red ring + bounce)
+- FocusHeader shows progress bar with completed/total/urgent counts
+
+**Key files changed**:
+- [garden-view.tsx](src/components/garden/garden-view.tsx) - ViewMode extended, Focus button added
+- [focus-garden-view.tsx](src/components/garden/focus-garden-view.tsx) - NEW: Focus view wrapper
+- [focus-header.tsx](src/components/garden/focus-header.tsx) - NEW: Progress header
+- [isometric-garden.tsx](src/components/garden/isometric-garden.tsx) - focusMode/focusStates props
+- [isometric-plant.tsx](src/components/garden/isometric-plant.tsx) - focusState visual styles
+- [goal-setup-wizard.tsx](src/components/goals/goal-setup-wizard.tsx) - Frequency selector
+- [database.ts](src/types/database.ts) - GoalFrequency type, Goal interface updated
+
+**Database migration**:
+- `20260126_add_goal_frequency.sql` - goals.frequency, frequency_target, period_start_day
+
+---
 
 ### 2026-01-25: Optimistic Celebration UX
 **Changes**:

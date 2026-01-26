@@ -26,7 +26,7 @@ import {
   Edit3,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { GoalMode, ProgressionType } from '@/types/database'
+import type { GoalMode, ProgressionType, GoalFrequency } from '@/types/database'
 import { createGoal } from '@/lib/actions/goals'
 import { generateProgressionPlan, type ProgressionType as ProgType } from '@/lib/progression'
 import { toast } from 'sonner'
@@ -118,6 +118,27 @@ const TRACKING_METRICS = [
   { id: 'average', label: 'Average', description: 'Track average' },
 ]
 
+const FREQUENCY_OPTIONS = [
+  {
+    id: 'daily' as GoalFrequency,
+    label: 'Daily',
+    icon: '📅',
+    description: 'Complete every day',
+  },
+  {
+    id: 'weekly' as GoalFrequency,
+    label: 'Weekly',
+    icon: '📆',
+    description: 'X times per week',
+  },
+  {
+    id: 'monthly' as GoalFrequency,
+    label: 'Monthly',
+    icon: '🗓️',
+    description: 'X times per month',
+  },
+]
+
 export function GoalSetupWizard({
   plantId,
   plantName,
@@ -139,6 +160,8 @@ export function GoalSetupWizard({
   const [progressionType, setProgressionType] = useState<ProgressionType>('s-curve')
   const [trackingMetric, setTrackingMetric] = useState('max')
   const [manualTargets, setManualTargets] = useState<number[] | null>(null)
+  const [frequency, setFrequency] = useState<GoalFrequency>('daily')
+  const [frequencyTarget, setFrequencyTarget] = useState(1)
 
   // Generate preview targets
   const previewTargets = useMemo(() => {
@@ -183,6 +206,8 @@ export function GoalSetupWizard({
     setTrackingMetric('max')
     setManualTargets(null)
     setShowManualEditor(false)
+    setFrequency('daily')
+    setFrequencyTarget(1)
   }
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -235,6 +260,8 @@ export function GoalSetupWizard({
         duration_weeks: durationWeeks,
         progression_type: progressionType,
         weekly_targets: manualTargets || undefined,
+        frequency,
+        frequency_target: frequency === 'daily' ? 1 : frequencyTarget,
       })
 
       if (result.success) {
@@ -469,6 +496,49 @@ export function GoalSetupWizard({
                 </div>
               )}
 
+              {/* Frequency Selector */}
+              <div className="space-y-2">
+                <Label>How often?</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {FREQUENCY_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => {
+                        setFrequency(opt.id)
+                        if (opt.id === 'daily') setFrequencyTarget(1)
+                        else if (opt.id === 'weekly') setFrequencyTarget(3)
+                        else setFrequencyTarget(10)
+                      }}
+                      className={cn(
+                        'p-3 rounded-lg border text-center transition-all',
+                        frequency === opt.id
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'hover:border-primary/50'
+                      )}
+                    >
+                      <div className="text-lg">{opt.icon}</div>
+                      <div className="font-medium text-sm">{opt.label}</div>
+                    </button>
+                  ))}
+                </div>
+                {frequency !== 'daily' && (
+                  <div className="flex items-center gap-2 mt-2 p-2 rounded-lg bg-muted/50">
+                    <Input
+                      type="number"
+                      min="1"
+                      max={frequency === 'weekly' ? 7 : 31}
+                      value={frequencyTarget}
+                      onChange={(e) => setFrequencyTarget(Number(e.target.value) || 1)}
+                      className="w-16 h-8 text-center"
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      times per {frequency === 'weekly' ? 'week' : 'month'}
+                    </span>
+                  </div>
+                )}
+              </div>
+
               {/* Duration Slider */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -592,6 +662,10 @@ export function GoalSetupWizard({
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 text-sm">
                   {goalMode === 'build_capacity' ? '📈' : '🎯'}{' '}
                   {goalMode === 'build_capacity' ? 'Capacity' : 'Accumulator'}
+                </span>
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 text-sm">
+                  {FREQUENCY_OPTIONS.find((f) => f.id === frequency)?.icon}{' '}
+                  {frequency === 'daily' ? 'Daily' : `${frequencyTarget}x/${frequency === 'weekly' ? 'week' : 'month'}`}
                 </span>
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 text-sm">
                   {currentGrowthStage.icon} {durationWeeks} weeks

@@ -1962,3 +1962,21 @@
   animation: tree-sway 4s ease-in-out infinite;
   transform-origin: bottom center;
 }
+
+/* ============================================
+   Focus Mode Visual States
+   ============================================ */
+
+/* Pulse glow for highlighted plants (needs action) */
+@keyframes pulse-glow {
+  0%, 100% {
+    filter: brightness(1) drop-shadow(0 0 0 transparent);
+  }
+  50% {
+    filter: brightness(1.1) drop-shadow(0 0 12px rgba(251, 191, 36, 0.6));
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}

@@ -5,15 +5,16 @@ import { PlantCard } from '@/components/plants/plant-card'
 import { PlantDetailSheet } from '@/components/plants/plant-detail-sheet'
 import { AddPlantDialog } from '@/components/plants/add-plant-dialog'
 import { IsometricGarden } from './isometric-garden'
+import { FocusGardenView } from './focus-garden-view'
 import { GardenSky } from './garden-sky'
 import { WeatherEffects } from './weather-effects'
-import { TreesIcon, LayoutGrid, Plus } from 'lucide-react'
+import { TreesIcon, LayoutGrid, Plus, Target } from 'lucide-react'
 import { GameHud } from '@/components/game-ui'
 import { cn } from '@/lib/utils'
 import { usePlants, useMood } from '@/lib/context'
 import type { PlantWithType, PlantType, WeatherType, Profile } from '@/types/database'
 
-type ViewMode = 'garden' | 'list'
+type ViewMode = 'garden' | 'list' | 'focus'
 
 interface GardenViewProps {
   plantTypes: PlantType[]
@@ -53,7 +54,7 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
     // Initialize from localStorage on client side
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('gardenViewMode') as ViewMode | null
-      if (saved === 'garden' || saved === 'list') {
+      if (saved === 'garden' || saved === 'list' || saved === 'focus') {
         return saved
       }
     }
@@ -105,11 +106,11 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
 
   return (
     <div className="h-full relative">
-      {/* Sky background - fills entire screen */}
-      {viewMode === 'garden' && <GardenSky weather={displayWeather} />}
+      {/* Sky background - fills entire screen (garden and focus modes) */}
+      {(viewMode === 'garden' || viewMode === 'focus') && <GardenSky weather={displayWeather} />}
 
-      {/* Weather Overlay - Renders on top of everything but below HUD */}
-      {viewMode === 'garden' && displayWeather && <WeatherEffects weather={displayWeather} />}
+      {/* Weather Overlay - Renders on top of everything but below HUD (garden and focus modes) */}
+      {(viewMode === 'garden' || viewMode === 'focus') && displayWeather && <WeatherEffects weather={displayWeather} />}
 
       {/* Game HUD - floating at top corners */}
       <GameHud profile={profile} />
@@ -124,6 +125,18 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
       {viewMode === 'garden' && (
         <div className="h-full">
           <IsometricGarden
+            plantTypes={plantTypes}
+            weather={displayWeather}
+            journalStreak={profile?.journal_streak ?? 0}
+          />
+        </div>
+      )}
+
+      {/* Focus Garden View - goal-focused with visual states */}
+      {viewMode === 'focus' && (
+        <div className="h-full">
+          <FocusGardenView
+            plants={plants}
             plantTypes={plantTypes}
             weather={displayWeather}
             journalStreak={profile?.journal_streak ?? 0}
@@ -285,6 +298,18 @@ function ViewToggle({
         >
           <LayoutGrid className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
           List
+        </button>
+        <button
+          onClick={() => onViewModeChange('focus')}
+          className={cn(
+            "flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-bold transition-all duration-300",
+            viewMode === 'focus'
+              ? "bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-md shadow-amber-500/30"
+              : "text-slate-400 hover:text-white hover:bg-slate-800"
+          )}
+        >
+          <Target className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+          Focus
         </button>
       </div>
     </div>

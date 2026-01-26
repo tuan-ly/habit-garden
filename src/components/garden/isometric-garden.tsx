@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { IsometricTile } from './isometric-tile'
-import { IsometricPlant } from './isometric-plant'
+import { IsometricPlant, type FocusState } from './isometric-plant'
 import { PlantInfoBar } from './plant-tooltip'
 import { FloatingPlantCard } from './floating-plant-card'
 import { GroundPlane, type MultiCellArea } from './ground-plane'
@@ -40,6 +40,10 @@ interface IsometricGardenProps {
   plantTypes: PlantType[]
   weather?: WeatherType | null
   journalStreak?: number
+  /** Enable focus mode - hides ModeToolbar, changes click behavior */
+  focusMode?: boolean
+  /** Map of plant ID to focus state for visual treatment */
+  focusStates?: Map<string, FocusState>
 }
 
 // Get responsive tile size - returns default for SSR, actual for client
@@ -60,6 +64,8 @@ export function IsometricGarden({
   plantTypes,
   weather,
   journalStreak = 0,
+  focusMode = false,
+  focusStates,
 }: IsometricGardenProps) {
   // Get plants from context with optimistic updates
   const { plants, waterPlant, logGoal, movePlant } = usePlants()
@@ -707,12 +713,14 @@ export function IsometricGarden({
 
   return (
     <div className="relative w-full h-full flex flex-col select-none">
-      {/* Mode toolbar - fixed position on left side */}
-      <ModeToolbar
-        mode={mode}
-        onModeChange={setMode}
-        className="fixed left-3 top-1/2 -translate-y-1/2 z-30"
-      />
+      {/* Mode toolbar - fixed position on left side (hidden in focus mode) */}
+      {!focusMode && (
+        <ModeToolbar
+          mode={mode}
+          onModeChange={setMode}
+          className="fixed left-3 top-1/2 -translate-y-1/2 z-30"
+        />
+      )}
 
       {/* Zoom Controls - fixed position on right side */}
       <ZoomControls
@@ -885,6 +893,7 @@ export function IsometricGarden({
                       <IsometricPlant
                         plant={plant}
                         weather={weather}
+                        focusState={focusStates?.get(plant.id)}
                       />
                     </div>
                   )}

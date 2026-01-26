@@ -8,6 +8,7 @@ export type AdaptiveMode = 'suggest' | 'auto' | 'off'
 export type ProgressionType = 'linear' | 'exponential' | 'logarithmic' | 's-curve' | 'step' | 'custom'
 export type WeatherType = 'sunny' | 'cloudy' | 'rainy' | 'stormy' | 'rainbow'
 export type AdjustmentType = 'increase' | 'decrease' | 'recovery_week' | 'timeline_extend'
+export type GoalFrequency = 'daily' | 'weekly' | 'monthly'
 
 // Special effect types for different plants
 export type SpecialEffectType =
@@ -177,6 +178,10 @@ export interface Goal {
   adaptive_mode: AdaptiveMode
   last_adjusted_at: string | null
   adjustment_count: number
+  // Frequency tracking
+  frequency: GoalFrequency
+  frequency_target: number
+  period_start_day: number
   created_at: string
   updated_at: string
 }
@@ -291,6 +296,10 @@ export interface CreateGoalDto {
   progression_type?: ProgressionType
   step_size?: number
   weekly_targets?: number[] // Optional manual targets override
+  // Frequency tracking
+  frequency?: GoalFrequency
+  frequency_target?: number
+  period_start_day?: number
 }
 
 export interface LogGoalDto {
