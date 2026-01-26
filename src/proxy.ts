@@ -57,12 +57,6 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Root path - redirect based on auth status
-  if (request.nextUrl.pathname === '/') {
-    const url = request.nextUrl.clone()
-    url.pathname = user ? '/garden' : '/login'
-    return NextResponse.redirect(url)
-  }
 
   return supabaseResponse
 }
