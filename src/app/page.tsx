@@ -166,6 +166,7 @@ export default async function Home() {
           <div className="flex justify-center gap-6 text-sm text-muted-foreground">
             <Link href="/privacy" className="hover:text-foreground">Privacy</Link>
             <Link href="/terms" className="hover:text-foreground">Terms</Link>
+            <Link href="/refund" className="hover:text-foreground">Refunds</Link>
             <Link href="mailto:support@habitgarden.com" className="hover:text-foreground">Contact</Link>
           </div>
         </div>
