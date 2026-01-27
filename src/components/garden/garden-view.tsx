@@ -4,14 +4,16 @@ import { useState } from 'react'
 import { PlantCard } from '@/components/plants/plant-card'
 import { PlantDetailSheet } from '@/components/plants/plant-detail-sheet'
 import { AddPlantDialog } from '@/components/plants/add-plant-dialog'
+import { BackgroundAudio } from './background-audio'
 import { IsometricGarden } from './isometric-garden'
 import { FocusGardenView } from './focus-garden-view'
 import { GardenSky } from './garden-sky'
 import { WeatherEffects } from './weather-effects'
-import { TreesIcon, LayoutGrid, Plus, Target } from 'lucide-react'
+import { TreesIcon, LayoutGrid, Plus, Target, Flower2 } from 'lucide-react'
 import { GameHud } from '@/components/game-ui'
 import { cn } from '@/lib/utils'
 import { usePlants, useMood } from '@/lib/context'
+import { useBreathingRhythm } from '@/hooks/use-breathing-rhythm'
 import type { PlantWithType, PlantType, WeatherType, Profile } from '@/types/database'
 
 type ViewMode = 'garden' | 'list' | 'focus'
@@ -50,6 +52,10 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
   const [selectedPlant, setSelectedPlant] = useState<PlantWithType | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [isZenMode, setIsZenMode] = useState(false)
+  const [currentZenTrack, setCurrentZenTrack] = useState(0)
+  const breathingValue = useBreathingRhythm(isZenMode)
+
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     // Initialize from localStorage on client side
     if (typeof window !== 'undefined') {
@@ -80,14 +86,30 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
   if (plants.length === 0) {
     return (
       <div className="h-full relative">
+        {/* Background Audio for Zen Mode */}
+        <BackgroundAudio
+          isPlaying={isZenMode}
+          currentTrackIndex={currentZenTrack}
+          onTrackChange={setCurrentZenTrack}
+          className="fixed top-14 right-2 sm:top-3 sm:right-3 z-30"
+        />
+
         {/* Sky background */}
-        <GardenSky weather={displayWeather} />
+        <GardenSky
+          weather={displayWeather}
+          breathingValue={breathingValue}
+        />
 
         {/* Game HUD */}
         <GameHud profile={profile} />
 
         {/* View toggle - top center */}
-        <ViewToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
+        <ViewToggle
+          viewMode={viewMode}
+          onViewModeChange={handleViewModeChange}
+          isZenMode={isZenMode}
+          onZenModeChange={setIsZenMode}
+        />
 
         <IsometricGarden
           plantTypes={plantTypes}
@@ -106,17 +128,40 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
 
   return (
     <div className="h-full relative">
+      {/* Background Audio for Zen Mode */}
+      <BackgroundAudio
+        isPlaying={isZenMode}
+        currentTrackIndex={currentZenTrack}
+        onTrackChange={setCurrentZenTrack}
+        className="fixed top-14 right-2 sm:top-3 sm:right-3 z-30"
+      />
+
       {/* Sky background - fills entire screen (garden and focus modes) */}
-      {(viewMode === 'garden' || viewMode === 'focus') && <GardenSky weather={displayWeather} />}
+      {(viewMode === 'garden' || viewMode === 'focus') && (
+        <GardenSky
+          weather={displayWeather}
+          breathingValue={breathingValue}
+        />
+      )}
 
       {/* Weather Overlay - Renders on top of everything but below HUD (garden and focus modes) */}
-      {(viewMode === 'garden' || viewMode === 'focus') && displayWeather && <WeatherEffects weather={displayWeather} />}
+      {(viewMode === 'garden' || viewMode === 'focus') && displayWeather && (
+        <WeatherEffects
+          weather={displayWeather}
+          breathingValue={breathingValue}
+        />
+      )}
 
       {/* Game HUD - floating at top corners */}
       <GameHud profile={profile} />
 
       {/* View toggle - top center */}
-      <ViewToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
+      <ViewToggle
+        viewMode={viewMode}
+        onViewModeChange={handleViewModeChange}
+        isZenMode={isZenMode}
+        onZenModeChange={setIsZenMode}
+      />
 
       {/* Floating Add Plant button - only in list view */}
       {viewMode === 'list' && <FloatingAddButton onClick={() => setAddDialogOpen(true)} />}
@@ -264,16 +309,21 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
   )
 }
 
-// View toggle component - compact, positioned at top center (moves down on mobile to avoid HUD overlap)
+// View toggle component - compact, positioned at top center
 function ViewToggle({
   viewMode,
-  onViewModeChange
+  onViewModeChange,
+  isZenMode,
+  onZenModeChange
 }: {
   viewMode: ViewMode
   onViewModeChange: (mode: ViewMode) => void
+  isZenMode: boolean
+  onZenModeChange: (isZen: boolean) => void
 }) {
   return (
-    <div className="fixed top-14 sm:top-3 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
+    <div className="fixed top-14 sm:top-3 left-1/2 -translate-x-1/2 z-30 pointer-events-auto flex items-center gap-2">
+      {/* View Modes */}
       <div className="flex items-center gap-0.5 p-0.5 sm:p-1 bg-slate-900/80 backdrop-blur-xl rounded-lg sm:rounded-xl border border-slate-700/50 shadow-lg">
         <button
           onClick={() => onViewModeChange('garden')}
@@ -310,6 +360,23 @@ function ViewToggle({
         >
           <Target className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
           Focus
+        </button>
+      </div>
+
+      {/* Zen Mode Toggle (Separate pill) */}
+      <div className="flex items-center p-0.5 sm:p-1 bg-slate-900/80 backdrop-blur-xl rounded-lg sm:rounded-xl border border-slate-700/50 shadow-lg">
+        <button
+          onClick={() => onZenModeChange(!isZenMode)}
+          className={cn(
+            "flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-bold transition-all duration-300",
+            isZenMode
+              ? "bg-gradient-to-br from-pink-400 to-rose-500 text-white shadow-md shadow-rose-500/30"
+              : "text-slate-400 hover:text-white hover:bg-slate-800"
+          )}
+          title="Zen Mode: Relax with breathing weather and music"
+        >
+          <Flower2 className={cn("w-3 h-3 sm:w-3.5 sm:h-3.5", isZenMode && "animate-pulse")} />
+          <span className="hidden sm:inline">Zen</span>
         </button>
       </div>
     </div>

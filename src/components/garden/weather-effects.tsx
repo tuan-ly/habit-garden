@@ -9,9 +9,11 @@ interface WeatherEffectsProps {
     className?: string
     /** If true, uses absolute positioning instead of fixed */
     contained?: boolean
+    /** Value between 0 and 1 for breathing animation */
+    breathingValue?: number
 }
 
-export function WeatherEffects({ weather, className, contained }: WeatherEffectsProps) {
+export function WeatherEffects({ weather, className, contained, breathingValue = 0 }: WeatherEffectsProps) {
     const [showLightning, setShowLightning] = useState(false)
     const [rainDrops, setRainDrops] = useState<Array<{
         id: number;
@@ -95,6 +97,7 @@ export function WeatherEffects({ weather, className, contained }: WeatherEffects
                         left: drop.left,
                         animationDelay: drop.delay,
                         animationDuration: drop.duration,
+                        opacity: breathingValue > 0 ? 0.3 + breathingValue * 0.7 : undefined,
                     }}
                 />
             ))}

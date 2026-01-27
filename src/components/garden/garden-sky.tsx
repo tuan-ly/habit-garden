@@ -11,6 +11,8 @@ interface GardenSkyProps {
   contained?: boolean
   /** Force a specific time of day (optional) */
   timeOfDay?: TimeOfDay
+  /** Value between 0 and 1 for breathing animation */
+  breathingValue?: number
 }
 
 // Enhanced sky gradient colors based on time of day - more vibrant and natural
@@ -101,7 +103,7 @@ function generateStars(count: number, seed: number = 456) {
   return stars
 }
 
-export function GardenSky({ weather, className, contained, timeOfDay: forcedTimeOfDay }: GardenSkyProps) {
+export function GardenSky({ weather, className, contained, timeOfDay: forcedTimeOfDay, breathingValue = 0 }: GardenSkyProps) {
   const [currentTimeOfDay, setCurrentTimeOfDay] = useState<TimeOfDay>('day')
 
   useEffect(() => {
@@ -161,6 +163,9 @@ export function GardenSky({ weather, className, contained, timeOfDay: forcedTime
               background: weather === 'sunny' || !weather
                 ? 'radial-gradient(circle, rgba(251,191,36,0.4) 0%, rgba(251,191,36,0) 70%)'
                 : 'radial-gradient(circle, rgba(251,191,36,0.15) 0%, rgba(251,191,36,0) 70%)',
+              transform: breathingValue > 0 ? `scale(${1 + breathingValue * 0.4})` : undefined,
+              opacity: breathingValue > 0 ? 0.6 + breathingValue * 0.4 : 1,
+              transition: 'transform 0.1s ease-out, opacity 0.1s ease-out'
             }}
           />
           {/* Sun icon */}
@@ -168,6 +173,18 @@ export function GardenSky({ weather, className, contained, timeOfDay: forcedTime
             {weather === 'stormy' ? '⛈️' : weather === 'rainy' ? '🌧️' : weather === 'cloudy' ? '⛅' : weather === 'rainbow' ? '🌈' : '☀️'}
           </div>
         </div>
+      )}
+
+
+      {/* Global Breathing Vignette (Zen Mode) */}
+      {breathingValue > 0 && (
+        <div
+          className="absolute inset-0 pointer-events-none transition-opacity duration-100 ease-out"
+          style={{
+            background: 'radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.4) 100%)',
+            opacity: breathingValue * 0.6
+          }}
+        />
       )}
 
       {/* Night sky with moon and stars */}
@@ -196,6 +213,9 @@ export function GardenSky({ weather, className, contained, timeOfDay: forcedTime
               className="absolute -inset-6 rounded-full"
               style={{
                 background: 'radial-gradient(circle, rgba(226,232,240,0.3) 0%, rgba(226,232,240,0) 70%)',
+                transform: breathingValue > 0 ? `scale(${1 + breathingValue * 0.5})` : undefined,
+                opacity: breathingValue > 0 ? 0.5 + breathingValue * 0.5 : 1,
+                transition: 'transform 0.1s ease-out, opacity 0.1s ease-out'
               }}
             />
             <div className="text-5xl sm:text-6xl drop-shadow-lg">🌙</div>
@@ -211,7 +231,7 @@ export function GardenSky({ weather, className, contained, timeOfDay: forcedTime
           style={{
             left: `${cloud.x}%`,
             top: `${cloud.y}%`,
-            transform: `scale(${cloud.scale})`,
+            transform: `scale(${cloud.scale * (1 + breathingValue * 0.15)})`,
             opacity: weather === 'cloudy' || weather === 'rainy' || weather === 'stormy'
               ? cloud.opacity
               : cloud.opacity * 0.5,
