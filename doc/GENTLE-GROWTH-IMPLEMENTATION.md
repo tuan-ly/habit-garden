@@ -80,165 +80,123 @@ Traditional habit apps create anxiety through:
 
 ## 3. Database Schema Changes
 
-### 3.1 New Table: `habits` (Core Entity)
+### 3.1 Update: `plants` Table (Add Gentle Growth Fields)
+
+Thay vì tạo bảng `habits` mới, ta mở rộng bảng `plants` hiện có:
 
 ```sql
--- Habits are lifetime entities, plants visualize them
-CREATE TABLE habits (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+-- Add Gentle Growth fields to existing plants table
+ALTER TABLE plants ADD COLUMN IF NOT EXISTS why_i_started TEXT;  -- User's original motivation
 
-  -- Identity
-  name TEXT NOT NULL,
-  description TEXT,
-  icon TEXT DEFAULT '🌱',
-  color TEXT DEFAULT '#22c55e',
+-- Rest day configuration (Gentle Growth: rest is valid)
+ALTER TABLE plants ADD COLUMN IF NOT EXISTS rest_days_allowed INTEGER DEFAULT 2;   -- per week
+ALTER TABLE plants ADD COLUMN IF NOT EXISTS grace_period_days INTEGER DEFAULT 7;   -- before "sleeping"
 
-  -- Purpose (Gentle Growth: reconnect with why)
-  why_i_started TEXT,                    -- User's original motivation
+-- Rhythm tracking (Gentle Growth: rhythm over streak)
+ALTER TABLE plants ADD COLUMN IF NOT EXISTS days_this_week INTEGER DEFAULT 0;
+ALTER TABLE plants ADD COLUMN IF NOT EXISTS days_this_month INTEGER DEFAULT 0;
+ALTER TABLE plants ADD COLUMN IF NOT EXISTS consistency_percentage NUMERIC DEFAULT 0;  -- rolling 30-day
 
-  -- Tracking configuration
-  tracking_metric TEXT NOT NULL,         -- "books", "minutes", "times"
-  unit TEXT NOT NULL,                    -- "cuốn", "phút", "lần"
-  frequency TEXT DEFAULT 'daily',        -- daily, weekly, flexible
-  frequency_target INTEGER DEFAULT 1,    -- times per frequency period
+-- Maturity (grows with time + consistency)
+ALTER TABLE plants ADD COLUMN IF NOT EXISTS maturity_level INTEGER DEFAULT 1;  -- 1-10
 
-  -- Rest day configuration (Gentle Growth: rest is valid)
-  rest_days_allowed INTEGER DEFAULT 2,   -- per week, guilt-free
-  grace_period_days INTEGER DEFAULT 7,   -- before "sleeping" status
-
-  -- Lifetime stats (aggregated across all seasons)
-  total_value NUMERIC DEFAULT 0,
-  total_logs INTEGER DEFAULT 0,
-  total_days_active INTEGER DEFAULT 0,
-  longest_streak INTEGER DEFAULT 0,
-  current_streak INTEGER DEFAULT 0,
-
-  -- Rhythm tracking (Gentle Growth: rhythm over streak)
-  days_this_week INTEGER DEFAULT 0,
-  days_this_month INTEGER DEFAULT 0,
-  consistency_percentage NUMERIC DEFAULT 0,  -- rolling 30-day
-
-  -- Age & Maturity
-  started_at TIMESTAMPTZ DEFAULT NOW(),
-  maturity_level INTEGER DEFAULT 1,      -- 1-10, grows with time + consistency
-
-  -- Status (Gentle Growth: sleeping, not dying)
-  status TEXT DEFAULT 'active',          -- active, resting, sleeping, paused
-  last_activity_at TIMESTAMPTZ DEFAULT NOW(),
-  paused_at TIMESTAMPTZ,
-  pause_reason TEXT,
-
-  -- Plant visual reference
-  plant_type_id UUID REFERENCES plant_types(id),
-
-  -- Legacy migration
-  legacy_plant_id UUID,                  -- Reference to old plants table
-
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Indexes
-CREATE INDEX idx_habits_user_id ON habits(user_id);
-CREATE INDEX idx_habits_status ON habits(status);
+-- Update status options: 'growing', 'mature', 'resting', 'sleeping', 'paused', 'dead'
+-- Note: 'resting' = 1-3 days no activity, 'sleeping' = 7+ days (gentle, not punishing)
 ```
 
-### 3.2 New Table: `seasons` (Goal Cycles)
+**Lý do không tạo bảng `habits` riêng:**
+- Quan hệ 1:1 với plants → không cần tách
+- Giảm complexity, ít joins
+- Giữ backward compatibility tốt hơn
+
+### 3.2 Repurpose: `goals` Table as Seasons
+
+Thay vì tạo bảng `seasons` mới, ta mở rộng bảng `goals` hiện có để support multiple seasons:
 
 ```sql
--- Seasons are goal cycles within a habit
-CREATE TABLE seasons (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  habit_id UUID NOT NULL REFERENCES habits(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+-- Add season/cycle support to existing goals table
+ALTER TABLE goals ADD COLUMN IF NOT EXISTS season_number INTEGER DEFAULT 1;
+ALTER TABLE goals ADD COLUMN IF NOT EXISTS season_name TEXT;  -- "2024 Reading Challenge"
 
-  -- Season identity
-  name TEXT,                             -- "2024 Reading Challenge"
-  season_number INTEGER NOT NULL,        -- Auto-increment per habit
+-- Status for gentle growth (celebrate effort even if not complete)
+ALTER TABLE goals ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active';  -- active, completed, ended
+ALTER TABLE goals ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;
 
-  -- Goal configuration
-  goal_mode TEXT DEFAULT 'total_progress',
-  target_value NUMERIC NOT NULL,
-  start_value NUMERIC DEFAULT 0,
-  current_value NUMERIC DEFAULT 0,
+-- Stats for this season
+ALTER TABLE goals ADD COLUMN IF NOT EXISTS days_active INTEGER DEFAULT 0;
+ALTER TABLE goals ADD COLUMN IF NOT EXISTS best_streak INTEGER DEFAULT 0;
+ALTER TABLE goals ADD COLUMN IF NOT EXISTS rest_days_used INTEGER DEFAULT 0;
 
-  -- Timeline
-  started_at TIMESTAMPTZ DEFAULT NOW(),
-  target_date TIMESTAMPTZ,
-  completed_at TIMESTAMPTZ,
+-- Reflection at end (Gentle Growth: learn from every season)
+ALTER TABLE goals ADD COLUMN IF NOT EXISTS end_reflection TEXT;
+ALTER TABLE goals ADD COLUMN IF NOT EXISTS lessons_learned TEXT;
 
-  -- Status (Gentle Growth: celebrate effort even if not complete)
-  status TEXT DEFAULT 'active',          -- active, completed, ended
-  completion_percentage NUMERIC GENERATED ALWAYS AS (
-    CASE WHEN target_value > 0
-    THEN LEAST(100, ROUND((current_value / target_value) * 100, 1))
-    ELSE 0 END
-  ) STORED,
-
-  -- Stats for this season
-  total_logs INTEGER DEFAULT 0,
-  days_active INTEGER DEFAULT 0,
-  best_streak INTEGER DEFAULT 0,
-  rest_days_used INTEGER DEFAULT 0,
-
-  -- Rewards
-  xp_earned INTEGER DEFAULT 0,
-
-  -- Reflection at end (Gentle Growth: learn from every season)
-  end_reflection TEXT,
-  lessons_learned TEXT,
-
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-
-  UNIQUE(habit_id, season_number)
-);
-
-CREATE INDEX idx_seasons_habit_id ON seasons(habit_id);
-CREATE INDEX idx_seasons_status ON seasons(status);
+-- Unique constraint for seasons per plant
+CREATE UNIQUE INDEX IF NOT EXISTS idx_goals_plant_season ON goals(plant_id, season_number);
 ```
 
-### 3.3 New Table: `habit_logs` (Unified Logging)
+**Season flow:**
+1. Plant có thể có nhiều goals (seasons) theo thời gian
+2. Khi hoàn thành/kết thúc season → tạo season mới với `season_number + 1`
+3. Mỗi season lưu reflection và lessons learned
+
+### 3.3 New Table: `activity_logs` (Merge watering_logs + goal_logs)
+
+Merge `watering_logs` và `goal_logs` thành một bảng thống nhất:
 
 ```sql
--- All habit activity logs
-CREATE TABLE habit_logs (
+-- Unified activity logs (replaces watering_logs + goal_logs)
+CREATE TABLE activity_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  habit_id UUID NOT NULL REFERENCES habits(id) ON DELETE CASCADE,
-  season_id UUID REFERENCES seasons(id),
+  plant_id UUID NOT NULL REFERENCES plants(id) ON DELETE CASCADE,
+  goal_id UUID REFERENCES goals(id) ON DELETE SET NULL,  -- NULL = simple watering
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-
-  -- Log data
-  value NUMERIC NOT NULL,
-  target_value NUMERIC,                  -- What was the target that day
-
-  -- Partial credit (Gentle Growth: every effort counts)
-  effort_percentage NUMERIC GENERATED ALWAYS AS (
-    CASE WHEN target_value > 0
-    THEN LEAST(100, ROUND((value / target_value) * 100, 1))
-    ELSE 100 END
-  ) STORED,
-
-  -- Context (Gentle Growth: understand, don't judge)
-  effort_level TEXT,                     -- full, partial, minimal
-  context TEXT,                          -- busy, sick, travel, tired, great
-  notes TEXT,
 
   -- Timing
   logged_at TIMESTAMPTZ DEFAULT NOW(),
   logged_date DATE DEFAULT CURRENT_DATE,
 
-  -- Rewards
+  -- Data (cả 2 NULL = simple watering/check-in)
+  value NUMERIC,                         -- NULL = không log số, có số = progress
+  notes TEXT,                            -- NULL = không ghi chú
+
+  -- Context (Gentle Growth: understand, don't judge)
+  difficulty TEXT,                       -- easy, normal, hard (mood khi thực hiện)
+
+  -- Computed flags
+  is_first_of_day BOOLEAN DEFAULT FALSE, -- moisture chỉ tính từ log đầu tiên
+  has_progress BOOLEAN GENERATED ALWAYS AS (
+    value IS NOT NULL OR notes IS NOT NULL
+  ) STORED,
+
+  -- XP & rewards
   xp_earned INTEGER DEFAULT 0,
-  is_personal_record BOOLEAN DEFAULT false,
+  morning_bonus BOOLEAN DEFAULT FALSE,
+  streak_bonus INTEGER DEFAULT 0,
+  is_personal_record BOOLEAN DEFAULT FALSE,
 
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_habit_logs_habit_id ON habit_logs(habit_id);
-CREATE INDEX idx_habit_logs_logged_date ON habit_logs(logged_date);
+-- Indexes
+CREATE INDEX idx_activity_plant ON activity_logs(plant_id);
+CREATE INDEX idx_activity_date ON activity_logs(logged_date);
+CREATE INDEX idx_activity_plant_date ON activity_logs(plant_id, logged_date);
+-- NOTE: Không có UNIQUE constraint - cho phép nhiều logs/ngày nếu có notes khác nhau
 ```
+
+**Logic phân biệt:**
+
+| value | notes | Ý nghĩa |
+|-------|-------|---------|
+| NULL | NULL | Simple watering (check-in, giữ moisture) |
+| NULL | có | Check-in + reflection/ghi chú |
+| có số | NULL/có | Log progress (cây lớn lên) |
+
+**Tính toán:**
+- **Moisture**: Reset khi có log đầu tiên trong ngày (`is_first_of_day = true`)
+- **Growth**: Tính từ tổng `value` hoặc count logs có `has_progress = true`
+- **Season progress**: Tính từ `SUM(value)` where `goal_id = current_goal`
 
 ### 3.4 New Table: `rest_days` (Track Intentional Rest)
 
@@ -246,7 +204,7 @@ CREATE INDEX idx_habit_logs_logged_date ON habit_logs(logged_date);
 -- Track intentional rest days (Gentle Growth: rest is valid)
 CREATE TABLE rest_days (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  habit_id UUID NOT NULL REFERENCES habits(id) ON DELETE CASCADE,
+  plant_id UUID NOT NULL REFERENCES plants(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
 
   rest_date DATE NOT NULL,
@@ -254,9 +212,14 @@ CREATE TABLE rest_days (
 
   created_at TIMESTAMPTZ DEFAULT NOW(),
 
-  UNIQUE(habit_id, rest_date)
+  UNIQUE(plant_id, rest_date)
 );
 ```
+
+**Note:** Rest days được track riêng để:
+- Không tính vào "missed days"
+- Hiển thị khác trên rhythm view (màu xanh thay vì xám)
+- Không ảnh hưởng đến moisture decay
 
 ### 3.5 New Table: `reflections` (Life Change Tracking)
 
@@ -264,7 +227,7 @@ CREATE TABLE rest_days (
 -- Milestone reflections (Gentle Growth: connect habit to life)
 CREATE TABLE reflections (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  habit_id UUID NOT NULL REFERENCES habits(id) ON DELETE CASCADE,
+  plant_id UUID NOT NULL REFERENCES plants(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
 
   -- Milestone that triggered reflection
@@ -276,30 +239,30 @@ CREATE TABLE reflections (
   personal_note TEXT,                    -- User's own words
   mood TEXT,                             -- How they feel about progress
 
-  -- Context
-  total_value_at_reflection NUMERIC,     -- Snapshot of progress
+  -- Context snapshot
+  total_value_at_reflection NUMERIC,     -- Progress at this point
   days_active_at_reflection INTEGER,
+  season_number_at_reflection INTEGER,
 
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_reflections_habit_id ON reflections(habit_id);
+CREATE INDEX idx_reflections_plant_id ON reflections(plant_id);
 ```
 
-### 3.6 Update: `plants` Table (Visual Only)
+### 3.6 Update: `plants` Table (Visual Stages)
 
 ```sql
--- Add new columns to existing plants table
-ALTER TABLE plants ADD COLUMN IF NOT EXISTS habit_id UUID REFERENCES habits(id);
+-- Add visual stage tracking
 ALTER TABLE plants ADD COLUMN IF NOT EXISTS visual_stage TEXT DEFAULT 'seed';
-ALTER TABLE plants ADD COLUMN IF NOT EXISTS visual_size INTEGER DEFAULT 1;
+-- Visual stages: seed, sprout, growing, mature, established, ancient, legendary
 
--- Visual stage: seed, sprout, growing, mature, established, ancient, legendary
+ALTER TABLE plants ADD COLUMN IF NOT EXISTS visual_size INTEGER DEFAULT 1;
 -- Visual size: 1-5, affects grid_size display
 
--- Remove/deprecate punishment-related concepts
--- Note: Keep current_moisture for backward compatibility during migration
--- but stop using it for "health decay" logic
+-- Note: Giữ current_moisture nhưng thay đổi messaging
+-- Thay vì "health decay" (punishment) → "cây cần được tưới" (gentle reminder)
+-- Khi moisture = 0: cây "sleeping" thay vì "dying"
 ```
 
 ### 3.7 Update: `profiles` Table
@@ -372,7 +335,7 @@ interface RhythmViewProps {
 // - missed: light gray (not red, not alarming)
 ```
 
-### 4.2 Habit Detail View (New)
+### 4.2 Plant Detail View (Enhanced)
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
@@ -430,22 +393,27 @@ interface RhythmViewProps {
 └────────────────────────────────────────────────────────────────┘
 ```
 
-### 4.3 Log Modal (Redesigned)
+### 4.3 Watering Modal (Unified Flow)
+
+**Concept:** Tưới nước = action cơ bản. Có thể thêm progress (value) hoặc ghi chú (notes) tùy ý.
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
-│  📚 LOG HÔM NAY                                          [×]  │
+│  💧 TƯỚI CÂY                                             [×]  │
 ├────────────────────────────────────────────────────────────────┤
 │                                                                │
-│  Mục tiêu hôm nay: 30 phút đọc sách                           │
+│  🌻 Đọc Sách                                                  │
+│  💭 "Tôi muốn mở rộng kiến thức..."        [Xem đầy đủ →]    │
+│                                                                │
+│  ════════════════════════════════════════════════════════════  │
 │                                                                │
 │  ┌──────────────────────────────────────────────────────────┐ │
-│  │  Hôm nay bạn đọc được bao lâu?                           │ │
+│  │  Hôm nay bạn có làm được gì không? (không bắt buộc)      │ │
 │  │                                                          │ │
 │  │  ┌────────┐  ┌────────┐  ┌────────┐  ┌────────┐         │ │
-│  │  │  😴    │  │  📖    │  │  📖    │  │  📖    │         │ │
-│  │  │ Nghỉ   │  │ 10 phút│  │ 20 phút│  │ 30 phút│         │ │
-│  │  │ hôm nay│  │        │  │        │  │ ✓ Goal │         │ │
+│  │  │  💧    │  │  📖    │  │  📖    │  │  📖    │         │ │
+│  │  │ Chỉ    │  │ 10 phút│  │ 20 phút│  │ 30 phút│         │ │
+│  │  │ tưới   │  │        │  │        │  │ ✓ Goal │         │ │
 │  │  └────────┘  └────────┘  └────────┘  └────────┘         │ │
 │  │                                                          │ │
 │  │  Hoặc nhập số: [____] phút                               │ │
@@ -461,18 +429,24 @@ interface RhythmViewProps {
 │  │  💭 Ghi chú (không bắt buộc)               +3 XP bonus   │ │
 │  │  ┌────────────────────────────────────────────────────┐  │ │
 │  │  │                                                    │  │ │
-│  │  │                                                    │  │ │
 │  │  └────────────────────────────────────────────────────┘  │ │
 │  └──────────────────────────────────────────────────────────┘ │
 │                                                                │
-│  ────────────────────────────────────────────────────────────  │
-│  Chọn "Nghỉ hôm nay" nếu bạn cần nghỉ ngơi.                   │
-│  Nghỉ ngơi cũng là một phần của hành trình. 💚                │
-│  ────────────────────────────────────────────────────────────  │
+│  ════════════════════════════════════════════════════════════  │
+│  💧 Tưới = giữ cây khỏe mạnh                                  │
+│  📖 Tưới + số = ghi nhận tiến độ, cây lớn lên                 │
+│  💭 Tưới + ghi chú = reflection, có thể tưới nhiều lần/ngày  │
+│  ════════════════════════════════════════════════════════════  │
 │                                                                │
-│                                         [Lưu]                  │
+│         [😴 Nghỉ hôm nay]              [💧 Tưới]              │
 └────────────────────────────────────────────────────────────────┘
 ```
+
+**Behavior:**
+- **Chỉ tưới (value=NULL, notes=NULL):** Giữ moisture, không tăng growth
+- **Tưới + số:** Giữ moisture + tăng growth + tăng season progress
+- **Tưới + ghi chú:** Giữ moisture + reflection, có thể tưới lại trong ngày
+- **Nghỉ hôm nay:** Đánh dấu rest day, không ảnh hưởng moisture
 
 ### 4.4 Reflection Modal (New)
 
@@ -661,69 +635,73 @@ WHEN GOAL NOT ACHIEVED (Season ends by time):
 
 ## 6. Implementation Phases
 
-### Phase 1: Database & Core Logic (Week 1-2)
+### Phase 1: Database & Core Logic
 
 **Tasks:**
-- [ ] Create migration for new tables (habits, seasons, habit_logs, rest_days, reflections)
-- [ ] Update plants table with new columns
-- [ ] Create habit status calculation logic (thriving/resting/waiting/sleeping)
+- [ ] Create migration: add Gentle Growth fields to `plants` table
+- [ ] Create migration: add season fields to `goals` table
+- [ ] Create migration: new `activity_logs` table (merge watering + goal logs)
+- [ ] Create migration: new `rest_days` table
+- [ ] Create migration: new `reflections` table
+- [ ] Create plant status calculation logic (thriving/resting/waiting/sleeping)
 - [ ] Create rhythm calculation (days this week/month, consistency %)
-- [ ] Update XP system for partial credit
-- [ ] Create REST API for new entities
+- [ ] Update XP system for unified activity logs
 
 **Files to create/modify:**
-- `supabase/migrations/2026XXXX_gentle_growth_schema.sql`
-- `src/lib/actions/habits.ts` (new)
-- `src/lib/actions/seasons.ts` (new)
-- `src/lib/habit-status.ts` (new)
+- `supabase/migrations/2026XXXX_gentle_growth_plants.sql`
+- `supabase/migrations/2026XXXX_gentle_growth_activity_logs.sql`
+- `src/lib/actions/activity.ts` (new - unified logging)
+- `src/lib/plant-status.ts` (new)
 - `src/lib/rhythm-calculator.ts` (new)
-- `src/types/database.ts` (update)
+- `src/types/supabase.ts` (update)
 
-### Phase 2: UI Components (Week 2-3)
+### Phase 2: UI Components
 
 **Tasks:**
-- [ ] Create RhythmView component
-- [ ] Create HabitDetailView component
-- [ ] Redesign LogModal with rest day option
-- [ ] Create ReflectionModal component
+- [ ] Create RhythmView component (dots/calendar view)
+- [ ] Enhance PlantDetailView with "why I started", seasons, reflections
+- [ ] Redesign WateringModal with unified flow (tưới/log/ghi chú)
+- [ ] Create ReflectionModal component (milestone triggers)
 - [ ] Create SeasonCompleteModal component
-- [ ] Update plant visual states (remove wilting, add sleeping)
+- [ ] Update plant visual states (remove "dying", add "sleeping")
 - [ ] Update PlantTooltip/PlantCard for new status display
 
 **Files to create/modify:**
-- `src/components/habits/rhythm-view.tsx` (new)
-- `src/components/habits/habit-detail-view.tsx` (new)
-- `src/components/habits/log-modal.tsx` (new)
-- `src/components/habits/reflection-modal.tsx` (new)
-- `src/components/habits/season-complete-modal.tsx` (new)
+- `src/components/plants/rhythm-view.tsx` (new)
+- `src/components/plants/plant-detail-view.tsx` (enhance)
+- `src/components/plants/watering-modal.tsx` (redesign)
+- `src/components/plants/reflection-modal.tsx` (new)
+- `src/components/plants/season-complete-modal.tsx` (new)
 - `src/components/garden/isometric-plant.tsx` (update visuals)
 - `src/components/garden/plant-tooltip.tsx` (update)
 
-### Phase 3: Migration & Integration (Week 3-4)
+### Phase 3: Data Migration & Integration
 
 **Tasks:**
-- [ ] Create data migration script (plants → habits)
-- [ ] Update garden view to use habits
-- [ ] Update watering flow to use habit logs
+- [ ] Create migration script: `watering_logs` + `goal_logs` → `activity_logs`
+- [ ] Update watering flow to use `activity_logs`
+- [ ] Update goal logging to use `activity_logs`
 - [ ] Implement reflection triggers at milestones
 - [ ] Update achievements for new model
 - [ ] Update statistics dashboard
 
 **Files to modify:**
+- `src/lib/actions/plants.ts` (update watering logic)
+- `src/lib/actions/goals.ts` (update logging logic)
 - `src/components/garden/garden-view.tsx`
-- `src/components/garden/isometric-garden.tsx`
-- `src/lib/context/plants-context.tsx` → habits-context.tsx
 - `src/lib/achievements.ts`
+- `src/app/(dashboard)/stats/page.tsx`
 
-### Phase 4: Polish & Settings (Week 4)
+### Phase 4: Polish & Settings
 
 **Tasks:**
 - [ ] Add user preferences (show streaks toggle, reflection frequency)
 - [ ] Update settings page
 - [ ] Add "Why I started" edit functionality
 - [ ] Journey/reflection history view
-- [ ] Copy review and polish
+- [ ] Copy review and polish (gentle messaging)
 - [ ] Testing and bug fixes
+- [ ] Deprecate old `watering_logs` and `goal_logs` tables
 
 ---
 

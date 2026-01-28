@@ -55,9 +55,9 @@ export function PlantDetailSheet({
   weather,
 }: PlantDetailSheetProps) {
   // Get the latest plant data from context (with optimistic updates)
-  const { plants, waterPlant, updatePlant, isPending, isSyncing } = usePlants()
+  const { plants, waterPlant, updatePlant } = usePlants()
   const plant = initialPlant ? (plants.find(p => p.id === initialPlant.id) || initialPlant) : null
-  
+
   const [isWatering, setIsWatering] = useState(false)
   const [showXp, setShowXp] = useState(false)
   const [earnedXp, setEarnedXp] = useState(0)
@@ -122,16 +122,16 @@ export function PlantDetailSheet({
     if (isWateredToday || isDead) return
 
     setIsWatering(true)
-    
+
     // Use optimistic update from context
     const result = await waterPlant(plant.id)
-    
+
     if (result.success) {
       setEarnedXp(result.xpEarned || 0)
       setShowXp(true)
       setTimeout(() => setShowXp(false), 1500)
     }
-    
+
     setTimeout(() => setIsWatering(false), 800)
   }
 
@@ -180,8 +180,8 @@ export function PlantDetailSheet({
               plant.status === 'dead'
                 ? 'from-slate-200 to-slate-100 dark:from-slate-800 dark:to-slate-900'
                 : plant.status === 'mature'
-                ? 'from-emerald-100 via-green-50 to-white dark:from-emerald-900/40 dark:via-green-950/30 dark:to-slate-900'
-                : 'from-sky-100 via-emerald-50 to-white dark:from-sky-900/30 dark:via-emerald-950/20 dark:to-slate-900'
+                  ? 'from-emerald-100 via-green-50 to-white dark:from-emerald-900/40 dark:via-green-950/30 dark:to-slate-900'
+                  : 'from-sky-100 via-emerald-50 to-white dark:from-sky-900/30 dark:via-emerald-950/20 dark:to-slate-900'
             )} />
 
             <div className="relative pt-8 pb-6 px-6">
@@ -247,14 +247,14 @@ export function PlantDetailSheet({
                     <div className={cn(
                       'p-1.5 rounded-lg',
                       plant.current_moisture >= 70 ? 'bg-blue-100 dark:bg-blue-900/50' :
-                      plant.current_moisture >= 40 ? 'bg-amber-100 dark:bg-amber-900/50' :
-                      'bg-red-100 dark:bg-red-900/50'
+                        plant.current_moisture >= 40 ? 'bg-amber-100 dark:bg-amber-900/50' :
+                          'bg-red-100 dark:bg-red-900/50'
                     )}>
                       <Droplets className={cn(
                         'h-4 w-4',
                         plant.current_moisture >= 70 ? 'text-blue-500' :
-                        plant.current_moisture >= 40 ? 'text-amber-500' :
-                        'text-red-500'
+                          plant.current_moisture >= 40 ? 'text-amber-500' :
+                            'text-red-500'
                       )} />
                     </div>
                     <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Moisture</span>
@@ -262,8 +262,8 @@ export function PlantDetailSheet({
                   <span className={cn(
                     'text-sm font-bold',
                     plant.current_moisture >= 70 ? 'text-blue-600 dark:text-blue-400' :
-                    plant.current_moisture >= 40 ? 'text-amber-600 dark:text-amber-400' :
-                    'text-red-600 dark:text-red-400'
+                      plant.current_moisture >= 40 ? 'text-amber-600 dark:text-amber-400' :
+                        'text-red-600 dark:text-red-400'
                   )}>
                     {Math.round(plant.current_moisture)}%
                   </span>
@@ -273,8 +273,8 @@ export function PlantDetailSheet({
                     className={cn(
                       'h-full rounded-full transition-all duration-700',
                       plant.current_moisture >= 70 ? 'bg-gradient-to-r from-blue-400 to-cyan-400' :
-                      plant.current_moisture >= 40 ? 'bg-gradient-to-r from-amber-400 to-yellow-400' :
-                      'bg-gradient-to-r from-red-400 to-orange-400'
+                        plant.current_moisture >= 40 ? 'bg-gradient-to-r from-amber-400 to-yellow-400' :
+                          'bg-gradient-to-r from-red-400 to-orange-400'
                     )}
                     style={{ width: `${Math.max(0, Math.min(100, plant.current_moisture))}%` }}
                   />
@@ -304,8 +304,8 @@ export function PlantDetailSheet({
                     className={cn(
                       'h-full rounded-full transition-all duration-700',
                       plant.status === 'dead' ? 'bg-slate-400' :
-                      plant.status === 'mature' ? 'bg-gradient-to-r from-emerald-400 via-green-400 to-teal-400' :
-                      'bg-gradient-to-r from-lime-400 to-emerald-500'
+                        plant.status === 'mature' ? 'bg-gradient-to-r from-emerald-400 via-green-400 to-teal-400' :
+                          'bg-gradient-to-r from-lime-400 to-emerald-500'
                     )}
                     style={{ width: `${Math.max(0, Math.min(100, plant.growth_percentage))}%` }}
                   />
@@ -359,7 +359,7 @@ export function PlantDetailSheet({
                   size="lg"
                   variant={isWateredToday ? 'secondary' : 'default'}
                   onClick={() => setShowGoalLog(true)}
-                  disabled={isPending || isWateredToday || isDead}
+                  disabled={isWateredToday || isDead}
                 >
                   <Plus className="h-5 w-5 mr-2" />
                   {isDead ? 'Plant has wilted' : isWateredToday ? 'Logged for today' : 'Log Progress'}
@@ -374,7 +374,7 @@ export function PlantDetailSheet({
                   size="lg"
                   variant={isWateredToday ? 'secondary' : 'default'}
                   onClick={handleWater}
-                  disabled={isPending || isWatering || isWateredToday || isDead}
+                  disabled={isWatering || isWateredToday || isDead}
                 >
                   <Droplets className={cn('h-5 w-5 mr-2', isWatering && 'text-blue-200')} />
                   {isDead ? 'Plant has wilted' : isWateredToday ? 'Watered today' : isWatering ? 'Watering...' : 'Water Plant'}
