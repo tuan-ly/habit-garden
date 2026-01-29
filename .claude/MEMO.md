@@ -1,6 +1,6 @@
 # Habit Garden - Project Memo
 
-> **Last Updated**: 2026-01-26
+> **Last Updated**: 2026-01-29
 > **Phase**: 4 - Polish & Launch
 > **Stack**: Next.js 16, Supabase, Tailwind CSS 4, shadcn/ui
 
@@ -21,6 +21,23 @@
 ---
 
 ## Recent Sessions
+
+### 2026-01-29: Improved Goal Setup UI/UX with Period-Based Tracking
+**Changes**:
+- Redesigned Goal Setup Wizard with clearer 4-step flow
+- Period-based progress tracking (daily/weekly/monthly goals now work properly)
+- New PeriodTargetDisplay component shows "This Week: 20/30 pages"
+- Fixed: frequency fields now saved to database when creating goal
+- Updated GoalProgress to prioritize period progress over overall
+
+**Key files changed**:
+- [goal-setup-wizard.tsx](src/components/goals/goal-setup-wizard.tsx) - Complete redesign
+- [goal-progress.tsx](src/components/goals/goal-progress.tsx) - Period-focused display
+- [period-target-display.tsx](src/components/goals/period-target-display.tsx) - NEW
+- [goal-utils.ts](src/lib/goal-utils.ts) - NEW: getPeriodInfo(), getPeriodTarget()
+- [goals.ts](src/lib/actions/goals.ts) - Period tracking in GoalWithStats
+
+---
 
 ### 2026-01-26: Focus Tab & Goal Frequency
 **Changes**:
