@@ -703,12 +703,794 @@ interface HardDayBehavior {
 
 ---
 
+## 📔 Cây Nhật Ký (Journal Tree) - Special Plant Type
+
+### Concept
+
+Cây Nhật Ký là loại cây đặc biệt - **không gắn với habit cụ thể**, mà là nơi để viết tự do. Mỗi entry là một chiếc lá, và cây lớn lên theo số lượng & chất lượng entries.
+
+### Tại sao cần Cây Nhật Ký?
+
+| Regular Plants | Journal Tree |
+|----------------|--------------|
+| Gắn với habit cụ thể | Viết tự do, không ràng buộc |
+| "I did X" | "I feel/think/dream..." |
+| Task-oriented | Emotion-oriented |
+| Track hành động | Track inner world |
+
+### Visual Design
+
+```
+                    🍃 Entry mới nhất
+                   /
+              🍃──┤
+             /    └──🍃
+        🍃──┤
+       /    └──🍃──🍃
+  🌳──┤
+       \    ┌──🍃
+        🍃──┤
+             \──🍃
+
+   Mỗi 🍃 = 1 journal entry
+   Hover để xem preview
+   Click để đọc full
+```
+
+### Growth Stages
+
+```
+Stage 1: Seedling (0-7 entries)
+┌─────────────────┐
+│      🌱         │
+│                 │
+│  "Hạt giống     │
+│   suy nghĩ"     │
+└─────────────────┘
+
+Stage 2: Sprout (8-30 entries)
+┌─────────────────┐
+│      🌿         │
+│     /|\         │
+│      |          │
+│  "Mầm non       │
+│   đang lớn"     │
+└─────────────────┘
+
+Stage 3: Young Tree (31-100 entries)
+┌─────────────────┐
+│     🌳          │
+│    /||\         │
+│     ||          │
+│  "Cây non       │
+│   vững chãi"    │
+└─────────────────┘
+
+Stage 4: Mature Tree (101-365 entries)
+┌─────────────────┐
+│    🌲🌲         │
+│   //||\\        │
+│    ||||         │
+│  "Cây trưởng    │
+│   thành"        │
+└─────────────────┘
+
+Stage 5: Ancient Tree (365+ entries)
+┌─────────────────┐
+│   🏛️🌳🏛️        │
+│  Ancient Tree   │
+│                 │
+│  "Cây cổ thụ -  │
+│   kho báu của   │
+│   tâm hồn"      │
+└─────────────────┘
+```
+
+### Journal Entry Types
+
+```
+┌─────────────────────────────────────────┐
+│  📔 Viết nhật ký                 [×]   │
+│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   │
+│                                         │
+│  Hôm nay bạn muốn viết về?             │
+│                                         │
+│  ┌────────┐ ┌────────┐ ┌────────┐      │
+│  │ 💭     │ │ 🙏     │ │ 💡     │      │
+│  │ Free   │ │Gratitude│ │ Idea  │      │
+│  │ Write  │ │        │ │       │      │
+│  └────────┘ └────────┘ └────────┘      │
+│                                         │
+│  ┌────────┐ ┌────────┐ ┌────────┐      │
+│  │ 🎯     │ │ 😤     │ │ 🌙     │      │
+│  │ Goal   │ │ Vent   │ │ Dream │      │
+│  │Reflect │ │        │ │       │      │
+│  └────────┘ └────────┘ └────────┘      │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+### Entry Types Detail
+
+| Type | Icon | Purpose | Prompt |
+|------|------|---------|--------|
+| Free Write | 💭 | Viết tự do | "Viết bất cứ điều gì đang trong đầu..." |
+| Gratitude | 🙏 | Biết ơn | "3 điều bạn biết ơn hôm nay..." |
+| Idea | 💡 | Ý tưởng | "Một ý tưởng đang nảy sinh..." |
+| Goal Reflect | 🎯 | Suy ngẫm mục tiêu | "Bạn đang tiến gần hơn đến..." |
+| Vent | 😤 | Xả stress | "Điều gì đang làm phiền bạn..." |
+| Dream | 🌙 | Giấc mơ/Mong ước | "Điều bạn mơ ước..." |
+
+### Writing Experience
+
+```
+┌─────────────────────────────────────────┐
+│  💭 Free Write              [Save]     │
+│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   │
+│                                         │
+│  ┌─────────────────────────────────┐    │
+│  │                                 │    │
+│  │ Hôm nay là một ngày lạ. Tôi    │    │
+│  │ thức dậy với cảm giác nhẹ      │    │
+│  │ nhõm, như thể điều gì đó đã    │    │
+│  │ được buông bỏ trong giấc ngủ.  │    │
+│  │                                 │    │
+│  │ Cuộc gọi với mẹ chiều nay làm  │    │
+│  │ tôi nhận ra mình đã quá bận    │    │
+│  │ rộn để quan tâm...             │    │
+│  │ _                               │    │
+│  │                                 │    │
+│  │                                 │    │
+│  └─────────────────────────────────┘    │
+│                                         │
+│  Word count: 156                       │
+│  ━━━━━━━━━━━━━━━━━━━░░░░░░░░░░░░░░░   │
+│  Writing streak: 🔥 12 ngày            │
+│                                         │
+│  ┌─────────────────────────────────┐    │
+│  │ 💡 Tip: Viết ít nhất 100 từ    │    │
+│  │    giúp não xử lý cảm xúc      │    │
+│  │    hiệu quả hơn                │    │
+│  └─────────────────────────────────┘    │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+### Reading Past Entries - Memory Garden
+
+```
+┌─────────────────────────────────────────┐
+│  🌳 Memory Garden              [🔍]    │
+│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   │
+│                                         │
+│  ┌─────────────────────────────────┐    │
+│  │     [Interactive Tree View]     │    │
+│  │                                 │    │
+│  │      Click any leaf 🍃         │    │
+│  │      to read that entry        │    │
+│  │                                 │    │
+│  └─────────────────────────────────┘    │
+│                                         │
+│  Timeline View                         │
+│  ─────────────                         │
+│                                         │
+│  📅 Tháng 1, 2026                      │
+│  ├─ 🍃 29/1 - "Hôm nay là một..."     │
+│  ├─ 🍃 28/1 - "Cuộc họp với team..."  │
+│  ├─ 🍃 27/1 - "Biết ơn: 1. Sức..."    │
+│  └─ 🍃 25/1 - "Ý tưởng mới về..."     │
+│                                         │
+│  📅 Tháng 12, 2025                     │
+│  └─ [Xem thêm...]                      │
+│                                         │
+│  ─────────────────────────────────────  │
+│  Filter: [All] [💭] [🙏] [💡] [🎯]    │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+### Journal Insights (Premium Feature)
+
+```
+┌─────────────────────────────────────────┐
+│  📊 Journal Insights           [PRO]   │
+│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   │
+│                                         │
+│  Sentiment Over Time                   │
+│  ┌─────────────────────────────────┐    │
+│  │  😊 ━━━━━━━━━━━━━━━━━━━━━━━━   │    │
+│  │  😐 ━━━━━━━━━━━                │    │
+│  │  😔 ━━━                        │    │
+│  │     Jan  Feb  Mar  Apr  May   │    │
+│  └─────────────────────────────────┘    │
+│                                         │
+│  ┌─────────────────────────────────┐    │
+│  │  🔑 Themes trong entries       │    │
+│  │                                 │    │
+│  │  #family    ████████  34%      │    │
+│  │  #work      ██████    28%      │    │
+│  │  #health    ████      18%      │    │
+│  │  #dreams    ███       12%      │    │
+│  └─────────────────────────────────┘    │
+│                                         │
+│  ┌─────────────────────────────────┐    │
+│  │  💎 Insight của tuần:          │    │
+│  │                                 │    │
+│  │  "Bạn viết về family nhiều     │    │
+│  │   hơn 40% trong tháng này -    │    │
+│  │   có vẻ đây là priority        │    │
+│  │   thực sự của bạn"             │    │
+│  └─────────────────────────────────┘    │
+│                                         │
+│  ┌─────────────────────────────────┐    │
+│  │  🌙 "On this day" - 1 năm trước│    │
+│  │                                 │    │
+│  │  "Hôm nay bắt đầu dự án mới,  │    │
+│  │   hơi lo lắng nhưng excited"   │    │
+│  │                                 │    │
+│  │  → So với bây giờ: Dự án đã   │    │
+│  │    thành công! 🎉              │    │
+│  └─────────────────────────────────┘    │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+### Journal Tree Rewards
+
+| Milestone | Reward |
+|-----------|--------|
+| 7 entries | Unlock "Seedling" badge |
+| 30 entries | Unlock custom leaf colors |
+| 100 entries | "Memory Garden" view unlocked |
+| 365 entries | "Ancient Tree" + year-in-review |
+| 1000 entries | "Chronicler's Legacy" - export beautiful book |
+
+---
+
+## 💰 Monetization Strategy
+
+### Philosophy
+
+> "Free users get full functionality. Paid users get deeper self-knowledge."
+
+Không giới hạn features cơ bản. Premium = **insights sâu hơn**, **trải nghiệm đẹp hơn**.
+
+### Tier Structure
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│  🌱 FREE                    🌿 PLUS           🌳 PRO       │
+│  ─────────                  ──────────        ─────────     │
+│  $0                         $4.99/mo          $9.99/mo      │
+│                             $39.99/yr         $79.99/yr     │
+│                                                             │
+│  ✅ Unlimited plants        ✅ All Free       ✅ All Plus   │
+│  ✅ Basic watering          ✅ Journal Tree   ✅ AI Insights│
+│  ✅ Notes & streaks         ✅ Deep insights  ✅ Sentiment  │
+│  ✅ 1 archetype             ✅ All archetypes ✅ Themes     │
+│  ✅ Weekly summary          ✅ Export data    ✅ "On this   │
+│  ✅ Basic stats             ✅ Custom themes     day"       │
+│                             ✅ Priority       ✅ Year review│
+│                                support        ✅ API access │
+│                                               ✅ Family     │
+│                                                  sharing   │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Feature Breakdown
+
+#### 🌱 FREE - "The Gardener"
+
+**Core Experience:**
+- ∞ Unlimited plants (habits)
+- ∞ Unlimited watering & notes
+- ∞ Streaks (watering & completion)
+- ∞ Basic mood tracking
+- 📊 Weekly summary email
+- 📈 Basic stats (7-day view)
+- 🎭 1 Primary archetype (after 30 days)
+- 🏆 Basic achievements
+
+**Limitations:**
+- Journal Tree: 3 entries/week
+- Insights: Basic patterns only
+- History: 30 days
+- No export
+
+---
+
+#### 🌿 PLUS - "The Cultivator" ($4.99/mo)
+
+**Everything in Free, plus:**
+
+**Journal Tree Unlocked:**
+- ∞ Unlimited journal entries
+- 📝 All entry types (Gratitude, Vent, Dream, etc.)
+- 🌳 Full Memory Garden view
+- 📅 Unlimited history
+
+**Deeper Insights:**
+- 🎭 All 7 archetypes + secondary traits
+- ⏰ "Golden Hour" analysis
+- 📊 90-day patterns
+- 🔥 Hard day response analysis
+- 📈 Progress graphs
+
+**Customization:**
+- 🎨 5 garden themes
+- 🌺 Premium plant skins
+- 🔔 Custom reminder sounds
+
+**Extras:**
+- 📤 Export data (CSV, JSON)
+- 💬 Priority email support
+- 🚫 No ads (if we ever add ads)
+
+---
+
+#### 🌳 PRO - "The Sage" ($9.99/mo)
+
+**Everything in Plus, plus:**
+
+**AI-Powered Insights:**
+- 🤖 AI analysis of journal entries
+- 💬 Sentiment tracking over time
+- 🔑 Auto-detected themes & topics
+- 💡 Personalized suggestions
+- 🔮 Pattern predictions
+
+**Memory Features:**
+- 🌙 "On this day" - entries from past years
+- 📚 Monthly/Yearly reviews with AI summary
+- 📖 Export as beautiful PDF book
+
+**Advanced:**
+- 📊 Unlimited history
+- 🔗 API access for integrations
+- 👨‍👩‍👧‍👦 Family sharing (up to 5)
+- 🎯 Goal coaching (AI suggestions)
+- 📱 Widgets with insights
+
+**Exclusive:**
+- 🌟 Early access to new features
+- 💎 Exclusive plant types
+- 🎨 Unlimited themes
+- 👤 1-on-1 onboarding call
+
+---
+
+### Conversion Strategy
+
+#### Free → Plus Triggers
+
+```
+Moment 1: After 3 journal entries/week limit
+┌─────────────────────────────────────────┐
+│  📝 Bạn đã viết 3 entries tuần này     │
+│                                         │
+│  "Viết nhật ký đang trở thành thói     │
+│   quen của bạn! Với Plus, bạn có thể   │
+│   viết không giới hạn."                 │
+│                                         │
+│  [Tiếp tục miễn phí] [Nâng cấp Plus]   │
+└─────────────────────────────────────────┘
+
+Moment 2: After archetype reveal (30 days)
+┌─────────────────────────────────────────┐
+│  🎭 Archetype của bạn: Dawn Gardener   │
+│                                         │
+│  "Bạn còn 6 archetypes khác chưa khám  │
+│   phá. Với Plus, xem tất cả insights   │
+│   về bản thân."                         │
+│                                         │
+│  [Để sau] [Khám phá thêm - Plus]       │
+└─────────────────────────────────────────┘
+
+Moment 3: Hard day detected
+┌─────────────────────────────────────────┐
+│  ⛈️ Ngày khó khăn, nhưng bạn vẫn đây   │
+│                                         │
+│  "Bạn có biết trong 78% ngày stormy,   │
+│   bạn vẫn chăm vườn? Đó là dấu hiệu    │
+│   của resilience. Xem chi tiết với     │
+│   Plus."                                │
+│                                         │
+│  [Tưới nước] [Xem insights - Plus]     │
+└─────────────────────────────────────────┘
+```
+
+#### Plus → Pro Triggers
+
+```
+Moment 1: After 100 journal entries
+┌─────────────────────────────────────────┐
+│  📚 100 entries! Bạn là Chronicler     │
+│                                         │
+│  "100 mảnh ghép của tâm hồn bạn. Với   │
+│   Pro, AI sẽ phân tích và cho bạn      │
+│   thấy themes, patterns, và insights   │
+│   sâu hơn."                             │
+│                                         │
+│  [Tiếp tục viết] [Unlock AI - Pro]     │
+└─────────────────────────────────────────┘
+
+Moment 2: 1-year anniversary
+┌─────────────────────────────────────────┐
+│  🎉 1 năm với Habit Garden!            │
+│                                         │
+│  "Một năm là đủ data để tạo Year In    │
+│   Review đẹp mắt. Với Pro, nhận bản    │
+│   PDF như một cuốn sách về năm qua     │
+│   của bạn."                             │
+│                                         │
+│  [Cảm ơn!] [Tạo Year Review - Pro]     │
+└─────────────────────────────────────────┘
+```
+
+### Pricing Psychology
+
+| Strategy | Implementation |
+|----------|----------------|
+| Yearly discount | 33% off (~$3.33/mo for Plus) |
+| Free trial | 14 days Pro for new users |
+| Referral | Give 1 month, Get 1 month |
+| Student discount | 50% off with .edu email |
+| Lifetime option | $199 Plus / $399 Pro (limited) |
+
+### Revenue Projections (Hypothetical)
+
+```
+With 100,000 users:
+- 85% Free     = 85,000 × $0    = $0
+- 10% Plus     = 10,000 × $4.99 = $49,900/mo
+- 5% Pro       = 5,000 × $9.99  = $49,950/mo
+─────────────────────────────────────────────
+Monthly Revenue                   = ~$100,000
+Annual Revenue                    = ~$1.2M
+```
+
+---
+
+## 🤝 Social Features
+
+### Philosophy
+
+> "Connection, not competition. Inspiration, not comparison."
+
+Social trong Habit Garden là về **chia sẻ journey**, không phải **so sánh thành tích**.
+
+### Feature 1: Garden Postcards
+
+Chia sẻ snapshot của vườn như một postcard đẹp.
+
+```
+┌─────────────────────────────────────────┐
+│                                         │
+│    ╔═══════════════════════════════╗    │
+│    ║                               ║    │
+│    ║   [Beautiful Garden Image]    ║    │
+│    ║   🌱🌿🌳🌺                    ║    │
+│    ║                               ║    │
+│    ║   ───────────────────────     ║    │
+│    ║   "Ngày thứ 30 chăm vườn"    ║    │
+│    ║                               ║    │
+│    ║   💧 30-day streak            ║    │
+│    ║   🌱 5 plants growing         ║    │
+│    ║                               ║    │
+│    ║   @tuanly • Habit Garden     ║    │
+│    ╚═══════════════════════════════╝    │
+│                                         │
+│  [📱 Share] [💾 Save] [✏️ Edit]        │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+**What's shared:**
+- Garden visual (isometric view)
+- Milestone/streak (optional)
+- Custom message
+- No specific habit names (privacy)
+
+**What's NOT shared:**
+- Individual habit details
+- Completion rates
+- Journal entries
+
+---
+
+### Feature 2: Archetype Sharing
+
+Share archetype như personality test result.
+
+```
+┌─────────────────────────────────────────┐
+│                                         │
+│    ╔═══════════════════════════════╗    │
+│    ║                               ║    │
+│    ║         🌅                    ║    │
+│    ║   THE DAWN GARDENER          ║    │
+│    ║                               ║    │
+│    ║   "Tôi thích bắt đầu ngày    ║    │
+│    ║    mới với sự tĩnh lặng"     ║    │
+│    ║                               ║    │
+│    ║   ─────────────────────      ║    │
+│    ║   Secondary: 📝 Chronicler   ║    │
+│    ║              🔥 Streak Keeper║    │
+│    ║                               ║    │
+│    ║   Khám phá archetype của bạn:║    │
+│    ║   habitgarden.app/archetype  ║    │
+│    ╚═══════════════════════════════╝    │
+│                                         │
+│  [Share to Stories] [Copy Link]        │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+**Viral potential:**
+- Như MBTI, Enneagram - people love sharing personality
+- "What's your gardener type?" conversation starter
+- Link drives new user acquisition
+
+---
+
+### Feature 3: Garden Visiting (Plus Feature)
+
+Ghé thăm vườn của bạn bè (nếu họ cho phép).
+
+```
+┌─────────────────────────────────────────┐
+│  🏡 Vườn của @minhanh           [Back] │
+│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   │
+│                                         │
+│  ┌─────────────────────────────────┐    │
+│  │                                 │    │
+│  │   [Friend's Garden View]       │    │
+│  │   (Read-only, blurred plant    │    │
+│  │    names for privacy)          │    │
+│  │                                 │    │
+│  └─────────────────────────────────┘    │
+│                                         │
+│  💧 Watering streak: 45 ngày           │
+│  🌱 5 plants đang lớn                  │
+│  🎭 Archetype: Storm Warrior           │
+│                                         │
+│  ┌─────────────────────────────────┐    │
+│  │  💧 Gửi nước tưới               │    │
+│  │  (Tặng 1 ngày water reserve)   │    │
+│  └─────────────────────────────────┘    │
+│                                         │
+│  ┌─────────────────────────────────┐    │
+│  │  💌 Gửi lời động viên          │    │
+│  │  "Vườn của bạn đẹp quá!"       │    │
+│  └─────────────────────────────────┘    │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+**Privacy controls:**
+```
+┌─────────────────────────────────────────┐
+│  🔒 Garden Privacy              [Save] │
+│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   │
+│                                         │
+│  Ai có thể xem vườn của bạn?           │
+│                                         │
+│  ○ Không ai (Private)                  │
+│  ◉ Chỉ bạn bè (Friends Only)          │
+│  ○ Mọi người (Public)                  │
+│                                         │
+│  ─────────────────────────────────────  │
+│                                         │
+│  Hiển thị trên vườn:                   │
+│                                         │
+│  [✓] Tên cây (không tên habit)        │
+│  [✓] Streak numbers                    │
+│  [✓] Archetype                         │
+│  [ ] Mood hiện tại                     │
+│  [ ] Journal tree                      │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+---
+
+### Feature 4: Accountability Buddies
+
+Kết nối với 1-3 người để động viên nhau.
+
+```
+┌─────────────────────────────────────────┐
+│  👥 Accountability Circle       [Edit] │
+│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   │
+│                                         │
+│  ┌──────┐ ┌──────┐ ┌──────┐            │
+│  │ 👤   │ │ 👤   │ │ ➕   │            │
+│  │ Minh │ │ Linh │ │ Add  │            │
+│  │ 🔥45 │ │ 🔥23 │ │      │            │
+│  └──────┘ └──────┘ └──────┘            │
+│                                         │
+│  Hôm nay trong circle:                 │
+│  ─────────────────────                 │
+│                                         │
+│  🌅 Minh đã tưới vườn lúc 6:30 AM     │
+│  💧 Linh đang có 23-day streak!       │
+│  ⛈️ Bạn đang có ngày stormy - circle  │
+│     sẽ không được thông báo           │
+│                                         │
+│  ┌─────────────────────────────────┐    │
+│  │  💪 Gửi động viên cho circle   │    │
+│  └─────────────────────────────────┘    │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+**Rules:**
+- Max 3 buddies (intimacy > scale)
+- Only see: watering activity, streaks, mood (if allowed)
+- Can send: encouragement, water gifts
+- Never see: specific habits, notes, journal
+
+**Smart notifications:**
+```
+From your circle:
+✅ "Minh vừa đạt 50-day streak!"
+✅ "Linh gửi bạn 💧 water reserve"
+✅ "Circle của bạn đã tưới 100% hôm nay"
+
+NOT sent:
+❌ "Linh chưa tưới vườn hôm nay" (no shaming)
+❌ "Minh đang có ngày khó khăn" (privacy)
+```
+
+---
+
+### Feature 5: Community Challenges (Optional)
+
+Monthly challenges cho những ai muốn tham gia.
+
+```
+┌─────────────────────────────────────────┐
+│  🏆 Community Challenges        [Join] │
+│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   │
+│                                         │
+│  ┌─────────────────────────────────┐    │
+│  │  🌅 January Challenge:          │    │
+│  │  "Morning Garden Month"         │    │
+│  │                                 │    │
+│  │  Tưới vườn trước 8 AM, 20/31   │    │
+│  │  ngày trong tháng 1             │    │
+│  │                                 │    │
+│  │  👥 2,341 người tham gia       │    │
+│  │  📊 Bạn: 12/20 ✓               │    │
+│  │                                 │    │
+│  │  Reward: 🌅 Dawn Badge         │    │
+│  └─────────────────────────────────┘    │
+│                                         │
+│  ┌─────────────────────────────────┐    │
+│  │  📝 February Challenge:         │    │
+│  │  "28 Days of Gratitude"         │    │
+│  │                                 │    │
+│  │  Viết gratitude entry mỗi ngày │    │
+│  │  trong tháng 2                  │    │
+│  │                                 │    │
+│  │  [Đăng ký sớm]                 │    │
+│  └─────────────────────────────────┘    │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+**Challenge types:**
+- Time-based: Morning watering, Evening journaling
+- Streak-based: 30-day consistency
+- Theme-based: Gratitude month, Reflection week
+- **Never** completion-based (no pressure)
+
+---
+
+### Feature 6: Inspiration Feed (Pro Feature)
+
+Anonymous quotes & insights từ community.
+
+```
+┌─────────────────────────────────────────┐
+│  ✨ Inspiration                [Filter]│
+│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   │
+│                                         │
+│  ┌─────────────────────────────────┐    │
+│  │  "Ngày thứ 100 chăm vườn. Nhìn │    │
+│  │   lại, mình không nhận ra mình │    │
+│  │   đã thay đổi nhiều như thế"   │    │
+│  │                                 │    │
+│  │   — Anonymous Storm Warrior    │    │
+│  │   ♡ 234   💬 12                │    │
+│  └─────────────────────────────────┘    │
+│                                         │
+│  ┌─────────────────────────────────┐    │
+│  │  "Hôm nay là ngày stormy. Tôi  │    │
+│  │   chỉ tưới nước thôi. Và điều │    │
+│  │   đó hoàn toàn okay."          │    │
+│  │                                 │    │
+│  │   — Anonymous Gentle Wave      │    │
+│  │   ♡ 567   💬 45                │    │
+│  └─────────────────────────────────┘    │
+│                                         │
+│  ┌─────────────────────────────────┐    │
+│  │  📝 Chia sẻ anonymous          │    │
+│  │  Chọn 1 note để share với      │    │
+│  │  community (không tên)          │    │
+│  └─────────────────────────────────┘    │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+**Moderation:**
+- AI review trước khi publish
+- Report system
+- Only positive/reflective content
+- No habits/personal details
+
+---
+
+### Social Features Summary
+
+| Feature | Free | Plus | Pro |
+|---------|------|------|-----|
+| Garden Postcards | ✅ | ✅ | ✅ |
+| Archetype Sharing | ✅ | ✅ | ✅ |
+| Garden Visiting | ❌ | ✅ | ✅ |
+| Accountability Buddies | 1 buddy | 3 buddies | 3 buddies |
+| Community Challenges | View only | Participate | Participate |
+| Inspiration Feed | ❌ | ❌ | ✅ |
+
+---
+
+## 🚀 Updated Implementation Priority
+
+### Phase 1: Core Watering Redesign
+1. New watering modal with Water/I did it/Log it
+2. Separate watering streak from completion streak
+3. Update copy to be gentler
+
+### Phase 2: Journal Tree
+1. Create Journal Tree plant type
+2. Entry types (Free, Gratitude, Vent, etc.)
+3. Memory Garden view
+4. Basic writing experience
+
+### Phase 3: Visit Tracking & Insights
+1. Track garden visits with timestamps
+2. Calculate patterns & archetypes
+3. Build Insights UI screen
+
+### Phase 4: Monetization
+1. Implement tier system (Free/Plus/Pro)
+2. Stripe/RevenueCat integration
+3. Feature gating
+4. Conversion triggers
+
+### Phase 5: Social - Basic
+1. Garden Postcards
+2. Archetype sharing cards
+3. Social media export
+
+### Phase 6: Social - Advanced
+1. Garden visiting
+2. Accountability buddies
+3. Community challenges
+4. Inspiration feed
+
+---
+
 ## 📝 Notes
 
 - Tất cả insights phải dựa trên data thực, không phải giả định
 - Luôn frame insights theo hướng positive
 - Cho phép user opt-out của tracking nếu muốn
 - Privacy-first: data chỉ để cho user, không share
+- Social features phải có consent rõ ràng
+- Journal entries NEVER được share (trừ khi user chọn anonymous)
 
 ---
 
