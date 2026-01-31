@@ -30,6 +30,8 @@ import { PlantVisual, XpPopup } from './plant-visual'
 import { usePlants } from '@/lib/context'
 import { getGoalForPlant, getGoalStats, type GoalWithStats, type GoalStatistics } from '@/lib/actions/goals'
 import { getAdaptiveAnalysis, type AdaptiveAnalysisResult } from '@/lib/actions/adaptive'
+import { getPlantActivityHistory, type ActivityHistory } from '@/lib/actions/activity'
+import { RhythmView, RhythmStats } from './rhythm-view'
 import {
   GoalSetupWizard,
   GoalLogModal,
@@ -77,7 +79,10 @@ export function PlantDetailSheet({
   const [adaptiveAnalysis, setAdaptiveAnalysis] = useState<AdaptiveAnalysisResult | null>(null)
   const [showAdaptiveSuggestion, setShowAdaptiveSuggestion] = useState(false)
 
-  // Load goal when plant changes or sheet opens
+  // Activity/Rhythm state
+  const [activityHistory, setActivityHistory] = useState<ActivityHistory | null>(null)
+
+  // Load goal and activity history when plant changes or sheet opens
   useEffect(() => {
     if (plant && open) {
       setIsLoadingGoal(true)
@@ -85,6 +90,8 @@ export function PlantDetailSheet({
         setGoal(g)
         setIsLoadingGoal(false)
       })
+      // Fetch activity history for rhythm view
+      getPlantActivityHistory(plant.id, 30).then(setActivityHistory)
     }
   }, [plant?.id, open])
 
@@ -473,6 +480,39 @@ export function PlantDetailSheet({
                 </div>
               </div>
             </div>
+
+            {/* Rhythm View - Activity Pattern */}
+            {activityHistory && (
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-emerald-500" />
+                  Activity Rhythm
+                </h4>
+
+                <div className="rounded-2xl bg-slate-900/80 p-4 space-y-4">
+                  {/* Rhythm dots visualization */}
+                  <RhythmView
+                    activityDates={activityHistory.activities
+                      .filter(a => a.activity_type !== 'rest_day')
+                      .map(a => a.logged_date)}
+                    restDates={activityHistory.restDays.map(r => r.rest_date)}
+                    days={14}
+                    size="md"
+                    showLegend
+                  />
+
+                  {/* Rhythm stats */}
+                  <div className="pt-2 border-t border-slate-700/50">
+                    <RhythmStats
+                      daysThisWeek={activityHistory.rhythm.daysThisWeek}
+                      daysThisMonth={activityHistory.rhythm.daysThisMonth}
+                      consistencyPercentage={activityHistory.rhythm.consistencyPercentage}
+                      className="justify-center"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Details - Compact & Clean */}
             <div className="space-y-3">

@@ -18,7 +18,7 @@ import { getTimeOfDay, type TimeOfDay } from './themes'
 import { AddPlantDialog } from '@/components/plants/add-plant-dialog'
 import { PlantDetailSheet } from '@/components/plants/plant-detail-sheet'
 import { QuickLogModal } from '@/components/plants/quick-log-modal'
-import { WateringModal } from '@/components/plants/watering-modal'
+import { GentleWateringModal } from '@/components/plants/gentle-watering-modal'
 import {
   showAlreadyWateredToast,
   showWaterErrorToast,
@@ -349,6 +349,9 @@ export function IsometricGarden({
       // Add to cooldown immediately
       actionCooldown.current.add(plant.id)
 
+      // Close modal IMMEDIATELY before showing celebration
+      setWateringModalOpen(false)
+
       const celebrationPosition = {
         x: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
         y: typeof window !== 'undefined' ? window.innerHeight / 2 : 300
@@ -365,9 +368,9 @@ export function IsometricGarden({
       })
       const noteBonus = notes?.trim()
         ? calculateNoteBonus({
-            noteLength: notes.trim().length,
-            journalStreak: journalStreak,
-          })
+          noteLength: notes.trim().length,
+          journalStreak: journalStreak,
+        })
         : { total: 0 }
       const estimatedXp = wateringXp.total + noteBonus.total
 
@@ -562,9 +565,9 @@ export function IsometricGarden({
       // Calculate note bonus if notes provided
       const noteBonus = notes?.trim()
         ? calculateNoteBonus({
-            noteLength: notes.trim().length,
-            journalStreak: journalStreak,
-          })
+          noteLength: notes.trim().length,
+          journalStreak: journalStreak,
+        })
         : { total: 0 }
 
       // Calculate estimated XP for optimistic celebration
@@ -951,20 +954,27 @@ export function IsometricGarden({
         journalStreak={journalStreak}
       />
 
-      {/* Watering modal for standard plants */}
-      <WateringModal
+      {/* Gentle watering modal - 3-action flow (Water/Log/Rest) */}
+      <GentleWateringModal
         plant={wateringPlant}
         open={wateringModalOpen}
         onOpenChange={setWateringModalOpen}
         onWater={handleWaterConfirm}
+        onLogProgress={wateringPlant?.goal_mode ? () => {
+          // Close watering modal and open quick log modal
+          setWateringModalOpen(false)
+          setQuickLogPlant(wateringPlant)
+          setQuickLogOpen(true)
+        } : undefined}
+        hasGoal={!!wateringPlant?.goal_mode}
         estimatedXp={(() => {
           // Calculate better estimate based on streak
           const streak = (wateringPlant?.current_streak || 0) + 1
-          let xp = 10 // Base
-          if (streak >= 30) xp += 50
-          else if (streak >= 14) xp += 30
-          else if (streak >= 7) xp += 15
-          else if (streak >= 3) xp += 5
+          let xp = 8 // Base XP for gentle watering
+          if (streak >= 30) xp += 5
+          else if (streak >= 14) xp += 4
+          else if (streak >= 7) xp += 3
+          else if (streak >= 3) xp += 2
           return xp
         })()}
         journalStreak={journalStreak}

@@ -17,11 +17,25 @@
 | Goal Tracking | ✅ Complete (Build Capacity + Total Progress modes) |
 | Adaptive Goals | ✅ Complete |
 | PWA/UI Polish | ✅ Mostly complete |
-| **Gentle Growth** | ✅ Phase 1 Complete (DB deployed + UI foundation) |
+| **Gentle Growth** | ✅ Phase 1 Complete (DB + UI integrated) |
 
 ---
 
 ## Recent Sessions
+
+### 2026-01-31: Gentle Growth Phase 1 - UI Integration
+**Changes**:
+- Integrated `GentleWateringModal` into garden view (replaces old WateringModal)
+- Added `RhythmView` with activity dots + stats to plant detail sheet
+- 3-action flow: Water / Log Progress / Rest Day now works from garden
+
+**Key Files Changed**:
+- [isometric-garden.tsx](src/components/garden/isometric-garden.tsx) - Uses GentleWateringModal
+- [plant-detail-sheet.tsx](src/components/plants/plant-detail-sheet.tsx) - Shows RhythmView
+
+**Status**: ✅ Phase 1 Complete - Ready for Phase 2
+
+---
 
 ### 2026-01-31: Gentle Growth Phase 1 Implementation
 **Changes**:
@@ -44,8 +58,8 @@
 
 **Next Steps**:
 - ✅ Migration deployed to Supabase (4 parts: columns, tables, RLS, data migration)
-- 📍 Integrate `GentleWateringModal` into garden view
-- 📍 Add rhythm view to plant detail sheet
+- ✅ Integrate `GentleWateringModal` into garden view
+- ✅ Add rhythm view to plant detail sheet
 - Phase 2: Journal Tree, season transitions
 
 ---
