@@ -1015,16 +1015,7 @@ export function IsometricGarden({
         goalUnit={wateringPlant?.goal?.unit}
         goalMode={wateringPlant?.goal_mode || undefined}
         isWateredToday={wateringPlant ? isWateredToday(wateringPlant) : false}
-        estimatedXp={(() => {
-          // Calculate better estimate based on streak
-          const streak = (wateringPlant?.current_streak || 0) + 1
-          let xp = 8 // Base XP for gentle watering
-          if (streak >= 30) xp += 5
-          else if (streak >= 14) xp += 4
-          else if (streak >= 7) xp += 3
-          else if (streak >= 3) xp += 2
-          return xp
-        })()}
+
         journalStreak={journalStreak}
       />
 
