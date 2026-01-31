@@ -1,14 +1,21 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { Target, TrendingUp, Trophy, AlertCircle } from 'lucide-react'
+import { Target, TrendingUp, Trophy, AlertCircle, Calendar, CalendarDays, CalendarRange, Check } from 'lucide-react'
 import type { GoalWithStats } from '@/lib/actions/goals'
+import type { GoalFrequency } from '@/types/database'
 
 interface GoalProgressProps {
   goal: GoalWithStats
   size?: 'sm' | 'md' | 'lg'
   showDetails?: boolean
   className?: string
+}
+
+const FREQUENCY_CONFIG: Record<GoalFrequency, { icon: typeof Calendar; label: string }> = {
+  daily: { icon: Calendar, label: 'Today' },
+  weekly: { icon: CalendarDays, label: 'This Week' },
+  monthly: { icon: CalendarRange, label: 'This Month' },
 }
 
 export function GoalProgress({
@@ -31,10 +38,19 @@ export function GoalProgress({
 
   const isBuildCapacity = goal.goal_mode === 'build_capacity'
   const progressPercent = Math.min(100, goal.overallProgress)
-  const weeklyProgressPercent = Math.min(100, (goal.weeklyProgress / goal.currentWeekTarget) * 100)
+
+  // Period-based progress
+  const frequency = (goal.frequency || 'weekly') as GoalFrequency
+  const freqConfig = FREQUENCY_CONFIG[frequency]
+  const FreqIcon = freqConfig.icon
+
+  const periodProgressPercent = goal.currentPeriodTarget > 0
+    ? Math.min(100, (goal.periodProgress / goal.currentPeriodTarget) * 100)
+    : 0
+  const isPeriodCompleted = goal.periodProgress >= goal.currentPeriodTarget
 
   return (
-    <div className={cn('space-y-2', sizeClasses[size], className)}>
+    <div className={cn('space-y-3', sizeClasses[size], className)}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
@@ -50,7 +66,7 @@ export function GoalProgress({
             )} />
           )}
           <span className="font-medium text-muted-foreground">
-            {isBuildCapacity ? 'Capacity' : 'Progress'}
+            {isBuildCapacity ? 'Build Capacity' : 'Total Progress'}
           </span>
         </div>
         {!goal.isOnTrack && (
@@ -63,11 +79,73 @@ export function GoalProgress({
         )}
       </div>
 
+      {/* Period Progress (Primary) */}
+      {showDetails && (
+        <div className="p-3 rounded-lg bg-muted/50 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <FreqIcon className={cn(
+                size === 'sm' ? 'h-3 w-3' : 'h-4 w-4',
+                isPeriodCompleted ? 'text-green-500' : 'text-muted-foreground'
+              )} />
+              <span className={cn(
+                'font-medium',
+                isPeriodCompleted ? 'text-green-600' : ''
+              )}>
+                {freqConfig.label}
+              </span>
+            </div>
+            {isPeriodCompleted ? (
+              <div className="flex items-center gap-1 text-green-600">
+                <Check className="h-4 w-4" />
+                <span className="text-xs font-medium">Done!</span>
+              </div>
+            ) : (
+              <span className="text-xs text-muted-foreground">
+                {goal.periodLabel}
+              </span>
+            )}
+          </div>
+
+          {/* Period progress bar */}
+          <div className={cn(
+            'w-full rounded-full bg-background overflow-hidden',
+            progressBarHeight[size]
+          )}>
+            <div
+              className={cn(
+                'h-full rounded-full transition-all duration-500',
+                isPeriodCompleted
+                  ? 'bg-gradient-to-r from-green-400 to-green-500'
+                  : periodProgressPercent >= 80
+                  ? 'bg-gradient-to-r from-amber-400 to-amber-500'
+                  : 'bg-gradient-to-r from-primary/80 to-primary'
+              )}
+              style={{ width: `${periodProgressPercent}%` }}
+            />
+          </div>
+
+          <div className="flex justify-between text-muted-foreground">
+            <span className="text-xs">{goal.periodDateRange}</span>
+            <span className={cn(
+              'font-medium',
+              isPeriodCompleted ? 'text-green-600' : ''
+            )}>
+              {Math.round(goal.periodProgress * 10) / 10} / {Math.round(goal.currentPeriodTarget * 10) / 10} {goal.unit}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Overall Progress Bar */}
       <div className="space-y-1">
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>Overall Progress</span>
+          <span>{Math.round(progressPercent)}%</span>
+        </div>
         <div className={cn(
           'w-full rounded-full bg-muted overflow-hidden',
-          progressBarHeight[size]
+          size === 'sm' ? 'h-1' : 'h-1.5'
         )}>
           <div
             className={cn(
@@ -77,7 +155,7 @@ export function GoalProgress({
             style={{ width: `${progressPercent}%` }}
           />
         </div>
-        <div className="flex justify-between text-muted-foreground">
+        <div className="flex justify-between text-muted-foreground text-xs">
           <span>
             {Number(goal.current_value).toFixed(1)} {goal.unit}
           </span>
@@ -87,37 +165,13 @@ export function GoalProgress({
         </div>
       </div>
 
-      {/* Weekly Progress */}
-      {showDetails && (
-        <div className="space-y-1">
-          <div className="flex justify-between text-muted-foreground">
-            <span>Week {goal.weekNumber} Target</span>
-            <span className="font-medium">
-              {goal.weeklyProgress.toFixed(1)} / {goal.currentWeekTarget.toFixed(1)} {goal.unit}
-            </span>
-          </div>
-          <div className={cn(
-            'w-full rounded-full bg-muted overflow-hidden',
-            size === 'sm' ? 'h-1' : 'h-1.5'
-          )}>
-            <div
-              className={cn(
-                'h-full rounded-full transition-all duration-500',
-                weeklyProgressPercent >= 100 ? 'bg-blue-500' : 'bg-blue-300'
-              )}
-              style={{ width: `${weeklyProgressPercent}%` }}
-            />
-          </div>
-        </div>
-      )}
-
       {/* Stats */}
       {showDetails && goal.personalRecords > 0 && (
         <div className="flex items-center gap-1 text-yellow-600">
           <Trophy className={cn(
             size === 'sm' ? 'h-3 w-3' : 'h-4 w-4'
           )} />
-          <span>{goal.personalRecords} PR{goal.personalRecords > 1 ? 's' : ''}</span>
+          <span>{goal.personalRecords} Personal Record{goal.personalRecords > 1 ? 's' : ''}</span>
         </div>
       )}
     </div>
@@ -128,9 +182,11 @@ export function GoalProgress({
 export function GoalProgressRing({
   goal,
   size = 'md',
+  showPeriod = false,
 }: {
   goal: GoalWithStats
   size?: 'sm' | 'md' | 'lg'
+  showPeriod?: boolean
 }) {
   const dimensions = {
     sm: { size: 40, stroke: 4 },
@@ -141,7 +197,13 @@ export function GoalProgressRing({
   const { size: svgSize, stroke } = dimensions[size]
   const radius = (svgSize - stroke) / 2
   const circumference = radius * 2 * Math.PI
-  const progress = Math.min(100, goal.overallProgress)
+
+  // Use period progress if showPeriod, otherwise overall
+  const progress = showPeriod
+    ? (goal.currentPeriodTarget > 0 ? Math.min(100, (goal.periodProgress / goal.currentPeriodTarget) * 100) : 0)
+    : Math.min(100, goal.overallProgress)
+
+  const isPeriodCompleted = showPeriod && goal.periodProgress >= goal.currentPeriodTarget
   const offset = circumference - (progress / 100) * circumference
 
   return (
@@ -174,17 +236,28 @@ export function GoalProgressRing({
           strokeLinecap="round"
           className={cn(
             'transition-all duration-500',
-            goal.isOnTrack ? 'text-green-500' : 'text-amber-500'
+            isPeriodCompleted
+              ? 'text-green-500'
+              : showPeriod
+              ? (progress >= 80 ? 'text-amber-500' : 'text-primary')
+              : (goal.isOnTrack ? 'text-green-500' : 'text-amber-500')
           )}
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className={cn(
-          'font-semibold',
-          size === 'sm' ? 'text-xs' : size === 'md' ? 'text-sm' : 'text-base'
-        )}>
-          {Math.round(progress)}%
-        </span>
+        {isPeriodCompleted ? (
+          <Check className={cn(
+            'text-green-500',
+            size === 'sm' ? 'h-4 w-4' : size === 'md' ? 'h-5 w-5' : 'h-6 w-6'
+          )} />
+        ) : (
+          <span className={cn(
+            'font-semibold',
+            size === 'sm' ? 'text-xs' : size === 'md' ? 'text-sm' : 'text-base'
+          )}>
+            {Math.round(progress)}%
+          </span>
+        )}
       </div>
     </div>
   )
@@ -219,6 +292,30 @@ export function GoalModeBadge({
           Progress
         </>
       )}
+    </span>
+  )
+}
+
+// Frequency badge
+export function GoalFrequencyBadge({
+  frequency,
+  className,
+}: {
+  frequency: GoalFrequency
+  className?: string
+}) {
+  const config = FREQUENCY_CONFIG[frequency]
+  const Icon = config.icon
+
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground',
+        className
+      )}
+    >
+      <Icon className="h-3 w-3" />
+      {frequency === 'daily' ? 'Daily' : frequency === 'weekly' ? 'Weekly' : 'Monthly'}
     </span>
   )
 }

@@ -20,15 +20,16 @@ import {
   ArrowLeft,
   Check,
   Sprout,
-  Leaf,
-  TreeDeciduous,
+  Calendar,
+  CalendarDays,
+  CalendarRange,
   Flower2,
   Edit3,
+  Info,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { GoalMode, ProgressionType, GoalFrequency } from '@/types/database'
 import { createGoal } from '@/lib/actions/goals'
-import { generateProgressionPlan, type ProgressionType as ProgType } from '@/lib/progression'
 import { toast } from 'sonner'
 
 interface GoalSetupWizardProps {
@@ -39,104 +40,65 @@ interface GoalSetupWizardProps {
   onComplete?: () => void
 }
 
-type WizardStep = 'seed' | 'target' | 'growth' | 'preview'
+type WizardStep = 'mode' | 'frequency' | 'target' | 'preview'
 
-// Garden-themed goal modes
-const SEED_TYPES = [
+// Goal mode options
+const GOAL_MODES = [
   {
     id: 'build_capacity' as GoalMode,
-    title: 'Capacity Seed',
+    title: 'Build Capacity',
     icon: '📈',
-    description: 'Grow stronger each week',
-    example: 'Run 2km → 10km',
+    description: 'Improve each period',
+    example: 'Week 1: 20 pages → Week 12: 50 pages',
     color: 'from-emerald-500/20 to-green-500/20',
     borderColor: 'border-emerald-500/50',
     textColor: 'text-emerald-600 dark:text-emerald-400',
   },
   {
     id: 'total_progress' as GoalMode,
-    title: 'Accumulator Seed',
+    title: 'Total Progress',
     icon: '🎯',
-    description: 'Collect towards a total',
-    example: 'Save $0 → $10,000',
+    description: 'Accumulate to a total',
+    example: 'Save $10,000 over 6 months',
     color: 'from-blue-500/20 to-cyan-500/20',
     borderColor: 'border-blue-500/50',
     textColor: 'text-blue-600 dark:text-blue-400',
   },
 ]
 
-// Growth curve types with visual preview
-const GROWTH_CURVES = [
-  {
-    id: 'linear' as ProgressionType,
-    name: 'Steady',
-    icon: '↗',
-    description: 'Linear growth',
-    visual: '▁▂▃▄▅▆▇█',
-  },
-  {
-    id: 's-curve' as ProgressionType,
-    name: 'S-Curve',
-    icon: '📈',
-    description: 'Natural progression',
-    visual: '▁▁▂▃▅▆▇▇',
-  },
-  {
-    id: 'step' as ProgressionType,
-    name: 'Step',
-    icon: '🪜',
-    description: 'Level up in stages',
-    visual: '▂▂▄▄▆▆██',
-  },
-  {
-    id: 'logarithmic' as ProgressionType,
-    name: 'Quick Start',
-    icon: '⚡',
-    description: 'Fast then steady',
-    visual: '▅▆▇▇▇███',
-  },
-  {
-    id: 'exponential' as ProgressionType,
-    name: 'Slow Burn',
-    icon: '🚀',
-    description: 'Build momentum',
-    visual: '▁▁▂▂▃▄▆█',
-  },
-]
-
-// Duration markers with plant growth stages
-const DURATION_MARKERS = [
-  { weeks: 4, icon: '🌱', label: 'Sprout' },
-  { weeks: 8, icon: '🌿', label: 'Growing' },
-  { weeks: 12, icon: '🌸', label: 'Blooming' },
-  { weeks: 16, icon: '🌳', label: 'Mature' },
-]
-
-const TRACKING_METRICS = [
-  { id: 'max', label: 'Best', description: 'Track peak performance' },
-  { id: 'sum', label: 'Total', description: 'Sum all values' },
-  { id: 'average', label: 'Average', description: 'Track average' },
-]
-
+// Frequency options with clearer descriptions
 const FREQUENCY_OPTIONS = [
   {
     id: 'daily' as GoalFrequency,
     label: 'Daily',
-    icon: '📅',
-    description: 'Complete every day',
+    icon: Calendar,
+    description: 'Set a target for each day',
+    periodLabel: 'day',
+    periodsPerWeek: 7,
   },
   {
     id: 'weekly' as GoalFrequency,
     label: 'Weekly',
-    icon: '📆',
-    description: 'X times per week',
+    icon: CalendarDays,
+    description: 'Set a target for each week',
+    periodLabel: 'week',
+    periodsPerWeek: 1,
   },
   {
     id: 'monthly' as GoalFrequency,
     label: 'Monthly',
-    icon: '🗓️',
-    description: 'X times per month',
+    icon: CalendarRange,
+    description: 'Set a target for each month',
+    periodLabel: 'month',
+    periodsPerWeek: 0.25,
   },
+]
+
+// Growth patterns
+const GROWTH_PATTERNS = [
+  { id: 'steady', label: 'Steady', description: 'Same increase each period', icon: '→' },
+  { id: 'gentle', label: 'Gentle Start', description: 'Small increases early, larger later', icon: '↗' },
+  { id: 'aggressive', label: 'Fast Start', description: 'Big gains early, then maintain', icon: '⚡' },
 ]
 
 export function GoalSetupWizard({
@@ -146,68 +108,112 @@ export function GoalSetupWizard({
   onOpenChange,
   onComplete,
 }: GoalSetupWizardProps) {
-  const [step, setStep] = useState<WizardStep>('seed')
+  const [step, setStep] = useState<WizardStep>('mode')
   const [isPending, startTransition] = useTransition()
   const [showManualEditor, setShowManualEditor] = useState(false)
 
   // Form state
   const [goalMode, setGoalMode] = useState<GoalMode | null>(null)
+  const [frequency, setFrequency] = useState<GoalFrequency>('weekly')
   const [unit, setUnit] = useState('')
-  const [startValue, setStartValue] = useState('')
-  const [targetValue, setTargetValue] = useState('')
-  const [initialAmount, setInitialAmount] = useState('')
+
+  // Build Capacity fields
+  const [startingTarget, setStartingTarget] = useState('') // Target for first period
+  const [finalTarget, setFinalTarget] = useState('') // Target for final period
+  const [growthPattern, setGrowthPattern] = useState('steady')
+
+  // Total Progress fields
+  const [totalTarget, setTotalTarget] = useState('') // Total to accumulate
+  const [currentAmount, setCurrentAmount] = useState('') // Already have
+
+  // Common
   const [durationWeeks, setDurationWeeks] = useState(12)
-  const [progressionType, setProgressionType] = useState<ProgressionType>('s-curve')
-  const [trackingMetric, setTrackingMetric] = useState('max')
   const [manualTargets, setManualTargets] = useState<number[] | null>(null)
-  const [frequency, setFrequency] = useState<GoalFrequency>('daily')
-  const [frequencyTarget, setFrequencyTarget] = useState(1)
 
-  // Generate preview targets
-  const previewTargets = useMemo(() => {
+  // Calculate number of periods based on frequency and duration
+  const numberOfPeriods = useMemo(() => {
+    if (frequency === 'daily') return durationWeeks * 7
+    if (frequency === 'weekly') return durationWeeks
+    return Math.ceil(durationWeeks / 4) // monthly
+  }, [frequency, durationWeeks])
+
+  // Generate period targets
+  const periodTargets = useMemo(() => {
     if (manualTargets) return manualTargets
-    if (!goalMode) return []
-    return generateProgressionPlan({
-      startValue: goalMode === 'build_capacity' ? Number(startValue) || 0 : 0,
-      endValue: Number(targetValue) || 100,
-      totalWeeks: durationWeeks,
-      type: progressionType as ProgType,
-    })
-  }, [goalMode, startValue, targetValue, durationWeeks, progressionType, manualTargets])
 
-  // Calculate week date ranges for preview
-  const weekDateRanges = useMemo(() => {
-    const today = new Date()
-    const startOfWeek = new Date(today)
-    startOfWeek.setDate(today.getDate() - today.getDay() + 1) // Monday
+    if (goalMode === 'build_capacity') {
+      const start = Number(startingTarget) || 0
+      const end = Number(finalTarget) || start
+      const periods = numberOfPeriods
 
-    return previewTargets.map((_, index) => {
-      const weekStart = new Date(startOfWeek)
-      weekStart.setDate(startOfWeek.getDate() + index * 7)
-      const weekEnd = new Date(weekStart)
-      weekEnd.setDate(weekStart.getDate() + 6)
+      if (periods <= 1) return [end]
 
-      return {
-        start: weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        end: weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      const targets: number[] = []
+      for (let i = 0; i < periods; i++) {
+        const progress = i / (periods - 1)
+        let value: number
+
+        if (growthPattern === 'gentle') {
+          // Slow start, accelerate later (quadratic ease-in)
+          value = start + (end - start) * (progress * progress)
+        } else if (growthPattern === 'aggressive') {
+          // Fast start, slow down (quadratic ease-out)
+          value = start + (end - start) * (1 - Math.pow(1 - progress, 2))
+        } else {
+          // Linear
+          value = start + (end - start) * progress
+        }
+        targets.push(Math.round(value * 10) / 10)
       }
-    })
-  }, [previewTargets])
+      return targets
+    } else {
+      // Total Progress: divide evenly
+      const remaining = (Number(totalTarget) || 0) - (Number(currentAmount) || 0)
+      const perPeriod = remaining / numberOfPeriods
+      return Array(numberOfPeriods).fill(Math.round(perPeriod * 10) / 10)
+    }
+  }, [goalMode, startingTarget, finalTarget, totalTarget, currentAmount, numberOfPeriods, growthPattern, manualTargets])
+
+  // Generate period labels (dates)
+  const periodLabels = useMemo(() => {
+    const today = new Date()
+    const labels: string[] = []
+
+    for (let i = 0; i < numberOfPeriods; i++) {
+      if (frequency === 'daily') {
+        const date = new Date(today)
+        date.setDate(today.getDate() + i)
+        labels.push(date.toLocaleDateString('vi-VN', { day: 'numeric', month: 'short' }))
+      } else if (frequency === 'weekly') {
+        const startDate = new Date(today)
+        startDate.setDate(today.getDate() + i * 7)
+        const endDate = new Date(startDate)
+        endDate.setDate(startDate.getDate() + 6)
+        labels.push(`${startDate.toLocaleDateString('vi-VN', { day: 'numeric', month: 'short' })} - ${endDate.toLocaleDateString('vi-VN', { day: 'numeric', month: 'short' })}`)
+      } else {
+        const date = new Date(today)
+        date.setMonth(today.getMonth() + i)
+        labels.push(date.toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' }))
+      }
+    }
+    return labels
+  }, [frequency, numberOfPeriods])
+
+  const frequencyOption = FREQUENCY_OPTIONS.find(f => f.id === frequency)!
 
   const resetForm = () => {
-    setStep('seed')
+    setStep('mode')
     setGoalMode(null)
+    setFrequency('weekly')
     setUnit('')
-    setStartValue('')
-    setTargetValue('')
-    setInitialAmount('')
+    setStartingTarget('')
+    setFinalTarget('')
+    setTotalTarget('')
+    setCurrentAmount('')
     setDurationWeeks(12)
-    setProgressionType('s-curve')
-    setTrackingMetric('max')
+    setGrowthPattern('steady')
     setManualTargets(null)
     setShowManualEditor(false)
-    setFrequency('daily')
-    setFrequencyTarget(1)
   }
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -216,83 +222,111 @@ export function GoalSetupWizard({
   }
 
   const handleNext = () => {
-    if (step === 'seed' && goalMode) setStep('target')
-    else if (step === 'target') setStep('growth')
-    else if (step === 'growth') setStep('preview')
+    if (step === 'mode' && goalMode) setStep('frequency')
+    else if (step === 'frequency') setStep('target')
+    else if (step === 'target') setStep('preview')
   }
 
   const handleBack = () => {
-    if (step === 'target') setStep('seed')
-    else if (step === 'growth') setStep('target')
-    else if (step === 'preview') setStep('growth')
+    if (step === 'frequency') setStep('mode')
+    else if (step === 'target') setStep('frequency')
+    else if (step === 'preview') setStep('target')
   }
 
   const canProceed = () => {
-    if (step === 'seed') return !!goalMode
+    if (step === 'mode') return !!goalMode
+    if (step === 'frequency') return true
     if (step === 'target') {
-      return unit.trim() && targetValue && Number(targetValue) > 0
+      if (!unit.trim()) return false
+      if (goalMode === 'build_capacity') {
+        return Number(startingTarget) >= 0 && Number(finalTarget) > 0
+      } else {
+        return Number(totalTarget) > 0
+      }
     }
     return true
   }
 
   const handleManualTargetChange = (index: number, value: number) => {
-    const newTargets = manualTargets ? [...manualTargets] : [...previewTargets]
+    const newTargets = manualTargets ? [...manualTargets] : [...periodTargets]
     newTargets[index] = value
     setManualTargets(newTargets)
-  }
-
-  const handleResetToRecommended = () => {
-    setManualTargets(null)
   }
 
   const handleSubmit = async () => {
     if (!goalMode) return
 
     startTransition(async () => {
+      // Convert period targets to weekly targets for storage
+      let weeklyTargets: number[]
+      if (frequency === 'daily') {
+        // Group daily targets into weekly
+        weeklyTargets = []
+        for (let i = 0; i < durationWeeks; i++) {
+          const weekDays = periodTargets.slice(i * 7, (i + 1) * 7)
+          // For build_capacity, take the max of the week; for total_progress, take sum
+          if (goalMode === 'build_capacity') {
+            weeklyTargets.push(Math.max(...weekDays))
+          } else {
+            weeklyTargets.push(weekDays.reduce((a, b) => a + b, 0))
+          }
+        }
+      } else if (frequency === 'monthly') {
+        // Expand monthly targets to weekly (4 weeks per month)
+        weeklyTargets = []
+        periodTargets.forEach(monthTarget => {
+          const weeklyValue = goalMode === 'build_capacity' ? monthTarget : monthTarget / 4
+          for (let i = 0; i < 4; i++) {
+            weeklyTargets.push(Math.round(weeklyValue * 10) / 10)
+          }
+        })
+        weeklyTargets = weeklyTargets.slice(0, durationWeeks)
+      } else {
+        weeklyTargets = periodTargets
+      }
+
       const result = await createGoal({
         plant_id: plantId,
         goal_mode: goalMode,
-        tracking_metric: goalMode === 'build_capacity' ? trackingMetric : 'sum',
+        tracking_metric: goalMode === 'build_capacity' ? 'max' : 'sum',
         unit: unit.trim(),
-        start_value: goalMode === 'build_capacity' ? Number(startValue) || 0 : 0,
-        target_value: Number(targetValue),
-        initial_amount: goalMode === 'total_progress' ? Number(initialAmount) || 0 : undefined,
+        start_value: goalMode === 'build_capacity' ? Number(startingTarget) || 0 : 0,
+        target_value: goalMode === 'build_capacity' ? Number(finalTarget) : Number(totalTarget),
+        initial_amount: goalMode === 'total_progress' ? Number(currentAmount) || 0 : undefined,
         duration_weeks: durationWeeks,
-        progression_type: progressionType,
-        weekly_targets: manualTargets || undefined,
+        progression_type: growthPattern === 'gentle' ? 's-curve' : growthPattern === 'aggressive' ? 'logarithmic' : 'linear',
+        weekly_targets: weeklyTargets,
         frequency,
-        frequency_target: frequency === 'daily' ? 1 : frequencyTarget,
+        frequency_target: 1,
       })
 
       if (result.success) {
-        toast.success('Goal planted!', {
-          description: `Your goal seed has been planted for ${plantName}`,
+        toast.success('Goal created!', {
+          description: `Your goal has been set for ${plantName}`,
         })
         handleOpenChange(false)
         onComplete?.()
       } else {
-        toast.error('Failed to plant goal', {
+        toast.error('Failed to create goal', {
           description: result.error,
         })
       }
     })
   }
 
-  // Get current growth stage based on duration
-  const currentGrowthStage = DURATION_MARKERS.reduce((prev, curr) =>
-    durationWeeks >= curr.weeks ? curr : prev
-  )
+  // Step indicators
+  const steps: WizardStep[] = ['mode', 'frequency', 'target', 'preview']
+  const stepIcons = [TrendingUp, Calendar, Target, Flower2]
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        {/* Garden-themed step indicator */}
+        {/* Step indicator */}
         <div className="flex items-center justify-center gap-1 mb-4">
-          {(['seed', 'target', 'growth', 'preview'] as WizardStep[]).map((s, i) => {
-            const icons = [Sprout, Target, Leaf, Flower2]
-            const Icon = icons[i]
+          {steps.map((s, i) => {
+            const Icon = stepIcons[i]
             const isActive = step === s
-            const isPast = ['seed', 'target', 'growth', 'preview'].indexOf(step) > i
+            const isPast = steps.indexOf(step) > i
 
             return (
               <div key={s} className="flex items-center">
@@ -308,7 +342,7 @@ export function GoalSetupWizard({
                 >
                   <Icon className="h-4 w-4" />
                 </div>
-                {i < 3 && (
+                {i < steps.length - 1 && (
                   <div
                     className={cn(
                       'w-8 h-0.5 mx-1',
@@ -321,56 +355,51 @@ export function GoalSetupWizard({
           })}
         </div>
 
-        {/* Step 1: Choose Seed Type */}
-        {step === 'seed' && (
+        {/* Step 1: Choose Goal Mode */}
+        {step === 'mode' && (
           <>
             <DialogHeader className="text-center">
               <DialogTitle className="flex items-center justify-center gap-2">
-                <Sprout className="h-5 w-5 text-green-500" />
-                Plant a Goal Seed
+                <TrendingUp className="h-5 w-5 text-green-500" />
+                Choose Goal Type
               </DialogTitle>
               <DialogDescription>
-                Choose how your goal will grow with {plantName}
+                How do you want to track progress for {plantName}?
               </DialogDescription>
             </DialogHeader>
 
             <div className="grid gap-4 py-4">
-              {SEED_TYPES.map((seed) => (
+              {GOAL_MODES.map((mode) => (
                 <button
-                  key={seed.id}
-                  onClick={() => {
-                    setGoalMode(seed.id)
-                    if (seed.id === 'total_progress') setTrackingMetric('sum')
-                  }}
+                  key={mode.id}
+                  onClick={() => setGoalMode(mode.id)}
                   className={cn(
                     'relative p-4 rounded-xl border-2 text-left transition-all overflow-hidden',
-                    goalMode === seed.id
-                      ? `${seed.borderColor} ring-2 ring-offset-2 ring-primary`
+                    goalMode === mode.id
+                      ? `${mode.borderColor} ring-2 ring-offset-2 ring-primary`
                       : 'border-border hover:border-primary/50'
                   )}
                 >
-                  {/* Background gradient */}
                   <div
                     className={cn(
                       'absolute inset-0 bg-gradient-to-br opacity-50',
-                      seed.color
+                      mode.color
                     )}
                   />
-
                   <div className="relative flex items-start gap-4">
-                    <span className="text-3xl">{seed.icon}</span>
+                    <span className="text-3xl">{mode.icon}</span>
                     <div className="flex-1">
-                      <h3 className={cn('font-semibold', seed.textColor)}>
-                        {seed.title}
+                      <h3 className={cn('font-semibold', mode.textColor)}>
+                        {mode.title}
                       </h3>
                       <p className="text-sm text-muted-foreground mt-1">
-                        {seed.description}
+                        {mode.description}
                       </p>
                       <p className="text-xs font-mono bg-background/50 px-2 py-1 rounded mt-2 inline-block">
-                        {seed.example}
+                        {mode.example}
                       </p>
                     </div>
-                    {goalMode === seed.id && (
+                    {goalMode === mode.id && (
                       <Check className="h-5 w-5 text-primary" />
                     )}
                   </div>
@@ -380,16 +409,88 @@ export function GoalSetupWizard({
           </>
         )}
 
-        {/* Step 2: Set Target */}
+        {/* Step 2: Choose Frequency */}
+        {step === 'frequency' && (
+          <>
+            <DialogHeader className="text-center">
+              <DialogTitle className="flex items-center justify-center gap-2">
+                <Calendar className="h-5 w-5 text-blue-500" />
+                Choose Tracking Period
+              </DialogTitle>
+              <DialogDescription>
+                How often do you want to set targets?
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <div className="grid gap-3">
+                {FREQUENCY_OPTIONS.map((opt) => {
+                  const Icon = opt.icon
+                  return (
+                    <button
+                      key={opt.id}
+                      onClick={() => {
+                        setFrequency(opt.id)
+                        setManualTargets(null)
+                      }}
+                      className={cn(
+                        'p-4 rounded-xl border-2 text-left transition-all flex items-center gap-4',
+                        frequency === opt.id
+                          ? 'border-primary bg-primary/5 ring-2 ring-offset-2 ring-primary'
+                          : 'hover:border-primary/50'
+                      )}
+                    >
+                      <div className={cn(
+                        'w-12 h-12 rounded-full flex items-center justify-center',
+                        frequency === opt.id ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                      )}>
+                        <Icon className="h-6 w-6" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold">{opt.label}</h3>
+                        <p className="text-sm text-muted-foreground">{opt.description}</p>
+                      </div>
+                      {frequency === opt.id && <Check className="h-5 w-5 text-primary" />}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Duration selector */}
+              <div className="space-y-3 pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <Label>Total duration</Label>
+                  <span className="text-sm font-medium">{durationWeeks} weeks ({numberOfPeriods} {frequencyOption.periodLabel}s)</span>
+                </div>
+                <Slider
+                  value={[durationWeeks]}
+                  onValueChange={(v) => {
+                    setDurationWeeks(v[0])
+                    setManualTargets(null)
+                  }}
+                  min={2}
+                  max={52}
+                  step={1}
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>2 weeks</span>
+                  <span>1 year</span>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Step 3: Set Targets */}
         {step === 'target' && (
           <>
             <DialogHeader className="text-center">
               <DialogTitle className="flex items-center justify-center gap-2">
-                <Target className="h-5 w-5 text-blue-500" />
-                Set Your Target
+                <Target className="h-5 w-5 text-amber-500" />
+                Set Your Targets
               </DialogTitle>
               <DialogDescription>
-                Define what you want to achieve
+                Define your {frequencyOption.periodLabel}ly targets
               </DialogDescription>
             </DialogHeader>
 
@@ -399,260 +500,174 @@ export function GoalSetupWizard({
                 <Label htmlFor="unit">What are you measuring?</Label>
                 <Input
                   id="unit"
-                  placeholder={
-                    goalMode === 'build_capacity'
-                      ? 'e.g., km, pages, minutes'
-                      : 'e.g., $, books, items'
-                  }
+                  placeholder="e.g., pages, km, minutes, $"
                   value={unit}
                   onChange={(e) => setUnit(e.target.value)}
                   className="text-lg"
                 />
               </div>
 
-              {/* Start/Current Value */}
+              {/* Build Capacity specific fields */}
               {goalMode === 'build_capacity' && (
-                <div className="space-y-2">
-                  <Label htmlFor="startValue">Current level (optional)</Label>
-                  <Input
-                    id="startValue"
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    placeholder="0"
-                    value={startValue}
-                    onChange={(e) => setStartValue(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Where you're starting from
-                  </p>
-                </div>
-              )}
-
-              {goalMode === 'total_progress' && (
-                <div className="space-y-2">
-                  <Label htmlFor="initialAmount">Already accumulated (optional)</Label>
-                  <Input
-                    id="initialAmount"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder="0"
-                    value={initialAmount}
-                    onChange={(e) => setInitialAmount(e.target.value)}
-                  />
-                </div>
-              )}
-
-              {/* Target Value */}
-              <div className="space-y-2">
-                <Label htmlFor="targetValue" className="flex items-center gap-2">
-                  <span>Goal target</span>
-                  <span className="text-primary font-medium">*</span>
-                </Label>
-                <div className="flex gap-2 items-center">
-                  <Input
-                    id="targetValue"
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    placeholder={goalMode === 'build_capacity' ? '10' : '10000'}
-                    value={targetValue}
-                    onChange={(e) => setTargetValue(e.target.value)}
-                    className="text-lg font-medium"
-                  />
-                  {unit && (
-                    <span className="text-muted-foreground font-medium">
-                      {unit}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Tracking Metric (for capacity goals) */}
-              {goalMode === 'build_capacity' && (
-                <div className="space-y-2">
-                  <Label>How to track progress</Label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {TRACKING_METRICS.map((metric) => (
-                      <button
-                        key={metric.id}
-                        type="button"
-                        onClick={() => setTrackingMetric(metric.id)}
-                        className={cn(
-                          'p-3 rounded-lg border text-center transition-all',
-                          trackingMetric === metric.id
-                            ? 'border-primary bg-primary/10 text-primary'
-                            : 'hover:border-primary/50'
-                        )}
-                      >
-                        <div className="font-medium text-sm">{metric.label}</div>
-                        <div className="text-[10px] text-muted-foreground mt-0.5">
-                          {metric.description}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Frequency Selector */}
-              <div className="space-y-2">
-                <Label>How often?</Label>
-                <div className="grid grid-cols-3 gap-2">
-                  {FREQUENCY_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => {
-                        setFrequency(opt.id)
-                        if (opt.id === 'daily') setFrequencyTarget(1)
-                        else if (opt.id === 'weekly') setFrequencyTarget(3)
-                        else setFrequencyTarget(10)
-                      }}
-                      className={cn(
-                        'p-3 rounded-lg border text-center transition-all',
-                        frequency === opt.id
-                          ? 'border-primary bg-primary/10 text-primary'
-                          : 'hover:border-primary/50'
-                      )}
-                    >
-                      <div className="text-lg">{opt.icon}</div>
-                      <div className="font-medium text-sm">{opt.label}</div>
-                    </button>
-                  ))}
-                </div>
-                {frequency !== 'daily' && (
-                  <div className="flex items-center gap-2 mt-2 p-2 rounded-lg bg-muted/50">
-                    <Input
-                      type="number"
-                      min="1"
-                      max={frequency === 'weekly' ? 7 : 31}
-                      value={frequencyTarget}
-                      onChange={(e) => setFrequencyTarget(Number(e.target.value) || 1)}
-                      className="w-16 h-8 text-center"
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      times per {frequency === 'weekly' ? 'week' : 'month'}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Duration Slider */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label>Growth duration</Label>
-                  <span className="text-sm font-medium flex items-center gap-1">
-                    {currentGrowthStage.icon} {durationWeeks} weeks
-                  </span>
-                </div>
-
-                <Slider
-                  value={[durationWeeks]}
-                  onValueChange={(v) => {
-                    setDurationWeeks(v[0])
-                    setManualTargets(null) // Reset manual targets when duration changes
-                  }}
-                  min={2}
-                  max={24}
-                  step={1}
-                  className="py-2"
-                />
-
-                {/* Duration markers */}
-                <div className="flex justify-between text-xs">
-                  {DURATION_MARKERS.map((marker) => (
-                    <button
-                      key={marker.weeks}
-                      onClick={() => {
-                        setDurationWeeks(marker.weeks)
-                        setManualTargets(null)
-                      }}
-                      className={cn(
-                        'flex flex-col items-center gap-1 px-2 py-1 rounded transition-colors',
-                        durationWeeks === marker.weeks
-                          ? 'bg-primary/10 text-primary'
-                          : 'hover:bg-muted'
-                      )}
-                    >
-                      <span className="text-base">{marker.icon}</span>
-                      <span>{marker.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Step 3: Growth Curve */}
-        {step === 'growth' && (
-          <>
-            <DialogHeader className="text-center">
-              <DialogTitle className="flex items-center justify-center gap-2">
-                <Leaf className="h-5 w-5 text-green-500" />
-                Choose Growth Pattern
-              </DialogTitle>
-              <DialogDescription>
-                How should your targets increase over time?
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="grid grid-cols-2 gap-3 py-4 sm:grid-cols-3">
-              {GROWTH_CURVES.map((curve) => (
-                <button
-                  key={curve.id}
-                  onClick={() => {
-                    setProgressionType(curve.id)
-                    setManualTargets(null) // Reset manual targets when curve changes
-                  }}
-                  className={cn(
-                    'p-3 rounded-xl border-2 text-center transition-all',
-                    progressionType === curve.id
-                      ? 'border-primary bg-primary/5 ring-2 ring-offset-2 ring-primary'
-                      : 'hover:border-primary/50'
-                  )}
-                >
-                  <div className="text-2xl mb-1">{curve.icon}</div>
-                  <div className="font-medium text-sm">{curve.name}</div>
-                  <div className="text-[10px] text-muted-foreground mt-0.5">
-                    {curve.description}
-                  </div>
-                  <div className="text-xs font-mono text-muted-foreground mt-2 tracking-tighter">
-                    {curve.visual}
-                  </div>
-                </button>
-              ))}
-            </div>
-
-            {/* Mini preview */}
-            <div className="p-3 rounded-lg bg-muted/50 mt-2">
-              <div className="text-xs text-muted-foreground mb-2">Preview (first 4 weeks):</div>
-              <div className="flex gap-2">
-                {previewTargets.slice(0, 4).map((target, i) => (
-                  <div key={i} className="flex-1 text-center">
-                    <div className="text-xs text-muted-foreground">W{i + 1}</div>
-                    <div className="text-sm font-medium">
-                      {Math.round(target)} {unit}
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="startingTarget">
+                        First {frequencyOption.periodLabel} target
+                      </Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="startingTarget"
+                          type="number"
+                          min="0"
+                          step="0.1"
+                          placeholder="e.g., 20"
+                          value={startingTarget}
+                          onChange={(e) => {
+                            setStartingTarget(e.target.value)
+                            setManualTargets(null)
+                          }}
+                        />
+                        {unit && <span className="text-muted-foreground text-sm shrink-0">{unit}</span>}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="finalTarget">
+                        Final {frequencyOption.periodLabel} target
+                      </Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="finalTarget"
+                          type="number"
+                          min="0"
+                          step="0.1"
+                          placeholder="e.g., 50"
+                          value={finalTarget}
+                          onChange={(e) => {
+                            setFinalTarget(e.target.value)
+                            setManualTargets(null)
+                          }}
+                        />
+                        {unit && <span className="text-muted-foreground text-sm shrink-0">{unit}</span>}
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
+
+                  {/* Example explanation */}
+                  {startingTarget && finalTarget && (
+                    <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
+                      <div className="flex items-start gap-2">
+                        <Info className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
+                        <p className="text-sm text-emerald-700 dark:text-emerald-300">
+                          You'll start with <strong>{startingTarget} {unit}</strong> per {frequencyOption.periodLabel},
+                          and gradually increase to <strong>{finalTarget} {unit}</strong> per {frequencyOption.periodLabel}
+                          over {numberOfPeriods} {frequencyOption.periodLabel}s.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Growth pattern */}
+                  <div className="space-y-2">
+                    <Label>Growth pattern</Label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {GROWTH_PATTERNS.map((pattern) => (
+                        <button
+                          key={pattern.id}
+                          type="button"
+                          onClick={() => {
+                            setGrowthPattern(pattern.id)
+                            setManualTargets(null)
+                          }}
+                          className={cn(
+                            'p-3 rounded-lg border text-center transition-all',
+                            growthPattern === pattern.id
+                              ? 'border-primary bg-primary/10 text-primary'
+                              : 'hover:border-primary/50'
+                          )}
+                        >
+                          <div className="text-xl mb-1">{pattern.icon}</div>
+                          <div className="font-medium text-sm">{pattern.label}</div>
+                          <div className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">
+                            {pattern.description}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Total Progress specific fields */}
+              {goalMode === 'total_progress' && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="totalTarget">Total target to reach</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="totalTarget"
+                        type="number"
+                        min="1"
+                        step="0.01"
+                        placeholder="e.g., 10000"
+                        value={totalTarget}
+                        onChange={(e) => {
+                          setTotalTarget(e.target.value)
+                          setManualTargets(null)
+                        }}
+                        className="text-lg"
+                      />
+                      {unit && <span className="text-muted-foreground">{unit}</span>}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="currentAmount">Already have (optional)</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="currentAmount"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="0"
+                        value={currentAmount}
+                        onChange={(e) => {
+                          setCurrentAmount(e.target.value)
+                          setManualTargets(null)
+                        }}
+                      />
+                      {unit && <span className="text-muted-foreground">{unit}</span>}
+                    </div>
+                  </div>
+
+                  {/* Example explanation */}
+                  {totalTarget && (
+                    <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+                      <div className="flex items-start gap-2">
+                        <Info className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
+                        <p className="text-sm text-blue-700 dark:text-blue-300">
+                          You need to accumulate <strong>{Math.round(((Number(totalTarget) - (Number(currentAmount) || 0)) / numberOfPeriods) * 10) / 10} {unit}</strong> per {frequencyOption.periodLabel}
+                          to reach <strong>{totalTarget} {unit}</strong> in {numberOfPeriods} {frequencyOption.periodLabel}s.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </>
         )}
 
-        {/* Step 4: Preview (Goal Master Format) */}
+        {/* Step 4: Preview */}
         {step === 'preview' && (
           <>
             <DialogHeader className="text-center">
               <DialogTitle className="flex items-center justify-center gap-2">
                 <Flower2 className="h-5 w-5 text-pink-500" />
-                Your Goal Garden Preview
+                Review Your Plan
               </DialogTitle>
               <DialogDescription>
-                Review your growth plan before planting
+                Check your {frequencyOption.periodLabel}ly targets before starting
               </DialogDescription>
             </DialogHeader>
 
@@ -660,19 +675,13 @@ export function GoalSetupWizard({
               {/* Summary badges */}
               <div className="flex flex-wrap gap-2 justify-center">
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 text-sm">
-                  {goalMode === 'build_capacity' ? '📈' : '🎯'}{' '}
-                  {goalMode === 'build_capacity' ? 'Capacity' : 'Accumulator'}
-                </span>
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 text-sm">
-                  {FREQUENCY_OPTIONS.find((f) => f.id === frequency)?.icon}{' '}
-                  {frequency === 'daily' ? 'Daily' : `${frequencyTarget}x/${frequency === 'weekly' ? 'week' : 'month'}`}
+                  {goalMode === 'build_capacity' ? '📈 Build Capacity' : '🎯 Total Progress'}
                 </span>
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 text-sm">
-                  {currentGrowthStage.icon} {durationWeeks} weeks
+                  📅 {frequency === 'daily' ? 'Daily' : frequency === 'weekly' ? 'Weekly' : 'Monthly'}
                 </span>
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-violet-100 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 text-sm">
-                  {GROWTH_CURVES.find((c) => c.id === progressionType)?.icon}{' '}
-                  {GROWTH_CURVES.find((c) => c.id === progressionType)?.name}
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 text-sm">
+                  ⏱️ {durationWeeks} weeks
                 </span>
               </div>
 
@@ -680,22 +689,24 @@ export function GoalSetupWizard({
               <div className="text-center p-4 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border border-green-200/50 dark:border-green-800/50">
                 <div className="text-sm text-muted-foreground">Your Goal</div>
                 <div className="text-2xl font-bold text-green-700 dark:text-green-300 mt-1">
-                  {goalMode === 'build_capacity' && startValue ? (
+                  {goalMode === 'build_capacity' ? (
                     <>
-                      {startValue} → {targetValue} {unit}
+                      {startingTarget} → {finalTarget} {unit}/{frequencyOption.periodLabel}
                     </>
                   ) : (
                     <>
-                      {targetValue} {unit}
+                      {totalTarget} {unit} total
                     </>
                   )}
                 </div>
               </div>
 
-              {/* Weekly targets (Goal Master format) */}
+              {/* Period targets list */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-medium text-sm">Weekly Targets</h4>
+                  <h4 className="font-medium text-sm">
+                    {frequency === 'daily' ? 'Daily' : frequency === 'weekly' ? 'Weekly' : 'Monthly'} Targets
+                  </h4>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -711,16 +722,15 @@ export function GoalSetupWizard({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={handleResetToRecommended}
+                    onClick={() => setManualTargets(null)}
                     className="w-full text-xs h-7"
                   >
                     Reset to Recommended
                   </Button>
                 )}
 
-                {/* Timeline list (Goal Master format) */}
                 <div className="max-h-[200px] overflow-y-auto rounded-lg border divide-y">
-                  {previewTargets.map((target, i) => (
+                  {periodTargets.slice(0, Math.min(periodTargets.length, 20)).map((target, i) => (
                     <div
                       key={i}
                       className={cn(
@@ -728,78 +738,46 @@ export function GoalSetupWizard({
                         i === 0 && 'bg-primary/5'
                       )}
                     >
-                      {/* Week date range */}
-                      <span className="text-xs text-muted-foreground w-24 shrink-0">
-                        {weekDateRanges[i]?.start} - {weekDateRanges[i]?.end}
+                      <span className="text-xs text-muted-foreground w-6 shrink-0">
+                        {frequency === 'daily' ? `D${i + 1}` : frequency === 'weekly' ? `W${i + 1}` : `M${i + 1}`}
                       </span>
-
-                      {/* Separator */}
+                      <span className="text-xs text-muted-foreground flex-1 truncate">
+                        {periodLabels[i]}
+                      </span>
                       <span className="text-muted-foreground">:</span>
-
-                      {/* Target indicator */}
-                      <span className="text-muted-foreground">—</span>
-
-                      {/* Target value */}
                       {showManualEditor ? (
                         <Input
                           type="number"
                           min="0"
                           step="0.1"
-                          value={manualTargets?.[i] ?? Math.round(target * 10) / 10}
-                          onChange={(e) =>
-                            handleManualTargetChange(i, Number(e.target.value))
-                          }
+                          value={target}
+                          onChange={(e) => handleManualTargetChange(i, Number(e.target.value))}
                           className="w-20 h-7 text-sm"
                         />
                       ) : (
-                        <span className="font-medium">
-                          {Math.round((manualTargets?.[i] ?? target) * 10) / 10}
-                        </span>
+                        <span className="font-medium w-16 text-right">{target}</span>
                       )}
-
-                      <span className="text-muted-foreground">{unit}</span>
-
-                      {/* Week indicator */}
-                      {i === 0 && (
-                        <span className="ml-auto text-xs text-primary font-medium">
-                          Start
-                        </span>
-                      )}
-                      {i === previewTargets.length - 1 && (
-                        <span className="ml-auto text-xs text-green-600 font-medium">
-                          🎯 Goal
-                        </span>
-                      )}
+                      <span className="text-muted-foreground text-xs">{unit}</span>
                     </div>
                   ))}
+                  {periodTargets.length > 20 && (
+                    <div className="px-3 py-2 text-sm text-muted-foreground text-center">
+                      ... and {periodTargets.length - 20} more {frequencyOption.periodLabel}s
+                    </div>
+                  )}
                 </div>
-
-                {/* Warning for large jumps */}
-                {manualTargets && (() => {
-                  const hasLargeJump = manualTargets.some((target, i) => {
-                    if (i === 0) return false
-                    const prev = manualTargets[i - 1]
-                    const jump = (target - prev) / prev
-                    return jump > 0.25 // > 25% increase
-                  })
-                  return hasLargeJump ? (
-                    <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                      ⚠️ Some weeks have large jumps (&gt;25%). Consider smoothing them out.
-                    </p>
-                  ) : null
-                })()}
               </div>
 
               {/* Motivational message */}
               <p className="text-center text-sm text-muted-foreground italic">
-                "Small steps every week lead to big growth. 🌱"
+                Consistent small steps lead to big results. 🌱
               </p>
             </div>
           </>
         )}
 
         <DialogFooter className="gap-2">
-          {step !== 'seed' && (
+          {step !== 'mode' && (
             <Button type="button" variant="outline" onClick={handleBack}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
@@ -816,7 +794,7 @@ export function GoalSetupWizard({
               disabled={isPending}
               className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
             >
-              {isPending ? 'Planting...' : '🌱 Plant Goal'}
+              {isPending ? 'Creating...' : '🌱 Start Goal'}
               {!isPending && <Check className="h-4 w-4 ml-2" />}
             </Button>
           )}
