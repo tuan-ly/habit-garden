@@ -1,6 +1,6 @@
 # Habit Garden - Project Memo
 
-> **Last Updated**: 2026-01-29
+> **Last Updated**: 2026-01-31
 > **Phase**: 4 - Polish & Launch
 > **Stack**: Next.js 16, Supabase, Tailwind CSS 4, shadcn/ui
 
@@ -17,10 +17,38 @@
 | Goal Tracking | ✅ Complete (Build Capacity + Total Progress modes) |
 | Adaptive Goals | ✅ Complete |
 | PWA/UI Polish | ✅ Mostly complete |
+| **Gentle Growth** | 🔄 Phase 1 Complete (DB + UI foundation) |
 
 ---
 
 ## Recent Sessions
+
+### 2026-01-31: Gentle Growth Phase 1 Implementation
+**Changes**:
+- Database migration: `activity_logs`, `rest_days`, `reflections` tables
+- New plant statuses: `thriving`, `resting`, `waiting`, `sleeping` (no more `dead`)
+- New types: `ActivityLog`, `RestDay`, `Reflection`, `GentlePlantStatus`
+- Created [plant-status.ts](src/lib/plant-status.ts) - Status calculation logic
+- Created [activity.ts](src/lib/actions/activity.ts) - Unified activity logging
+- Created [gentle-watering-modal.tsx](src/components/plants/gentle-watering-modal.tsx) - 3-action flow
+- Created [rhythm-view.tsx](src/components/plants/rhythm-view.tsx) - Dots visualization
+- Updated [plant-detail-sheet.tsx](src/components/plants/plant-detail-sheet.tsx) - "Why I Started" + gentle messaging
+
+**Key Files**:
+- [20260131_gentle_growth_phase1.sql](supabase/migrations/20260131_gentle_growth_phase1.sql)
+- [database.ts](src/types/database.ts) - Extended with new types
+- [plant-status.ts](src/lib/plant-status.ts) - NEW
+- [activity.ts](src/lib/actions/activity.ts) - NEW
+- [gentle-watering-modal.tsx](src/components/plants/gentle-watering-modal.tsx) - NEW
+- [rhythm-view.tsx](src/components/plants/rhythm-view.tsx) - NEW
+
+**Next Steps**:
+- Run migration on Supabase
+- Integrate `GentleWateringModal` into garden view
+- Add rhythm view to plant detail sheet
+- Phase 2: Journal Tree, season transitions
+
+---
 
 ### 2026-01-31: Unified Vision Plan & Doc Cleanup
 **Changes**:

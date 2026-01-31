@@ -1,6 +1,24 @@
 // Database types for Habit Garden
 
-export type PlantStatus = 'growing' | 'mature' | 'dead' | 'dormant'
+// Gentle Growth: New plant statuses
+// Note: 'dead' and 'dormant' kept for backward compatibility but deprecated
+// UI should treat 'dead' as 'sleeping' and 'dormant' as 'resting'
+export type PlantStatus = 'thriving' | 'growing' | 'resting' | 'waiting' | 'sleeping' | 'mature' | 'dead' | 'dormant'
+
+// New statuses for Gentle Growth (use these in new code)
+export type GentlePlantStatus = 'thriving' | 'growing' | 'resting' | 'waiting' | 'sleeping' | 'mature'
+
+// Visual stages for plant display
+export type VisualStage = 'seed' | 'sprout' | 'growing' | 'mature' | 'established' | 'ancient' | 'legendary'
+
+// Activity types for unified logging
+export type ActivityType = 'watering' | 'progress' | 'rest_day' | 'reflection'
+
+// Season status for goals
+export type SeasonStatus = 'active' | 'completed' | 'ended'
+
+// Milestone types for reflections
+export type MilestoneType = 'days_30' | 'days_100' | 'season_complete' | 'year_1' | 'custom'
 export type FrequencyType = 'daily' | 'flexible'
 export type Difficulty = 'easy' | 'medium' | 'hard'
 export type GoalMode = 'build_capacity' | 'total_progress'
@@ -88,8 +106,8 @@ export interface Plant {
   last_watered_at: string | null
   status: PlantStatus
   matured_at: string | null
-  died_at: string | null
-  death_reason: string | null
+  died_at: string | null // Legacy: kept for backwards compat
+  death_reason: string | null // Legacy: kept for backwards compat
   goal_mode: GoalMode | null
   reminder_time: string | null
   reminder_enabled: boolean
@@ -105,6 +123,15 @@ export interface Plant {
   weed_count: number
   last_weed_added: string | null
   weeds_cleared_total: number
+  // Gentle Growth fields
+  why_i_started: string | null // Motivation for starting this habit
+  maturity_level: number // 1-10 scale
+  visual_stage: VisualStage // Display stage
+  rest_days_allowed: number // Per week
+  grace_period_days: number // Days before sleeping
+  days_this_week: number // Rhythm tracking
+  days_this_month: number
+  consistency_percentage: number
   created_at: string
   updated_at: string
 }
@@ -158,7 +185,7 @@ export interface WateringLog {
   created_at: string
 }
 
-// Goals table
+// Goals table (now represents Seasons)
 export interface Goal {
   id: string
   plant_id: string
@@ -182,6 +209,16 @@ export interface Goal {
   frequency: GoalFrequency
   frequency_target: number
   period_start_day: number
+  // Season support (Gentle Growth)
+  season_number: number
+  season_name: string | null
+  season_status: SeasonStatus
+  completed_at: string | null
+  days_active: number
+  best_streak: number
+  rest_days_used: number
+  end_reflection: string | null
+  lessons_learned: string | null
   created_at: string
   updated_at: string
 }
@@ -312,4 +349,100 @@ export interface WaterPlantDto {
   plant_id: string
   difficulty?: 'easy' | 'medium' | 'hard'
   notes?: string
+}
+
+// =====================================================
+// Gentle Growth - New Tables
+// =====================================================
+
+// Activity logs - Unified activity tracking
+export interface ActivityLog {
+  id: string
+  plant_id: string
+  season_id: string | null
+  user_id: string
+  activity_type: ActivityType
+  logged_at: string
+  logged_date: string
+  value: number | null
+  notes: string | null
+  difficulty: string | null
+  is_first_of_day: boolean
+  xp_earned: number
+  morning_bonus: boolean
+  streak_bonus: number
+  is_personal_record: boolean
+  created_at: string
+}
+
+// Rest days - Intentional rest tracking
+export interface RestDay {
+  id: string
+  plant_id: string
+  user_id: string
+  rest_date: string
+  reason: string | null
+  created_at: string
+}
+
+// Reflections - Milestone reflections
+export interface Reflection {
+  id: string
+  plant_id: string
+  user_id: string
+  milestone_type: MilestoneType
+  milestone_value: number | null
+  life_changes: string[] | null
+  personal_note: string | null
+  mood: string | null
+  total_value_at_reflection: number | null
+  days_active_at_reflection: number | null
+  season_number_at_reflection: number | null
+  created_at: string
+}
+
+// =====================================================
+// Gentle Growth - DTOs
+// =====================================================
+
+export interface LogActivityDto {
+  plant_id: string
+  activity_type: ActivityType
+  value?: number
+  notes?: string
+  difficulty?: 'easy' | 'normal' | 'hard'
+}
+
+export interface MarkRestDayDto {
+  plant_id: string
+  reason?: string
+}
+
+export interface CreateReflectionDto {
+  plant_id: string
+  milestone_type: MilestoneType
+  milestone_value?: number
+  life_changes?: string[]
+  personal_note?: string
+  mood?: string
+}
+
+export interface StartNewSeasonDto {
+  plant_id: string
+  goal_mode: GoalMode
+  tracking_metric: string
+  unit: string
+  target_value: number
+  duration_weeks: number
+  season_name?: string
+}
+
+// Plant state info for UI
+export interface PlantStateInfo {
+  status: PlantStatus
+  message: string
+  emoji: string
+  daysInactive: number
+  canWater: boolean
+  isResting: boolean
 }

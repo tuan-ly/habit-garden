@@ -21,6 +21,9 @@ import {
   BarChart3,
   Sparkles,
   Zap,
+  Lightbulb,
+  Moon,
+  Heart,
 } from 'lucide-react'
 import type { PlantWithType, WeatherType } from '@/types/database'
 import { PlantVisual, XpPopup } from './plant-visual'
@@ -105,7 +108,9 @@ export function PlantDetailSheet({
     ? new Date(plant.last_watered_at).toDateString() === new Date().toDateString()
     : false
 
-  const isDead = plant.status === 'dead'
+  // Gentle Growth: treat 'dead' as 'sleeping' for gentle messaging
+  const isSleeping = plant.status === 'dead' || plant.status === 'sleeping'
+  const isResting = plant.status === 'resting' || plant.status === 'dormant'
   const hasGoal = !!plant.goal_mode
 
   const startedDate = new Date(plant.started_at).toLocaleDateString('en-US', {
@@ -119,7 +124,7 @@ export function PlantDetailSheet({
   )
 
   const handleWater = async () => {
-    if (isWateredToday || isDead) return
+    if (isWateredToday) return
 
     setIsWatering(true)
 
@@ -174,14 +179,18 @@ export function PlantDetailSheet({
         <SheetContent className="overflow-y-auto p-0 w-full sm:max-w-md">
           {/* Hero Header - Centered plant visual */}
           <div className="relative">
-            {/* Background gradient */}
+            {/* Background gradient - Gentle Growth colors */}
             <div className={cn(
               'absolute inset-0 bg-gradient-to-b',
-              plant.status === 'dead'
-                ? 'from-slate-200 to-slate-100 dark:from-slate-800 dark:to-slate-900'
-                : plant.status === 'mature'
-                  ? 'from-emerald-100 via-green-50 to-white dark:from-emerald-900/40 dark:via-green-950/30 dark:to-slate-900'
-                  : 'from-sky-100 via-emerald-50 to-white dark:from-sky-900/30 dark:via-emerald-950/20 dark:to-slate-900'
+              isSleeping
+                ? 'from-indigo-100 to-slate-100 dark:from-indigo-950/40 dark:to-slate-900'
+                : isResting
+                  ? 'from-blue-100 to-slate-100 dark:from-blue-950/40 dark:to-slate-900'
+                  : plant.status === 'mature'
+                    ? 'from-emerald-100 via-green-50 to-white dark:from-emerald-900/40 dark:via-green-950/30 dark:to-slate-900'
+                    : plant.status === 'thriving'
+                      ? 'from-emerald-100 via-teal-50 to-white dark:from-emerald-900/40 dark:via-teal-950/30 dark:to-slate-900'
+                      : 'from-sky-100 via-emerald-50 to-white dark:from-sky-900/30 dark:via-emerald-950/20 dark:to-slate-900'
             )} />
 
             <div className="relative pt-8 pb-6 px-6">
@@ -203,22 +212,32 @@ export function PlantDetailSheet({
                     <XpPopup amount={earnedXp} show={showXp} />
                   </div>
 
-                  {/* Status badge floating */}
+                  {/* Status badge floating - Gentle Growth messaging */}
                   <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
                     <span
                       className={cn(
                         'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold',
                         'shadow-lg shadow-black/10',
+                        plant.status === 'thriving' && 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white',
                         plant.status === 'growing' && 'bg-emerald-500 text-white',
                         plant.status === 'mature' && 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white',
-                        plant.status === 'dead' && 'bg-slate-400 text-white'
+                        isResting && 'bg-blue-500 text-white',
+                        plant.status === 'waiting' && 'bg-amber-500 text-white',
+                        isSleeping && 'bg-indigo-500 text-white'
                       )}
                     >
+                      {plant.status === 'thriving' && <Sparkles className="h-3 w-3" />}
                       {plant.status === 'growing' && <Sparkles className="h-3 w-3" />}
                       {plant.status === 'mature' && <Trophy className="h-3 w-3" />}
+                      {isResting && <Moon className="h-3 w-3" />}
+                      {plant.status === 'waiting' && <Heart className="h-3 w-3" />}
+                      {isSleeping && <Moon className="h-3 w-3" />}
+                      {plant.status === 'thriving' && 'Thriving'}
                       {plant.status === 'growing' && 'Growing'}
                       {plant.status === 'mature' && 'Mature'}
-                      {plant.status === 'dead' && 'Wilted'}
+                      {isResting && 'Resting'}
+                      {plant.status === 'waiting' && 'Waiting'}
+                      {isSleeping && 'Sleeping'}
                     </span>
                   </div>
                 </div>
@@ -348,41 +367,64 @@ export function PlantDetailSheet({
             )}
 
             {/* Primary Action Button */}
+            {/* Gentle Growth: Sleeping plant message */}
+            {isSleeping && (
+              <div className={cn(
+                'p-4 rounded-xl mb-3',
+                'bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/40 dark:to-purple-950/40',
+                'ring-1 ring-indigo-200/50 dark:ring-indigo-800/30'
+              )}>
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg">
+                    <Moon className="h-4 w-4 text-indigo-500" />
+                  </div>
+                  <div>
+                    <h5 className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+                      Sleeping peacefully 💚
+                    </h5>
+                    <p className="text-xs text-indigo-600/80 dark:text-indigo-400/80 mt-1">
+                      This plant is resting. Wake it anytime by watering - your journey continues where you left off.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2.5">
               {hasGoal && goal ? (
                 <Button
                   className={cn(
                     'w-full h-12 text-base font-semibold rounded-xl shadow-lg transition-all',
                     isWatering && 'animate-pulse',
-                    !isWateredToday && !isDead && 'bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 shadow-indigo-500/25'
+                    !isWateredToday && 'bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 shadow-indigo-500/25'
                   )}
                   size="lg"
                   variant={isWateredToday ? 'secondary' : 'default'}
                   onClick={() => setShowGoalLog(true)}
-                  disabled={isWateredToday || isDead}
+                  disabled={isWateredToday}
                 >
                   <Plus className="h-5 w-5 mr-2" />
-                  {isDead ? 'Plant has wilted' : isWateredToday ? 'Logged for today' : 'Log Progress'}
+                  {isWateredToday ? 'Logged for today' : isSleeping ? 'Wake & Log Progress' : 'Log Progress'}
                 </Button>
               ) : (
                 <Button
                   className={cn(
                     'w-full h-12 text-base font-semibold rounded-xl shadow-lg transition-all',
                     isWatering && 'animate-pulse',
-                    !isWateredToday && !isDead && 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-blue-500/25'
+                    !isWateredToday && 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-blue-500/25'
                   )}
                   size="lg"
                   variant={isWateredToday ? 'secondary' : 'default'}
                   onClick={handleWater}
-                  disabled={isWatering || isWateredToday || isDead}
+                  disabled={isWatering || isWateredToday}
                 >
                   <Droplets className={cn('h-5 w-5 mr-2', isWatering && 'text-blue-200')} />
-                  {isDead ? 'Plant has wilted' : isWateredToday ? 'Watered today' : isWatering ? 'Watering...' : 'Water Plant'}
+                  {isWateredToday ? 'Watered today' : isWatering ? 'Watering...' : isSleeping ? 'Wake Plant' : 'Water Plant'}
                 </Button>
               )}
 
               {/* Add Goal - Secondary */}
-              {!hasGoal && !isDead && (
+              {!hasGoal && (
                 <Button
                   variant="outline"
                   className="w-full h-11 rounded-xl font-medium border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
@@ -436,8 +478,31 @@ export function PlantDetailSheet({
             <div className="space-y-3">
               <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Details</h4>
 
+              {/* Why I Started - Gentle Growth motivation */}
+              {plant.why_i_started && (
+                <div className={cn(
+                  'p-4 rounded-xl mb-3',
+                  'bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/40 dark:to-indigo-950/40',
+                  'ring-1 ring-purple-200/50 dark:ring-purple-800/30'
+                )}>
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-purple-100 dark:bg-purple-900/50 rounded-lg">
+                      <Lightbulb className="h-4 w-4 text-purple-500" />
+                    </div>
+                    <div>
+                      <h5 className="text-xs font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wide mb-1">
+                        Why I Started
+                      </h5>
+                      <p className="text-sm text-purple-600 dark:text-purple-400 italic leading-relaxed">
+                        &ldquo;{plant.why_i_started}&rdquo;
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="rounded-xl bg-slate-50/80 dark:bg-slate-800/40 divide-y divide-slate-200/50 dark:divide-slate-700/50">
-                {plant.habit_description && (
+                {plant.habit_description && !plant.why_i_started && (
                   <div className="p-3">
                     <p className="text-sm text-slate-600 dark:text-slate-400 italic leading-relaxed">
                       &ldquo;{plant.habit_description}&rdquo;
