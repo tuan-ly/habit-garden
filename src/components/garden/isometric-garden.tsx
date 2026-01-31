@@ -23,10 +23,12 @@ import {
   showAlreadyWateredToast,
   showWaterErrorToast,
   showGoalLogToast,
+  showWaterToast,
 } from '@/components/plants/water-toast'
 import { usePlants, useGardenSettingsOptional } from '@/lib/context'
 import { calculateWateringXp, calculateNoteBonus } from '@/lib/xp-system'
 import { useGardenZoom, useVisibleTiles } from '@/lib/hooks'
+import { waterPlantSimple } from '@/lib/actions/activity'
 import type { PlantWithType, PlantType, WeatherType } from '@/types/database'
 import { defaultTheme } from './themes'
 import {
@@ -451,14 +453,22 @@ export function IsometricGarden({
             })
           }
         } else {
-          // Simple water with note
-          const result = await waterPlant(plant.id, { notes })
+          // Simple water with note (using activity action which allows multiple logs)
+          const result = await waterPlantSimple(plant.id, notes)
+
           if (!result.success) {
             setCelebration(null)
-            if (result.error === 'Already watered today') {
-              showAlreadyWateredToast(plant.name)
-            } else {
-              showWaterErrorToast(result.error || 'Unknown error')
+            showWaterErrorToast(result.error || 'Unknown error')
+          } else {
+            // Success - celebration handles the visual
+            // Show toast for XP feedback
+            if (result.xpEarned !== undefined) {
+              showWaterToast({
+                plantName: plant.name,
+                plantIcon: plant.plant_type.icon,
+                xpEarned: result.xpEarned,
+                streakCount: newStreak,
+              })
             }
           }
         }
