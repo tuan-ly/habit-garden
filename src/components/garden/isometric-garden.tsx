@@ -331,8 +331,9 @@ export function IsometricGarden({
   )
 
   // Actual watering action (called from modal)
+  // Receives notes and estimatedXp calculated by modal
   const handleWaterConfirm = useCallback(
-    async (notes?: string) => {
+    async (notes: string | undefined, estimatedXp: number) => {
       if (!wateringPlant) return
 
       const plant = wateringPlant
@@ -345,32 +346,15 @@ export function IsometricGarden({
       // Add to cooldown immediately
       actionCooldown.current.add(plant.id)
 
-      // Close modal IMMEDIATELY before showing celebration
-      setWateringModalOpen(false)
-
       const celebrationPosition = {
         x: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
         y: typeof window !== 'undefined' ? window.innerHeight / 2 : 300
       }
 
-      // Calculate estimated XP client-side for optimistic celebration
+      // Use estimatedXp from modal directly - single source of truth
       const newStreak = plant.current_streak + 1
-      const isMorning = new Date().getHours() < 9
-      const wateringXp = calculateWateringXp({
-        streak: newStreak,
-        isMorning,
-        isRainyDay: weather === 'rainy',
-        isRainbowDay: weather === 'rainbow',
-      })
-      const noteBonus = notes?.trim()
-        ? calculateNoteBonus({
-          noteLength: notes.trim().length,
-          journalStreak: journalStreak,
-        })
-        : { total: 0 }
-      const estimatedXp = wateringXp.total + noteBonus.total
 
-      // Show celebration IMMEDIATELY (optimistic)
+      // Show celebration IMMEDIATELY (optimistic) with XP from modal
       if (gardenSettings.showCelebrations) {
         setCelebration({
           active: true,
@@ -408,12 +392,13 @@ export function IsometricGarden({
         }, 3000)
       }
     },
-    [wateringPlant, waterPlant, gardenSettings.showCelebrations, weather, journalStreak]
+    [wateringPlant, waterPlant, gardenSettings.showCelebrations]
   )
 
   // Handle "I did it" action from gentle watering modal (log progress + water)
+  // Receives value, notes and estimatedXp calculated by modal - single source of truth
   const handleLogAndWaterConfirm = useCallback(
-    async (value: number | undefined, notes?: string) => {
+    async (value: number | undefined, notes: string | undefined, estimatedXp: number) => {
       if (!wateringPlant) return
 
       const plant = wateringPlant
@@ -435,35 +420,7 @@ export function IsometricGarden({
       const isFirstLogToday = (plant.today_log_count || 0) === 0
       const newStreak = isFirstLogToday ? plant.current_streak + 1 : plant.current_streak
 
-      // Calculate note bonus if notes provided
-      const noteBonus = notes?.trim()
-        ? calculateNoteBonus({
-          noteLength: notes.trim().length,
-          journalStreak: journalStreak,
-        })
-        : { total: 0 }
-
-      // Calculate estimated XP for optimistic celebration
-      // Match server-side logProgress logic:
-      // - Base XP = 15 for progress logging
-      // - First of day: +5
-      // - Morning (5am-9am): +3
-      // - Note bonus from calculateNoteBonus
-      let estimatedXp = 0
-
-      if (hasGoal && value !== undefined) {
-        // Progress logging XP (match server activity.ts logProgress)
-        estimatedXp = 15 // Base for progress logging
-        if (isFirstLogToday) estimatedXp += 5 // First of day bonus
-        if (new Date().getHours() >= 5 && new Date().getHours() < 9) estimatedXp += 3 // Morning bonus
-        estimatedXp += noteBonus.total
-        // Weather bonus is applied server-side, skip for optimistic
-      } else {
-        // Simple water with note - only note bonus (match waterPlantSimple)
-        estimatedXp = noteBonus.total
-      }
-
-      // Show celebration IMMEDIATELY (optimistic)
+      // Show celebration IMMEDIATELY using XP from modal (single source of truth)
       if (gardenSettings.showCelebrations) {
         setCelebration({
           active: true,
@@ -515,7 +472,7 @@ export function IsometricGarden({
         }, 3000)
       }
     },
-    [wateringPlant, waterPlant, logGoal, gardenSettings.showCelebrations, weather, journalStreak]
+    [wateringPlant, waterPlant, logGoal, gardenSettings.showCelebrations]
   )
 
   // Track last tap time for double-tap detection

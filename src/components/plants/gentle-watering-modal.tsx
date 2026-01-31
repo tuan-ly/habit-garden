@@ -45,8 +45,10 @@ interface GentleWateringModalProps {
   plant: PlantWithType | null
   open: boolean
   onOpenChange: (open: boolean) => void
-  onWater?: (notes?: string) => Promise<void>
-  onLogAndWater?: (value: number | undefined, notes?: string) => Promise<void>
+  /** Called for "Just checking in" water action. Receives notes and estimated XP from modal */
+  onWater?: (notes: string | undefined, estimatedXp: number) => Promise<void>
+  /** Called for "I did it" log action. Receives value, notes and estimated XP from modal */
+  onLogAndWater?: (value: number | undefined, notes: string | undefined, estimatedXp: number) => Promise<void>
   estimatedXp?: number
   journalStreak?: number
   hasGoal?: boolean
@@ -130,7 +132,8 @@ export function GentleWateringModal({
     if (onWater) {
       onOpenChange(false)
       // Fire and forget - parent handles the async call
-      onWater(notes.trim() || undefined).finally(() => {
+      // Pass totalXp (watering XP) calculated by modal
+      onWater(notes.trim() || undefined, totalXp).finally(() => {
         setIsLoading(false)
       })
       return
@@ -165,7 +168,8 @@ export function GentleWateringModal({
     if (onLogAndWater) {
       onOpenChange(false)
       // Fire and forget - parent handles the async call
-      onLogAndWater(value, notes.trim() || undefined).finally(() => {
+      // Pass logXp (progress logging XP) calculated by modal
+      onLogAndWater(value, notes.trim() || undefined, logXp).finally(() => {
         setIsLoading(false)
       })
       return
