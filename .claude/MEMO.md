@@ -17,7 +17,7 @@
 | Goal Tracking | ✅ Complete (Build Capacity + Total Progress modes) |
 | Adaptive Goals | ✅ Complete |
 | PWA/UI Polish | ✅ Mostly complete |
-| **Gentle Growth** | 🔄 Phase 1 Complete (DB + UI foundation) |
+| **Gentle Growth** | ✅ Phase 1 Complete (DB deployed + UI foundation) |
 
 ---
 
@@ -43,9 +43,9 @@
 - [rhythm-view.tsx](src/components/plants/rhythm-view.tsx) - NEW
 
 **Next Steps**:
-- Run migration on Supabase
-- Integrate `GentleWateringModal` into garden view
-- Add rhythm view to plant detail sheet
+- ✅ Migration deployed to Supabase (4 parts: columns, tables, RLS, data migration)
+- 📍 Integrate `GentleWateringModal` into garden view
+- 📍 Add rhythm view to plant detail sheet
 - Phase 2: Journal Tree, season transitions
 
 ---
@@ -269,7 +269,7 @@ CRON_SECRET=                 # For cron auth
 
 ## Database Quick Reference
 
-**Key tables**: `plants`, `plant_types`, `goals`, `goal_logs`, `profiles`, `watering_logs`, `mood_logs`, `achievements`
+**Key tables**: `plants`, `plant_types`, `goals`, `goal_logs`, `profiles`, `watering_logs`, `mood_logs`, `achievements`, `activity_logs`, `rest_days`, `reflections`
 
 **Cron**: `update_daily_moisture()` runs at 17:00 UTC (00:00 VN) via pg_cron
 
