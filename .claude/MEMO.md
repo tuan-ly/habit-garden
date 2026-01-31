@@ -22,6 +22,25 @@
 
 ## Recent Sessions
 
+### 2026-01-31: Unified Vision Plan & Doc Cleanup
+**Changes**:
+- Created [UNIFIED-VISION-PLAN.md](../doc/UNIFIED-VISION-PLAN.md) - Master vision document
+- Consolidated ideas from GENTLE-GROWTH, Design_vision, redesign, feature docs
+- Archived superseded docs to `doc/archive/`
+
+**Key Decisions**:
+- **Watering ≠ Completing**: Full separation (tưới vs log progress)
+- **Multi-Season**: 1 plant = nhiều seasons over time
+- **No Plant Death**: Sleeping state replaces dead
+- **Journal Tree**: Special plant type for free writing
+- **Archetypes**: Deferred to Phase 2
+
+**Next Steps**:
+- Phase 1: DB migrations, new plant states, watering modal redesign
+- Phase 2: Journal Tree, season transitions, reflection UI
+
+---
+
 ### 2026-01-29: Improved Goal Setup UI/UX with Period-Based Tracking
 **Changes**:
 - Redesigned Goal Setup Wizard with clearer 4-step flow
