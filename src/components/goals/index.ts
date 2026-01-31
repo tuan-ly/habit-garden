@@ -1,7 +1,8 @@
 export { GoalSetupWizard } from './goal-setup-wizard'
 export { GoalLogModal } from './goal-log-modal'
-export { GoalProgress, GoalProgressRing, GoalModeBadge } from './goal-progress'
+export { GoalProgress, GoalProgressRing, GoalModeBadge, GoalFrequencyBadge } from './goal-progress'
 export { GoalStats } from './goal-stats'
+export { PeriodTargetDisplay, PeriodTargetBadge } from './period-target-display'
 
 // Progress Chart Components (NEW)
 export { GoalProgressChart } from './goal-progress-chart'

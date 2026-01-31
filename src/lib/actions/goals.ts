@@ -6,27 +6,45 @@ import type { Goal, GoalLog, CreateGoalDto, LogGoalDto, GoalMode, ProgressionTyp
 import { calculateTarget, generateProgressionPlan, type ProgressionType as ProgType } from '@/lib/progression'
 import { calculateWateringXp, calculateNoteBonus } from '@/lib/xp-system'
 import { getTodayWeather, calculateWeatherXp } from '@/lib/weather-system'
+import { getPeriodInfo, getPeriodTarget } from '@/lib/goal-utils'
 
 export interface GoalWithStats extends Goal {
-  weeklyProgress: number
-  overallProgress: number
-  currentWeekTarget: number
+  // Period-based (respects frequency: daily/weekly/monthly)
+  periodProgress: number          // Progress in current period
+  currentPeriodTarget: number     // Target for current period
+  periodNumber: number            // Which period we're in (1-indexed)
+  periodLabel: string             // Human-readable period label (e.g., "Week 3", "Jan 29")
+  periodDateRange: string         // Date range for current period
+  // Overall
+  overallProgress: number         // Percentage towards final goal
   isOnTrack: boolean
   personalRecords: number
+  // Legacy (for backwards compatibility)
+  weeklyProgress: number
+  currentWeekTarget: number
   weekNumber: number
 }
 
 export interface GoalStatistics {
   goal: Goal
   logs: GoalLog[]
+  // Period-based
+  currentPeriod: number
+  periodTarget: number
+  periodProgress: number
+  periodLabel: string
+  // Overall
+  overallProgress: number
+  personalRecords: number
+  periodsCompleted: number
+  predictedCompletion: Date | null
+  isOnTrack: boolean
+  periodTrend: 'up' | 'down' | 'stable'
+  // Legacy
   currentWeek: number
   weeklyTarget: number
   weeklyProgress: number
-  overallProgress: number
-  personalRecords: number
   weeksCompleted: number
-  predictedCompletion: Date | null
-  isOnTrack: boolean
   weeklyTrend: 'up' | 'down' | 'stable'
 }
 
@@ -81,6 +99,10 @@ export async function createGoal(dto: CreateGoalDto): Promise<{ success: boolean
       progression_type: dto.progression_type || 'linear',
       step_size: dto.step_size || 5,
       weekly_targets: weeklyTargets,
+      // Frequency tracking
+      frequency: dto.frequency || 'weekly',
+      frequency_target: dto.frequency_target || 1,
+      period_start_day: dto.period_start_day || 1, // Monday default
     })
     .select()
     .single()
@@ -423,7 +445,26 @@ export async function getGoalStats(goalId: string): Promise<GoalStatistics | nul
   const currentWeek = Math.floor(daysSinceStart / 7) + 1
 
   const weeklyTargets = goal.weekly_targets as number[] || []
-  const weeklyTarget = weeklyTargets[Math.min(currentWeek, weeklyTargets.length - 1)] || goal.target_value
+  const weeklyTarget = weeklyTargets[Math.min(currentWeek - 1, weeklyTargets.length - 1)] || goal.target_value
+
+  // Get period info
+  const periodInfo = getPeriodInfo(goal as Goal)
+  const periodTarget = getPeriodTarget(goal as Goal, periodInfo.periodNumber)
+
+  // Calculate period progress
+  const periodLogs = goalLogs.filter(log => {
+    const logDate = new Date(log.logged_at)
+    return logDate >= periodInfo.periodStart && logDate <= periodInfo.periodEnd
+  })
+
+  let periodProgress = 0
+  if (goal.goal_mode === 'total_progress') {
+    periodProgress = periodLogs.reduce((sum, log) => sum + Number(log.value), 0)
+  } else {
+    periodProgress = periodLogs.length > 0
+      ? Math.max(...periodLogs.map(log => Number(log.value)))
+      : 0
+  }
 
   // Calculate weekly progress (logs from current week)
   const weekStart = new Date(startDate)
@@ -484,14 +525,23 @@ export async function getGoalStats(goalId: string): Promise<GoalStatistics | nul
   return {
     goal: goal as Goal,
     logs: goalLogs,
+    // Period-based
+    currentPeriod: periodInfo.periodNumber,
+    periodTarget,
+    periodProgress,
+    periodLabel: periodInfo.periodLabel,
+    periodsCompleted: goalLogs.filter(log => log.exceeded_target).length,
+    periodTrend: weeklyTrend, // Use same trend logic for now
+    // Overall
+    overallProgress: Math.min(100, overallProgress),
+    personalRecords,
+    predictedCompletion,
+    isOnTrack,
+    // Legacy
     currentWeek,
     weeklyTarget,
     weeklyProgress,
-    overallProgress: Math.min(100, overallProgress),
-    personalRecords,
     weeksCompleted,
-    predictedCompletion,
-    isOnTrack,
     weeklyTrend,
   }
 }
@@ -511,23 +561,48 @@ export async function getGoalForPlant(plantId: string): Promise<GoalWithStats | 
 
   if (error || !goal) return null
 
-  // Calculate stats
+  // Get period info based on frequency
+  const periodInfo = getPeriodInfo(goal as Goal)
+  const currentPeriodTarget = getPeriodTarget(goal as Goal, periodInfo.periodNumber)
+
+  // Also calculate week info for legacy compatibility
   const startDate = new Date(goal.started_at)
   const daysSinceStart = Math.floor((Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24))
   const weekNumber = Math.floor(daysSinceStart / 7) + 1
-
   const weeklyTargets = goal.weekly_targets as number[] || []
-  const currentWeekTarget = weeklyTargets[Math.min(weekNumber, weeklyTargets.length - 1)] || goal.target_value
+  const currentWeekTarget = weeklyTargets[Math.min(weekNumber - 1, weeklyTargets.length - 1)] || goal.target_value
 
-  // Get logs for current week
+  // Get logs for current period
+  const { data: periodLogs } = await supabase
+    .from('goal_logs')
+    .select('value, is_personal_record')
+    .eq('goal_id', goal.id)
+    .gte('logged_at', periodInfo.periodStart.toISOString())
+    .lte('logged_at', periodInfo.periodEnd.toISOString())
+
+  // Calculate period progress
+  let periodProgress = 0
+  if (goal.goal_mode === 'total_progress') {
+    periodProgress = (periodLogs || []).reduce((sum, log) => sum + Number(log.value), 0)
+  } else {
+    periodProgress = periodLogs && periodLogs.length > 0
+      ? Math.max(...periodLogs.map(log => Number(log.value)))
+      : 0
+  }
+
+  // Get logs for current week (legacy)
   const weekStart = new Date(startDate)
   weekStart.setDate(weekStart.getDate() + (weekNumber - 1) * 7)
+  const weekEnd = new Date(weekStart)
+  weekEnd.setDate(weekStart.getDate() + 6)
+  weekEnd.setHours(23, 59, 59, 999)
 
   const { data: weeklyLogs } = await supabase
     .from('goal_logs')
     .select('value, is_personal_record')
     .eq('goal_id', goal.id)
     .gte('logged_at', weekStart.toISOString())
+    .lte('logged_at', weekEnd.toISOString())
 
   let weeklyProgress = 0
   if (goal.goal_mode === 'total_progress') {
@@ -539,7 +614,7 @@ export async function getGoalForPlant(plantId: string): Promise<GoalWithStats | 
   }
 
   const overallProgress = (Number(goal.current_value) / Number(goal.target_value)) * 100
-  const isOnTrack = Number(goal.current_value) >= (weeklyTargets[weekNumber - 1] || 0)
+  const isOnTrack = periodProgress >= currentPeriodTarget * 0.8 // Consider 80%+ as on track
 
   const { count: personalRecords } = await supabase
     .from('goal_logs')
@@ -549,11 +624,19 @@ export async function getGoalForPlant(plantId: string): Promise<GoalWithStats | 
 
   return {
     ...goal,
-    weeklyProgress,
+    // Period-based stats
+    periodProgress,
+    currentPeriodTarget,
+    periodNumber: periodInfo.periodNumber,
+    periodLabel: periodInfo.periodLabel,
+    periodDateRange: periodInfo.periodDateRange,
+    // Overall
     overallProgress: Math.min(100, overallProgress),
-    currentWeekTarget,
     isOnTrack,
     personalRecords: personalRecords || 0,
+    // Legacy
+    weeklyProgress,
+    currentWeekTarget,
     weekNumber,
   } as GoalWithStats
 }
