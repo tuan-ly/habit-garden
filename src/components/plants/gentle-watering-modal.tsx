@@ -93,10 +93,17 @@ export function GentleWateringModal({
     return calculateNoteBonus(notes.trim().length, journalStreak)
   }, [notes, journalStreak])
 
-  // Total XP: if already watered today, no base XP (only note bonus)
-  // This matches subsequent log behavior
-  const baseXp = isWateredToday ? 0 : estimatedXp
-  const totalXp = baseXp + noteBonus
+  // XP for "Just checking in" (watering only) - uses estimatedXp prop
+  // If already watered today, watering gives no base XP (only note bonus)
+  const wateringBaseXp = isWateredToday ? 0 : estimatedXp
+  const totalXp = wateringBaseXp + noteBonus
+
+  // XP for "I did it" (log progress) - match server-side logProgress logic
+  // Base = 15, First of day = +5, Morning = +3
+  const isFirstLogToday = (plant?.today_log_count || 0) === 0
+  const isMorning = new Date().getHours() >= 5 && new Date().getHours() < 9
+  const logBaseXp = 15 + (isFirstLogToday ? 5 : 0) + (isMorning ? 3 : 0)
+  const logXp = logBaseXp + noteBonus
 
   // Reset state when modal opens
   useEffect(() => {
@@ -652,7 +659,7 @@ export function GentleWateringModal({
                 ) : (
                   <>
                     <Droplets className="w-5 h-5 mr-2" />
-                    Log (+{totalXp + (hasGoal && !isWateredToday ? 7 : 0)} XP)
+                    Log (+{logXp} XP)
                   </>
                 )}
               </Button>

@@ -444,23 +444,23 @@ export function IsometricGarden({
         : { total: 0 }
 
       // Calculate estimated XP for optimistic celebration
+      // Match server-side logProgress logic:
+      // - Base XP = 15 for progress logging
+      // - First of day: +5
+      // - Morning (5am-9am): +3
+      // - Note bonus from calculateNoteBonus
       let estimatedXp = 0
 
-      if (isFirstLogToday) {
-        // Base watering XP
-        const wateringXp = calculateWateringXp({
-          streak: newStreak,
-          isMorning: new Date().getHours() < 9,
-          isRainyDay: weather === 'rainy',
-          isRainbowDay: weather === 'rainbow',
-        })
-        estimatedXp = wateringXp.total
-      }
-
-      // Add note bonus (applies to all logs) + goal logging bonus
-      estimatedXp += noteBonus.total
-      if (hasGoal && value !== undefined && !isFirstLogToday) {
-        estimatedXp += 7 // Base goal log XP for subsequent logs
+      if (hasGoal && value !== undefined) {
+        // Progress logging XP (match server activity.ts logProgress)
+        estimatedXp = 15 // Base for progress logging
+        if (isFirstLogToday) estimatedXp += 5 // First of day bonus
+        if (new Date().getHours() >= 5 && new Date().getHours() < 9) estimatedXp += 3 // Morning bonus
+        estimatedXp += noteBonus.total
+        // Weather bonus is applied server-side, skip for optimistic
+      } else {
+        // Simple water with note - only note bonus (match waterPlantSimple)
+        estimatedXp = noteBonus.total
       }
 
       // Show celebration IMMEDIATELY (optimistic)
