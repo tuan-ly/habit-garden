@@ -23,6 +23,26 @@
 
 ## Recent Sessions
 
+### 2026-01-31: Watering Modal Redesign - Simplified 2-Option Flow
+**Changes**:
+- Replaced 3-action flow (Water/Log/Rest) with 2-option flow: "I did it today!" + "Just checking in"
+- "I did it today!" mode now has QuickLogModal-style UI: number input + quick picks first, then notes
+- All plants (goal or non-goal) now use `GentleWateringModal` instead of QuickLogModal
+- Removed rest day option from modal (simplification)
+
+**Key Files Changed**:
+- [gentle-watering-modal.tsx](src/components/plants/gentle-watering-modal.tsx) - 2-button flow, log mode UI
+- [isometric-garden.tsx](src/components/garden/isometric-garden.tsx) - Routes all plants to GentleWateringModal
+
+**Status**: ✅ Complete
+
+**TODO for Next Session** (Watering Logic Refinement):
+1. If already watered today → hide "Just checking in", only show "I did it today!"
+2. `waterPlantSimple` should NOT give base XP anymore, only note XP (like subsequent logs)
+3. Base XP only awarded on first water/log of the day
+
+---
+
 ### 2026-01-31: Gentle Growth Phase 1 - UI Integration
 **Changes**:
 - Integrated `GentleWateringModal` into garden view (replaces old WateringModal)

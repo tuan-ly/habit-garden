@@ -5,9 +5,10 @@
  *
  * Philosophy:
  * - Watering ≠ Completing
- * - 💧 Water = "I'm caring for you"
- * - 📊 Log Progress = "I achieved something"
- * - 😴 Rest Day = "I'm taking care of myself"
+ * 📊 Log Progress = "I achieved something"
+ * - 💧 Water = "Just checking in"
+ * - 
+ * - 
  */
 
 import { useState, useEffect, useRef, useMemo } from 'react'
@@ -51,6 +52,7 @@ interface GentleWateringModalProps {
   hasGoal?: boolean
   goalUnit?: string
   goalMode?: 'build_capacity' | 'total_progress'
+  isWateredToday?: boolean
 }
 
 // Calculate note bonus based on note length
@@ -77,6 +79,7 @@ export function GentleWateringModal({
   hasGoal = false,
   goalUnit = '',
   goalMode,
+  isWateredToday = false,
 }: GentleWateringModalProps) {
   const [mode, setMode] = useState<ActionMode>('choose')
   const [notes, setNotes] = useState('')
@@ -90,7 +93,10 @@ export function GentleWateringModal({
     return calculateNoteBonus(notes.trim().length, journalStreak)
   }, [notes, journalStreak])
 
-  const totalXp = estimatedXp + noteBonus
+  // Total XP: if already watered today, no base XP (only note bonus)
+  // This matches subsequent log behavior
+  const baseXp = isWateredToday ? 0 : estimatedXp
+  const totalXp = baseXp + noteBonus
 
   // Reset state when modal opens
   useEffect(() => {
@@ -278,7 +284,7 @@ export function GentleWateringModal({
           {/* MODE: Choose Action */}
           {mode === 'choose' && (
             <div className="space-y-3">
-              {/* I Did It Today - Primary */}
+              {/* I Did It  - Primary */}
               <Button
                 onClick={() => setMode('log')}
                 className={cn(
@@ -294,33 +300,35 @@ export function GentleWateringModal({
                     <Sparkles className="w-5 h-5" />
                   </div>
                   <div className="text-left">
-                    <div>I did it today!</div>
+                    <div>I did it!</div>
                     <div className="text-xs opacity-70">Record your progress</div>
                   </div>
                 </div>
               </Button>
 
-              {/* Just Checking In - Secondary */}
-              <Button
-                onClick={() => setMode('water')}
-                variant="outline"
-                className={cn(
-                  'w-full h-14 justify-start px-4',
-                  'border-slate-600 bg-slate-800/50',
-                  'hover:bg-slate-700/50 hover:border-emerald-500/50',
-                  'text-slate-200 font-medium text-base',
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-emerald-500/10 rounded-lg">
-                    <Droplets className="w-5 h-5 text-emerald-400" />
+              {/* Just Checking In - Secondary - Only show if NOT watered today */}
+              {!isWateredToday && (
+                <Button
+                  onClick={() => setMode('water')}
+                  variant="outline"
+                  className={cn(
+                    'w-full h-14 justify-start px-4',
+                    'border-slate-600 bg-slate-800/50',
+                    'hover:bg-slate-700/50 hover:border-emerald-500/50',
+                    'text-slate-200 font-medium text-base',
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-emerald-500/10 rounded-lg">
+                      <Droplets className="w-5 h-5 text-emerald-400" />
+                    </div>
+                    <div className="text-left">
+                      <div>Just checking in</div>
+                      <div className="text-xs text-slate-400">Water only</div>
+                    </div>
                   </div>
-                  <div className="text-left">
-                    <div>Just checking in</div>
-                    <div className="text-xs text-slate-400">Water only</div>
-                  </div>
-                </div>
-              </Button>
+                </Button>
+              )}
             </div>
           )}
 
@@ -454,6 +462,8 @@ export function GentleWateringModal({
                   </div>
                 </div>
               </div>
+
+
 
               {/* Number input for goals - FIRST */}
               {hasGoal && (
@@ -592,6 +602,19 @@ export function GentleWateringModal({
                 </div>
               </div>
 
+              {/* Motivation tip when no note on subsequent logs */}
+              {isWateredToday && noteLength === 0 && (
+                <div className="p-3 rounded-lg bg-amber-900/20 border border-amber-500/20 text-xs text-amber-200/80">
+                  <p className="flex items-start gap-2">
+                    <span className="text-base">💡</span>
+                    <span>
+                      <strong>Tip:</strong> You&apos;ve already logged today, so this entry won&apos;t earn base XP.
+                      However, adding a note will still earn you bonus XP! Reflect on what you accomplished.
+                    </span>
+                  </p>
+                </div>
+              )}
+
               {/* Submit Button */}
               <Button
                 onClick={handleLogAndWater}
@@ -613,7 +636,7 @@ export function GentleWateringModal({
                 ) : (
                   <>
                     <Droplets className="w-5 h-5 mr-2" />
-                    Log (+{totalXp + (hasGoal ? 7 : 0)} XP)
+                    Log (+{totalXp + (hasGoal && !isWateredToday ? 7 : 0)} XP)
                   </>
                 )}
               </Button>

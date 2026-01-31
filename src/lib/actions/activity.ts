@@ -74,9 +74,10 @@ export async function waterPlantSimple(
 
   const isFirstOfDay = !existingActivity
 
-  // Calculate XP (smaller for simple watering)
-  const baseXp = isFirstOfDay ? 8 : 3 // Base XP for watering
-  let totalXp = baseXp
+  // "Just checking in" gives NO base XP - only note bonus
+  // This is a gentle reminder, not a full activity log
+  // Full XP comes from "I did it today!" flow (logProgress)
+  let totalXp = 0
 
   // Note bonus
   if (notes && notes.trim().length > 0) {

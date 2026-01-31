@@ -17,7 +17,7 @@ import { getTimeOfDay, type TimeOfDay } from './themes'
 // GestureHint removed - now using mode-based UI
 import { AddPlantDialog } from '@/components/plants/add-plant-dialog'
 import { PlantDetailSheet } from '@/components/plants/plant-detail-sheet'
-import { QuickLogModal } from '@/components/plants/quick-log-modal'
+import { QuickLogModal } from '@/components/plants/quick-log-modal (archieved)'
 import { GentleWateringModal } from '@/components/plants/gentle-watering-modal'
 import {
   showAlreadyWateredToast,
@@ -322,16 +322,12 @@ export function IsometricGarden({
   // Handle quick water request - opens modal instead of immediate action
   const handleQuickWaterRequest = useCallback(
     (plant: PlantWithType) => {
-      // Check if already watered
-      if (isWateredToday(plant)) {
-        showAlreadyWateredToast(plant.name)
-        return
-      }
-
+      // Always open modal - it will handle watered state via isWateredToday prop
+      // (hides "Just checking in" button when already watered)
       setWateringPlant(plant)
       setWateringModalOpen(true)
     },
-    [isWateredToday]
+    []
   )
 
   // Actual watering action (called from modal)
@@ -953,6 +949,7 @@ export function IsometricGarden({
         hasGoal={!!wateringPlant?.goal_mode}
         goalUnit={wateringPlant?.goal?.unit}
         goalMode={wateringPlant?.goal_mode || undefined}
+        isWateredToday={wateringPlant ? isWateredToday(wateringPlant) : false}
         estimatedXp={(() => {
           // Calculate better estimate based on streak
           const streak = (wateringPlant?.current_streak || 0) + 1
