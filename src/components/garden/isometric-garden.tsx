@@ -451,13 +451,8 @@ export function IsometricGarden({
         return
       }
 
-      // Desktop behavior: Click directly opens action
-      if (plant.goal_mode) {
-        setQuickLogPlant(plant)
-        setQuickLogOpen(true)
-      } else {
-        handleQuickWaterRequest(plant)
-      }
+      // Desktop behavior: Always open gentle watering modal
+      handleQuickWaterRequest(plant)
     },
     [handleQuickWaterRequest]
   )
@@ -659,12 +654,7 @@ export function IsometricGarden({
   // Log from floating card
   const handleLogFromCard = useCallback(() => {
     if (floatingCard) {
-      if (floatingCard.plant.goal_mode) {
-        setQuickLogPlant(floatingCard.plant)
-        setQuickLogOpen(true)
-      } else {
-        handleQuickWaterRequest(floatingCard.plant)
-      }
+      handleQuickWaterRequest(floatingCard.plant)
       setFloatingCard(null)
     }
   }, [floatingCard, handleQuickWaterRequest])
@@ -954,19 +944,15 @@ export function IsometricGarden({
         journalStreak={journalStreak}
       />
 
-      {/* Gentle watering modal - 3-action flow (Water/Log/Rest) */}
+      {/* Gentle watering modal - new 2-option flow (I did it / Just checking in) */}
       <GentleWateringModal
         plant={wateringPlant}
         open={wateringModalOpen}
         onOpenChange={setWateringModalOpen}
         onWater={handleWaterConfirm}
-        onLogProgress={wateringPlant?.goal_mode ? () => {
-          // Close watering modal and open quick log modal
-          setWateringModalOpen(false)
-          setQuickLogPlant(wateringPlant)
-          setQuickLogOpen(true)
-        } : undefined}
         hasGoal={!!wateringPlant?.goal_mode}
+        goalUnit={wateringPlant?.goal?.unit}
+        goalMode={wateringPlant?.goal_mode || undefined}
         estimatedXp={(() => {
           // Calculate better estimate based on streak
           const streak = (wateringPlant?.current_streak || 0) + 1

@@ -30,12 +30,12 @@ import {
   Sparkles,
   PenLine,
   BarChart3,
-  Moon,
-  Heart,
+  Minus,
+  Plus,
   Lightbulb,
 } from 'lucide-react'
 import { resolveGrowthConflict } from '@/lib/actions/plants'
-import { waterPlantSimple, markRestDay, getRestDaysRemaining } from '@/lib/actions/activity'
+import { waterPlantSimple, logProgress } from '@/lib/actions/activity'
 import { toast } from 'sonner'
 
 type ActionMode = 'choose' | 'water' | 'log' | 'rest'
@@ -45,10 +45,12 @@ interface GentleWateringModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onWater?: (notes?: string) => Promise<void>
-  onLogProgress?: () => void
+  onLogAndWater?: (value: number | undefined, notes?: string) => Promise<void>
   estimatedXp?: number
   journalStreak?: number
   hasGoal?: boolean
+  goalUnit?: string
+  goalMode?: 'build_capacity' | 'total_progress'
 }
 
 // Calculate note bonus based on note length
@@ -69,17 +71,18 @@ export function GentleWateringModal({
   open,
   onOpenChange,
   onWater,
-  onLogProgress,
+  onLogAndWater,
   estimatedXp = 8,
   journalStreak = 0,
   hasGoal = false,
+  goalUnit = '',
+  goalMode,
 }: GentleWateringModalProps) {
   const [mode, setMode] = useState<ActionMode>('choose')
   const [notes, setNotes] = useState('')
-  const [restReason, setRestReason] = useState('')
+  const [logValue, setLogValue] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
   const [isResolving, setIsResolving] = useState(false)
-  const [restDaysRemaining, setRestDaysRemaining] = useState(2)
   const notesRef = useRef<HTMLTextAreaElement>(null)
 
   // Calculate note bonus XP
@@ -94,13 +97,9 @@ export function GentleWateringModal({
     if (open) {
       setMode('choose')
       setNotes('')
-      setRestReason('')
-      // Fetch rest days remaining
-      if (plant) {
-        getRestDaysRemaining(plant.id).then(setRestDaysRemaining)
-      }
+      setLogValue('')
     }
-  }, [open, plant])
+  }, [open])
 
   // Focus textarea when entering water mode
   useEffect(() => {
@@ -134,25 +133,44 @@ export function GentleWateringModal({
     }
   }
 
-  const handleRestDay = async () => {
+  const handleLogAndWater = async () => {
     if (isLoading || !plant) return
     setIsLoading(true)
 
     try {
-      const result = await markRestDay({
-        plant_id: plant.id,
-        reason: restReason.trim() || undefined,
-      })
+      const value = logValue.trim() ? parseFloat(logValue) : undefined
 
-      if (result.success) {
-        toast.success('Rest day marked', {
-          description: result.message,
-          icon: '💚',
-        })
-        onOpenChange(false)
+      if (onLogAndWater) {
+        await onLogAndWater(value, notes.trim() || undefined)
       } else {
-        toast.error('Could not mark rest day', { description: result.error })
+        // First log progress if has goal
+        if (hasGoal && value !== undefined) {
+          const logResult = await logProgress({
+            plant_id: plant.id,
+            activity_type: 'progress',
+            value,
+            notes: notes.trim() || undefined,
+          })
+          if (logResult.success) {
+            toast.success(logResult.message || 'Progress logged!', {
+              description: `+${logResult.xpEarned} XP${logResult.isPersonalRecord ? ' 🏆 New Record!' : ''}`,
+            })
+          } else {
+            toast.error('Could not log progress', { description: logResult.error })
+          }
+        } else {
+          // Just water with notes
+          const result = await waterPlantSimple(plant.id, notes.trim() || undefined)
+          if (result.success) {
+            toast.success('Great job! 🎉', {
+              description: `+${result.xpEarned} XP`,
+            })
+          } else {
+            toast.error('Could not water plant', { description: result.error })
+          }
+        }
       }
+      onOpenChange(false)
     } catch {
       toast.error('Something went wrong')
     } finally {
@@ -260,9 +278,9 @@ export function GentleWateringModal({
           {/* MODE: Choose Action */}
           {mode === 'choose' && (
             <div className="space-y-3">
-              {/* Water Only Button */}
+              {/* I Did It Today - Primary */}
               <Button
-                onClick={() => setMode('water')}
+                onClick={() => setMode('log')}
                 className={cn(
                   'w-full h-14 justify-start px-4',
                   'bg-gradient-to-r from-emerald-600 to-green-600',
@@ -273,64 +291,33 @@ export function GentleWateringModal({
               >
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-white/10 rounded-lg">
-                    <Droplets className="w-5 h-5" />
+                    <Sparkles className="w-5 h-5" />
                   </div>
                   <div className="text-left">
-                    <div>Water Plant</div>
-                    <div className="text-xs opacity-70">Just checking in, caring for you</div>
+                    <div>I did it today!</div>
+                    <div className="text-xs opacity-70">Record your progress</div>
                   </div>
                 </div>
               </Button>
 
-              {/* Log Progress Button (if has goal) */}
-              {hasGoal && onLogProgress && (
-                <Button
-                  onClick={() => {
-                    onOpenChange(false)
-                    onLogProgress()
-                  }}
-                  className={cn(
-                    'w-full h-14 justify-start px-4',
-                    'bg-gradient-to-r from-indigo-600 to-purple-600',
-                    'hover:from-indigo-500 hover:to-purple-500',
-                    'text-white font-medium text-base',
-                    'shadow-lg shadow-indigo-500/20',
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-white/10 rounded-lg">
-                      <BarChart3 className="w-5 h-5" />
-                    </div>
-                    <div className="text-left">
-                      <div>Log Progress</div>
-                      <div className="text-xs opacity-70">Record what you achieved today</div>
-                    </div>
-                  </div>
-                </Button>
-              )}
-
-              {/* Rest Day Button */}
+              {/* Just Checking In - Secondary */}
               <Button
-                onClick={() => setMode('rest')}
+                onClick={() => setMode('water')}
                 variant="outline"
                 className={cn(
                   'w-full h-14 justify-start px-4',
                   'border-slate-600 bg-slate-800/50',
-                  'hover:bg-slate-700/50 hover:border-blue-500/50',
+                  'hover:bg-slate-700/50 hover:border-emerald-500/50',
                   'text-slate-200 font-medium text-base',
                 )}
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-500/10 rounded-lg">
-                    <Moon className="w-5 h-5 text-blue-400" />
+                  <div className="p-2 bg-emerald-500/10 rounded-lg">
+                    <Droplets className="w-5 h-5 text-emerald-400" />
                   </div>
                   <div className="text-left">
-                    <div>Rest Today</div>
-                    <div className="text-xs text-slate-400">
-                      {restDaysRemaining > 0
-                        ? `${restDaysRemaining} rest days left this week`
-                        : 'No rest days left this week'}
-                    </div>
+                    <div>Just checking in</div>
+                    <div className="text-xs text-slate-400">Water only</div>
                   </div>
                 </div>
               </Button>
@@ -346,6 +333,19 @@ export function GentleWateringModal({
               >
                 ← Back to options
               </button>
+
+              {/* Encouraging message */}
+              <div className="p-3 rounded-lg bg-emerald-900/20 border border-emerald-500/20">
+                <div className="flex items-start gap-3">
+                  <Sparkles className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-semibold text-emerald-200">Great job! 🎉</h4>
+                    <p className="text-xs text-emerald-200/70 mt-1">
+                      Every small step counts toward your goals.
+                    </p>
+                  </div>
+                </div>
+              </div>
 
               {/* Notes with XP Bonus */}
               <div>
@@ -432,8 +432,8 @@ export function GentleWateringModal({
             </div>
           )}
 
-          {/* MODE: Rest Day */}
-          {mode === 'rest' && (
+          {/* MODE: Log Progress (I did it today!) */}
+          {mode === 'log' && (
             <div className="space-y-4">
               <button
                 onClick={() => setMode('choose')}
@@ -443,61 +443,177 @@ export function GentleWateringModal({
               </button>
 
               {/* Encouraging message */}
-              <div className="p-4 rounded-lg bg-blue-900/20 border border-blue-500/20">
+              <div className="p-3 rounded-lg bg-emerald-900/20 border border-emerald-500/20">
                 <div className="flex items-start gap-3">
-                  <Heart className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                  <Sparkles className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="text-sm font-semibold text-blue-200">Rest is part of growth</h4>
-                    <p className="text-xs text-blue-200/70 mt-1">
-                      Taking intentional rest days is healthy and celebrated here.
-                      Your streak stays protected. 💚
+                    <h4 className="text-sm font-semibold text-emerald-200">Great job! 🎉</h4>
+                    <p className="text-xs text-emerald-200/70 mt-1">
+                      Every small step counts toward your goals.
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Reason (optional) */}
+              {/* Number input for goals - FIRST */}
+              {hasGoal && (
+                <>
+                  {/* Value Input with +/- buttons */}
+                  <div>
+                    <label className="text-sm font-medium text-slate-300 mb-2 block">
+                      How much?
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setLogValue(v => String(Math.max(0, (parseInt(v) || 0) - 1)))}
+                        disabled={!logValue || parseInt(logValue) <= 0}
+                        className="h-12 w-12 border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white shrink-0"
+                      >
+                        <Minus className="w-5 h-5" />
+                      </Button>
+
+                      <div className="flex-1 relative">
+                        <input
+                          type="number"
+                          value={logValue}
+                          onChange={(e) => setLogValue(e.target.value)}
+                          className={cn(
+                            'w-full h-12 text-center text-2xl font-bold',
+                            'bg-slate-800 border border-slate-600 rounded-xl',
+                            'focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20',
+                            'outline-none transition-all',
+                            'text-white'
+                          )}
+                        />
+                        {goalUnit && (
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+                            {goalUnit}
+                          </span>
+                        )}
+                      </div>
+
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setLogValue(v => String((parseInt(v) || 0) + 1))}
+                        className="h-12 w-12 border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white shrink-0"
+                      >
+                        <Plus className="w-5 h-5" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Quick Picks */}
+                  <div>
+                    <label className="text-xs font-medium text-slate-400 mb-2 block">
+                      Quick picks
+                    </label>
+                    <div className="flex gap-2">
+                      {(goalUnit?.toLowerCase().includes('km')
+                        ? [1, 2, 5, 10]
+                        : goalUnit?.toLowerCase().includes('min')
+                          ? [15, 30, 45, 60]
+                          : [10, 20, 30, 50]
+                      ).map((v) => (
+                        <button
+                          key={v}
+                          onClick={() => setLogValue(String(v))}
+                          className={cn(
+                            'flex-1 py-2 rounded-lg text-sm font-medium transition-all',
+                            parseInt(logValue) === v
+                              ? 'bg-emerald-500 text-white'
+                              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                          )}
+                        >
+                          {v}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Notes with XP Bonus */}
               <div>
-                <label className="text-xs font-medium text-slate-400 mb-2 block">
-                  Why are you resting? (optional)
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-medium text-slate-400 flex items-center gap-1.5">
+                    <PenLine className="w-3.5 h-3.5" />
+                    Note (optional)
+                  </label>
+                  {noteBonus > 0 && (
+                    <span className={cn(
+                      'text-xs font-medium px-2 py-0.5 rounded-full flex items-center gap-1',
+                      noteTier === 'detailed'
+                        ? 'bg-purple-500/20 text-purple-300 ring-1 ring-purple-500/30'
+                        : noteTier === 'thoughtful'
+                          ? 'bg-blue-500/20 text-blue-300'
+                          : 'bg-emerald-500/20 text-emerald-300'
+                    )}>
+                      <Sparkles className="w-3 h-3" />
+                      +{noteBonus} XP
+                    </span>
+                  )}
+                </div>
                 <Textarea
-                  value={restReason}
-                  onChange={(e) => setRestReason(e.target.value)}
-                  placeholder="Feeling tired, busy day, just need a break..."
-                  maxLength={200}
+                  ref={notesRef}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="What did you accomplish? How did it feel?"
+                  maxLength={500}
                   className={cn(
                     'bg-slate-800 border-slate-600 text-white placeholder:text-slate-500',
-                    'focus:border-blue-500 focus:ring-blue-500/20',
+                    'focus:border-emerald-500 focus:ring-emerald-500/20',
                     'resize-none h-20',
+                    noteBonus > 0 && 'border-emerald-500/50'
                   )}
                 />
+                {/* Note bonus tiers hint */}
+                <div className="mt-2 flex items-center gap-2 text-[10px] text-slate-500">
+                  <span className={cn(
+                    "px-1.5 py-0.5 rounded",
+                    notes.trim().length > 0 ? "bg-emerald-500/20 text-emerald-400" : "bg-slate-800"
+                  )}>
+                    Any note +3
+                  </span>
+                  <span className={cn(
+                    "px-1.5 py-0.5 rounded",
+                    notes.trim().length > 50 ? "bg-blue-500/20 text-blue-400" : "bg-slate-800"
+                  )}>
+                    50+ chars +2
+                  </span>
+                  <span className={cn(
+                    "px-1.5 py-0.5 rounded",
+                    notes.trim().length > 100 ? "bg-purple-500/20 text-purple-400" : "bg-slate-800"
+                  )}>
+                    100+ chars +2
+                  </span>
+                </div>
               </div>
 
-              {/* Mark Rest Day Button */}
+              {/* Submit Button */}
               <Button
-                onClick={handleRestDay}
-                disabled={isLoading || restDaysRemaining <= 0}
+                onClick={handleLogAndWater}
+                disabled={isLoading || (hasGoal && (!logValue || parseInt(logValue) <= 0))}
                 className={cn(
                   'w-full h-12',
-                  'bg-gradient-to-r from-blue-600 to-indigo-600',
-                  'hover:from-blue-500 hover:to-indigo-500',
+                  'bg-gradient-to-r from-emerald-500 to-green-600',
+                  'hover:from-emerald-400 hover:to-green-500',
                   'text-white font-semibold text-base',
-                  'shadow-lg shadow-blue-500/30',
+                  'shadow-lg shadow-emerald-500/30',
                   'disabled:opacity-50',
                 )}
               >
                 {isLoading ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Marking...
+                    Logging...
                   </>
-                ) : restDaysRemaining <= 0 ? (
-                  'No rest days left this week'
                 ) : (
                   <>
-                    <Moon className="w-5 h-5 mr-2" />
-                    Mark as Rest Day (+2 XP)
+                    <Droplets className="w-5 h-5 mr-2" />
+                    Log (+{totalXp + (hasGoal ? 7 : 0)} XP)
                   </>
                 )}
               </Button>
