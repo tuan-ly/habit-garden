@@ -22,6 +22,7 @@ import type {
 import { calculateWateringXp, calculateNoteBonus } from '@/lib/xp-system'
 import { getTodayWeather, calculateWeatherXp } from '@/lib/weather-system'
 import { calculatePlantStatus, calculateRhythm } from '@/lib/plant-status'
+import { XP_VALUES, isMorningTime } from '@/lib/xp-constants'
 
 // =====================================================
 // Simple Watering (Caring, not completing)
@@ -74,10 +75,15 @@ export async function waterPlantSimple(
 
   const isFirstOfDay = !existingActivity
 
-  // "Just checking in" gives NO base XP - only note bonus
-  // This is a gentle reminder, not a full activity log
-  // Full XP comes from "I did it today!" flow (logProgress)
-  let totalXp = 0
+  const isMorning = isMorningTime()
+
+  // XP Calculation using Constants
+  // Base (10) + Morning (3) + Notes
+  let totalXp = XP_VALUES.WATERING_BASE
+  
+  if (isMorning) {
+    totalXp += XP_VALUES.MORNING_BONUS
+  }
 
   // Note bonus
   if (notes && notes.trim().length > 0) {
@@ -210,13 +216,12 @@ export async function logProgress(dto: LogActivityDto): Promise<LogProgressResul
 
   // Calculate XP
   const weather = getTodayWeather()
-  const currentHour = new Date().getHours()
-  const isMorning = currentHour >= 5 && currentHour < 9
+  const isMorning = isMorningTime()
 
-  let baseXp = 15 // Base for progress logging
-  if (isFirstOfDay) baseXp += 5
-  if (isPersonalRecord) baseXp += 25
-  if (isMorning) baseXp += 3
+  let baseXp = XP_VALUES.PROGRESS_LOG_BASE // Base (0)
+  if (isFirstOfDay) baseXp += XP_VALUES.FIRST_LOG_BONUS // (0)
+  if (isPersonalRecord) baseXp += XP_VALUES.PERSONAL_RECORD_BONUS
+  if (isMorning) baseXp += XP_VALUES.MORNING_BONUS
 
   // Note bonus
   if (dto.notes && dto.notes.trim().length > 0) {

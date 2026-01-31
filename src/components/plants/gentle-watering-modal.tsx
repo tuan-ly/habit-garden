@@ -38,6 +38,7 @@ import {
 import { resolveGrowthConflict } from '@/lib/actions/plants'
 import { waterPlantSimple, logProgress } from '@/lib/actions/activity'
 import { toast } from 'sonner'
+import { XP_VALUES, isMorningTime } from '@/lib/xp-constants'
 
 type ActionMode = 'choose' | 'water' | 'log' | 'rest'
 
@@ -60,9 +61,9 @@ interface GentleWateringModalProps {
 // Calculate note bonus based on note length
 function calculateNoteBonus(noteLength: number, journalStreak: number): number {
   if (noteLength === 0) return 0
-  let bonus = 3
-  if (noteLength > 50) bonus += 2
-  if (noteLength > 100) bonus += 2
+  let bonus = XP_VALUES.NOTE_ANY
+  if (noteLength > 50) bonus += XP_VALUES.NOTE_LONG
+  if (noteLength > 100) bonus += XP_VALUES.NOTE_VERY_LONG
   if (journalStreak >= 30) bonus += 12
   else if (journalStreak >= 14) bonus += 8
   else if (journalStreak >= 7) bonus += 5
@@ -76,7 +77,7 @@ export function GentleWateringModal({
   onOpenChange,
   onWater,
   onLogAndWater,
-  estimatedXp = 8,
+  estimatedXp = 8, // Deprecated prop, using constants now
   journalStreak = 0,
   hasGoal = false,
   goalUnit = '',
@@ -95,16 +96,25 @@ export function GentleWateringModal({
     return calculateNoteBonus(notes.trim().length, journalStreak)
   }, [notes, journalStreak])
 
-  // XP for "Just checking in" (watering only) - uses estimatedXp prop
-  // If already watered today, watering gives no base XP (only note bonus)
-  const wateringBaseXp = isWateredToday ? 0 : estimatedXp
+  // XP Calculation using Shared Constants
+  const isMorning = isMorningTime()
+
+  // 1. Watering XP (Just checking in)
+  // Base + Morning + Note
+  // If already watered today, ONLY Note bonus applies
+  const wateringBaseXp = isWateredToday
+    ? 0
+    : (XP_VALUES.WATERING_BASE + (isMorning ? XP_VALUES.MORNING_BONUS : 0))
   const totalXp = wateringBaseXp + noteBonus
 
-  // XP for "I did it" (log progress) - match server-side logProgress logic
-  // Base = 15, First of day = +5, Morning = +3
+  // 2. Log Progress XP (I did it)
+  // Base + First Log Bonus + Morning + Note
   const isFirstLogToday = (plant?.today_log_count || 0) === 0
-  const isMorning = new Date().getHours() >= 5 && new Date().getHours() < 9
-  const logBaseXp = 15 + (isFirstLogToday ? 5 : 0) + (isMorning ? 3 : 0)
+  const logBaseXp = XP_VALUES.PROGRESS_LOG_BASE
+    + (isFirstLogToday ? XP_VALUES.FIRST_LOG_BONUS : 0)
+    + (isMorning ? XP_VALUES.MORNING_BONUS : 0)
+
+  // Note: Personal record bonus is calculated on server, optimistic UI assumes standard log
   const logXp = logBaseXp + noteBonus
 
   // Reset state when modal opens
@@ -630,13 +640,12 @@ export function GentleWateringModal({
               </div>
 
               {/* Motivation tip when no note on subsequent logs */}
-              {isWateredToday && noteLength === 0 && (
+              {!isFirstLogToday && noteLength === 0 && (
                 <div className="p-3 rounded-lg bg-amber-900/20 border border-amber-500/20 text-xs text-amber-200/80">
                   <p className="flex items-start gap-2">
                     <span className="text-base">💡</span>
                     <span>
-                      <strong>Tip:</strong> You&apos;ve already logged today, so this entry won&apos;t earn base XP.
-                      However, adding a note will still earn you bonus XP! Reflect on what you accomplished.
+                      <strong>Tip:</strong> Adding a note earns bonus XP! Reflect on what you accomplished.
                     </span>
                   </p>
                 </div>
