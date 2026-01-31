@@ -118,18 +118,26 @@ export function GentleWateringModal({
     if (isLoading || !plant) return
     setIsLoading(true)
 
+    // If external onWater callback is provided, close modal IMMEDIATELY
+    // Parent component handles the async call and celebration
+    if (onWater) {
+      onOpenChange(false)
+      // Fire and forget - parent handles the async call
+      onWater(notes.trim() || undefined).finally(() => {
+        setIsLoading(false)
+      })
+      return
+    }
+
+    // Fallback: handle internally if no onWater callback
     try {
-      if (onWater) {
-        await onWater(notes.trim() || undefined)
+      const result = await waterPlantSimple(plant.id, notes.trim() || undefined)
+      if (result.success) {
+        toast.success(result.message || 'Plant watered!', {
+          description: `+${result.xpEarned} XP`,
+        })
       } else {
-        const result = await waterPlantSimple(plant.id, notes.trim() || undefined)
-        if (result.success) {
-          toast.success(result.message || 'Plant watered!', {
-            description: `+${result.xpEarned} XP`,
-          })
-        } else {
-          toast.error('Could not water plant', { description: result.error })
-        }
+        toast.error('Could not water plant', { description: result.error })
       }
       onOpenChange(false)
     } catch {
@@ -143,37 +151,45 @@ export function GentleWateringModal({
     if (isLoading || !plant) return
     setIsLoading(true)
 
-    try {
-      const value = logValue.trim() ? parseFloat(logValue) : undefined
+    const value = logValue.trim() ? parseFloat(logValue) : undefined
 
-      if (onLogAndWater) {
-        await onLogAndWater(value, notes.trim() || undefined)
-      } else {
-        // First log progress if has goal
-        if (hasGoal && value !== undefined) {
-          const logResult = await logProgress({
-            plant_id: plant.id,
-            activity_type: 'progress',
-            value,
-            notes: notes.trim() || undefined,
+    // If external callback is provided, close modal IMMEDIATELY
+    // Parent component handles the async call and celebration
+    if (onLogAndWater) {
+      onOpenChange(false)
+      // Fire and forget - parent handles the async call
+      onLogAndWater(value, notes.trim() || undefined).finally(() => {
+        setIsLoading(false)
+      })
+      return
+    }
+
+    // Fallback: handle internally if no onLogAndWater callback
+    try {
+      // First log progress if has goal
+      if (hasGoal && value !== undefined) {
+        const logResult = await logProgress({
+          plant_id: plant.id,
+          activity_type: 'progress',
+          value,
+          notes: notes.trim() || undefined,
+        })
+        if (logResult.success) {
+          toast.success(logResult.message || 'Progress logged!', {
+            description: `+${logResult.xpEarned} XP${logResult.isPersonalRecord ? ' 🏆 New Record!' : ''}`,
           })
-          if (logResult.success) {
-            toast.success(logResult.message || 'Progress logged!', {
-              description: `+${logResult.xpEarned} XP${logResult.isPersonalRecord ? ' 🏆 New Record!' : ''}`,
-            })
-          } else {
-            toast.error('Could not log progress', { description: logResult.error })
-          }
         } else {
-          // Just water with notes
-          const result = await waterPlantSimple(plant.id, notes.trim() || undefined)
-          if (result.success) {
-            toast.success('Great job! 🎉', {
-              description: `+${result.xpEarned} XP`,
-            })
-          } else {
-            toast.error('Could not water plant', { description: result.error })
-          }
+          toast.error('Could not log progress', { description: logResult.error })
+        }
+      } else {
+        // Just water with notes
+        const result = await waterPlantSimple(plant.id, notes.trim() || undefined)
+        if (result.success) {
+          toast.success('Great job! 🎉', {
+            description: `+${result.xpEarned} XP`,
+          })
+        } else {
+          toast.error('Could not water plant', { description: result.error })
         }
       }
       onOpenChange(false)
