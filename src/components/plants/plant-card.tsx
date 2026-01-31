@@ -38,9 +38,9 @@ interface PlantCardProps {
 
 export function PlantCard({ plant: initialPlant, onClick, weather }: PlantCardProps) {
   // Get the latest plant data from context (with optimistic updates)
-  const { plants, waterPlant, isPending, isSyncing } = usePlants()
+  const { plants, waterPlant } = usePlants()
   const plant = plants.find(p => p.id === initialPlant.id) || initialPlant
-  
+
   const [isWatering, setIsWatering] = useState(false)
   const [showXp, setShowXp] = useState(false)
   const [earnedXp, setEarnedXp] = useState(0)
@@ -74,17 +74,17 @@ export function PlantCard({ plant: initialPlant, onClick, weather }: PlantCardPr
     }
 
     setIsWatering(true)
-    
+
     // Use optimistic update from context
     const result = await waterPlant(plant.id)
-    
+
     if (result.success) {
       // Show XP popup animation
       setEarnedXp(result.xpEarned || 0)
       setShowXp(true)
       setTimeout(() => setShowXp(false), 1500)
     }
-    
+
     // Keep watering animation for a moment
     setTimeout(() => setIsWatering(false), 800)
   }
@@ -106,7 +106,7 @@ export function PlantCard({ plant: initialPlant, onClick, weather }: PlantCardPr
     >
       {/* Decorative corner gradient */}
       <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-white/40 to-transparent dark:from-white/5 pointer-events-none" />
-      
+
       <CardContent className="p-4 relative">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -149,8 +149,8 @@ export function PlantCard({ plant: initialPlant, onClick, weather }: PlantCardPr
               <div
                 className={cn(
                   'h-full rounded-full transition-all duration-500',
-                  goal.isOnTrack 
-                    ? 'bg-gradient-to-r from-green-400 to-emerald-500' 
+                  goal.isOnTrack
+                    ? 'bg-gradient-to-r from-green-400 to-emerald-500'
                     : 'bg-gradient-to-r from-amber-400 to-orange-500'
                 )}
                 style={{ width: `${Math.min(100, goal.overallProgress)}%` }}
@@ -195,7 +195,7 @@ export function PlantCard({ plant: initialPlant, onClick, weather }: PlantCardPr
               isWateredToday && 'opacity-75'
             )}
             onClick={handleWater}
-            disabled={isPending || isWatering || isWateredToday || isDead}
+            disabled={isWatering || isWateredToday || isDead}
           >
             <Droplets className={cn('h-4 w-4 mr-2', isWatering && 'text-blue-200 animate-bounce')} />
             {isDead ? 'Dead' : isWateredToday ? '✓ Watered Today' : isWatering ? 'Watering...' : 'Water Plant'}
