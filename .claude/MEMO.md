@@ -1,6 +1,6 @@
 # Habit Garden - Project Memo
 
-> **Last Updated**: 2026-01-31
+> **Last Updated**: 2026-02-02
 > **Phase**: 4 - Polish & Launch
 > **Stack**: Next.js 16, Supabase, Tailwind CSS 4, shadcn/ui
 
@@ -18,10 +18,37 @@
 | Adaptive Goals | ✅ Complete |
 | PWA/UI Polish | ✅ Mostly complete |
 | **Gentle Growth** | ✅ Phase 1 Complete (DB + UI integrated) |
+| **Plant Detail Sheet** | ✅ Redesigned with tabs + reflective UX |
 
 ---
 
 ## Recent Sessions
+
+### 2026-02-02: Plant Detail Sheet Redesign - Reflective UX with Tabs
+**Changes**:
+- Redesigned plant-detail-sheet.tsx with 3-tab layout: Overview | Journal | Stats
+- **Overview tab**: "Why I Started", quick rhythm (7 days), goal progress, action button, compact stats
+- **Journal tab**: Activity timeline with notes + milestone celebrations (lazy loaded)
+- **Stats tab**: Full moisture/growth bars, streak stats, 14-day rhythm (lazy loaded)
+- Added skeleton loaders for smooth loading experience
+- Implemented ReflectionModal for milestone reflections
+
+**New Components**:
+- [plant-detail-skeleton.tsx](src/components/plants/plant-detail-skeleton.tsx) - Tab-specific skeletons
+- [journal-timeline.tsx](src/components/plants/journal-timeline.tsx) - Notes chronologically grouped
+- [milestone-timeline.tsx](src/components/plants/milestone-timeline.tsx) - Journey milestones
+- [reflection-modal.tsx](src/components/plants/reflection-modal.tsx) - Multi-step reflection flow
+- [journal.ts](src/lib/actions/journal.ts) - Server actions for journal/milestones
+
+**Performance Improvements**:
+- Lazy loading: Only load data for visible tab
+- Reduced initial load from 3 API calls to 2 (7-day rhythm vs 30-day)
+- useTransition for smooth tab switches
+- Data caching (don't refetch on tab switch back)
+
+**Status**: ✅ Complete
+
+---
 
 ### 2026-01-31: Watering Modal Redesign - Simplified 2-Option Flow
 **Changes**:
