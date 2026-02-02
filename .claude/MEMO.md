@@ -24,6 +24,24 @@
 
 ## Recent Sessions
 
+### 2026-02-02: UX Mode Consolidation - Simplified Interaction
+**Changes**:
+- Consolidated 3 garden modes (View/Move/Add) into 1 toggle (Interact/Move)
+- **Interact mode** (default): Click plant → GentleWateringModal, Click empty → AddPlantDialog
+- **Move mode**: Click-to-select, click-to-place (toggle on/off)
+- Merged FloatingPlantCard UX into GentleWateringModal (plant stats: moisture/growth/streak bars)
+- Added "View plant details" link in modal for quick access to PlantDetailSheet
+- Unified mobile/desktop behavior: both now show GentleWateringModal on plant click
+
+**Key Files Changed**:
+- [mode-toolbar.tsx](src/components/garden/mode-toolbar.tsx) - 3 buttons → 1 toggle
+- [isometric-garden.tsx](src/components/garden/isometric-garden.tsx) - Simplified modes, removed FloatingCard
+- [gentle-watering-modal.tsx](src/components/plants/gentle-watering-modal.tsx) - Added stats section + Details link
+
+**Status**: ✅ Complete
+
+---
+
 ### 2026-02-02: Plant Detail Sheet Redesign - Reflective UX with Tabs
 **Changes**:
 - Redesigned plant-detail-sheet.tsx with 3-tab layout: Overview | Journal | Stats

@@ -34,6 +34,7 @@ import {
   Minus,
   Plus,
   Lightbulb,
+  Info,
 } from 'lucide-react'
 import { resolveGrowthConflict } from '@/lib/actions/plants'
 import { waterPlantSimple, logProgress } from '@/lib/actions/activity'
@@ -50,6 +51,8 @@ interface GentleWateringModalProps {
   onWater?: (notes: string | undefined, estimatedXp: number) => Promise<void>
   /** Called for "I did it" log action. Receives value, notes and estimated XP from modal */
   onLogAndWater?: (value: number | undefined, notes: string | undefined, estimatedXp: number) => Promise<void>
+  /** Called when user clicks "View Details" link */
+  onDetails?: () => void
   estimatedXp?: number
   journalStreak?: number
   hasGoal?: boolean
@@ -77,6 +80,7 @@ export function GentleWateringModal({
   onOpenChange,
   onWater,
   onLogAndWater,
+  onDetails,
   estimatedXp = 8, // Deprecated prop, using constants now
   journalStreak = 0,
   hasGoal = false,
@@ -269,6 +273,71 @@ export function GentleWateringModal({
           </div>
         </DialogHeader>
 
+        {/* Plant Stats (merged from FloatingCard) */}
+        {mode === 'choose' && (
+          <div className="flex items-center gap-4 px-1 py-3 border-b border-slate-700/50">
+            {/* Moisture */}
+            <div className="flex-1">
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="text-sm">💧</span>
+                <span
+                  className={cn(
+                    'text-sm font-bold tabular-nums',
+                    plant.current_moisture >= 70
+                      ? 'text-emerald-400'
+                      : plant.current_moisture >= 40
+                        ? 'text-amber-400'
+                        : plant.current_moisture >= 20
+                          ? 'text-orange-400'
+                          : 'text-red-400'
+                  )}
+                >
+                  {plant.current_moisture}%
+                </span>
+              </div>
+              <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                <div
+                  className={cn(
+                    'h-full rounded-full transition-all',
+                    plant.current_moisture >= 70
+                      ? 'bg-emerald-500'
+                      : plant.current_moisture >= 40
+                        ? 'bg-amber-500'
+                        : plant.current_moisture >= 20
+                          ? 'bg-orange-500'
+                          : 'bg-red-500'
+                  )}
+                  style={{ width: `${plant.current_moisture}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Growth */}
+            <div className="flex-1">
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="text-sm">🌱</span>
+                <span className="text-sm font-bold tabular-nums text-green-400">
+                  {Math.round(plant.growth_percentage)}%
+                </span>
+              </div>
+              <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full transition-all"
+                  style={{ width: `${plant.growth_percentage}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Streak badge */}
+            {plant.current_streak > 0 && (
+              <div className="flex items-center gap-1 px-2 py-1 bg-orange-900/50 rounded-lg border border-orange-500/30">
+                <span className="text-sm">🔥</span>
+                <span className="font-bold text-orange-400 text-sm">{plant.current_streak}</span>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="space-y-4 py-2">
           {/* Growth Conflict Resolution */}
           {plant.growth_blocked && (
@@ -365,6 +434,17 @@ export function GentleWateringModal({
                     </div>
                   </div>
                 </Button>
+              )}
+
+              {/* Details link - smaller tertiary option */}
+              {onDetails && (
+                <button
+                  onClick={onDetails}
+                  className="w-full text-sm text-slate-400 hover:text-slate-300 flex items-center gap-1.5 justify-center mt-2 py-2"
+                >
+                  <Info className="w-4 h-4" />
+                  View plant details
+                </button>
               )}
             </div>
           )}

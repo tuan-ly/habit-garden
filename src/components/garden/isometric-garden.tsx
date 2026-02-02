@@ -4,7 +4,6 @@ import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { IsometricTile } from './isometric-tile'
 import { IsometricPlant, type FocusState } from './isometric-plant'
 import { PlantInfoBar } from './plant-tooltip'
-import { FloatingPlantCard } from './floating-plant-card'
 import { GroundPlane, type MultiCellArea } from './ground-plane'
 import { GroundPlaneCanvas } from './ground-plane-canvas'
 import { GardenDecorations } from './garden-decorations'
@@ -91,8 +90,8 @@ export function IsometricGarden({
     resetDidPan,
   } = useGardenZoom()
 
-  // Garden mode state
-  const [mode, setModeInternal] = useState<GardenMode>('view')
+  // Garden mode state: 'interact' (default) or 'move'
+  const [mode, setModeInternal] = useState<GardenMode>('interact')
 
   // Wrap setMode to cancel move selection when changing modes
   const setMode = useCallback((newMode: GardenMode) => {
@@ -111,11 +110,7 @@ export function IsometricGarden({
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [addDialogPosition, setAddDialogPosition] = useState<{ row: number; col: number } | null>(null)
 
-  // New state for enhanced interactions
-  const [floatingCard, setFloatingCard] = useState<{
-    plant: PlantWithType
-    position: { x: number; y: number }
-  } | null>(null)
+  // Quick log state (for archived QuickLogModal, now unused)
   const [quickLogPlant, setQuickLogPlant] = useState<PlantWithType | null>(null)
   const [quickLogOpen, setQuickLogOpen] = useState(false)
 
@@ -257,7 +252,6 @@ export function IsometricGarden({
 
   // Select a plant to move (click-to-select)
   const selectPlantForMove = useCallback((plant: PlantWithType) => {
-    setFloatingCard(null)
     setHoveredTile(null)
     // Haptic feedback
     if (navigator.vibrate) navigator.vibrate(30)
@@ -489,14 +483,13 @@ export function IsometricGarden({
   const lastTapTime = useRef<number>(0)
   const lastTapPlantId = useRef<string | null>(null)
 
-  // Handle tap/click on plant - gesture-based (no modes)
-  // Single tap = water/log, Double tap = open detail sheet
+  // Handle tap/click on plant - unified for mobile and desktop
+  // Single tap = open watering modal, Double tap = open detail sheet
   const handlePlantTap = useCallback(
-    (plant: PlantWithType, tapPosition?: { x: number; y: number }) => {
+    (plant: PlantWithType) => {
       const now = Date.now()
       const timeSinceLastTap = now - lastTapTime.current
       const sameTarget = lastTapPlantId.current === plant.id
-      const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024 // Considering tablet as mobile touch target for behavior
 
       // Double-tap detection
       if (sameTarget && timeSinceLastTap < DOUBLE_TAP_THRESHOLD) {
@@ -512,25 +505,17 @@ export function IsometricGarden({
       lastTapTime.current = now
       lastTapPlantId.current = plant.id
 
-      // Mobile behavior: Tap opens card first (unless it's a goal log which might be direct? No, stay consistent)
-      if (isMobile) {
-        setFloatingCard({
-          plant,
-          position: tapPosition || { x: window.innerWidth / 2, y: window.innerHeight / 2 }
-        })
-        return
-      }
-
-      // Desktop behavior: Always open gentle watering modal
+      // Unified behavior: Always open gentle watering modal (both mobile and desktop)
       handleQuickWaterRequest(plant)
     },
     [handleQuickWaterRequest]
   )
 
-  // Handle right-click / long-press to show info card (all modes)
+  // Handle right-click / long-press - open detail sheet
   const handleShowInfo = useCallback(
-    (plant: PlantWithType, position: { x: number; y: number }) => {
-      setFloatingCard({ plant, position })
+    (plant: PlantWithType) => {
+      setSelectedPlant(plant)
+      setSheetOpen(true)
     },
     []
   )
@@ -556,14 +541,18 @@ export function IsometricGarden({
 
       // Mode-based interaction logic
       switch (mode) {
-        case 'view':
-          // View mode: tap plant to water/log, tap empty does nothing
+        case 'interact':
+          // Interact mode: tap plant → watering modal, tap empty → add plant dialog
           if (plant) {
-            handlePlantTap(plant, tapPosition)
+            handlePlantTap(plant)
+          } else {
+            // Open add plant dialog for empty tiles
+            setAddDialogPosition({ row, col })
+            setAddDialogOpen(true)
           }
           break
 
-        case 'drag':
+        case 'move':
           // Move mode: click-to-select, click-to-place
           if (moveState.selectedPlant) {
             // A plant is already selected - try to place it here
@@ -579,28 +568,17 @@ export function IsometricGarden({
             selectPlantForMove(plant)
           }
           break
-
-        case 'add':
-          // Add mode: tap empty to add plant, tap plant to edit goal/details
-          if (plant) {
-            setSelectedPlant(plant)
-            setSheetOpen(true)
-          } else {
-            setAddDialogPosition({ row, col })
-            setAddDialogOpen(true)
-          }
-          break
       }
     },
     [mode, handlePlantTap, didPan, resetDidPan, moveState.selectedPlant, selectPlantForMove, cancelMoveSelection, confirmMove]
   )
 
-  // Handle right-click (desktop) - show info card
+  // Handle right-click (desktop) - open detail sheet
   const handleContextMenu = useCallback(
     (e: React.MouseEvent, plant?: PlantWithType) => {
       e.preventDefault()
       if (plant) {
-        handleShowInfo(plant, { x: e.clientX, y: e.clientY })
+        handleShowInfo(plant)
       }
     },
     [handleShowInfo]
@@ -707,27 +685,14 @@ export function IsometricGarden({
     [quickLogPlant, logGoal, gardenSettings.showCelebrations, journalStreak, weather]
   )
 
-  // Close floating card
-  const handleCloseFloatingCard = useCallback(() => {
-    setFloatingCard(null)
-  }, [])
-
-  // Open details from floating card
+  // Open details from watering modal
   const handleOpenDetails = useCallback(() => {
-    if (floatingCard) {
-      setSelectedPlant(floatingCard.plant)
+    if (wateringPlant) {
+      setWateringModalOpen(false)
+      setSelectedPlant(wateringPlant)
       setSheetOpen(true)
-      setFloatingCard(null)
     }
-  }, [floatingCard])
-
-  // Log from floating card
-  const handleLogFromCard = useCallback(() => {
-    if (floatingCard) {
-      handleQuickWaterRequest(floatingCard.plant)
-      setFloatingCard(null)
-    }
-  }, [floatingCard, handleQuickWaterRequest])
+  }, [wateringPlant])
 
   const handleTileHover = (row: number, col: number) => {
     const plant = occupiedCells.get(`${row}-${col}`)
@@ -738,7 +703,7 @@ export function IsometricGarden({
     }
 
     // Update move preview when in move mode with selected plant
-    if (mode === 'drag' && moveState.selectedPlant) {
+    if (mode === 'move' && moveState.selectedPlant) {
       updateMovePreview(row, col)
     }
   }
@@ -826,11 +791,9 @@ export function IsometricGarden({
           touchAction: 'manipulation',
           cursor: isPanning
             ? 'grabbing'
-            : mode === 'drag'
+            : mode === 'move'
               ? (moveState.selectedPlant ? 'crosshair' : 'grab')
-              : mode === 'add'
-                ? 'cell'
-                : 'default',
+              : 'default',
           WebkitUserSelect: 'none',
           WebkitTouchCallout: 'none',
         }}
@@ -947,7 +910,7 @@ export function IsometricGarden({
                   tileSize={tileSize}
                   plant={isAnchor ? plant : null}
                   hideBadge={isSelectedForMove}
-                  showAddHint={mode === 'add'}
+                  showAddHint={false}
                   isSelectedForMove={isSelectedForMove}
                   previewPlant={isPreviewTile && moveState.selectedPlant && moveState.isValidPreview ? moveState.selectedPlant : undefined}
                 >
@@ -984,23 +947,6 @@ export function IsometricGarden({
       {/* Fixed info bar at bottom - disabled on touch devices since hover requires a mouse */}
       {!isTouchDevice && <PlantInfoBar plant={hoveredPlant} />}
 
-      {/* Floating plant card */}
-      {floatingCard && (
-        <FloatingPlantCard
-          plant={floatingCard.plant}
-          position={floatingCard.position}
-          todayLogs={(floatingCard.plant.today_logs || []).map(log => ({
-            time: new Date(log.logged_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-            value: log.value,
-            notes: log.notes || undefined,
-          }))}
-          todayValue={floatingCard.plant.today_value}
-          onClose={handleCloseFloatingCard}
-          onLog={handleLogFromCard}
-          onDetails={handleOpenDetails}
-        />
-      )}
-
       {/* Quick log modal for goal plants */}
       <QuickLogModal
         plant={quickLogPlant}
@@ -1021,11 +967,11 @@ export function IsometricGarden({
         onOpenChange={setWateringModalOpen}
         onWater={handleWaterConfirm}
         onLogAndWater={handleLogAndWaterConfirm}
+        onDetails={handleOpenDetails}
         hasGoal={!!wateringPlant?.goal_mode}
         goalUnit={wateringPlant?.goal?.unit}
         goalMode={wateringPlant?.goal_mode || undefined}
         isWateredToday={wateringPlant ? isWateredToday(wateringPlant) : false}
-
         journalStreak={journalStreak}
       />
 
