@@ -542,18 +542,15 @@ export function IsometricGarden({
       // Mode-based interaction logic
       switch (mode) {
         case 'interact':
-          // Interact mode: tap plant → watering modal, tap empty → add plant dialog
+          // Interact mode: tap plant → watering modal, empty tiles do nothing
           if (plant) {
             handlePlantTap(plant)
-          } else {
-            // Open add plant dialog for empty tiles
-            setAddDialogPosition({ row, col })
-            setAddDialogOpen(true)
           }
+          // Empty tiles: no action in interact mode (use move mode to add)
           break
 
-        case 'move':
-          // Move mode: click-to-select, click-to-place
+        case 'edit':
+          // Edit mode: click-to-select, click-to-place, or add plant
           if (moveState.selectedPlant) {
             // A plant is already selected - try to place it here
             if (moveState.selectedPlant.id === plant?.id) {
@@ -566,6 +563,10 @@ export function IsometricGarden({
           } else if (plant) {
             // No plant selected - select this one
             selectPlantForMove(plant)
+          } else {
+            // Empty tile with no plant selected - open add plant dialog
+            setAddDialogPosition({ row, col })
+            setAddDialogOpen(true)
           }
           break
       }
@@ -702,8 +703,8 @@ export function IsometricGarden({
       setHoveredTile(`${row}-${col}`)
     }
 
-    // Update move preview when in move mode with selected plant
-    if (mode === 'move' && moveState.selectedPlant) {
+    // Update move preview when in edit mode with selected plant
+    if (mode === 'edit' && moveState.selectedPlant) {
       updateMovePreview(row, col)
     }
   }
@@ -791,7 +792,7 @@ export function IsometricGarden({
           touchAction: 'manipulation',
           cursor: isPanning
             ? 'grabbing'
-            : mode === 'move'
+            : mode === 'edit'
               ? (moveState.selectedPlant ? 'crosshair' : 'grab')
               : 'default',
           WebkitUserSelect: 'none',
@@ -910,7 +911,7 @@ export function IsometricGarden({
                   tileSize={tileSize}
                   plant={isAnchor ? plant : null}
                   hideBadge={isSelectedForMove}
-                  showAddHint={false}
+                  showAddHint={mode === 'edit' && !moveState.selectedPlant}
                   isSelectedForMove={isSelectedForMove}
                   previewPlant={isPreviewTile && moveState.selectedPlant && moveState.isValidPreview ? moveState.selectedPlant : undefined}
                 >
