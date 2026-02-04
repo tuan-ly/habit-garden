@@ -68,7 +68,7 @@ export function IsometricGarden({
   focusStates,
 }: IsometricGardenProps) {
   // Get plants from context with optimistic updates
-  const { plants, movePlant } = usePlants()
+  const { plants, movePlant, updatePlant } = usePlants()
 
   // Get garden settings for performance optimization
   const gardenSettings = useGardenSettingsOptional()
@@ -359,6 +359,22 @@ export function IsometricGarden({
         streakCount: newStreak,
       })
 
+      // Optimistic update: Update plant state immediately
+      const moistureBoost = plant.plant_type?.moisture_boost || 20
+      const newMoisture = Math.min(100, plant.current_moisture + moistureBoost)
+      const baseGrowth = 100 / (plant.plant_type?.maturity_days || 30)
+      const newGrowth = Math.min(100, plant.growth_percentage + baseGrowth)
+
+      updatePlant(plant.id, {
+        current_moisture: newMoisture,
+        growth_percentage: newGrowth,
+        current_streak: newStreak,
+        longest_streak: Math.max(plant.longest_streak, newStreak),
+        total_waterings: plant.total_waterings + 1,
+        last_watered_at: new Date().toISOString(),
+        status: newGrowth >= 100 ? 'mature' : plant.status,
+      })
+
       try {
         // Call unified logActivity with 'watering' type
         const result = await logActivity({
@@ -391,7 +407,7 @@ export function IsometricGarden({
         }, 3000)
       }
     },
-    [wateringPlant]
+    [wateringPlant, updatePlant]
   )
 
   // Handle "I did it" action from gentle watering modal (log progress + water)
@@ -428,6 +444,35 @@ export function IsometricGarden({
         plantIcon: plant.plant_type.icon,
         streakCount: newStreak,
       })
+
+      // Optimistic update: Update plant state immediately
+      const moistureBoost = plant.plant_type?.moisture_boost || 20
+      const newMoisture = Math.min(100, plant.current_moisture + moistureBoost)
+      const baseGrowth = 100 / (plant.plant_type?.maturity_days || 30)
+      const newGrowth = Math.min(100, plant.growth_percentage + baseGrowth)
+
+      // Build optimistic updates
+      const optimisticUpdates: Partial<typeof plant> = {
+        current_moisture: newMoisture,
+        growth_percentage: newGrowth,
+        current_streak: newStreak,
+        longest_streak: Math.max(plant.longest_streak, newStreak),
+        total_waterings: plant.total_waterings + 1,
+        last_watered_at: new Date().toISOString(),
+        status: newGrowth >= 100 ? 'mature' : plant.status,
+      }
+
+      // Update goal progress optimistically if applicable
+      if (hasGoal && value !== undefined && plant.goal) {
+        const newCurrentValue = plant.goal.goal_mode === 'total_progress'
+          ? plant.goal.current_value + value
+          : Math.max(plant.goal.current_value, value)
+        optimisticUpdates.goal = { ...plant.goal, current_value: newCurrentValue }
+        optimisticUpdates.today_value = (plant.today_value || 0) + value
+        optimisticUpdates.today_log_count = (plant.today_log_count || 0) + 1
+      }
+
+      updatePlant(plant.id, optimisticUpdates)
 
       try {
         // Use unified logActivity with appropriate type:
@@ -474,7 +519,7 @@ export function IsometricGarden({
         }, 3000)
       }
     },
-    [wateringPlant, isWateredToday]
+    [wateringPlant, isWateredToday, updatePlant]
   )
 
   // Track last tap time for double-tap detection

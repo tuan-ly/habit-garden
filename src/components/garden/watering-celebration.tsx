@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 
 interface WateringCelebrationProps {
@@ -95,8 +96,9 @@ export function WateringCelebration({
   const centerX = position?.x ?? (typeof window !== 'undefined' ? window.innerWidth / 2 : 200)
   const centerY = position?.y ?? (typeof window !== 'undefined' ? window.innerHeight / 2 : 300)
 
-  return (
-    <div className="fixed inset-0 pointer-events-none z-[100]">
+  // Use portal to render at document.body level, above Dialog portals
+  const content = (
+    <div className="fixed inset-0 pointer-events-none z-[9999]">
       {/* Background overlay with radial gradient */}
       <div
         className={cn(
@@ -237,4 +239,8 @@ export function WateringCelebration({
       )}
     </div>
   )
+
+  // Render via portal to ensure it's above all modals/dialogs
+  if (typeof document === 'undefined') return content
+  return createPortal(content, document.body)
 }
