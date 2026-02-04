@@ -45,7 +45,7 @@
 | Plants Dir | `public/plants/[type]/[stage].png` |
 | Server Actions | `src/lib/actions/` |
 | Components | `src/components/` (garden, plants, goals, game-ui) |
-
+| Supabase | habit-garden (id: jkhkfsfjnilbfqfatonb) 
 ---
 
 ## Key Directories
