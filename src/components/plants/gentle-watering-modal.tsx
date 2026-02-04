@@ -147,15 +147,17 @@ export function GentleWateringModal({
     if (isLoading || !plant) return
     setIsLoading(true)
 
-    // If external onWater callback is provided, close modal IMMEDIATELY
-    // Parent component handles the async call and celebration
+    // If external onWater callback is provided, trigger handler first then close modal
+    // This ensures celebration renders before modal close animation starts
     if (onWater) {
-      onOpenChange(false)
-      // Fire and forget - parent handles the async call
+      // Fire the handler first - this sets celebration state in parent
       // Pass totalXp (watering XP) calculated by modal
       onWater(notes.trim() || undefined, totalXp).finally(() => {
         setIsLoading(false)
       })
+      // Small delay to ensure celebration renders before modal starts closing
+      // This fixes mobile issue where celebration wasn't visible
+      setTimeout(() => onOpenChange(false), 100)
       return
     }
 
@@ -183,15 +185,17 @@ export function GentleWateringModal({
 
     const value = logValue.trim() ? parseFloat(logValue) : undefined
 
-    // If external callback is provided, close modal IMMEDIATELY
-    // Parent component handles the async call and celebration
+    // If external callback is provided, trigger handler first then close modal
+    // This ensures celebration renders before modal close animation starts
     if (onLogAndWater) {
-      onOpenChange(false)
-      // Fire and forget - parent handles the async call
+      // Fire the handler first - this sets celebration state in parent
       // Pass logXp (progress logging XP) calculated by modal
       onLogAndWater(value, notes.trim() || undefined, logXp).finally(() => {
         setIsLoading(false)
       })
+      // Small delay to ensure celebration renders before modal starts closing
+      // This fixes mobile issue where celebration wasn't visible
+      setTimeout(() => onOpenChange(false), 100)
       return
     }
 
