@@ -374,7 +374,7 @@ export function useGardenZoom(options: UseGardenZoomOptions = {}): UseGardenZoom
   const handleWheel = useCallback(
     (e: React.WheelEvent) => {
       // Always prevent default to stop browser zoom (especially on Ctrl+scroll)
-      e.preventDefault()
+      // e.preventDefault()
       e.stopPropagation()
 
       // Use deltaY directly for smooth continuous zooming
