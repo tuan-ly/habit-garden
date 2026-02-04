@@ -830,7 +830,7 @@ export interface AggregatedGardenStats {
   weather: WeatherType | null
 }
 
-// Get watering logs for a specific time period
+// Get activity logs for a specific time period
 export async function getGardenStats(
   period: 'day' | 'week' | 'month' | 'year',
   targetDate?: string // YYYY-MM-DD format, defaults to today
@@ -841,8 +841,6 @@ export async function getGardenStats(
   if (!user) return null
 
   // Parse date from YYYY-MM-DD string without timezone issues
-  // new Date('2026-01-15') parses as UTC midnight, which can shift dates
-  // Instead, parse components directly
   let baseYear: number, baseMonth: number, baseDay: number
   if (targetDate) {
     const [y, m, d] = targetDate.split('-').map(Number)
@@ -891,17 +889,18 @@ export async function getGardenStats(
       break
   }
 
-  // Fetch watering logs with plant info
-  // Use watered_date for filtering (local date, no timezone issues)
-  // watered_date should always be set (DEFAULT CURRENT_DATE in schema)
-  const { data: waterings, error } = await supabase
-    .from('watering_logs')
+  // Fetch activity logs with plant info
+  // activity_type: 'watering' | 'completed' | 'progress' | 'rest_day' | 'reflection'
+  const { data: activities, error } = await supabase
+    .from('activity_logs')
     .select(`
       id,
       plant_id,
-      watered_at,
-      watered_date,
+      activity_type,
+      logged_at,
+      logged_date,
       xp_earned,
+      notes,
       plant:plants(
         id,
         name,
@@ -909,9 +908,10 @@ export async function getGardenStats(
       )
     `)
     .eq('user_id', user.id)
-    .gte('watered_date', startStr)
-    .lte('watered_date', endStr)
-    .order('watered_at', { ascending: true })
+    .gte('logged_date', startStr)
+    .lte('logged_date', endStr)
+    .in('activity_type', ['watering', 'completed', 'progress']) // Only count main activities
+    .order('logged_at', { ascending: true })
 
   if (error) {
     console.error('Error fetching garden stats:', error)
@@ -931,26 +931,17 @@ export async function getGardenStats(
     current.setDate(current.getDate() + 1)
   }
 
-  // Helper to extract date from watered_at timestamp
-  const extractDateFromTimestamp = (timestamp: string): string => {
-    // watered_at is ISO timestamp like "2026-01-15T10:30:00.000Z"
-    // Extract the date part, handling timezone
-    const date = new Date(timestamp)
-    return formatDate(date.getFullYear(), date.getMonth(), date.getDate())
-  }
+  // Transform activity logs to WateringLogWithPlant format for compatibility
+  const typedWaterings: WateringLogWithPlant[] = (activities || [])
+    .map(a => {
+      // Handle nested plant relation
+      const plantData = Array.isArray(a.plant) ? a.plant[0] : a.plant
 
-  // Transform Supabase nested select arrays to objects
-  // Supabase returns nested relations as arrays when using the syntax `relation:table(...)`
-  const typedWaterings: WateringLogWithPlant[] = (waterings || [])
-    .map(w => {
-      // Handle nested plant relation (could be array or single object depending on Supabase version)
-      const plantData = Array.isArray(w.plant) ? w.plant[0] : w.plant
-      
-      // Handle nested plant_type relation 
+      // Handle nested plant_type relation
       let plantType = { id: '', name: 'Unknown', icon: '🌱' }
       if (plantData?.plant_type) {
-        const typeData = Array.isArray(plantData.plant_type) 
-          ? plantData.plant_type[0] 
+        const typeData = Array.isArray(plantData.plant_type)
+          ? plantData.plant_type[0]
           : plantData.plant_type
         if (typeData) {
           plantType = {
@@ -962,12 +953,12 @@ export async function getGardenStats(
       }
 
       return {
-        id: w.id,
-        plant_id: w.plant_id,
-        watered_at: w.watered_at,
-        // Use watered_date if available, otherwise extract from watered_at
-        watered_date: w.watered_date || extractDateFromTimestamp(w.watered_at),
-        xp_earned: w.xp_earned,
+        id: a.id,
+        plant_id: a.plant_id,
+        watered_at: a.logged_at,
+        watered_date: a.logged_date,
+        xp_earned: a.xp_earned || 0,
+        notes: a.notes,
         plant: plantData
           ? {
               id: plantData.id,
@@ -977,6 +968,7 @@ export async function getGardenStats(
           : null
       }
     })
+
   typedWaterings.forEach(w => {
     const date = w.watered_date
     dailyMap.set(date, (dailyMap.get(date) || 0) + 1)
@@ -1053,7 +1045,7 @@ function calculateDominantWeather(logs: any[]): WeatherType | null {
 
 /**
  * Get aggregated garden stats by plant for a specific time period
- * Groups waterings and goal logs by plant with stats
+ * Uses activity_logs table (unified activity tracking)
  */
 export async function getAggregatedGardenStats(
   period: 'day' | 'week' | 'month' | 'year',
@@ -1111,48 +1103,21 @@ export async function getAggregatedGardenStats(
       break
   }
 
-  // Fetch watering logs with plant info
-  const { data: waterings, error: wateringError } = await supabase
-    .from('watering_logs')
+  // Fetch activity logs with plant info
+  // activity_type: 'watering' | 'completed' | 'progress' | 'rest_day' | 'reflection'
+  const { data: activities, error: activityError } = await supabase
+    .from('activity_logs')
     .select(`
       id,
       plant_id,
-      watered_at,
-      watered_date,
-      xp_earned,
-      notes,
-      plant:plants(
-        id,
-        name,
-        goal_mode,
-        grid_row,
-        grid_col,
-        grid_size,
-        growth_percentage,
-        status,
-        plant_type:plant_types(id, name, icon)
-      )
-    `)
-    .eq('user_id', user.id)
-    .gte('watered_date', startStr)
-    .lte('watered_date', endStr)
-    .order('watered_at', { ascending: true })
-
-  if (wateringError) {
-    console.error('Error fetching watering logs:', wateringError)
-    return null
-  }
-
-  // Fetch goal logs for the period
-  const { data: goalLogs, error: goalError } = await supabase
-    .from('goal_logs')
-    .select(`
-      id,
-      plant_id,
-      value,
-      notes,
+      activity_type,
       logged_at,
       logged_date,
+      value,
+      notes,
+      xp_earned,
+      is_first_of_day,
+      is_personal_record,
       plant:plants(
         id,
         name,
@@ -1163,9 +1128,6 @@ export async function getAggregatedGardenStats(
         growth_percentage,
         status,
         plant_type:plant_types(id, name, icon)
-      ),
-      goal:goals(
-        unit
       )
     `)
     .eq('user_id', user.id)
@@ -1173,16 +1135,28 @@ export async function getAggregatedGardenStats(
     .lte('logged_date', endStr)
     .order('logged_at', { ascending: true })
 
-  if (goalError) {
-    console.error('Error fetching goal logs:', goalError)
+  if (activityError) {
+    console.error('Error fetching activity logs:', activityError)
+    return null
+  }
+
+  // Fetch goals for unit info
+  const { data: goals } = await supabase
+    .from('goals')
+    .select('id, plant_id, unit')
+    .eq('season_status', 'active')
+
+  const goalUnitMap = new Map<string, string>()
+  for (const goal of goals || []) {
+    goalUnitMap.set(goal.plant_id, goal.unit)
   }
 
   // Group data by plant
   const plantStatsMap = new Map<string, PlantPeriodStats>()
 
-  // Process watering logs
-  for (const w of waterings || []) {
-    const plantData = Array.isArray(w.plant) ? w.plant[0] : w.plant
+  // Process activity logs
+  for (const a of activities || []) {
+    const plantData = Array.isArray(a.plant) ? a.plant[0] : a.plant
     if (!plantData) continue
 
     const plantTypeData = Array.isArray(plantData.plant_type)
@@ -1207,67 +1181,37 @@ export async function getAggregatedGardenStats(
         total_xp: 0,
         has_goal: !!plantData.goal_mode,
         goal_mode: plantData.goal_mode,
+        goal_unit: goalUnitMap.get(plantId),
         goal_logs: [],
       })
     }
 
     const stats = plantStatsMap.get(plantId)!
-    stats.watering_count++
-    stats.total_xp += w.xp_earned || 0
-    stats.waterings.push({
-      id: w.id,
-      watered_at: w.watered_at,
-      xp_earned: w.xp_earned,
-      notes: w.notes,
-    })
-  }
+    stats.total_xp += a.xp_earned || 0
 
-  // Process goal logs
-  for (const g of goalLogs || []) {
-    const plantData = Array.isArray(g.plant) ? g.plant[0] : g.plant
-    if (!plantData) continue
-
-    const plantTypeData = Array.isArray(plantData.plant_type)
-      ? plantData.plant_type[0]
-      : plantData.plant_type
-
-    const goalData = Array.isArray(g.goal) ? g.goal[0] : g.goal
-
-    const plantId = plantData.id
-
-    if (!plantStatsMap.has(plantId)) {
-      plantStatsMap.set(plantId, {
-        plant_id: plantId,
-        plant_name: plantData.name,
-        plant_icon: plantTypeData?.icon || '🌱',
-        plant_type_name: plantTypeData?.name || 'Unknown',
-        grid_row: plantData.grid_row || 0,
-        grid_col: plantData.grid_col || 0,
-        grid_size: plantData.grid_size || 1,
-        growth_percentage: plantData.growth_percentage || 0,
-        status: plantData.status || 'growing',
-        watering_count: 0,
-        waterings: [],
-        total_xp: 0,
-        has_goal: true,
-        goal_mode: plantData.goal_mode,
-        goal_unit: goalData?.unit,
-        goal_logs: [],
+    // Count waterings (watering, completed, progress types all count as "activity")
+    if (a.activity_type === 'watering' || a.activity_type === 'completed' || a.activity_type === 'progress') {
+      stats.watering_count++
+      stats.waterings.push({
+        id: a.id,
+        watered_at: a.logged_at,
+        xp_earned: a.xp_earned || 0,
+        notes: a.notes,
       })
     }
 
-    const stats = plantStatsMap.get(plantId)!
-    stats.has_goal = true
-    stats.goal_mode = plantData.goal_mode
-    stats.goal_unit = goalData?.unit
-    if (!stats.goal_logs) stats.goal_logs = []
-    stats.goal_logs.push({
-      id: g.id,
-      value: g.value,
-      notes: g.notes,
-      logged_at: g.logged_at,
-      logged_date: g.logged_date,
-    })
+    // Track goal logs for progress type
+    if (a.activity_type === 'progress' && a.value !== null) {
+      stats.has_goal = true
+      if (!stats.goal_logs) stats.goal_logs = []
+      stats.goal_logs.push({
+        id: a.id,
+        value: a.value,
+        notes: a.notes,
+        logged_at: a.logged_at,
+        logged_date: a.logged_date,
+      })
+    }
   }
 
   // Calculate goal stats for plants with goals
