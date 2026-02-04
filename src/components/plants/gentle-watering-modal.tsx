@@ -1,14 +1,17 @@
 'use client'
 
 /**
- * Gentle Watering Modal - 3-Action Flow
+ * Gentle Watering Modal - 2-Action Flow
  *
  * Philosophy:
- * - Watering ≠ Completing
- * 📊 Log Progress = "I achieved something"
- * - 💧 Water = "Just checking in"
- * - 
- * - 
+ * - 🌟 "I did it!" = Log progress + water (primary action)
+ * - 🌙 "Not today" = Rest day (secondary, guilt-free)
+ *
+ * Rest Day UX (Option B):
+ * - Low friction path for rest
+ * - Empathetic messaging ("Resting is part of growing")
+ * - Still earns XP for checking in
+ * - Streak protected
  */
 
 import { useState, useEffect, useRef, useMemo } from 'react'
@@ -35,6 +38,7 @@ import {
   Plus,
   Lightbulb,
   Info,
+  Moon,
 } from 'lucide-react'
 import { resolveGrowthConflict } from '@/lib/actions/plants'
 import { waterPlantSimple, logProgress } from '@/lib/actions/activity'
@@ -414,7 +418,7 @@ export function GentleWateringModal({
                 </div>
               </Button>
 
-              {/* Just Checking In - Secondary - Only show if NOT watered today */}
+              {/* Rest Day - Secondary - Only show if NOT watered today */}
               {!isWateredToday && (
                 <Button
                   onClick={() => setMode('water')}
@@ -422,17 +426,17 @@ export function GentleWateringModal({
                   className={cn(
                     'w-full h-14 justify-start px-4',
                     'border-slate-600 bg-slate-800/50',
-                    'hover:bg-slate-700/50 hover:border-emerald-500/50',
-                    'text-slate-200 font-medium text-base',
+                    'hover:bg-slate-700/50 hover:border-indigo-500/50',
+                    'text-slate-200 hover:text-slate-100 font-medium text-base',
                   )}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-emerald-500/10 rounded-lg">
-                      <Droplets className="w-5 h-5 text-emerald-400" />
+                    <div className="p-2 bg-indigo-500/10 rounded-lg">
+                      <Moon className="w-5 h-5 text-indigo-400" />
                     </div>
                     <div className="text-left">
-                      <div>Just checking in</div>
-                      <div className="text-xs text-slate-400">Water only</div>
+                      <div>Not today</div>
+                      <div className="text-xs text-slate-400">Resting is part of growing 🌙</div>
                     </div>
                   </div>
                 </Button>
@@ -451,7 +455,7 @@ export function GentleWateringModal({
             </div>
           )}
 
-          {/* MODE: Water */}
+          {/* MODE: Rest Day (Water only) */}
           {mode === 'water' && (
             <div className="space-y-4">
               <button
@@ -461,14 +465,14 @@ export function GentleWateringModal({
                 ← Back to options
               </button>
 
-              {/* Encouraging message */}
-              <div className="p-3 rounded-lg bg-emerald-900/20 border border-emerald-500/20">
+              {/* Encouraging rest message */}
+              <div className="p-3 rounded-lg bg-indigo-900/20 border border-indigo-500/20">
                 <div className="flex items-start gap-3">
-                  <Sparkles className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <Moon className="w-5 h-5 text-indigo-400 flex-shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="text-sm font-semibold text-emerald-200">Great job! 🎉</h4>
-                    <p className="text-xs text-emerald-200/70 mt-1">
-                      Every small step counts toward your goals.
+                    <h4 className="text-sm font-semibold text-indigo-200">Rest days matter 💜</h4>
+                    <p className="text-xs text-indigo-200/70 mt-1">
+                      Checking in keeps your streak alive. Your body and mind need recovery to grow stronger.
                     </p>
                   </div>
                 </div>
@@ -479,7 +483,7 @@ export function GentleWateringModal({
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-medium text-slate-400 flex items-center gap-1.5">
                     <PenLine className="w-3.5 h-3.5" />
-                    Add a reflection (optional)
+                    How are you feeling? (optional)
                   </label>
                   {noteBonus > 0 && (
                     <span className={cn(
@@ -488,7 +492,7 @@ export function GentleWateringModal({
                         ? 'bg-purple-500/20 text-purple-300 ring-1 ring-purple-500/30'
                         : noteTier === 'thoughtful'
                           ? 'bg-blue-500/20 text-blue-300'
-                          : 'bg-emerald-500/20 text-emerald-300'
+                          : 'bg-indigo-500/20 text-indigo-300'
                     )}>
                       <Sparkles className="w-3 h-3" />
                       +{noteBonus} XP
@@ -499,13 +503,13 @@ export function GentleWateringModal({
                   ref={notesRef}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="How are you feeling? Any thoughts to capture?"
+                  placeholder="Tired? Busy? Just need a break? It's all okay..."
                   maxLength={500}
                   className={cn(
                     'bg-slate-800 border-slate-600 text-white placeholder:text-slate-500',
-                    'focus:border-emerald-500 focus:ring-emerald-500/20',
+                    'focus:border-indigo-500 focus:ring-indigo-500/20',
                     'resize-none h-24',
-                    noteBonus > 0 && 'border-emerald-500/50'
+                    noteBonus > 0 && 'border-indigo-500/50'
                   )}
                 />
 
@@ -513,7 +517,7 @@ export function GentleWateringModal({
                 <div className="mt-2 flex items-center gap-2 text-[10px] text-slate-500">
                   <span className={cn(
                     'px-1.5 py-0.5 rounded',
-                    noteLength > 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800'
+                    noteLength > 0 ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800'
                   )}>
                     Any note +3
                   </span>
@@ -532,27 +536,27 @@ export function GentleWateringModal({
                 </div>
               </div>
 
-              {/* Water Button */}
+              {/* Rest Day Button */}
               <Button
                 onClick={handleWater}
                 disabled={isLoading}
                 className={cn(
                   'w-full h-12',
-                  'bg-gradient-to-r from-emerald-500 to-green-600',
-                  'hover:from-emerald-400 hover:to-green-500',
+                  'bg-gradient-to-r from-indigo-500 to-purple-600',
+                  'hover:from-indigo-400 hover:to-purple-500',
                   'text-white font-semibold text-base',
-                  'shadow-lg shadow-emerald-500/30',
+                  'shadow-lg shadow-indigo-500/30',
                 )}
               >
                 {isLoading ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Watering...
+                    Resting...
                   </>
                 ) : (
                   <>
-                    <Droplets className="w-5 h-5 mr-2" />
-                    Water Plant (+{totalXp} XP)
+                    <Moon className="w-5 h-5 mr-2" />
+                    Take Rest Day (+{totalXp} XP)
                   </>
                 )}
               </Button>
