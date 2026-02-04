@@ -103,20 +103,22 @@ export function GentleWateringModal({
   // XP Calculation using Shared Constants
   const isMorning = isMorningTime()
 
+  // Check if first activity today (any activity, not just watering)
+  // isWateredToday is passed from parent - means ANY activity exists today
+  const isFirstActivityToday = !isWateredToday
+
   // 1. Watering XP (Just checking in)
-  // Base + Morning + Note
-  // If already watered today, ONLY Note bonus applies
-  const wateringBaseXp = isWateredToday
-    ? 0
-    : (XP_VALUES.WATERING_BASE + (isMorning ? XP_VALUES.MORNING_BONUS : 0))
+  // Base + Morning + Note (only if first activity today)
+  const wateringBaseXp = isFirstActivityToday
+    ? (XP_VALUES.WATERING_BASE + (isMorning ? XP_VALUES.MORNING_BONUS : 0))
+    : 0
   const totalXp = wateringBaseXp + noteBonus
 
-  // 2. Log Progress XP (I did it)
-  // Base + First Log Bonus + Morning + Note
-  const isFirstLogToday = (plant?.today_log_count || 0) === 0
-  const logBaseXp = XP_VALUES.PROGRESS_LOG_BASE
-    + (isFirstLogToday ? XP_VALUES.FIRST_LOG_BONUS : 0)
-    + (isMorning ? XP_VALUES.MORNING_BONUS : 0)
+  // 2. Log Progress XP (I did it) - includes watering XP if first activity today
+  // Watering Base + Morning + Note + (PR bonus calculated on server)
+  const logBaseXp = isFirstActivityToday
+    ? (XP_VALUES.WATERING_BASE + (isMorning ? XP_VALUES.MORNING_BONUS : 0))
+    : 0
 
   // Note: Personal record bonus is calculated on server, optimistic UI assumes standard log
   const logXp = logBaseXp + noteBonus
@@ -720,7 +722,7 @@ export function GentleWateringModal({
               </div>
 
               {/* Motivation tip when no note on subsequent logs */}
-              {!isFirstLogToday && noteLength === 0 && (
+              {!isFirstActivityToday && noteLength === 0 && (
                 <div className="p-3 rounded-lg bg-amber-900/20 border border-amber-500/20 text-xs text-amber-200/80">
                   <p className="flex items-start gap-2">
                     <span className="text-base">💡</span>

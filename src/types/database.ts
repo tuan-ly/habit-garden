@@ -12,7 +12,12 @@ export type GentlePlantStatus = 'thriving' | 'growing' | 'resting' | 'waiting' |
 export type VisualStage = 'seed' | 'sprout' | 'growing' | 'mature' | 'established' | 'ancient' | 'legendary'
 
 // Activity types for unified logging
-export type ActivityType = 'watering' | 'progress' | 'rest_day' | 'reflection'
+// - 'watering' = Just checking in (water only)
+// - 'completed' = I did it! (plants without goals)
+// - 'progress' = I did it! with value (plants with goals)
+// - 'rest_day' = Intentional rest
+// - 'reflection' = Milestone reflection
+export type ActivityType = 'watering' | 'completed' | 'progress' | 'rest_day' | 'reflection'
 
 // Season status for goals
 export type SeasonStatus = 'active' | 'completed' | 'ended'

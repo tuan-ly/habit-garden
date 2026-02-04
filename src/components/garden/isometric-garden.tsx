@@ -25,9 +25,8 @@ import {
   showWaterToast,
 } from '@/components/plants/water-toast'
 import { usePlants, useGardenSettingsOptional } from '@/lib/context'
-import { calculateWateringXp, calculateNoteBonus } from '@/lib/xp-system'
 import { useGardenZoom, useVisibleTiles } from '@/lib/hooks'
-import { waterPlantSimple } from '@/lib/actions/activity'
+import { logActivity } from '@/lib/actions/activity'
 import type { PlantWithType, PlantType, WeatherType } from '@/types/database'
 import { defaultTheme } from './themes'
 import {
@@ -69,7 +68,7 @@ export function IsometricGarden({
   focusStates,
 }: IsometricGardenProps) {
   // Get plants from context with optimistic updates
-  const { plants, waterPlant, logGoal, movePlant } = usePlants()
+  const { plants, movePlant } = usePlants()
 
   // Get garden settings for performance optimization
   const gardenSettings = useGardenSettingsOptional()
@@ -351,32 +350,36 @@ export function IsometricGarden({
       const newStreak = plant.current_streak + 1
 
       // Show celebration IMMEDIATELY (optimistic) with XP from modal
-      if (gardenSettings.showCelebrations) {
-        setCelebration({
-          active: true,
-          position: celebrationPosition,
-          xpEarned: estimatedXp,
-          plantName: plant.name,
-          plantIcon: plant.plant_type.icon,
-          streakCount: newStreak,
-        })
-      }
+      setCelebration({
+        active: true,
+        position: celebrationPosition,
+        xpEarned: estimatedXp,
+        plantName: plant.name,
+        plantIcon: plant.plant_type.icon,
+        streakCount: newStreak,
+      })
 
       try {
-        // Call server in background
-        const result = await waterPlant(plant.id, { notes })
+        // Call unified logActivity with 'watering' type
+        const result = await logActivity({
+          plant_id: plant.id,
+          activity_type: 'watering',
+          notes,
+        })
 
         if (!result.success) {
           // Cancel celebration on error
           setCelebration(null)
-          // Show appropriate error
-          if (result.error === 'Already watered today') {
-            showAlreadyWateredToast(plant.name)
-          } else {
-            showWaterErrorToast(result.error || 'Unknown error')
-          }
+          showWaterErrorToast(result.error || 'Unknown error')
+        } else {
+          // Show toast with actual XP from server
+          showWaterToast({
+            plantName: plant.name,
+            plantIcon: plant.plant_type.icon,
+            xpEarned: result.xpEarned || 0,
+            streakCount: newStreak,
+          })
         }
-        // On success: celebration already showing, no action needed
       } catch (error) {
         // Cancel celebration on error
         setCelebration(null)
@@ -388,7 +391,7 @@ export function IsometricGarden({
         }, 3000)
       }
     },
-    [wateringPlant, waterPlant, gardenSettings.showCelebrations]
+    [wateringPlant]
   )
 
   // Handle "I did it" action from gentle watering modal (log progress + water)
@@ -413,57 +416,52 @@ export function IsometricGarden({
       }
 
       const hasGoal = !!plant.goal_mode
-      const isFirstLogToday = (plant.today_log_count || 0) === 0
-      const newStreak = isFirstLogToday ? plant.current_streak + 1 : plant.current_streak
+      const isFirstActivityToday = !isWateredToday(plant)
+      const newStreak = isFirstActivityToday ? plant.current_streak + 1 : plant.current_streak
 
       // Show celebration IMMEDIATELY using XP from modal (single source of truth)
-      if (gardenSettings.showCelebrations) {
-        setCelebration({
-          active: true,
-          position: celebrationPosition,
-          xpEarned: estimatedXp,
-          plantName: plant.name,
-          plantIcon: plant.plant_type.icon,
-          streakCount: newStreak,
-        })
-      }
+      setCelebration({
+        active: true,
+        position: celebrationPosition,
+        xpEarned: estimatedXp,
+        plantName: plant.name,
+        plantIcon: plant.plant_type.icon,
+        streakCount: newStreak,
+      })
 
       try {
-        // Call appropriate action based on whether plant has goal
-        if (hasGoal && value !== undefined) {
-          const result = await logGoal(plant.id, value, notes)
-          if (!result.success) {
-            setCelebration(null)
-            showWaterErrorToast(result.error || 'Failed to log')
-          } else if (result.xpEarned && result.xpEarned > 0) {
+        // Use unified logActivity with appropriate type:
+        // - 'progress' for plants with goals (includes value)
+        // - 'completed' for plants without goals
+        const result = await logActivity({
+          plant_id: plant.id,
+          activity_type: hasGoal && value !== undefined ? 'progress' : 'completed',
+          value: hasGoal ? value : undefined,
+          notes,
+        })
+
+        if (!result.success) {
+          setCelebration(null)
+          showWaterErrorToast(result.error || 'Failed to log')
+        } else {
+          // Show appropriate toast
+          if (hasGoal && value !== undefined) {
             showGoalLogToast({
               plantName: plant.name,
               plantIcon: plant.plant_type.icon,
               value,
               unit: plant.goal?.unit || '',
-              xpEarned: result.xpEarned,
+              xpEarned: result.xpEarned || 0,
               isPersonalRecord: result.isPersonalRecord,
-              exceededTarget: result.exceededTarget,
+              exceededTarget: false, // Server calculates this
             })
-          }
-        } else {
-          // Simple water with note (using activity action which allows multiple logs)
-          const result = await waterPlantSimple(plant.id, notes)
-
-          if (!result.success) {
-            setCelebration(null)
-            showWaterErrorToast(result.error || 'Unknown error')
           } else {
-            // Success - celebration handles the visual
-            // Show toast for XP feedback
-            if (result.xpEarned !== undefined) {
-              showWaterToast({
-                plantName: plant.name,
-                plantIcon: plant.plant_type.icon,
-                xpEarned: result.xpEarned,
-                streakCount: newStreak,
-              })
-            }
+            showWaterToast({
+              plantName: plant.name,
+              plantIcon: plant.plant_type.icon,
+              xpEarned: result.xpEarned || 0,
+              streakCount: newStreak,
+            })
           }
         }
       } catch (error) {
@@ -476,7 +474,7 @@ export function IsometricGarden({
         }, 3000)
       }
     },
-    [wateringPlant, waterPlant, logGoal, gardenSettings.showCelebrations]
+    [wateringPlant, isWateredToday]
   )
 
   // Track last tap time for double-tap detection
@@ -585,7 +583,7 @@ export function IsometricGarden({
     [handleShowInfo]
   )
 
-  // Handle goal log
+  // Handle goal log (for archived QuickLogModal - uses new unified logActivity)
   const handleGoalLog = useCallback(
     async (value: number, notes?: string) => {
       if (!quickLogPlant) return
@@ -603,35 +601,18 @@ export function IsometricGarden({
       // Close modal FIRST so celebration is visible
       setQuickLogOpen(false)
 
-      const isFirstLogToday = (plant.today_log_count || 0) === 0
-      const newStreak = isFirstLogToday ? plant.current_streak + 1 : plant.current_streak
+      const isFirstActivityToday = !isWateredToday(plant)
+      const newStreak = isFirstActivityToday ? plant.current_streak + 1 : plant.current_streak
 
-      // Calculate note bonus if notes provided
-      const noteBonus = notes?.trim()
-        ? calculateNoteBonus({
-          noteLength: notes.trim().length,
-          journalStreak: journalStreak,
-        })
-        : { total: 0 }
+      // Simple XP estimate: base watering (10) + morning (3) if applicable
+      const isMorning = new Date().getHours() >= 5 && new Date().getHours() < 9
+      let estimatedXp = isFirstActivityToday ? 10 + (isMorning ? 3 : 0) : 0
 
-      // Calculate estimated XP for optimistic celebration
-      // First log: watering XP (base + streak) + note bonus
-      // Subsequent logs: note bonus only
-      let estimatedXp = 0
-
-      if (isFirstLogToday) {
-        // Base watering XP
-        const wateringXp = calculateWateringXp({
-          streak: newStreak,
-          isMorning: new Date().getHours() < 9,
-          isRainyDay: weather === 'rainy',
-          isRainbowDay: weather === 'rainbow',
-        })
-        estimatedXp = wateringXp.total
+      // Note bonus estimate
+      if (notes?.trim()) {
+        const len = notes.trim().length
+        estimatedXp += 3 + (len > 50 ? 2 : 0) + (len > 100 ? 2 : 0)
       }
-
-      // Add note bonus (applies to all logs)
-      estimatedXp += noteBonus.total
 
       const celebrationPosition = {
         x: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
@@ -639,20 +620,23 @@ export function IsometricGarden({
       }
 
       // Show celebration IMMEDIATELY (optimistic)
-      if (gardenSettings.showCelebrations) {
-        setCelebration({
-          active: true,
-          position: celebrationPosition,
-          xpEarned: estimatedXp,
-          plantName: plant.name,
-          plantIcon: plant.plant_type.icon,
-          streakCount: newStreak,
-        })
-      }
+      setCelebration({
+        active: true,
+        position: celebrationPosition,
+        xpEarned: estimatedXp,
+        plantName: plant.name,
+        plantIcon: plant.plant_type.icon,
+        streakCount: newStreak,
+      })
 
       try {
-        // Call server in background
-        const result = await logGoal(plant.id, value, notes)
+        // Use unified logActivity
+        const result = await logActivity({
+          plant_id: plant.id,
+          activity_type: 'progress',
+          value,
+          notes,
+        })
 
         if (!result.success) {
           // Cancel celebration on error
@@ -668,7 +652,7 @@ export function IsometricGarden({
               unit: plant.goal?.unit || '',
               xpEarned: result.xpEarned,
               isPersonalRecord: result.isPersonalRecord,
-              exceededTarget: result.exceededTarget,
+              exceededTarget: false,
             })
           }
         }
@@ -683,7 +667,7 @@ export function IsometricGarden({
         }, 3000)
       }
     },
-    [quickLogPlant, logGoal, gardenSettings.showCelebrations, journalStreak, weather]
+    [quickLogPlant, isWateredToday]
   )
 
   // Open details from watering modal
