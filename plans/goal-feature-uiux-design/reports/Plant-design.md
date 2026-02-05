@@ -1,0 +1,6 @@
+Tôi đang thiết kế habien habit garden, khu vườn thói quen. Tôi muốn nó gắn liền với các chỉ số productivity, outcome của họ. Người ta thường nói hãy tưởng tượng thành công của bạn, người mà bạn muốn trở thành và hãy thiết kế system, các thói quen để đưa bạn đến đó.
+Các chỉ số cần theo dõi có thể là: số trang sách đọc trong 1 tuần, số giờ dành cho gia đình, 
+Các chỉ số này cần đo lường những thứ mình có thể chủ động thực hiện: số video mỗi tuần, số khách hàng cần gặp hằng tuần, số email cần gửi. chứ không phải những việc gián tiếp như số lượt view, doanh thu.
+Từ những chỉ số chúng ta muốn làm thể hiện qua goal chúng ta sẽ thực hiện chúng thông qua khu vườn. Như vậy đang có một sự liên kết nhưng cũng sẽ làm phức tạp goal system vì goal hiện tại đang gắn liền với cây nhưng goal sau này lại có thể gắn với các chỉ số productivity, thay đổi về lượng dẫn đến thay đổi chất của người dùng. các goal này lại liên kết và được thực hiện thông qua các cây thói quen.
+Hãy brainstorming ý tưởng
+Tôi cũng đang brainstorming thiết kế cây
