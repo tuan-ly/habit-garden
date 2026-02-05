@@ -10,19 +10,25 @@
 
 **DO NOT** read all docs upfront. Only what's needed for the task.
 
+**App Language: English**
 ---
 
 ## Quick Start
 
-1. **Read** `.claude/MEMO.md` - Current status, recent sessions, working features
-2. **Identify** what task needs
-3. **Read additional context** only if needed
+1. **Read** `.claude/MEMO.md` - Start with **Current Sprint** section
+2. **Check** if task relates to current sprint
+3. **Read additional context** only if needed (design docs, DEVLOG.md)
 
 ---
 
 ## After Work
 
-**Update MEMO.md** with:
+**Always update Current Sprint** (top of MEMO.md):
+- What sprint/focus is active right now
+- Current progress (where we are)
+- Next steps (what to do next)
+
+**Update Session Log** with:
 - Session date and title (1 line)
 - What changed (bullet points, max 5)
 - Key files (links)

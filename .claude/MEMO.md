@@ -6,6 +6,27 @@
 
 ---
 
+## 🎯 Current Sprint
+
+**Focus**: Habien 2.0 - Progressive Growth System Design
+
+**Progress**:
+- ✅ Brainstorm complete (plant difficulty, outcome integration, creative expansion)
+- ✅ Design document created: [HABIEN_2.0_DESIGN.md](../plans/goal-feature-uiux-design/HABIEN_2.0_DESIGN.md)
+- ✅ Plant catalog designed: [PLANT_CATALOG.md](../plans/goal-feature-uiux-design/plant-designs/PLANT_CATALOG.md)
+- 🔄 Ready for implementation planning
+
+**Next Steps**:
+1. Review & finalize design document
+2. Create implementation plan (Phase 1: Foundation - tier system, slot limits)
+3. Start Phase 1 implementation
+
+**Related Docs**:
+- [Brainstorm Reports](../plans/goal-feature-uiux-design/reports/)
+- [Plant Designs](../plans/goal-feature-uiux-design/plant-designs/)
+
+---
+
 ## Quick Status
 
 | Area | Status |
