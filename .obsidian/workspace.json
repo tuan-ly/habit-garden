@@ -1,0 +1,222 @@
+{
+  "main": {
+    "id": "679a8771108ff6bd",
+    "type": "split",
+    "children": [
+      {
+        "id": "4d7569e20ca82da2",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "4e39704fa1e19bc6",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "plans/goal-feature-uiux-design/reports/brainstorm-260205-plant-difficulty-system.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "brainstorm-260205-plant-difficulty-system"
+            }
+          },
+          {
+            "id": "a096048361983d90",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Brainstorm.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Brainstorm"
+            }
+          }
+        ],
+        "currentTab": 1
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "1e937149fd9b64c3",
+    "type": "split",
+    "children": [
+      {
+        "id": "f9ea2136d228b102",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "eb3d70acc757fc9e",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "a65df2b72d98d3d1",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "597d9baf2b2c7ef8",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "b2c9f65dbd9391fe",
+    "type": "split",
+    "children": [
+      {
+        "id": "c71352f2c1180a00",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "65afe4bf531e548e",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "Brainstorm.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for Brainstorm"
+            }
+          },
+          {
+            "id": "f8d121b0aeb69f06",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "Brainstorm.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from Brainstorm"
+            }
+          },
+          {
+            "id": "6517c4bfb87813a3",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "38795d3853fbe620",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "99a30af111662411",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "Brainstorm.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of Brainstorm"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "a096048361983d90",
+  "lastOpenFiles": [
+    "plans/goal-feature-uiux-design/plant-designs/INDEX.md",
+    "plans/goal-feature-uiux-design/plant-designs/INDEX.md.tmp.84820.1770265615810",
+    "plans/goal-feature-uiux-design/plant-designs/SEASONAL_SPECIAL.md",
+    "plans/goal-feature-uiux-design/plant-designs/SEASONAL_SPECIAL.md.tmp.84820.1770265560444",
+    "plans/goal-feature-uiux-design/plant-designs/TIER5_GARDEN_LEGENDS.md",
+    "plans/goal-feature-uiux-design/plant-designs/TIER5_GARDEN_LEGENDS.md.tmp.84820.1770265450827",
+    "plans/goal-feature-uiux-design/plant-designs/TIER4_LIFE_COMPANIONS.md",
+    "plans/goal-feature-uiux-design/plant-designs/TIER4_LIFE_COMPANIONS.md.tmp.84820.1770265345434",
+    "plans/goal-feature-uiux-design/plant-designs/TIER3_DEMANDING_BEAUTIES.md",
+    "plans/goal-feature-uiux-design/plant-designs/TIER3_DEMANDING_BEAUTIES.md.tmp.84820.1770265208675",
+    "plans/goal-feature-uiux-design/plant-designs/PLANT_CATALOG.md.tmp.84820.1770265035114",
+    "plans/goal-feature-uiux-design/plant-designs/PLANT_CATALOG.md",
+    "plans/goal-feature-uiux-design/plant-designs/PLANT_CATALOG.md.tmp.84820.1770264927282",
+    "plans/goal-feature-uiux-design/plant-designs",
+    "plans/goal-feature-uiux-design/reports/brainstorm-260205-outcome-integration.md",
+    "plans/goal-feature-uiux-design/reports/brainstorm-260205-plant-difficulty-system.md",
+    "Brainstorm.md",
+    "MIGRATION-GUIDE.md"
+  ]
+}
