@@ -27,7 +27,7 @@
 | 1 | Dandelion | Bồ công anh | 7 days | 14d | 1.0x |
 | 2 | Succulent | Sen đá | 10 days | 21d | 1.0x |
 | 3 | Cactus | Xương rồng | 14 days | 30d | 1.1x |
-| 4 | Sprouts | Rau mầm | 3 days | 7d | 0.8x |
+| 4 | Mushroom | Nấm | 3 days | 5d | 0.9x |
 | 5 | Clover | Cỏ ba lá | 5 days | 14d | 1.0x |
 
 ### TIER 2: Reliable Partners (6 plants)
@@ -94,11 +94,11 @@
 | Purpose | Recommended Plants |
 |---------|-------------------|
 | First habit ever | Dandelion, Succulent |
-| Building confidence | Sprouts, Daisy |
+| Building confidence | Mushroom, Daisy |
 | Ready for challenge | **Rose**, Orchid |
 | Morning routine | **Orchid** (morning bonus) |
 | Evening routine | Lavender (evening bonus) |
-| Need quick wins | Sprouts (7 days) |
+| Need quick wins | Mushroom (5 days) |
 
 ### For Habit Maintenance (Day 66+)
 | Purpose | Recommended Plants |
@@ -123,6 +123,7 @@
 | Plant | Signature Mechanic |
 |-------|-------------------|
 | Dandelion | Wish spreading, immortal |
+| Mushroom | Colony growth, night bonus, harvest cycles |
 | Clover | Lucky search mini-game |
 | Mint | Aggressive spreading |
 | **Rose** | Progressive reflection system |
@@ -166,7 +167,7 @@ Master (Year 2+):
 ## Implementation Priority
 
 ### Phase 1 (MVP)
-- [ ] Dandelion, Succulent, Cactus, Sprouts, Clover (Tier 1)
+- [ ] Dandelion, Succulent, Cactus, Mushroom, Clover (Tier 1)
 - [ ] Daisy, Lavender, Vegetable (Tier 2)
 - [ ] Rose (Tier 3 - flagship)
 

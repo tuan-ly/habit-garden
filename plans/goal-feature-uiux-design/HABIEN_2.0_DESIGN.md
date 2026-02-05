@@ -219,7 +219,7 @@ Start simple:
 🌼 Dandelion  - 7 day tolerance - "Make a wish"
 🪴 Succulent  - 10 day tolerance - "Resilient"
 🌵 Cactus     - 14 day tolerance - "Desert survivor"
-🌱 Sprouts    - 3 day tolerance, fast growth (7 days)
+🍄 Mushroom   - 3 day tolerance, fastest (5 days), night bonus
 ☘️ Clover     - 5 day tolerance - Lucky events
 ```
 
@@ -391,7 +391,7 @@ TIER 1: FORGIVING FRIENDS
 Theme: "You cannot fail here"
 Tolerance: 3-14 days
 Target User: New, building confidence
-Plants: Dandelion, Succulent, Cactus, Sprouts, Clover
+Plants: Dandelion, Succulent, Cactus, Mushroom, Clover
 
 TIER 2: RELIABLE PARTNERS
 Theme: "Building real consistency"
@@ -848,7 +848,7 @@ CREATE TABLE feature_unlocks (
 
 ```sql
 -- Seed plant_types with tiers
-UPDATE plant_types SET tier = 1 WHERE name IN ('Dandelion', 'Succulent', 'Cactus', 'Sprouts', 'Clover');
+UPDATE plant_types SET tier = 1 WHERE name IN ('Dandelion', 'Succulent', 'Cactus', 'Mushroom', 'Clover');
 UPDATE plant_types SET tier = 2 WHERE name IN ('Vegetable', 'Bush', 'Daisy', 'Mint', 'Lavender', 'Tomato');
 UPDATE plant_types SET tier = 3 WHERE name IN ('Rose', 'Orchid', 'Cherry Blossom', 'Tulip', 'Peony', 'Sunflower');
 UPDATE plant_types SET tier = 4 WHERE name IN ('Bamboo', 'Pine', 'Banyan', 'Bodhi', 'Bonsai');

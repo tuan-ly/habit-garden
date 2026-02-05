@@ -338,7 +338,7 @@ Mature (Day 30+): Full cactus, occasional bloom
 
 ---
 
-## 4. Rau Mầm (Sprouts) - "The Quick Win"
+## 4. Nấm (Mushroom) - "The Night Dweller"
 
 ### Quick Stats
 | Attribute | Value |
@@ -346,80 +346,129 @@ Mature (Day 30+): Full cactus, occasional bloom
 | Tier | 1 - Forgiving |
 | Difficulty | Very Easy |
 | Tolerance | 3 ngày không tưới |
-| Growth Duration | 7 ngày để mature |
-| XP Multiplier | 0.8x |
+| Growth Duration | 5 ngày để mature |
+| XP Multiplier | 0.9x |
 | Unlock | Available from start |
 
 ### Habit Psychology
-- **Phù hợp cho**: Cần quick win, testing new habits, impatient users
-- **Dạy user**: "Small wins build momentum"
-- **Personality match**: Results-oriented, needs immediate feedback
+- **Phù hợp cho**: Cần quick win, người thích sự khác biệt, night owls
+- **Dạy user**: "Growth happens in unexpected places"
+- **Personality match**: Creative, unconventional, thrives in quiet moments
 
 ### Care Requirements
 | Action | Frequency | Required/Optional | XP Bonus |
 |--------|-----------|-------------------|----------|
-| Watering | Daily | Required | +8 |
+| Misting | Daily | Required | +8 |
+| Night check | After 8 PM | Optional | +5 |
+| Harvest | When ready | Optional | +12 |
 
 ### Visual Progression
 ```
-Stage 1 (Day 1): Seeds visible in soil
-Stage 2 (Day 2): Tiny white sprouts emerging
-Stage 3 (Day 3-4): Green cotyledons open
-Stage 4 (Day 5-6): True leaves forming
-Stage 5 (Day 7): Harvest ready
-Mature (Day 7): Ready to harvest and replant
+Stage 1 (Day 1): Mycelium web visible on log/substrate
+  → Emotion: "Có gì đó đang hình thành trong bóng tối"
+
+Stage 2 (Day 2): Tiny pins (baby mushrooms) emerging
+  → Emotion: "Wow, chúng xuất hiện rồi!"
+
+Stage 3 (Day 3): Small mushroom caps forming
+  → Emotion: "Đang lớn nhanh quá"
+
+Stage 4 (Day 4): Medium mushrooms, caps opening
+  → Emotion: "Một colony nhỏ đáng yêu"
+
+Stage 5 (Day 5): Full mushroom cluster ready
+  → Emotion: "Thành công! Có thể harvest"
+
+Mature (Day 5+): Glowing mushroom colony
+  → Emotion: "Magical forest vibes"
 ```
 
 ### Unique Mechanics
 
-**1. Harvest & Replant Cycle**
-- After 7 days, MUST harvest
-- Harvesting gives: +50 XP, 1 "Fresh Sprout" item
-- Immediately replant = streak continues
-- Skip replant = streak resets
+**1. Colony Growth**
+- Không phải 1 cây mà là cả COLONY (đàn nấm)
+- Mỗi lần tưới = thêm 1-2 nấm con
+- Max colony: 12 nấm
+- Visual càng ngày càng đẹp với nhiều nấm
 
-**2. Variety Rotation**
-- Each cycle can be different sprout type
-- Mung bean, alfalfa, sunflower, radish
-- Collection achievement for growing all types
+**2. Night Bonus 🌙**
+- Tưới sau 8 PM = 1.5x XP
+- "Nấm thích bóng tối"
+- Khuyến khích evening routine
+- Nấm phát sáng nhẹ (bioluminescent) vào ban đêm
 
-**3. Speed Growth Visible**
-- DAILY visible changes (unlike other plants)
-- Time-lapse available after 7 days
-- Most "active" feeling plant
+**3. Harvest & Regrow**
+- Có thể harvest khi mature (không bắt buộc)
+- Harvest: +12 XP, 1 "Mushroom" item
+- Sau harvest, colony regrow từ Stage 3 (2 ngày)
+- Không harvest = colony tiếp tục đẹp hơn
+
+**4. Spore Spreading**
+- Mature colony release spores mỗi 7 ngày
+- Spores có thể:
+  - Mọc ở tile adjacent (shade required)
+  - Tạo "fairy ring" pattern
+  - Gift cho friends
 
 ### Death & Recovery
 | State | Trigger | Visual | Recovery |
 |-------|---------|--------|----------|
-| Healthy | Moisture 50-100% | Perky sprouts | N/A |
-| Thirsty | Moisture 20-49% | Drooping | 1 watering |
-| Wilting | Moisture 1-19% | Yellowing | 2 waterings |
-| Dead | Moisture 0% for 2+ days | Moldy/rotted | Must replant |
+| Healthy | Moisture 50-100% | Plump, glowing | N/A |
+| Thirsty | Moisture 25-49% | Caps shrinking | 1 misting |
+| Wilting | Moisture 10-24% | Dried edges | 2 mistings |
+| Dormant | Moisture 0% for 2 days | Dried out | Mycelium survives! |
+| Dead | Moisture 0% for 5+ days | Crumbled | Spores remain for replant |
+
+**Special**: Mycelium (rễ nấm) rất khó chết - có thể hồi sinh từ dormant dễ dàng
 
 ### Rewards & Achievements
-- **Harvest completion**: +50 XP per cycle
+- **First harvest**: "Fungi Friend" badge, +60 XP
 - **Special achievements**:
-  - "Speed Demon" - 10 harvest cycles
-  - "Variety Pack" - Grow all 4 sprout types
-  - "Sprout Streak" - 30 consecutive successful harvests
-- **Unlocks**: Vegetable plants, "Quick Grower" title
+  - "Night Gardener" - Tưới sau 8 PM 10 lần
+  - "Mushroom Colony" - Đạt 12 nấm trong colony
+  - "Fairy Ring" - Tạo vòng tròn 3+ mushroom tiles
+  - "Bioluminescent" - Check mushroom lúc midnight
+  - "Forager" - Harvest 20 lần
+- **Unlocks**: Night bonus cho các cây khác, Tier 2 plants
 
 ### Variants & Colors
 | Variant | How to Get | Visual |
 |---------|------------|--------|
-| Mung Bean | Default | Classic green |
-| Alfalfa | 5 cycles | Delicate, thin |
-| Sunflower | 10 cycles | Chunky, yellow-green |
-| Radish | 20 cycles | Purple stems |
+| Button Mushroom | Start | Nấm trắng cổ điển |
+| Shiitake | 5 harvests | Nâu đậm, mũ rộng |
+| Oyster | 10 harvests | Hình quạt, xám nhạt |
+| Enoki | Night water 15x | Thân dài, mũ nhỏ |
+| **Premium** | | |
+| Glowing Blue | $0.99 | Phát sáng xanh |
+| Magic Mushroom | $1.99 | Đỏ chấm trắng (Amanita style) |
+| Galaxy Cap | $2.49 | Mũ có hình ngân hà |
 
 ### Easter Eggs
-1. **Speed Record**: Fastest growing plant - animation shows growth if you watch for 30 seconds
-2. **Recipe Unlock**: After 10 harvests, unlock "Sprout Salad" decoration item
+1. **Midnight Glow**: Check app từ 12-1 AM → mushrooms phát sáng mạnh nhất
+   - "Midnight Forager" achievement
+   - Screenshot-worthy moment
+
+2. **Fairy Visit**: Đôi khi có tiny fairy ngồi trên mũ nấm
+   - Tap để nhận luck buff
+   - Collect different fairy types
+
+3. **Rain Bonus**: Tưới khi trời mưa (weather API) = 2x growth speed
+   - "Rain Dancer" achievement
+
+4. **Hidden Face**: Đôi khi nấm mọc với "face" pattern trên mũ 🍄
+   - Rare visual variant
+   - "Fungi Face" achievement
 
 ### Lore
-> "Rau mầm là lời nhắc rằng mọi thứ vĩ đại đều bắt đầu nhỏ bé. Trong vài ngày, hạt giống trở thành thức ăn. Đừng đánh giá thấp sức mạnh của sự bắt đầu."
+> "Nấm không cần ánh sáng để tìm đường. Nó mọc trong bóng tối, biến những thứ mục nát thành sự sống mới. Đôi khi điều kỳ diệu nhất xảy ra khi không ai nhìn thấy."
 >
-> *"Sprouts remind us that all great things start small. In mere days, a seed becomes food. Never underestimate the power of beginning."*
+> *"Mushrooms need no light to find their way. They grow in darkness, turning decay into new life. Sometimes the most magical things happen when no one is watching."*
+
+### Reflection Prompts
+- Day 2: "Có điều gì đang 'mọc' trong cuộc sống mà bạn chưa nhận ra?"
+- Day 3: "Bạn làm gì vào những lúc yên tĩnh nhất trong ngày?"
+- Day 5: "Điều gì giúp bạn 'phát sáng' theo cách riêng của mình?"
+- After harvest: "Thành quả nào trong tuần này khiến bạn tự hào?"
 
 ---
 
