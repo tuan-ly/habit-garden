@@ -8,24 +8,27 @@
 
 ## 🎯 Current Sprint
 
-**Focus**: Habien 2.0 - Phase 1 Implementation
+**Focus**: Habien 2.0 - Phase 2 Implementation
 
 **Progress**:
-- ✅ Design complete: [HABIEN_2.0_DESIGN.md](../plans/goal-feature-uiux-design/HABIEN_2.0_DESIGN.md)
-- ✅ Plant catalog: [PLANT_CATALOG.md](../plans/goal-feature-uiux-design/plant-designs/PLANT_CATALOG.md)
-- ✅ Phase 1 implementation complete (tier system, slot limits)
-- ✅ Migration applied to Supabase
+- ✅ Phase 1 complete (tier system, slot limits)
+- ✅ Phase 2 complete (garden expansion system)
+- [ ] Phase 3: Celebration & Feedback integration
 
-**Implemented**:
-- [progression-system.ts](../src/lib/progression-system.ts) - Core utility (getMaxPlants, canPlantTier, checkSlotAvailability)
-- [tier-badge.tsx](../src/components/ui/tier-badge.tsx) - TierBadge component (1-5 stars)
-- [slot-indicator.tsx](../src/components/ui/slot-indicator.tsx) - SlotIndicator (default/compact/progress)
-- Modified: [database.ts](../src/lib/database.ts), [add-plant-dialog.tsx](../src/components/plants/add-plant-dialog.tsx), [plants.ts](../src/lib/actions/plants.ts)
+**Phase 2 Implemented**:
+- [progression-system.ts](../src/lib/progression-system.ts) - Added getGardenSize, getUnlockedDecorations, getLevelUnlocks
+- [grid-positioning.ts](../src/lib/utils/grid-positioning.ts) - Added minimumSize parameter
+- [isometric-garden.tsx](../src/components/garden/isometric-garden.tsx) - Level-based grid sizing
+- [garden-decorations.tsx](../src/components/garden/garden-decorations.tsx) - Unlock filtering + new SVGs (fence, pond, fountain)
+- [level-up-modal.tsx](../src/components/game-ui/level-up-modal.tsx) - Level-up celebration modal
+- [unlock-toast.tsx](../src/components/game-ui/unlock-toast.tsx) - Unlock notification toasts
+- [expansion-animation.tsx](../src/components/garden/expansion-animation.tsx) - Garden expansion ripple effect
 
-**Next Steps**:
-1. Test in browser (tier filtering, slot limits)
-2. Phase 2: Garden expansion system
-3. Phase 3: Outcome integration
+**Next Actions**:
+1. Wire up LevelUpModal to XP system (trigger on level up)
+2. Add expansion animation to isometric-garden
+3. Test garden at different levels (1, 5, 6, 8, 9, 10, 12)
+4. Phase 3: Add level-up triggering in xp-system.ts
 
 **Related Docs**:
 - [Implementation Plan](../plans/20260206-habien-2.0-phase-1/)
@@ -51,6 +54,18 @@
 
 ## Latest Session
 
+### 2026-02-06: Habien 2.0 Phase 2 - Garden Expansion System
+- Implemented level-based garden sizing (3x3 -> 5x5 -> 7x7 -> dynamic)
+- Added decoration unlock system (bushes/rocks at L1, mushrooms/flowers L5, lanterns L8, fences L10, ponds/fountains L12)
+- Created new SVG decorations: FencePost, FenceCorner, Pond, Fountain
+- Built LevelUpModal with confetti effect and unlock display
+- Built unlock toast notification system
+- Built garden expansion ripple animation
+
+**New Files**: [level-up-modal.tsx](src/components/game-ui/level-up-modal.tsx), [unlock-toast.tsx](src/components/game-ui/unlock-toast.tsx), [expansion-animation.tsx](src/components/garden/expansion-animation.tsx)
+
+**Modified**: [progression-system.ts](src/lib/progression-system.ts), [grid-positioning.ts](src/lib/utils/grid-positioning.ts), [isometric-garden.tsx](src/components/garden/isometric-garden.tsx), [garden-decorations.tsx](src/components/garden/garden-decorations.tsx), [globals.css](src/app/globals.css)
+
 ### 2026-02-06: Habien 2.0 Phase 1 Implementation
 - Implemented tier system (1-5 tiers based on plant difficulty)
 - Added slot limits by level (1 slot at level 1, up to unlimited at level 15)
@@ -70,8 +85,9 @@
 
 - [ ] Responsive design check
 - [ ] Achievement unlock popup notification
-- [ ] Level up celebration modal
+- [x] Level up celebration modal (Phase 2)
 - [ ] Performance optimization for large gardens
+- [ ] Wire LevelUpModal to XP system (trigger on level change)
 
 **Watering Logic Refinement** (from 2026-01-31):
 1. If already watered today -> hide "Just checking in"

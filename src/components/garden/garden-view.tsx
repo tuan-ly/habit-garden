@@ -115,6 +115,7 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
           plantTypes={plantTypes}
           weather={displayWeather}
           journalStreak={profile?.journal_streak ?? 0}
+          userLevel={profile?.level ?? 1}
         />
 
         <AddPlantDialog
@@ -173,6 +174,7 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
             plantTypes={plantTypes}
             weather={displayWeather}
             journalStreak={profile?.journal_streak ?? 0}
+            userLevel={profile?.level ?? 1}
           />
         </div>
       )}
@@ -185,6 +187,7 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
             plantTypes={plantTypes}
             weather={displayWeather}
             journalStreak={profile?.journal_streak ?? 0}
+            userLevel={profile?.level ?? 1}
           />
         </div>
       )}

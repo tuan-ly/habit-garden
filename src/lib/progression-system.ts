@@ -309,3 +309,161 @@ export function difficultyToTier(difficulty: 'easy' | 'medium' | 'hard'): PlantT
 export function getTierUnlockLevel(tier: PlantTier): number {
   return TIER_REQUIREMENTS[tier].level
 }
+
+// ============================================
+// Garden Expansion System (Phase 2)
+// ============================================
+
+/**
+ * Decoration types available in the garden
+ */
+export type DecorationType =
+  | 'bush'
+  | 'rock'
+  | 'mushroom'
+  | 'flower-patch'
+  | 'lantern'
+  | 'fence-post'
+  | 'fence-corner'
+  | 'pond'
+  | 'fountain'
+
+/**
+ * Level unlock information
+ */
+export interface LevelUnlock {
+  type: 'garden' | 'decoration' | 'slot' | 'tier'
+  name: string
+  icon: string
+  description?: string
+}
+
+/**
+ * Garden size thresholds by level
+ * Level 1-5:   3x3  (9 tiles)   - Seedling's patch
+ * Level 6-8:   5x5  (25 tiles)  - Gardener's plot
+ * Level 9-11:  7x7  (49 tiles)  - Growing estate
+ * Level 12+:   Dynamic (0)      - Full garden (no minimum)
+ */
+export function getGardenSize(level: number): number {
+  if (level >= 12) return 0 // Dynamic (no minimum)
+  if (level >= 9) return 7 // 7x7
+  if (level >= 6) return 5 // 5x5
+  return 3 // 3x3
+}
+
+/**
+ * Get garden size name for display
+ */
+export function getGardenSizeName(level: number): string {
+  if (level >= 12) return 'Unlimited Garden'
+  if (level >= 9) return 'Growing Estate'
+  if (level >= 6) return "Gardener's Plot"
+  return "Seedling's Patch"
+}
+
+/**
+ * Get decorations unlocked at a given level
+ *
+ * Level 1:   Basic (bushes, rocks)
+ * Level 5:   Mushrooms, flower patches
+ * Level 8:   Lanterns (night glow effect)
+ * Level 10:  Garden fence/border decorations
+ * Level 12:  Ponds/water features
+ */
+export function getUnlockedDecorations(level: number): DecorationType[] {
+  const decos: DecorationType[] = ['bush', 'rock']
+  if (level >= 5) decos.push('mushroom', 'flower-patch')
+  if (level >= 8) decos.push('lantern')
+  if (level >= 10) decos.push('fence-post', 'fence-corner')
+  if (level >= 12) decos.push('pond', 'fountain')
+  return decos
+}
+
+/**
+ * Check if a specific decoration type is unlocked at the given level
+ */
+export function isDecorationUnlocked(level: number, decoType: DecorationType): boolean {
+  return getUnlockedDecorations(level).includes(decoType)
+}
+
+/**
+ * Get all unlocks that happen at a specific level
+ * Used for level-up celebrations
+ */
+export function getLevelUnlocks(level: number): LevelUnlock[] {
+  const unlocks: LevelUnlock[] = []
+
+  // Slot unlocks
+  if (level === 4) {
+    unlocks.push({ type: 'slot', name: '2nd Plant Slot', icon: '🌱', description: 'You can now grow 2 plants!' })
+  }
+  if (level === 6) {
+    unlocks.push({ type: 'slot', name: '3rd Plant Slot', icon: '🌿', description: 'You can now grow 3 plants!' })
+  }
+  if (level === 9) {
+    unlocks.push({ type: 'slot', name: '4th Plant Slot', icon: '🪴', description: 'You can now grow 4 plants!' })
+  }
+  if (level === 12) {
+    unlocks.push({ type: 'slot', name: '5th Plant Slot', icon: '🌳', description: 'You can now grow 5 plants!' })
+  }
+  if (level === 15) {
+    unlocks.push({ type: 'slot', name: 'Unlimited Slots', icon: '✨', description: 'No plant limits!' })
+  }
+
+  // Garden size upgrades
+  if (level === 6) {
+    unlocks.push({ type: 'garden', name: '5×5 Garden', icon: '🏡', description: "Gardener's Plot unlocked!" })
+  }
+  if (level === 9) {
+    unlocks.push({ type: 'garden', name: '7×7 Garden', icon: '🏘️', description: 'Growing Estate unlocked!' })
+  }
+  if (level === 12) {
+    unlocks.push({ type: 'garden', name: 'Unlimited Garden', icon: '🏰', description: 'Your garden has no boundaries!' })
+  }
+
+  // Decoration unlocks
+  if (level === 5) {
+    unlocks.push({ type: 'decoration', name: 'Mushrooms & Flowers', icon: '🍄', description: 'New garden decorations!' })
+  }
+  if (level === 8) {
+    unlocks.push({ type: 'decoration', name: 'Garden Lanterns', icon: '🏮', description: 'Light up your nights!' })
+  }
+  if (level === 10) {
+    unlocks.push({ type: 'decoration', name: 'Garden Fences', icon: '🪵', description: 'Border decorations unlocked!' })
+  }
+  if (level === 12) {
+    unlocks.push({ type: 'decoration', name: 'Water Features', icon: '💧', description: 'Ponds and fountains!' })
+  }
+
+  // Tier unlocks
+  if (level === 7) {
+    unlocks.push({ type: 'tier', name: 'Tier 2 Plants', icon: '⭐⭐', description: 'Reliable Partners unlocked!' })
+  }
+  if (level === 10) {
+    unlocks.push({ type: 'tier', name: 'Tier 3 Plants', icon: '⭐⭐⭐', description: 'Demanding Beauties unlocked!' })
+  }
+  if (level === 14) {
+    unlocks.push({ type: 'tier', name: 'Tier 4 Plants', icon: '⭐⭐⭐⭐', description: 'Life Companions unlocked!' })
+  }
+  if (level === 18) {
+    unlocks.push({ type: 'tier', name: 'Tier 5 Plants', icon: '⭐⭐⭐⭐⭐', description: 'Garden Legends unlocked!' })
+  }
+
+  return unlocks
+}
+
+/**
+ * Check if a level has any unlocks (for showing celebration)
+ */
+export function hasLevelUnlocks(level: number): boolean {
+  return getLevelUnlocks(level).length > 0
+}
+
+/**
+ * Get the next level that has unlocks (for motivation display)
+ */
+export function getNextUnlockLevel(currentLevel: number): number | null {
+  const unlockLevels = [4, 5, 6, 7, 8, 9, 10, 12, 14, 15, 18]
+  return unlockLevels.find(l => l > currentLevel) || null
+}

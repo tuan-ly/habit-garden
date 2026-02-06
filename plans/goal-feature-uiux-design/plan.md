@@ -23,7 +23,7 @@ Day 150: Identity emerges. Legacy begins.
 | Phase | Name | Status | Details |
 |-------|------|--------|---------|
 | 1 | Tier System & Slot Limits | DONE | Core progression utilities |
-| 2 | Garden Expansion System | PLANNED | [phase-02-garden-expansion.md](./phase-02-garden-expansion.md) |
+| 2 | Garden Expansion System | DONE | [phase-02-garden-expansion.md](./phase-02-garden-expansion.md) |
 | 3 | Celebration & Feedback | PLANNED | Level-up modals, unlock toasts |
 | 4 | Goal Restructure | PLANNED | Separate Goals from Plants (1:N) |
 | 5 | Identity System | PLANNED | Identity layer (Level 13+) |
@@ -43,15 +43,18 @@ Day 150: Identity emerges. Legacy begins.
 
 ---
 
-## Phase 2: Garden Expansion System (NEXT)
+## Phase 2: Garden Expansion System (DONE)
 
 **Goal**: Garden grows visually as user levels up.
 
-Features:
-1. Garden size by level (3x3 -> 5x5 -> 7x7 -> dynamic)
-2. Decoration unlocks (bushes -> mushrooms -> lanterns -> ponds)
-3. Level-up modal with unlock preview
-4. Garden expansion animation
+**Implemented**:
+1. `getGardenSize(level)` - Level-based minimum grid size (3x3 -> 5x5 -> 7x7 -> dynamic)
+2. `getUnlockedDecorations(level)` - Decorations filtered by level
+3. `getLevelUnlocks(level)` - Get all unlocks at a level
+4. Garden decorations with new SVGs (fence, pond, fountain)
+5. Level-up modal component
+6. Unlock toast notifications
+7. Garden expansion animation
 
 See: [phase-02-garden-expansion.md](./phase-02-garden-expansion.md)
 

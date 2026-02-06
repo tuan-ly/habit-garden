@@ -38,10 +38,14 @@ export interface PlantForGrid {
  * Calculate minimum grid size needed to fit all plants
  * Grid size is determined by the maximum row/col position of any plant + its size
  * Example: Plant at (4,2) with size 2x2 means grid needs to be at least 6x6
+ *
+ * @param plants - Array of plants to calculate grid for
+ * @param minimumSize - Minimum grid size (level-based). 0 = dynamic (no minimum beyond plants)
  */
-export function calculateRequiredGridSize(plants: PlantForGrid[]): number {
-  if (plants.length === 0) return 2 // Minimum 2x2
-
+export function calculateRequiredGridSize(
+  plants: PlantForGrid[],
+  minimumSize: number = 0
+): number {
   // Find the maximum extent of any plant (position + size)
   let maxExtent = 0
   for (const plant of plants) {
@@ -57,10 +61,12 @@ export function calculateRequiredGridSize(plants: PlantForGrid[]): number {
     maxExtent = Math.max(maxExtent, rowExtent, colExtent)
   }
 
-  // Add 1 buffer cell for adding new plants
-  const gridSize = maxExtent + 1
+  // Add 1 buffer cell for adding new plants (only if there are plants)
+  const plantBasedSize = plants.length > 0 ? maxExtent + 1 : 0
 
-  return Math.max(gridSize, 2) // Minimum 2x2
+  // Use the larger of: plant-based size, minimum size, or absolute minimum (2)
+  const effectiveMinimum = minimumSize > 0 ? minimumSize : 2
+  return Math.max(plantBasedSize, effectiveMinimum)
 }
 
 /**
