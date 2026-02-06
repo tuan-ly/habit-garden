@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useMemo } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -14,15 +14,25 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Plus, Clock, Sparkles } from 'lucide-react'
+import { Plus, Clock, Sparkles, Lock } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { PlantType } from '@/types/database'
+import type { PlantType, Profile, PlantTier } from '@/types/database'
 import { createPlant } from '@/lib/actions/plants'
 import { usePlants } from '@/lib/context'
 import { toast } from 'sonner'
+import { TierBadge } from '@/components/ui/tier-badge'
+import { SlotIndicator } from '@/components/garden/slot-indicator'
+import {
+  isTierUnlocked,
+  getTierInfo,
+  getTierUnlockLevel,
+  checkSlotAvailability,
+} from '@/lib/progression-system'
 
 interface AddPlantDialogProps {
   plantTypes: PlantType[]
+  profile?: Profile | null
+  currentPlantCount?: number
   // Support controlled mode for isometric garden
   open?: boolean
   onOpenChange?: (open: boolean) => void
@@ -30,9 +40,16 @@ interface AddPlantDialogProps {
   gridPosition?: { row: number; col: number } | null
 }
 
-export function AddPlantDialog({ plantTypes, open: controlledOpen, onOpenChange, gridPosition }: AddPlantDialogProps) {
+export function AddPlantDialog({
+  plantTypes,
+  profile,
+  currentPlantCount = 0,
+  open: controlledOpen,
+  onOpenChange,
+  gridPosition,
+}: AddPlantDialogProps) {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false)
-  const { addPlant } = usePlants()
+  const { addPlant, plants } = usePlants()
 
   // Support both controlled and uncontrolled modes
   const isControlled = controlledOpen !== undefined
@@ -44,10 +61,61 @@ export function AddPlantDialog({ plantTypes, open: controlledOpen, onOpenChange,
   const [description, setDescription] = useState('')
   const [isPending, startTransition] = useTransition()
 
+  // Calculate actual plant count (from context or prop)
+  const actualPlantCount = currentPlantCount || plants.filter(p => p.status !== 'dead').length
+
+  // Check slot availability
+  const slotCheck = useMemo(() => {
+    if (!profile) return { hasSlot: true, currentCount: actualPlantCount, maxSlots: 999 }
+    return checkSlotAvailability(profile, actualPlantCount)
+  }, [profile, actualPlantCount])
+
+  // Group plants by tier
+  const plantsByTier = useMemo(() => {
+    const grouped: Record<PlantTier, PlantType[]> = { 1: [], 2: [], 3: [], 4: [], 5: [] }
+    for (const plant of plantTypes) {
+      const tier = (plant.tier || 1) as PlantTier
+      grouped[tier].push(plant)
+    }
+    return grouped
+  }, [plantTypes])
+
+  // Check which tiers are unlocked
+  const tierStatus = useMemo(() => {
+    if (!profile) return { 1: true, 2: true, 3: true, 4: true, 5: true }
+    return {
+      1: isTierUnlocked(profile, 1),
+      2: isTierUnlocked(profile, 2),
+      3: isTierUnlocked(profile, 3),
+      4: isTierUnlocked(profile, 4),
+      5: isTierUnlocked(profile, 5),
+    }
+  }, [profile])
+
+  // Backward compatibility: filter by category if tier not set
   const basicPlants = plantTypes.filter((p) => p.category === 'basic')
   const specialPlants = plantTypes.filter((p) => p.category === 'special')
 
-  const handleSelectType = (plantType: PlantType) => {
+  // Check if we should use tier-based grouping (if any plant has tier > 1)
+  const useTierGrouping = plantTypes.some(p => p.tier && p.tier > 1)
+
+  const handleSelectType = (plantType: PlantType, isLocked: boolean) => {
+    if (isLocked) {
+      const tier = (plantType.tier || 1) as PlantTier
+      const unlockLevel = getTierUnlockLevel(tier)
+      toast.error('Plant locked', {
+        description: `Reach Level ${unlockLevel} to unlock Tier ${tier} plants.`,
+      })
+      return
+    }
+
+    if (!slotCheck.hasSlot) {
+      toast.error('No slots available', {
+        description: slotCheck.message,
+      })
+      return
+    }
+
     setSelectedType(plantType)
     setStep('details')
   }
@@ -73,7 +141,7 @@ export function AddPlantDialog({ plantTypes, open: controlledOpen, onOpenChange,
       if (result.success && result.plant) {
         // Add plant to context immediately for instant UI update
         addPlant(result.plant)
-        
+
         toast.success('Plant created!', {
           description: `${name} has been planted in your garden.`,
         })
@@ -101,17 +169,71 @@ export function AddPlantDialog({ plantTypes, open: controlledOpen, onOpenChange,
     }
   }
 
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'easy':
-        return 'text-green-600 bg-green-100'
-      case 'medium':
-        return 'text-yellow-600 bg-yellow-100'
-      case 'hard':
-        return 'text-red-600 bg-red-100'
-      default:
-        return 'text-gray-600 bg-gray-100'
-    }
+  const renderPlantCard = (plant: PlantType, isLocked: boolean) => {
+    const tier = (plant.tier || 1) as PlantTier
+    const tierInfo = getTierInfo(tier)
+
+    return (
+      <button
+        key={plant.id}
+        onClick={() => handleSelectType(plant, isLocked)}
+        disabled={isLocked}
+        className={cn(
+          'flex flex-col items-center p-4 rounded-lg border transition-colors text-left relative',
+          isLocked
+            ? 'opacity-60 cursor-not-allowed bg-muted border-muted'
+            : 'hover:border-primary hover:bg-accent',
+          plant.category === 'special' && !isLocked && 'border-purple-200 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950'
+        )}
+      >
+        {isLocked && (
+          <div className="absolute top-2 right-2">
+            <Lock className="h-4 w-4 text-muted-foreground" />
+          </div>
+        )}
+        <span className="text-3xl mb-2">{plant.icon}</span>
+        <span className="font-medium text-sm">{plant.name}</span>
+        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+          <Clock className="h-3 w-3" />
+          <span>{plant.maturity_days} days</span>
+        </div>
+        <div className="mt-2">
+          <TierBadge tier={tier} size="sm" locked={isLocked} />
+        </div>
+        {plant.special_effect && !isLocked && (
+          <span className="text-xs text-purple-600 mt-1">Special ability</span>
+        )}
+        {isLocked && (
+          <span className="text-xs text-muted-foreground mt-1">
+            Level {getTierUnlockLevel(tier)}
+          </span>
+        )}
+      </button>
+    )
+  }
+
+  const renderTierSection = (tier: PlantTier) => {
+    const plants = plantsByTier[tier]
+    if (plants.length === 0) return null
+
+    const isLocked = !tierStatus[tier]
+    const tierInfo = getTierInfo(tier)
+
+    return (
+      <div key={tier}>
+        <h3 className={cn('font-medium mb-3 flex items-center gap-2', isLocked && 'opacity-60')}>
+          <TierBadge tier={tier} showLabel showTooltip={false} locked={isLocked} />
+          {isLocked && (
+            <span className="text-xs text-muted-foreground">
+              (Level {getTierUnlockLevel(tier)})
+            </span>
+          )}
+        </h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {plants.map((plant) => renderPlantCard(plant, isLocked))}
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -119,7 +241,7 @@ export function AddPlantDialog({ plantTypes, open: controlledOpen, onOpenChange,
       {/* Only show trigger button in uncontrolled mode */}
       {!isControlled && (
         <DialogTrigger asChild>
-          <Button>
+          <Button disabled={!slotCheck.hasSlot}>
             <Plus className="h-4 w-4 mr-2" />
             Add Plant
           </Button>
@@ -135,62 +257,54 @@ export function AddPlantDialog({ plantTypes, open: controlledOpen, onOpenChange,
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-6 py-4">
-              <div>
-                <h3 className="font-medium mb-3">Basic Plants</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {basicPlants.map((plant) => (
-                    <button
-                      key={plant.id}
-                      onClick={() => handleSelectType(plant)}
-                      className="flex flex-col items-center p-4 rounded-lg border hover:border-primary hover:bg-accent transition-colors text-left"
-                    >
-                      <span className="text-3xl mb-2">{plant.icon}</span>
-                      <span className="font-medium text-sm">{plant.name}</span>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                        <Clock className="h-3 w-3" />
-                        <span>{plant.maturity_days} days</span>
-                      </div>
-                      <span
-                        className={cn(
-                          'text-xs px-2 py-0.5 rounded-full mt-2',
-                          getDifficultyColor(plant.difficulty)
-                        )}
-                      >
-                        {plant.difficulty}
-                      </span>
-                    </button>
-                  ))}
-                </div>
+            {/* Slot indicator */}
+            {profile && (
+              <div className="py-2">
+                <SlotIndicator
+                  currentCount={actualPlantCount}
+                  maxSlots={slotCheck.maxSlots}
+                  variant="progress"
+                />
               </div>
+            )}
 
-              <div>
-                <h3 className="font-medium mb-3 flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-purple-500" />
-                  Special Plants
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {specialPlants.map((plant) => (
-                    <button
-                      key={plant.id}
-                      onClick={() => handleSelectType(plant)}
-                      className="flex flex-col items-center p-4 rounded-lg border border-purple-200 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950 transition-colors text-left"
-                    >
-                      <span className="text-3xl mb-2">{plant.icon}</span>
-                      <span className="font-medium text-sm">{plant.name}</span>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                        <Clock className="h-3 w-3" />
-                        <span>{plant.maturity_days} days</span>
-                      </div>
-                      {plant.special_effect && (
-                        <span className="text-xs text-purple-600 mt-1">
-                          Special ability
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
+            {!slotCheck.hasSlot && (
+              <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800">
+                <p className="text-sm text-amber-700 dark:text-amber-400">
+                  Your garden is full! Level up to unlock more plant slots.
+                </p>
               </div>
+            )}
+
+            <div className="space-y-6 py-4">
+              {useTierGrouping ? (
+                // Tier-based grouping (new system)
+                <>
+                  {([1, 2, 3, 4, 5] as PlantTier[]).map(renderTierSection)}
+                </>
+              ) : (
+                // Backward compatibility: category-based grouping
+                <>
+                  <div>
+                    <h3 className="font-medium mb-3">Basic Plants</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {basicPlants.map((plant) => renderPlantCard(plant, false))}
+                    </div>
+                  </div>
+
+                  {specialPlants.length > 0 && (
+                    <div>
+                      <h3 className="font-medium mb-3 flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-purple-500" />
+                        Special Plants
+                      </h3>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {specialPlants.map((plant) => renderPlantCard(plant, false))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </>
         ) : (
@@ -230,11 +344,22 @@ export function AddPlantDialog({ plantTypes, open: controlledOpen, onOpenChange,
               </div>
 
               <div className="p-3 rounded-lg bg-muted">
-                <h4 className="font-medium text-sm mb-2">Plant Info</h4>
+                <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                  Plant Info
+                  {selectedType?.tier && (
+                    <TierBadge tier={selectedType.tier as PlantTier} size="sm" />
+                  )}
+                </h4>
                 <ul className="text-sm text-muted-foreground space-y-1">
                   <li>• Matures in {selectedType?.maturity_days} days</li>
-                  <li>• Frequency: {selectedType?.frequency_type === 'daily' ? 'Daily check-in' : 'Flexible'}</li>
-                  <li>• Moisture decay: {selectedType?.moisture_decay_rate}% per day without watering</li>
+                  <li>
+                    • Frequency:{' '}
+                    {selectedType?.frequency_type === 'daily' ? 'Daily check-in' : 'Flexible'}
+                  </li>
+                  <li>
+                    • Moisture decay: {selectedType?.moisture_decay_rate}% per day without
+                    watering
+                  </li>
                   {selectedType?.special_effect && (
                     <li className="text-purple-600">• Has special ability!</li>
                   )}

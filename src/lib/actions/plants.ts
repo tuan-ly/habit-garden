@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import type { CreatePlantDto, PlantWithType, PlantType, Difficulty, WeatherType, PlantGoalInfo, TodayGoalLog, GoalMode } from '@/types/database'
+import type { CreatePlantDto, PlantWithType, PlantType, Difficulty, WeatherType, PlantGoalInfo, TodayGoalLog, GoalMode, PlantTier, Profile } from '@/types/database'
 import { getTodayWeather, calculateWeatherXp } from '@/lib/weather-system'
 import { calculateWateringXp, calculateNoteBonus } from '@/lib/xp-system'
 import { getTodayMood } from '@/lib/actions/mood'
@@ -13,6 +13,12 @@ import {
   hasCollision,
   findDisplacementMoves,
 } from '@/lib/utils/grid-positioning'
+import {
+  checkSlotAvailability,
+  canPlantTier,
+  getMaxPlants,
+  calculateProgressionFields,
+} from '@/lib/progression-system'
 
 export async function getPlants(): Promise<PlantWithType[]> {
   const supabase = await createClient()
@@ -145,6 +151,24 @@ export async function createPlant(dto: CreatePlantDto): Promise<{ success: boole
     return { success: false, error: 'Not authenticated' }
   }
 
+  // Get user profile for tier/slot validation
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single()
+
+  // Get the plant type to check tier
+  const { data: plantType } = await supabase
+    .from('plant_types')
+    .select('*')
+    .eq('id', dto.plant_type_id)
+    .single()
+
+  if (!plantType) {
+    return { success: false, error: 'Plant type not found' }
+  }
+
   // Get all existing living plants to calculate grid position
   const { data: existingPlants } = await supabase
     .from('plants')
@@ -161,6 +185,23 @@ export async function createPlant(dto: CreatePlantDto): Promise<{ success: boole
     .neq('status', 'dead')
 
   const livingPlants = existingPlants || []
+
+  // Validate slot availability
+  if (profile) {
+    const slotCheck = checkSlotAvailability(profile as Profile, livingPlants.length)
+    if (!slotCheck.hasSlot) {
+      return { success: false, error: slotCheck.message || 'No plant slots available. Level up to unlock more!' }
+    }
+
+    // Validate tier unlock (if tier field exists)
+    const tier = (plantType.tier || 1) as PlantTier
+    if (tier > 1) {
+      const tierCheck = canPlantTier(profile as Profile, tier)
+      if (!tierCheck.allowed) {
+        return { success: false, error: tierCheck.reason || `Tier ${tier} plants are locked. ${tierCheck.missingRequirements?.[0] || ''}` }
+      }
+    }
+  }
 
   // Calculate next position (legacy)
   const { data: lastPlant } = await supabase

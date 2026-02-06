@@ -56,6 +56,9 @@ export interface SpecialEffect {
   child_at?: number
 }
 
+// User phase for progressive disclosure
+export type UserPhase = 'seedling' | 'gardener' | 'sage'
+
 // Profile table
 export interface Profile {
   id: string
@@ -71,9 +74,18 @@ export interface Profile {
   longest_journal_streak: number
   last_journal_date: string | null
   total_journal_entries: number
+  // Progressive disclosure (Habien 2.0)
+  max_plants: number
+  unlocked_tiers: number[]
+  phase: UserPhase
+  longest_streak: number
+  total_mature_plants: number
   created_at: string
   updated_at: string
 }
+
+// Plant tier (1-5 for progressive disclosure)
+export type PlantTier = 1 | 2 | 3 | 4 | 5
 
 // Plant types table
 export interface PlantType {
@@ -92,6 +104,9 @@ export interface PlantType {
   category: string | null
   difficulty: Difficulty
   is_premium: boolean
+  // Progressive disclosure (Habien 2.0)
+  tier: PlantTier
+  tier_unlock_level: number
   created_at: string
 }
 
