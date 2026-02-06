@@ -1,6 +1,6 @@
 # Habit Garden - Project Memo
 
-> **Last Updated**: 2026-02-05
+> **Last Updated**: 2026-02-06
 > **Phase**: 4 - Polish & Launch
 > **Stack**: Next.js 16, Supabase, Tailwind CSS 4, shadcn/ui
 
@@ -8,22 +8,28 @@
 
 ## 🎯 Current Sprint
 
-**Focus**: Habien 2.0 - Progressive Growth System Design
+**Focus**: Habien 2.0 - Phase 1 Implementation
 
 **Progress**:
-- ✅ Brainstorm complete (plant difficulty, outcome integration, creative expansion)
-- ✅ Design document created: [HABIEN_2.0_DESIGN.md](../plans/goal-feature-uiux-design/HABIEN_2.0_DESIGN.md)
-- ✅ Plant catalog designed: [PLANT_CATALOG.md](../plans/goal-feature-uiux-design/plant-designs/PLANT_CATALOG.md)
-- 🔄 Ready for implementation planning
+- ✅ Design complete: [HABIEN_2.0_DESIGN.md](../plans/goal-feature-uiux-design/HABIEN_2.0_DESIGN.md)
+- ✅ Plant catalog: [PLANT_CATALOG.md](../plans/goal-feature-uiux-design/plant-designs/PLANT_CATALOG.md)
+- ✅ Phase 1 implementation complete (tier system, slot limits)
+- ✅ Migration applied to Supabase
+
+**Implemented**:
+- [progression-system.ts](../src/lib/progression-system.ts) - Core utility (getMaxPlants, canPlantTier, checkSlotAvailability)
+- [tier-badge.tsx](../src/components/ui/tier-badge.tsx) - TierBadge component (1-5 stars)
+- [slot-indicator.tsx](../src/components/ui/slot-indicator.tsx) - SlotIndicator (default/compact/progress)
+- Modified: [database.ts](../src/lib/database.ts), [add-plant-dialog.tsx](../src/components/plants/add-plant-dialog.tsx), [plants.ts](../src/lib/actions/plants.ts)
 
 **Next Steps**:
-1. Review & finalize design document
-2. Create implementation plan (Phase 1: Foundation - tier system, slot limits)
-3. Start Phase 1 implementation
+1. Test in browser (tier filtering, slot limits)
+2. Phase 2: Garden expansion system
+3. Phase 3: Outcome integration
 
 **Related Docs**:
+- [Implementation Plan](../plans/20260206-habien-2.0-phase-1/)
 - [Brainstorm Reports](../plans/goal-feature-uiux-design/reports/)
-- [Plant Designs](../plans/goal-feature-uiux-design/plant-designs/)
 
 ---
 
@@ -45,13 +51,18 @@
 
 ## Latest Session
 
-### 2026-02-02: UX Mode Consolidation
-- Consolidated 3 garden modes (View/Move/Add) into 1 toggle (Interact/Move)
-- **Interact mode** (default): Click plant -> GentleWateringModal, Click empty -> AddPlantDialog
-- **Move mode**: Click-to-select, click-to-place
-- Merged FloatingPlantCard UX into GentleWateringModal (stats bars + details link)
+### 2026-02-06: Habien 2.0 Phase 1 Implementation
+- Implemented tier system (1-5 tiers based on plant difficulty)
+- Added slot limits by level (1 slot at level 1, up to unlimited at level 15)
+- Created TierBadge and SlotIndicator UI components
+- Added tier filtering and slot validation to AddPlantDialog
+- Applied migration to Supabase
 
-**Changed**: [mode-toolbar.tsx](src/components/garden/mode-toolbar.tsx), [isometric-garden.tsx](src/components/garden/isometric-garden.tsx), [gentle-watering-modal.tsx](src/components/plants/gentle-watering-modal.tsx)
+**New Files**: [progression-system.ts](src/lib/progression-system.ts), [tier-badge.tsx](src/components/ui/tier-badge.tsx), [slot-indicator.tsx](src/components/ui/slot-indicator.tsx)
+
+### 2026-02-02: UX Mode Consolidation
+- Consolidated 3 garden modes into 1 toggle (Interact/Move)
+- Merged FloatingPlantCard UX into GentleWateringModal
 
 ---
 
