@@ -27,6 +27,7 @@
 - What sprint/focus is active right now
 - Current progress (where we are)
 - Next steps (what to do next)
+- **Next Actions**: Explicitly propose what to do next in the sprint
 
 **Update Session Log** with:
 - Session date and title (1 line)
@@ -41,6 +42,12 @@
 **Keep MEMO.md under 200 lines.** Archive old sessions to DEVLOG.md.
 
 ---
+
+## Performance & Animation
+
+- **Minimize DOM Animations**: Avoid heavy CSS/JS animations that cause lag.
+- **Prefer Canvas**: Use HTML5 Canvas for complex visuals or many moving parts.
+- **Performance First**: Always prioritize frame rate and responsiveness.
 
 ## Project Quick Reference
 
