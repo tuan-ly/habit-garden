@@ -8,30 +8,34 @@
 
 ## 🎯 Current Sprint
 
-**Focus**: Habien 2.0 - Phase 2 Implementation
+**Focus**: Habien 2.0 - Phase 3: Subscription Infrastructure
 
 **Progress**:
-- ✅ Phase 1 complete (tier system, slot limits)
-- ✅ Phase 2 complete (garden expansion system)
-- [ ] Phase 3: Celebration & Feedback integration
+- ✅ Phase 1: Tier system, slot limits
+- ✅ Phase 2: Garden expansion system
+- [ ] **Phase 3: Subscription Infrastructure** ← NEXT
+- [ ] Phase 4: Feature Gating
+- [ ] Phase 5: Goals System (PRO+)
+- [ ] Phase 6: Identity System (PREMIUM)
+- [ ] Phase 7: Polish & Launch
 
-**Phase 2 Implemented**:
-- [progression-system.ts](../src/lib/progression-system.ts) - Added getGardenSize, getUnlockedDecorations, getLevelUnlocks
-- [grid-positioning.ts](../src/lib/utils/grid-positioning.ts) - Added minimumSize parameter
-- [isometric-garden.tsx](../src/components/garden/isometric-garden.tsx) - Level-based grid sizing
-- [garden-decorations.tsx](../src/components/garden/garden-decorations.tsx) - Unlock filtering + new SVGs (fence, pond, fountain)
-- [level-up-modal.tsx](../src/components/game-ui/level-up-modal.tsx) - Level-up celebration modal
-- [unlock-toast.tsx](../src/components/game-ui/unlock-toast.tsx) - Unlock notification toasts
-- [expansion-animation.tsx](../src/components/garden/expansion-animation.tsx) - Garden expansion ripple effect
+**Monetization Tiers**:
+| Tier | Price | Key Features |
+|------|-------|--------------|
+| FREE | $0 | 3 plants, Tier 1-2, 3x3 garden, Level cap 10 |
+| PRO | $4.99/mo | 8 plants, Tier 1-4, 5x5 garden, Goals, Level cap 15 |
+| PREMIUM | $9.99/mo | Unlimited, Tier 1-5, 7x7+ garden, Identity, Level 20+ |
 
 **Next Actions**:
-1. Wire up LevelUpModal to XP system (trigger on level up)
-2. Add expansion animation to isometric-garden
-3. Test garden at different levels (1, 5, 6, 8, 9, 10, 12)
-4. Phase 3: Add level-up triggering in xp-system.ts
+1. Create subscription database schema (subscription_tiers, subscriptions)
+2. Integrate payment provider (Polar.sh recommended)
+3. Add subscription_tier to profiles
+4. Create TierLimits utility (replace pure level-based limits)
+5. Build upgrade modal component
 
 **Related Docs**:
-- [Implementation Plan](../plans/20260206-habien-2.0-phase-1/)
+- [Monetization Design](../plans/goal-feature-uiux-design/MONETIZATION_DESIGN.md) ← NEW
+- [Habien 2.0 Design](../plans/goal-feature-uiux-design/HABIEN_2.0_DESIGN.md)
 - [Brainstorm Reports](../plans/goal-feature-uiux-design/reports/)
 
 ---
@@ -54,17 +58,19 @@
 
 ## Latest Session
 
+### 2026-02-06: Monetization Design
+- Designed FREE/PRO/PREMIUM tier system
+- Created [MONETIZATION_DESIGN.md](../plans/goal-feature-uiux-design/MONETIZATION_DESIGN.md)
+- Updated implementation roadmap (7 phases)
+- Key: Goals gated to PRO, Identity gated to PREMIUM
+
 ### 2026-02-06: Habien 2.0 Phase 2 - Garden Expansion System
 - Implemented level-based garden sizing (3x3 -> 5x5 -> 7x7 -> dynamic)
 - Added decoration unlock system (bushes/rocks at L1, mushrooms/flowers L5, lanterns L8, fences L10, ponds/fountains L12)
 - Created new SVG decorations: FencePost, FenceCorner, Pond, Fountain
 - Built LevelUpModal with confetti effect and unlock display
-- Built unlock toast notification system
-- Built garden expansion ripple animation
 
 **New Files**: [level-up-modal.tsx](src/components/game-ui/level-up-modal.tsx), [unlock-toast.tsx](src/components/game-ui/unlock-toast.tsx), [expansion-animation.tsx](src/components/garden/expansion-animation.tsx)
-
-**Modified**: [progression-system.ts](src/lib/progression-system.ts), [grid-positioning.ts](src/lib/utils/grid-positioning.ts), [isometric-garden.tsx](src/components/garden/isometric-garden.tsx), [garden-decorations.tsx](src/components/garden/garden-decorations.tsx), [globals.css](src/app/globals.css)
 
 ### 2026-02-06: Habien 2.0 Phase 1 Implementation
 - Implemented tier system (1-5 tiers based on plant difficulty)
