@@ -43,6 +43,20 @@
 
 ---
 
+## Testing Workflow
+
+**For every new feature:**
+1. Write tests before or alongside implementation
+2. Run tests: `npm test` or `npm run test:watch`
+3. Ensure all tests pass
+4. Commit only when tests are green
+
+**Test location:** `src/lib/__tests__/` for utilities, co-locate component tests
+
+**Commit after green tests** - Never commit failing tests for new features.
+
+---
+
 ## Performance & Animation
 
 - **Minimize DOM Animations**: Avoid heavy CSS/JS animations that cause lag.
