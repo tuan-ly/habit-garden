@@ -296,22 +296,32 @@ PRO tier thành công khi:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  🌳 TRỞ THÀNH NGƯỜI BẠN MUỐN TRỞ THÀNH                      │
+│  🌳 UNLOCK TOÀN BỘ TIỀM NĂNG HABIEN                         │
 │                                                             │
-│  Bạn đã đạt goals. Bây giờ hãy định nghĩa identity.        │
+│  PREMIUM mang đến trải nghiệm không giới hạn:              │
 │                                                             │
-│  Có sự khác biệt giữa:                                      │
-│  "Tôi đọc sách" (doing)                                     │
-│        và                                                   │
-│  "Tôi LÀ người đọc sách" (being)                           │
+│  🌱 Unlimited plants & 7x7+ garden                          │
+│  🎨 Tất cả themes & customization                           │
+│  💧 14 water reserves & 7-day backfill                      │
+│  📖 Year in Review - câu chuyện transformation              │
+│  🎯 Priority support & early access                        │
 │                                                             │
-│  PREMIUM giúp bạn đi từ DOING → BEING.                     │
+│  ─────────────────────────────────────────────────────────  │
+│                                                             │
+│  🌳 OPTIONAL: Identity System                               │
+│                                                             │
+│  Nếu bạn sẵn sàng đi sâu hơn:                              │
+│  "Tôi đọc sách" (doing) → "Tôi LÀ người đọc sách" (being)  │
+│                                                             │
+│  Identity là optional - explore khi bạn muốn.              │
+│                                                             │
+│  ─────────────────────────────────────────────────────────  │
 │                                                             │
 │  30 ngày hoàn tiền · Pause 3 tháng/năm · Annual save 33%   │
 │                                                             │
 │  Milestone rewards:                                         │
-│  ✓ 6-month identity → 1 tháng FREE                         │
-│  ✓ Year in Review → Exclusive badge + theme                │
+│  ✓ Year in Review completed → Exclusive badge + theme      │
+│  ✓ 6-month identity (optional) → 1 tháng FREE              │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -339,9 +349,34 @@ PRO tier thành công khi:
 
 #### Identity Creation Flow
 
+> **Design Principle**: Identity là optional feature. User có thể dùng PREMIUM mà không cần tạo identity. Mọi step đều có opt-out.
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  🌳 TẠO IDENTITY ĐẦU TIÊN                                   │
+│  🌳 IDENTITY CENTER                                         │
+│                                                             │
+│  Identity giúp bạn chuyển từ "làm việc X" sang "là người   │
+│  làm X". Đây là optional - explore khi bạn sẵn sàng.       │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  [+ Tạo Identity đầu tiên]                          │    │
+│  │                                                     │    │
+│  │  💡 Dựa trên habits của bạn, có thể bạn đã là:     │    │
+│  │     • Người đọc sách (47 cuốn trong 8 tháng)       │    │
+│  │     • Người chạy bộ (89 lần, 234km)                │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                             │
+│  [Để sau - Khám phá PREMIUM features khác]                 │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════
+                    IDENTITY CREATION FLOW
+         (Chỉ hiện khi user chọn "Tạo Identity")
+═══════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────┐
+│  🌳 TẠO IDENTITY                                            │
 │                                                             │
 │  Step 1: Bạn muốn TRỞ THÀNH ai?                            │
 │                                                             │
@@ -349,29 +384,35 @@ PRO tier thành công khi:
 │                                                             │
 │  Suggestions (dựa trên habits hiện tại của bạn):           │
 │  ┌─────────────────────────────────────────────────────┐    │
-│  │ 📚 "Tôi là người đọc sách"                          │    │
-│  │    (Bạn đã đọc 47 cuốn trong 8 tháng qua)          │    │
+│  │ ○ 📚 "Tôi là người đọc sách"                        │    │
+│  │      (Bạn đã đọc 47 cuốn trong 8 tháng qua)        │    │
 │  ├─────────────────────────────────────────────────────┤    │
-│  │ 🏃 "Tôi là người chạy bộ"                           │    │
-│  │    (Bạn đã chạy 89 lần, 234km)                     │    │
+│  │ ○ 🏃 "Tôi là người chạy bộ"                         │    │
+│  │      (Bạn đã chạy 89 lần, 234km)                   │    │
 │  ├─────────────────────────────────────────────────────┤    │
-│  │ ✍️ Tạo identity mới...                              │    │
+│  │ ○ ✍️ Tạo identity mới...                            │    │
+│  ├─────────────────────────────────────────────────────┤    │
+│  │ ○ ⏭️ Chưa sẵn sàng - để sau                         │    │
 │  └─────────────────────────────────────────────────────┘    │
 │                                                             │
 │  Step 2: Chọn "Tôi là người đọc sách"                      │
 │                                                             │
-│  Identity này có nghĩa gì với bạn?                          │
+│  Identity này có nghĩa gì với bạn? (optional)              │
 │  ┌─────────────────────────────────────────────────────┐    │
 │  │ Người đọc sách là người luôn học hỏi, tò mò về     │    │
 │  │ thế giới, và dùng sách để grow bản thân...         │    │
 │  └─────────────────────────────────────────────────────┘    │
 │                                                             │
-│  Step 3: Goals nào sẽ xây dựng identity này?               │
+│  [Tiếp tục]                              [Bỏ qua bước này] │
+│                                                             │
+│  Step 3: Goals nào sẽ xây dựng identity này? (optional)    │
 │                                                             │
 │  ☑️ Đọc 24 cuốn/năm (đang active)                          │
 │  ☑️ Viết 52 book notes/năm (đang active)                   │
 │  ☐ Tham gia book club 2x/tháng (new)                       │
 │  ☐ Đọc 1 cuốn classic mỗi quý (new)                        │
+│                                                             │
+│  [Tiếp tục]                              [Bỏ qua bước này] │
 │                                                             │
 │  Step 4: Confirm identity                                   │
 │  ┌─────────────────────────────────────────────────────┐    │
@@ -386,7 +427,7 @@ PRO tier thành công khi:
 │  │ • Đọc 24 cuốn/năm                                 │    │
 │  │ • Viết 52 book notes/năm                          │    │
 │  │                                                     │    │
-│  │           [Xác nhận Identity]                      │    │
+│  │  [Xác nhận Identity]         [Chỉnh sửa]          │    │
 │  └─────────────────────────────────────────────────────┘    │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
@@ -505,15 +546,23 @@ PRO tier thành công khi:
 #### Success Criteria
 ```
 PREMIUM tier thành công khi:
-├── 80% users create ít nhất 1 identity
-├── 60% users có 2+ goals linked to identity
-├── 70% users engage với AI insights monthly
-├── 50% users share identity badge
+├── 60% users explore Identity Center (view, not necessarily create)
+├── 50% users create ít nhất 1 identity (optional, not forced)
+├── Of those who create: 70% có goals linked to identity
+├── 60% users engage với AI insights monthly
+├── 40% users share identity badge (of those who have one)
 ├── 40% users complete Year in Review
 ├── <5% refund rate trong 30 ngày đầu
 ├── 40%+ users chọn annual plan
 ├── 30%+ users nhận milestone rewards
-└── Users report: "Thói quen này là một phần của tôi"
+└── Users report: "PREMIUM mang lại value" (không nhất thiết là identity)
+
+Note: Identity là optional. PREMIUM value có thể đến từ:
+- Unlimited plants & 7x7+ garden
+- All themes & customization
+- 14 water reserves & 7-day backfill
+- Priority support & early access
+- Year in Review (works without identity)
 ```
 
 ---
@@ -667,9 +716,11 @@ PREMIUM tier thành công khi:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### PRO → PREMIUM: The Identity Unlock
+### PRO → PREMIUM: The Power User Unlock
 
 **Trigger**: Level 13 (~250 days) + ≥1 goal achieved
+
+> **Design Principle**: PREMIUM pitch focuses on ALL benefits, not just identity. User có nhiều lý do để upgrade.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -684,27 +735,28 @@ PREMIUM tier thành công khi:
 │                                                             │
 │  ─────────────────────────────────────────────────────────  │
 │                                                             │
-│  Bây giờ, một câu hỏi sâu hơn:                             │
+│  PREMIUM mở ra toàn bộ tiềm năng của Habien:               │
 │                                                             │
-│  Bạn có nhận ra không?                                      │
-│  Đây không còn là điều bạn ĐANG LÀM.                       │
-│  Đây là BẠN.                                               │
-│                                                             │
-│  Bạn không "đang cố đọc sách."                             │
-│  Bạn LÀ NGƯỜI ĐỌC SÁCH.                                    │
+│  🌱 Unlimited plants - không giới hạn habits               │
+│  🏡 7x7+ garden - không gian rộng hơn                      │
+│  🎨 All themes - personalize your garden                   │
+│  💧 14 water reserves - buffer cho life                    │
+│  📅 7-day backfill - flexibility tối đa                    │
+│  📖 Year in Review - câu chuyện transformation             │
+│  🎯 Priority support & early access                        │
 │                                                             │
 │  ─────────────────────────────────────────────────────────  │
 │                                                             │
-│  PREMIUM giúp bạn định nghĩa và xây dựng IDENTITY          │
+│  🌳 OPTIONAL: Identity System                               │
 │                                                             │
-│  🌳 Tạo identities: "Tôi là người..."                      │
-│  📊 Link goals → identity lớn hơn                          │
-│  💡 AI insights về transformation journey                   │
-│  🏆 Badges chứng minh bạn LÀ ai                            │
-│  📖 Year in Review: Câu chuyện transformation              │
+│  Nếu bạn sẵn sàng, PREMIUM còn có Identity - giúp bạn      │
+│  chuyển từ "đang làm X" sang "là người làm X".             │
+│  (Explore khi bạn muốn, không bắt buộc)                    │
+│                                                             │
+│  ─────────────────────────────────────────────────────────  │
 │                                                             │
 │  ✓ 30 ngày hoàn tiền nếu không hài lòng                    │
-│  ✓ Milestone rewards: 6-month identity → 1 tháng FREE      │
+│  ✓ Pause lên đến 3 tháng/năm khi cần                       │
 │                                                             │
 │  [Upgrade to PREMIUM]              [Stay with PRO]         │
 │                                                             │
@@ -723,7 +775,10 @@ PREMIUM tier thành công khi:
 |------|------------|--------|
 | FREE | 30-day streak rate | 35% of signups |
 | PRO | Goal completion rate | 50% achieve ≥1 goal/year |
-| PREMIUM | Identity adoption rate | 60% create & maintain identity |
+| PREMIUM | Satisfaction & retention | NPS >50, <10% monthly churn |
+
+> **Note**: PREMIUM success = user satisfaction, không phải identity adoption.
+> Identity là optional feature - một số users chọn PREMIUM vì unlimited plants, themes, hoặc Year in Review.
 
 ### Conversion Funnel
 
@@ -754,8 +809,13 @@ Level 13 reached (3%)
     ▼
 PREMIUM converted (2%)
     │
-    ▼
-Identity created (1.5%)
+    ├──► Identity explored (1.2%)  ─► Identity created (0.8%)
+    │                                      │
+    │                                      ▼
+    │                              Identity maintained 6mo+ (0.5%)
+    │
+    └──► Using other PREMIUM features only (0.8%)
+         (unlimited plants, themes, backfill, etc.)
 ```
 
 ### Health Metrics
@@ -766,9 +826,11 @@ Identity created (1.5%)
 | Annual plan conversion | >30% | 20-30% | <20% |
 | Pause usage | 10-20% | 20-30% | >30% |
 | Goal completion rate | >50% | 30-50% | <30% |
-| Identity engagement | >60% monthly | 40-60% | <40% |
+| Identity exploration (PREMIUM) | >60% view | 40-60% | <40% |
+| Identity creation (of explorers) | >50% create | 30-50% | <30% |
 | Weekly report opens | >70% | 50-70% | <50% |
 | Milestone rewards claimed | >30% | 15-30% | <15% |
+| PREMIUM satisfaction (NPS) | >50 | 30-50 | <30 |
 
 ---
 
