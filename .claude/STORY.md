@@ -159,8 +159,8 @@ Chúng tôi tin rằng:
 
 | Date | Milestone | Significance |
 |------|-----------|--------------|
-| 2024-01-XX | First commit | Bắt đầu hành trình |
-| 2024-01-XX | MVP complete | Core features hoạt động |
+| 2024-01-12 | First commit | Bắt đầu hành trình |
+| 2024-01-13 | MVP complete | Core features hoạt động |
 | 2024-01-14 | Gamification complete | App thực sự "game-like" |
 
 ---

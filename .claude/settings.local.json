@@ -27,7 +27,10 @@
       "Bash(timeout 10 npm run dev:*)",
       "Bash(npm test:*)",
       "mcp__supabase__get_cost",
-      "mcp__supabase__list_organizations"
+      "mcp__supabase__list_organizations",
+      "Bash(npx storybook@latest init:*)",
+      "Bash(npm run build-storybook:*)",
+      "Bash(timeout 15 npm run storybook:*)"
     ]
   }
 }

@@ -53,11 +53,21 @@
 | PWA/UI Polish | Done |
 | Gentle Growth | Phase 1 Done |
 | Plant Detail Sheet | Done (tabs + reflective UX) |
-| Testing Infrastructure | Done (Vitest + Dev Debug Panel) |
+| Testing Infrastructure | Done (Vitest + Dev Debug Panel + Storybook) |
 
 ---
 
 ## Latest Session
+
+### 2026-02-11: Storybook Setup
+- Installed Storybook 8.6.15 with React Vite framework (Next.js 16 compatible)
+- Created 3 story files with multiple visual states:
+  - [TierBadge.stories.tsx](src/components/ui/__stories__/TierBadge.stories.tsx) - All tiers, sizes, locked states
+  - [SlotIndicator.stories.tsx](src/components/garden/__stories__/SlotIndicator.stories.tsx) - Fill states, variants
+  - [PlantVisual.stories.tsx](src/components/plants/__stories__/PlantVisual.stories.tsx) - Growth stages, moisture, weather
+- New npm scripts: `npm run storybook`, `npm run build-storybook`
+
+**New Files**: [.storybook/main.ts](.storybook/main.ts), [.storybook/preview.ts](.storybook/preview.ts), 3 story files
 
 ### 2026-02-11: Phase 4 - Feature Gating
 - Created [SubscriptionContext](src/lib/context/subscription-context.tsx) for managing tier state across app
@@ -108,7 +118,8 @@
 **New Files**: [dev-debug-context.tsx](src/components/dev/dev-debug-context.tsx), [dev-debug-panel.tsx](src/components/dev/dev-debug-panel.tsx), [vitest.config.ts](vitest.config.ts)
 
 **Next Steps for Testing**:
-- [ ] Add Storybook for visual components
+- [x] Add Storybook for visual components
+- [ ] Add more story files (PlantCard, LevelUpModal, etc.)
 - [ ] Add E2E tests with Playwright (optional)
 - See [TESTING_STRATEGY.md](plans/20260211-1530-testing-strategy/TESTING_STRATEGY.md)
 
