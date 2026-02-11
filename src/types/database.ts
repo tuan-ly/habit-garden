@@ -59,6 +59,10 @@ export interface SpecialEffect {
 // User phase for progressive disclosure
 export type UserPhase = 'seedling' | 'gardener' | 'sage'
 
+// Subscription types
+export type SubscriptionTier = 'free' | 'pro' | 'premium'
+export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'trialing' | 'expired'
+
 // Profile table
 export interface Profile {
   id: string
@@ -80,6 +84,9 @@ export interface Profile {
   phase: UserPhase
   longest_streak: number
   total_mature_plants: number
+  // Subscription (Habien 2.0 Phase 3)
+  subscription_tier: SubscriptionTier
+  subscription_status: SubscriptionStatus
   created_at: string
   updated_at: string
 }
@@ -465,4 +472,86 @@ export interface PlantStateInfo {
   daysInactive: number
   canWater: boolean
   isResting: boolean
+}
+
+// =====================================================
+// Subscription System (Habien 2.0 Phase 3)
+// =====================================================
+
+// Subscription tier definition from DB
+export interface SubscriptionTierDef {
+  id: SubscriptionTier
+  name: string
+  description: string | null
+  tagline: string | null
+  price_monthly_usd: number
+  price_yearly_usd: number
+  price_monthly_vnd: number | null
+  price_yearly_vnd: number | null
+  features: Record<string, unknown>
+  is_active: boolean
+  sort_order: number
+  created_at: string
+}
+
+// User subscription record
+export interface Subscription {
+  id: string
+  user_id: string
+  tier_id: SubscriptionTier
+  status: SubscriptionStatus
+  payment_provider: 'polar' | 'stripe' | 'sepay' | null
+  provider_subscription_id: string | null
+  provider_customer_id: string | null
+  current_period_start: string | null
+  current_period_end: string | null
+  cancel_at_period_end: boolean
+  canceled_at: string | null
+  trial_start: string | null
+  trial_end: string | null
+  metadata: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+
+// Subscription event for analytics
+export interface SubscriptionEvent {
+  id: string
+  subscription_id: string
+  user_id: string
+  event_type: 'created' | 'upgraded' | 'downgraded' | 'canceled' | 'renewed' | 'trial_started' | 'trial_ended' | 'payment_failed'
+  from_tier: SubscriptionTier | null
+  to_tier: SubscriptionTier | null
+  metadata: Record<string, unknown>
+  created_at: string
+}
+
+// Upgrade prompt tracking
+export interface UpgradePrompt {
+  id: string
+  user_id: string
+  prompt_type: 'level_6_goals' | 'level_13_identity' | 'plant_limit' | 'tier_limit' | 'feature_gate'
+  feature_context: string | null
+  shown_at: string
+  action: 'dismissed' | 'clicked_upgrade' | 'started_trial' | 'converted' | null
+  converted: boolean
+  converted_at: string | null
+}
+
+// =====================================================
+// Subscription DTOs
+// =====================================================
+
+export interface CreateSubscriptionDto {
+  tier_id: SubscriptionTier
+  payment_provider: 'polar' | 'stripe' | 'sepay'
+  provider_subscription_id?: string
+  provider_customer_id?: string
+  trial_days?: number
+}
+
+export interface TrackUpgradePromptDto {
+  prompt_type: UpgradePrompt['prompt_type']
+  feature_context?: string
+  action: UpgradePrompt['action']
 }

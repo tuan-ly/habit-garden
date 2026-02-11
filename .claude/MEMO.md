@@ -8,13 +8,13 @@
 
 ## 🎯 Current Sprint
 
-**Focus**: Habien 2.0 - Phase 3: Subscription Infrastructure
+**Focus**: Habien 2.0 - Phase 4: Feature Gating
 
 **Progress**:
 - ✅ Phase 1: Tier system, slot limits
 - ✅ Phase 2: Garden expansion system
-- [ ] **Phase 3: Subscription Infrastructure** ← NEXT
-- [ ] Phase 4: Feature Gating
+- ✅ Phase 3: Subscription Infrastructure
+- [ ] **Phase 4: Feature Gating** ← NEXT
 - [ ] Phase 5: Goals System (PRO+)
 - [ ] Phase 6: Identity System (PREMIUM)
 - [ ] Phase 7: Polish & Launch
@@ -27,11 +27,11 @@
 | PREMIUM | $9.99/mo | Unlimited, Tier 1-5, 7x7+ garden, Identity, Level 20+ |
 
 **Next Actions**:
-1. Create subscription database schema (subscription_tiers, subscriptions)
-2. Integrate payment provider (Polar.sh recommended)
-3. Add subscription_tier to profiles
-4. Create TierLimits utility (replace pure level-based limits)
-5. Build upgrade modal component
+1. Gate goals system behind PRO subscription
+2. Apply tier limits to plant creation (check subscription tier)
+3. Apply level caps by subscription tier
+4. Add upgrade prompts at natural triggers (Level 6, Level 13, limits reached)
+5. Integrate payment provider (Polar.sh or Stripe)
 
 **Related Docs**:
 - [Monetization Design](../plans/goal-feature-uiux-design/MONETIZATION_DESIGN.md) ← NEW
@@ -58,6 +58,21 @@
 ---
 
 ## Latest Session
+
+### 2026-02-11: Phase 3 - Subscription Infrastructure
+- Created subscription database schema (4 tables: subscription_tiers, subscriptions, subscription_events, upgrade_prompts)
+- Added subscription_tier and subscription_status to profiles with auto-sync trigger
+- Created [subscription-limits.ts](src/lib/subscription-limits.ts) utility with tier limits, feature checks, upgrade prompts
+- Created [upgrade-modal.tsx](src/components/game-ui/upgrade-modal.tsx) with FeatureLock component
+- Added [subscription.ts](src/lib/actions/subscription.ts) server actions (get tier, check limits, track prompts)
+- Added 36 unit tests for subscription limits (100% pass)
+
+**New Files**:
+- [20260211_subscription_infrastructure.sql](supabase/migrations/20260211_subscription_infrastructure.sql)
+- [subscription-limits.ts](src/lib/subscription-limits.ts)
+- [upgrade-modal.tsx](src/components/game-ui/upgrade-modal.tsx)
+- [subscription.ts](src/lib/actions/subscription.ts)
+- [subscription-limits.test.ts](src/lib/__tests__/subscription-limits.test.ts)
 
 ### 2026-02-11: Testing Infrastructure
 - Added **Dev Debug Panel** for quick feature testing (toggle with `Ctrl+Shift+D`)
