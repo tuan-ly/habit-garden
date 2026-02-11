@@ -364,6 +364,7 @@ export function StatsGarden({
   const [tileSize, setTileSize] = useState(DEFAULT_TILE_SIZE)
   const [hoveredPlantId, setHoveredPlantId] = useState<string | null>(null)
   const [hoveredStats, setHoveredStats] = useState<PlantPeriodStats | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   // Zoom and pan state management with separate storage key for overview
   const {
@@ -377,7 +378,6 @@ export function StatsGarden({
     didPan,
     panOffset,
     bindGestures,
-    containerRef,
     resetDidPan,
   } = useGardenZoom({
     storageKey: 'stats-garden-zoom-level',
