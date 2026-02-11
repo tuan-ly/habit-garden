@@ -24,7 +24,10 @@
       "Bash(python3:*)",
       "Bash(python:*)",
       "Bash(npm run test:run:*)",
-      "Bash(timeout 10 npm run dev:*)"
+      "Bash(timeout 10 npm run dev:*)",
+      "Bash(npm test:*)",
+      "mcp__supabase__get_cost",
+      "mcp__supabase__list_organizations"
     ]
   }
 }

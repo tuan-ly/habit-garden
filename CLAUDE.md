@@ -49,11 +49,11 @@
 1. Write tests before or alongside implementation
 2. Run tests: `npm test` or `npm run test:watch`
 3. Ensure all tests pass
-4. **CREATE COMMIT immediately after tests pass**
+4. **Generate commit message** for user to commit manually
 
 **Test location:** `src/lib/__tests__/` for utilities, co-locate component tests
 
-**IMPORTANT: Always commit after green tests** - Don't leave uncommitted work. Create commit right after tests pass.
+**IMPORTANT: After green tests** - Generate a commit message following the commit format. User will commit manually.
 
 ---
 
