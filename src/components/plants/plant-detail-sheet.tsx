@@ -35,10 +35,12 @@ import {
   Heart,
   BookOpen,
   ChevronRight,
+  Lock,
 } from 'lucide-react'
 import type { PlantWithType, WeatherType, MilestoneType } from '@/types/database'
 import { PlantVisual, XpPopup } from './plant-visual'
-import { usePlants } from '@/lib/context'
+import { usePlants, useSubscription } from '@/lib/context'
+import { FeatureLock } from '@/components/game-ui'
 import { getGoalForPlant, getGoalStats, type GoalWithStats, type GoalStatistics } from '@/lib/actions/goals'
 import { getAdaptiveAnalysis, type AdaptiveAnalysisResult } from '@/lib/actions/adaptive'
 import { getPlantActivityHistory, type ActivityHistory } from '@/lib/actions/activity'
@@ -79,6 +81,7 @@ export function PlantDetailSheet({
 }: PlantDetailSheetProps) {
   // Get the latest plant data from context (with optimistic updates)
   const { plants, waterPlant, updatePlant } = usePlants()
+  const { hasGoals, showUpgradeModal } = useSubscription()
   const plant = initialPlant ? (plants.find(p => p.id === initialPlant.id) || initialPlant) : null
 
   const [isWatering, setIsWatering] = useState(false)
@@ -422,14 +425,30 @@ export function PlantDetailSheet({
                   )}
 
                   {!hasGoal && (
-                    <Button
-                      variant="outline"
-                      className="w-full h-11 rounded-xl font-medium border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
-                      onClick={() => setShowGoalWizard(true)}
-                    >
-                      <Target className="h-4 w-4 mr-2" />
-                      Add Goal Tracking
-                    </Button>
+                    hasGoals ? (
+                      <Button
+                        variant="outline"
+                        className="w-full h-11 rounded-xl font-medium border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                        onClick={() => setShowGoalWizard(true)}
+                      >
+                        <Target className="h-4 w-4 mr-2" />
+                        Add Goal Tracking
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        className="w-full h-11 rounded-xl font-medium border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 opacity-80"
+                        onClick={() => showUpgradeModal('level_6_goals')}
+                      >
+                        <Lock className="h-4 w-4 mr-2 text-amber-500" />
+                        <span className="flex items-center gap-1.5">
+                          Goal Tracking
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 font-semibold">
+                            PRO
+                          </span>
+                        </span>
+                      </Button>
+                    )
                   )}
                 </div>
 

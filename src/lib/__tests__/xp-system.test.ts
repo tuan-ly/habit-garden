@@ -569,3 +569,127 @@ describe('Level Rewards Array', () => {
     }
   })
 })
+
+// ============================================
+// Level Cap Tests (Subscription Tiers)
+// ============================================
+
+describe('Level Cap Functionality', () => {
+  describe('getLevelFromXp with maxLevel', () => {
+    it('returns capped level when XP exceeds cap', () => {
+      // XP for level 15 is quite high, let's use a smaller cap
+      const xpForLevel12 = getXpForLevel(12)
+      const level = getLevelFromXp(xpForLevel12 + 1000, 10)
+
+      expect(level).toBe(10)
+    })
+
+    it('returns uncapped level when under cap', () => {
+      const xpForLevel5 = getXpForLevel(5) + 50
+      const level = getLevelFromXp(xpForLevel5, 10)
+
+      expect(level).toBe(5)
+    })
+
+    it('returns level at cap when exactly at cap', () => {
+      const xpForLevel10 = getXpForLevel(10)
+      const level = getLevelFromXp(xpForLevel10, 10)
+
+      expect(level).toBe(10)
+    })
+
+    it('returns normal level without cap', () => {
+      const xpForLevel12 = getXpForLevel(12)
+      const level = getLevelFromXp(xpForLevel12)
+
+      expect(level).toBe(12)
+    })
+  })
+
+  describe('getLevelProgress with maxLevel', () => {
+    it('returns 100% when at level cap', () => {
+      const xpForLevel12 = getXpForLevel(12)
+      const progress = getLevelProgress(xpForLevel12, 10)
+
+      expect(progress).toBe(100)
+    })
+
+    it('returns normal progress when under cap', () => {
+      const xpForLevel5 = getXpForLevel(5)
+      const progress = getLevelProgress(xpForLevel5 + 50, 10)
+
+      // Should be between 0 and 100
+      expect(progress).toBeGreaterThan(0)
+      expect(progress).toBeLessThan(100)
+    })
+  })
+
+  describe('getLevelInfo with maxLevel', () => {
+    it('includes isAtCap when at level cap', () => {
+      const xpForLevel12 = getXpForLevel(12)
+      const info = getLevelInfo(xpForLevel12, 10)
+
+      expect(info.level).toBe(10)
+      expect(info.isAtCap).toBe(true)
+      expect(info.maxLevel).toBe(10)
+      expect(info.progress).toBe(100)
+    })
+
+    it('isAtCap is false when under cap', () => {
+      const xpForLevel5 = getXpForLevel(5)
+      const info = getLevelInfo(xpForLevel5, 10)
+
+      expect(info.level).toBe(5)
+      expect(info.isAtCap).toBe(false)
+    })
+
+    it('isAtCap is undefined without cap', () => {
+      const xpForLevel5 = getXpForLevel(5)
+      const info = getLevelInfo(xpForLevel5)
+
+      expect(info.isAtCap).toBe(false)
+    })
+  })
+
+  describe('checkLevelUp with maxLevel', () => {
+    it('detects hitting level cap', () => {
+      const xpForLevel9 = getXpForLevel(9)
+      const xpForLevel11 = getXpForLevel(11)
+      const result = checkLevelUp(xpForLevel9, xpForLevel11, 10)
+
+      expect(result.leveledUp).toBe(true)
+      expect(result.newLevel).toBe(10)
+      expect(result.hitLevelCap).toBe(true)
+      expect(result.uncappedLevel).toBe(11)
+    })
+
+    it('does not indicate cap hit when under cap', () => {
+      const xpForLevel3 = getXpForLevel(3)
+      const xpForLevel5 = getXpForLevel(5)
+      const result = checkLevelUp(xpForLevel3, xpForLevel5, 10)
+
+      expect(result.leveledUp).toBe(true)
+      expect(result.newLevel).toBe(5)
+      expect(result.hitLevelCap).toBe(false)
+    })
+
+    it('still reports level up when going to cap', () => {
+      const xpForLevel9 = getXpForLevel(9)
+      const xpForLevel10 = getXpForLevel(10)
+      const result = checkLevelUp(xpForLevel9, xpForLevel10, 10)
+
+      expect(result.leveledUp).toBe(true)
+      expect(result.newLevel).toBe(10)
+      // Exactly at cap, not beyond
+      expect(result.hitLevelCap).toBe(false)
+    })
+
+    it('works without maxLevel parameter', () => {
+      const result = checkLevelUp(0, 100)
+
+      expect(result.leveledUp).toBe(true)
+      expect(result.newLevel).toBe(2)
+      expect(result.hitLevelCap).toBe(false)
+    })
+  })
+})

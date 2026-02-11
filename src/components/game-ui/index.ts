@@ -7,3 +7,5 @@ export {
   showGardenExpansionToast,
   showDecorationUnlockToast,
 } from './unlock-toast'
+export { UpgradeModal, FeatureLock } from './upgrade-modal'
+export { UpgradeModalContainer } from './upgrade-modal-container'

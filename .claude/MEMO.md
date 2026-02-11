@@ -8,14 +8,14 @@
 
 ## 🎯 Current Sprint
 
-**Focus**: Habien 2.0 - Phase 4: Feature Gating
+**Focus**: Habien 2.0 - Phase 5: Payment Integration
 
 **Progress**:
 - ✅ Phase 1: Tier system, slot limits
 - ✅ Phase 2: Garden expansion system
 - ✅ Phase 3: Subscription Infrastructure
-- [ ] **Phase 4: Feature Gating** ← NEXT
-- [ ] Phase 5: Goals System (PRO+)
+- ✅ Phase 4: Feature Gating
+- [ ] **Phase 5: Payment Integration** ← NEXT
 - [ ] Phase 6: Identity System (PREMIUM)
 - [ ] Phase 7: Polish & Launch
 
@@ -27,11 +27,11 @@
 | PREMIUM | $9.99/mo | Unlimited, Tier 1-5, 7x7+ garden, Identity, Level 20+ |
 
 **Next Actions**:
-1. Gate goals system behind PRO subscription
-2. Apply tier limits to plant creation (check subscription tier)
-3. Apply level caps by subscription tier
-4. Add upgrade prompts at natural triggers (Level 6, Level 13, limits reached)
-5. Integrate payment provider (Polar.sh or Stripe)
+1. Integrate payment provider (Polar.sh or Stripe)
+2. Create pricing page with tier comparison
+3. Implement checkout flow
+4. Add subscription webhook handlers
+5. Test upgrade/downgrade flows
 
 **Related Docs**:
 - [Monetization Design](../plans/goal-feature-uiux-design/MONETIZATION_DESIGN.md) ← NEW
@@ -58,6 +58,27 @@
 ---
 
 ## Latest Session
+
+### 2026-02-11: Phase 4 - Feature Gating
+- Created [SubscriptionContext](src/lib/context/subscription-context.tsx) for managing tier state across app
+- Added SubscriptionProvider to dashboard layout with dev override support
+- Gated Goals feature in PlantDetailSheet behind PRO tier
+- Updated AddPlantDialog with subscription-based plant tier/slot limits
+- Added level cap enforcement in xp-system with subscription tier support
+- Added upgrade prompts at Level 6 (Goals) and Level 13 (Identity)
+- Updated GameHud to show MAX level state when at subscription cap
+- Added 13 new tests for level cap functionality (202 tests total, 100% pass)
+
+**New Files**:
+- [subscription-context.tsx](src/lib/context/subscription-context.tsx)
+- [upgrade-modal-container.tsx](src/components/game-ui/upgrade-modal-container.tsx)
+
+**Modified Files**:
+- [plant-detail-sheet.tsx](src/components/plants/plant-detail-sheet.tsx) - PRO gate for goals
+- [add-plant-dialog.tsx](src/components/plants/add-plant-dialog.tsx) - Subscription tier limits
+- [game-hud.tsx](src/components/game-ui/game-hud.tsx) - Level cap display
+- [level-up-modal.tsx](src/components/game-ui/level-up-modal.tsx) - Upgrade prompts at L6/L13
+- [xp-system.ts](src/lib/xp-system.ts) - Level cap support
 
 ### 2026-02-11: Phase 3 - Subscription Infrastructure
 - Created subscription database schema (4 tables: subscription_tiers, subscriptions, subscription_events, upgrade_prompts)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useMemo } from 'react'
+import { useState, useTransition, useMemo, useCallback } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -14,11 +14,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Plus, Clock, Sparkles, Lock } from 'lucide-react'
+import { Plus, Clock, Sparkles, Lock, Crown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { PlantType, Profile, PlantTier } from '@/types/database'
 import { createPlant } from '@/lib/actions/plants'
-import { usePlants } from '@/lib/context'
+import { usePlants, useSubscription } from '@/lib/context'
 import { toast } from 'sonner'
 import { TierBadge } from '@/components/ui/tier-badge'
 import { SlotIndicator } from '@/components/garden/slot-indicator'
@@ -28,6 +28,7 @@ import {
   getTierUnlockLevel,
   checkSlotAvailability,
 } from '@/lib/progression-system'
+import { getMinimumSubscriptionForPlantTier } from '@/lib/subscription-limits'
 
 interface AddPlantDialogProps {
   plantTypes: PlantType[]
@@ -50,6 +51,7 @@ export function AddPlantDialog({
 }: AddPlantDialogProps) {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false)
   const { addPlant, plants } = usePlants()
+  const { canUsePlantTier, canAddPlant: checkSubscriptionPlantLimit, showUpgradeModal, limits } = useSubscription()
 
   // Support both controlled and uncontrolled modes
   const isControlled = controlledOpen !== undefined
@@ -64,11 +66,27 @@ export function AddPlantDialog({
   // Calculate actual plant count (from context or prop)
   const actualPlantCount = currentPlantCount || plants.filter(p => p.status !== 'dead').length
 
-  // Check slot availability
-  const slotCheck = useMemo(() => {
+  // Check slot availability (level-based)
+  const levelSlotCheck = useMemo(() => {
     if (!profile) return { hasSlot: true, currentCount: actualPlantCount, maxSlots: 999 }
     return checkSlotAvailability(profile, actualPlantCount)
   }, [profile, actualPlantCount])
+
+  // Check subscription-based plant limit
+  const subscriptionHasSlot = checkSubscriptionPlantLimit(actualPlantCount)
+
+  // Combined slot check - both level AND subscription must allow
+  const slotCheck = useMemo(() => {
+    // Use the more restrictive of level or subscription limits
+    const maxSlots = Math.min(levelSlotCheck.maxSlots, limits.maxPlants === -1 ? 999 : limits.maxPlants)
+    const hasSlot = levelSlotCheck.hasSlot && subscriptionHasSlot
+    return {
+      ...levelSlotCheck,
+      maxSlots,
+      hasSlot,
+      isSubscriptionLimited: levelSlotCheck.hasSlot && !subscriptionHasSlot,
+    }
+  }, [levelSlotCheck, subscriptionHasSlot, limits.maxPlants])
 
   // Group plants by tier
   const plantsByTier = useMemo(() => {
@@ -80,17 +98,24 @@ export function AddPlantDialog({
     return grouped
   }, [plantTypes])
 
-  // Check which tiers are unlocked
+  // Check which tiers are unlocked (both level-based AND subscription-based)
   const tierStatus = useMemo(() => {
     if (!profile) return { 1: true, 2: true, 3: true, 4: true, 5: true }
     return {
-      1: isTierUnlocked(profile, 1),
-      2: isTierUnlocked(profile, 2),
-      3: isTierUnlocked(profile, 3),
-      4: isTierUnlocked(profile, 4),
-      5: isTierUnlocked(profile, 5),
+      1: isTierUnlocked(profile, 1) && canUsePlantTier(1),
+      2: isTierUnlocked(profile, 2) && canUsePlantTier(2),
+      3: isTierUnlocked(profile, 3) && canUsePlantTier(3),
+      4: isTierUnlocked(profile, 4) && canUsePlantTier(4),
+      5: isTierUnlocked(profile, 5) && canUsePlantTier(5),
     }
-  }, [profile])
+  }, [profile, canUsePlantTier])
+
+  // Check if tier is locked due to subscription (not level)
+  const isSubscriptionLocked = useCallback((tier: PlantTier): boolean => {
+    if (!profile) return false
+    // If level unlocked but subscription doesn't allow
+    return isTierUnlocked(profile, tier) && !canUsePlantTier(tier)
+  }, [profile, canUsePlantTier])
 
   // Backward compatibility: filter by category if tier not set
   const basicPlants = plantTypes.filter((p) => p.category === 'basic')
@@ -102,6 +127,15 @@ export function AddPlantDialog({
   const handleSelectType = (plantType: PlantType, isLocked: boolean) => {
     if (isLocked) {
       const tier = (plantType.tier || 1) as PlantTier
+
+      // Check if it's subscription-locked
+      if (isSubscriptionLocked(tier)) {
+        const requiredSub = getMinimumSubscriptionForPlantTier(tier)
+        showUpgradeModal('tier_limit', plantType.name)
+        return
+      }
+
+      // Otherwise it's level-locked
       const unlockLevel = getTierUnlockLevel(tier)
       toast.error('Plant locked', {
         description: `Reach Level ${unlockLevel} to unlock Tier ${tier} plants.`,
@@ -110,6 +144,12 @@ export function AddPlantDialog({
     }
 
     if (!slotCheck.hasSlot) {
+      // Check if it's subscription-limited
+      if (slotCheck.isSubscriptionLimited) {
+        showUpgradeModal('plant_limit')
+        return
+      }
+      // Otherwise it's level-limited
       toast.error('No slots available', {
         description: slotCheck.message,
       })
@@ -217,15 +257,23 @@ export function AddPlantDialog({
     if (plants.length === 0) return null
 
     const isLocked = !tierStatus[tier]
+    const isSubLocked = isSubscriptionLocked(tier)
     const tierInfo = getTierInfo(tier)
+    const requiredSub = getMinimumSubscriptionForPlantTier(tier)
 
     return (
       <div key={tier}>
         <h3 className={cn('font-medium mb-3 flex items-center gap-2', isLocked && 'opacity-60')}>
           <TierBadge tier={tier} showLabel showTooltip={false} locked={isLocked} />
-          {isLocked && (
+          {isLocked && !isSubLocked && (
             <span className="text-xs text-muted-foreground">
               (Level {getTierUnlockLevel(tier)})
+            </span>
+          )}
+          {isSubLocked && (
+            <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 font-semibold">
+              <Crown className="h-3 w-3" />
+              {requiredSub.toUpperCase()}
             </span>
           )}
         </h3>
@@ -269,10 +317,32 @@ export function AddPlantDialog({
             )}
 
             {!slotCheck.hasSlot && (
-              <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800">
-                <p className="text-sm text-amber-700 dark:text-amber-400">
-                  Your garden is full! Level up to unlock more plant slots.
-                </p>
+              <div className={cn(
+                "p-3 rounded-lg border",
+                slotCheck.isSubscriptionLimited
+                  ? "bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-800"
+                  : "bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800"
+              )}>
+                {slotCheck.isSubscriptionLimited ? (
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-emerald-700 dark:text-emerald-400">
+                      Your garden is full! Upgrade to grow more plants.
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900"
+                      onClick={() => showUpgradeModal('plant_limit')}
+                    >
+                      <Crown className="h-3 w-3 mr-1" />
+                      Upgrade
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-sm text-amber-700 dark:text-amber-400">
+                    Your garden is full! Level up to unlock more plant slots.
+                  </p>
+                )}
               </div>
             )}
 

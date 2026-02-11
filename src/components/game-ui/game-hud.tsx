@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { Star, ChevronDown, Zap } from 'lucide-react'
+import { Star, ChevronDown, Zap, Crown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getLevelInfo } from '@/lib/xp-system'
 import type { Profile } from '@/types/database'
 import { MoodSelector } from '@/components/mood'
+import { useSubscription } from '@/lib/context'
 
 interface GameHudProps {
   profile?: Profile | null
@@ -13,7 +14,8 @@ interface GameHudProps {
 
 export function GameHud({ profile }: GameHudProps) {
   const [expanded, setExpanded] = useState(false)
-  const levelInfo = profile ? getLevelInfo(profile.xp) : null
+  const { limits, showUpgradeModal } = useSubscription()
+  const levelInfo = profile ? getLevelInfo(profile.xp, limits.levelCap) : null
 
   return (
     <>
@@ -60,7 +62,12 @@ export function GameHud({ profile }: GameHudProps) {
               {/* XP Bar - Compact */}
               <div className="relative h-1.5 sm:h-2 w-full bg-slate-700/80 rounded-full overflow-hidden border border-slate-600/50">
                 <div
-                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 rounded-full transition-all duration-700"
+                  className={cn(
+                    "absolute inset-y-0 left-0 rounded-full transition-all duration-700",
+                    levelInfo.isAtCap
+                      ? "bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500"
+                      : "bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500"
+                  )}
                   style={{ width: `${levelInfo.progress}%` }}
                 />
               </div>
@@ -71,9 +78,16 @@ export function GameHud({ profile }: GameHudProps) {
                   <Zap className="w-2 h-2 sm:w-2.5 sm:h-2.5" />
                   {profile?.xp}
                 </span>
-                <span className="text-slate-400 hidden sm:inline">
-                  Lv.{levelInfo.level + 1}: {levelInfo.xpForNextLevel}
-                </span>
+                {levelInfo.isAtCap ? (
+                  <span className="text-emerald-400 hidden sm:inline flex items-center gap-0.5">
+                    <Crown className="w-2 h-2 sm:w-2.5 sm:h-2.5" />
+                    MAX
+                  </span>
+                ) : (
+                  <span className="text-slate-400 hidden sm:inline">
+                    Lv.{levelInfo.level + 1}: {levelInfo.xpForNextLevel}
+                  </span>
+                )}
               </div>
             </div>
           </button>
@@ -89,16 +103,34 @@ export function GameHud({ profile }: GameHudProps) {
                     {profile?.xp.toLocaleString()}
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400">To Next Level</span>
-                  <span className="font-bold text-cyan-400">
-                    {(levelInfo.xpForNextLevel - (profile?.xp || 0)).toLocaleString()} XP
-                  </span>
-                </div>
+                {levelInfo.isAtCap ? (
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400">Level Cap</span>
+                    <button
+                      onClick={() => showUpgradeModal('feature_gate', 'higher level cap')}
+                      className="font-bold text-emerald-400 flex items-center gap-1 hover:text-emerald-300 transition-colors"
+                    >
+                      <Crown className="w-3 h-3" />
+                      Upgrade to unlock
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400">To Next Level</span>
+                    <span className="font-bold text-cyan-400">
+                      {(levelInfo.xpForNextLevel - (profile?.xp || 0)).toLocaleString()} XP
+                    </span>
+                  </div>
+                )}
                 <div className="h-px bg-gradient-to-r from-transparent via-slate-600 to-transparent" />
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400">Progress</span>
-                  <span className="font-bold text-green-400">{Math.round(levelInfo.progress)}%</span>
+                  <span className={cn(
+                    "font-bold",
+                    levelInfo.isAtCap ? "text-amber-400" : "text-green-400"
+                  )}>
+                    {levelInfo.isAtCap ? 'MAX' : `${Math.round(levelInfo.progress)}%`}
+                  </span>
                 </div>
               </div>
             </div>

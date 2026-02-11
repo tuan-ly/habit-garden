@@ -11,13 +11,21 @@ import {
   getUserPhase,
   type LevelUnlock,
 } from '@/lib/progression-system'
-import { Sparkles, Trophy, ChevronRight } from 'lucide-react'
+import { Sparkles, Trophy, ChevronRight, Crown, Target, User } from 'lucide-react'
+import { useSubscription } from '@/lib/context'
+import type { UpgradeTrigger } from '@/lib/subscription-limits'
 
 interface LevelUpModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   newLevel: number
   oldLevel?: number
+}
+
+// Feature unlock triggers by level (for FREE users)
+const UPGRADE_TRIGGERS: Record<number, { trigger: UpgradeTrigger; feature: string; icon: React.ReactNode }> = {
+  6: { trigger: 'level_6_goals', feature: 'Goals', icon: <Target className="w-5 h-5" /> },
+  13: { trigger: 'level_13_identity', feature: 'Identity', icon: <User className="w-5 h-5" /> },
 }
 
 // Phase names and icons
@@ -54,12 +62,17 @@ export function LevelUpModal({
 }: LevelUpModalProps) {
   const [showConfetti, setShowConfetti] = useState(false)
   const [showContent, setShowContent] = useState(false)
+  const { tier, showUpgradeModal } = useSubscription()
 
   const unlocks = getLevelUnlocks(newLevel)
   const phase = getUserPhase(newLevel)
   const phaseInfo = PHASE_INFO[phase]
   const gardenSizeName = getGardenSizeName(newLevel)
   const levelTitle = getLevelTitle(newLevel)
+
+  // Check if this level unlocks a feature that requires upgrade
+  const upgradeInfo = UPGRADE_TRIGGERS[newLevel]
+  const showFeatureUnlock = upgradeInfo && tier === 'free'
 
   // Check if phase changed
   const oldPhase = oldLevel ? getUserPhase(oldLevel) : phase
@@ -183,17 +196,50 @@ export function LevelUpModal({
             </div>
           )}
 
+          {/* PRO Feature Unlock Prompt */}
+          {showFeatureUnlock && (
+            <div className="mb-6 p-4 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 rounded-xl border border-emerald-500/30">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Crown className="w-5 h-5 text-emerald-400" />
+                <span className="text-sm font-bold text-emerald-300">
+                  {upgradeInfo.feature} Now Available!
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mb-3">
+                {newLevel === 6
+                  ? "You've proven your dedication! Goals help you track progress and achieve more."
+                  : "Master gardener! Identity lets you become who you want to be."}
+              </p>
+              <Button
+                onClick={() => {
+                  onOpenChange(false)
+                  setTimeout(() => showUpgradeModal(upgradeInfo.trigger), 300)
+                }}
+                className={cn(
+                  'w-full py-3 text-sm font-bold',
+                  'bg-gradient-to-r from-emerald-500 to-teal-500',
+                  'hover:from-emerald-400 hover:to-teal-400',
+                  'shadow-lg shadow-emerald-500/30'
+                )}
+              >
+                <Crown className="w-4 h-4 mr-2" />
+                Unlock {upgradeInfo.feature}
+              </Button>
+            </div>
+          )}
+
           {/* Continue button */}
           <Button
             onClick={() => onOpenChange(false)}
+            variant={showFeatureUnlock ? 'outline' : 'default'}
             className={cn(
               'w-full py-6 text-lg font-bold',
-              'bg-gradient-to-r from-amber-500 to-orange-500',
-              'hover:from-amber-400 hover:to-orange-400',
-              'shadow-lg shadow-amber-500/30'
+              showFeatureUnlock
+                ? 'border-slate-600 text-slate-300 hover:bg-slate-800'
+                : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 shadow-lg shadow-amber-500/30'
             )}
           >
-            Continue
+            {showFeatureUnlock ? 'Maybe Later' : 'Continue'}
           </Button>
         </div>
       </DialogContent>
