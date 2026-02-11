@@ -22,7 +22,9 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(python3:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(npm run test:run:*)",
+      "Bash(timeout 10 npm run dev:*)"
     ]
   }
 }

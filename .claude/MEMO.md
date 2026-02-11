@@ -1,6 +1,6 @@
 # Habit Garden - Project Memo
 
-> **Last Updated**: 2026-02-06
+> **Last Updated**: 2026-02-11
 > **Phase**: 4 - Polish & Launch
 > **Stack**: Next.js 16, Supabase, Tailwind CSS 4, shadcn/ui
 
@@ -53,10 +53,28 @@
 | PWA/UI Polish | Done |
 | Gentle Growth | Phase 1 Done |
 | Plant Detail Sheet | Done (tabs + reflective UX) |
+| Testing Infrastructure | Done (Vitest + Dev Debug Panel) |
 
 ---
 
 ## Latest Session
+
+### 2026-02-11: Testing Infrastructure
+- Added **Dev Debug Panel** for quick feature testing (toggle with `Ctrl+Shift+D`)
+  - Override level, tier, subscription in dev mode
+  - Quick actions: Level Up, Max Level, Set PRO/PREMIUM
+  - Persists to localStorage
+- Added **Vitest Unit Tests** (153 tests, 100% pass)
+  - [progression-system.test.ts](src/lib/__tests__/progression-system.test.ts) - 82 tests
+  - [xp-system.test.ts](src/lib/__tests__/xp-system.test.ts) - 71 tests
+- New npm scripts: `npm test`, `npm run test:ui`, `npm run test:coverage`
+
+**New Files**: [dev-debug-context.tsx](src/components/dev/dev-debug-context.tsx), [dev-debug-panel.tsx](src/components/dev/dev-debug-panel.tsx), [vitest.config.ts](vitest.config.ts)
+
+**Next Steps for Testing**:
+- [ ] Add Storybook for visual components
+- [ ] Add E2E tests with Playwright (optional)
+- See [TESTING_STRATEGY.md](plans/20260211-1530-testing-strategy/TESTING_STRATEGY.md)
 
 ### 2026-02-06: Monetization Design
 - Designed FREE/PRO/PREMIUM tier system
@@ -124,11 +142,13 @@ src/components/
   plants/    - Plant visual, cards, dialogs, watering modal
   goals/     - Goal tracking UI
   game-ui/   - HUD, nav, mood selector
+  dev/       - Dev Debug Panel (dev-only)
 
 src/lib/
   actions/   - Server actions (plants, goals, profile, activity, journal)
   context/   - React contexts
   hooks/     - Custom hooks
+  __tests__/ - Unit tests (Vitest)
 ```
 
 ---
