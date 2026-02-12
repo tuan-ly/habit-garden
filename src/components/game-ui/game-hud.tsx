@@ -7,6 +7,7 @@ import { getLevelInfo } from '@/lib/xp-system'
 import type { Profile } from '@/types/database'
 import { MoodSelector } from '@/components/mood'
 import { useSubscription } from '@/lib/context'
+import { useDevOverride } from '@/components/dev/dev-debug-context'
 
 interface GameHudProps {
   profile?: Profile | null
@@ -15,7 +16,11 @@ interface GameHudProps {
 export function GameHud({ profile }: GameHudProps) {
   const [expanded, setExpanded] = useState(false)
   const { limits, showUpgradeModal } = useSubscription()
-  const levelInfo = profile ? getLevelInfo(profile.xp, limits.levelCap) : null
+
+  // Dev overrides for testing
+  const effectiveXp = useDevOverride('xp', profile?.xp ?? 0)
+
+  const levelInfo = profile ? getLevelInfo(effectiveXp, limits.levelCap) : null
 
   return (
     <>
@@ -76,7 +81,7 @@ export function GameHud({ profile }: GameHudProps) {
               <div className="flex items-center justify-between text-[9px] sm:text-[10px]">
                 <span className="text-amber-300/80 font-medium flex items-center gap-0.5">
                   <Zap className="w-2 h-2 sm:w-2.5 sm:h-2.5" />
-                  {profile?.xp}
+                  {effectiveXp}
                 </span>
                 {levelInfo.isAtCap ? (
                   <span className="text-emerald-400 hidden sm:inline flex items-center gap-0.5">
@@ -100,7 +105,7 @@ export function GameHud({ profile }: GameHudProps) {
                   <span className="text-slate-400">Current XP</span>
                   <span className="font-bold text-amber-400 flex items-center gap-1">
                     <Zap className="w-3 h-3" />
-                    {profile?.xp.toLocaleString()}
+                    {effectiveXp.toLocaleString()}
                   </span>
                 </div>
                 {levelInfo.isAtCap ? (
@@ -118,7 +123,7 @@ export function GameHud({ profile }: GameHudProps) {
                   <div className="flex items-center justify-between">
                     <span className="text-slate-400">To Next Level</span>
                     <span className="font-bold text-cyan-400">
-                      {(levelInfo.xpForNextLevel - (profile?.xp || 0)).toLocaleString()} XP
+                      {(levelInfo.xpForNextLevel - (effectiveXp || 0)).toLocaleString()} XP
                     </span>
                   </div>
                 )}

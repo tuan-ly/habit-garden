@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils'
 import type { PlantType, Profile, PlantTier } from '@/types/database'
 import { createPlant } from '@/lib/actions/plants'
 import { usePlants, useSubscription } from '@/lib/context'
+import { useDevOverride, useDevDebug } from '@/components/dev/dev-debug-context'
 import { toast } from 'sonner'
 import { TierBadge } from '@/components/ui/tier-badge'
 import { SlotIndicator } from '@/components/garden/slot-indicator'
@@ -53,6 +54,13 @@ export function AddPlantDialog({
   const { addPlant, plants } = usePlants()
   const { canUsePlantTier, canAddPlant: checkSubscriptionPlantLimit, showUpgradeModal, limits } = useSubscription()
 
+  // Dev overrides for testing
+  const { overrides: devOverrides } = useDevDebug()
+  const effectiveLevel = useDevOverride('level', profile?.level ?? 1)
+
+  // Create effective profile with dev override
+  const effectiveProfile = profile ? { ...profile, level: effectiveLevel } : null
+
   // Support both controlled and uncontrolled modes
   const isControlled = controlledOpen !== undefined
   const open = isControlled ? controlledOpen : uncontrolledOpen
@@ -68,9 +76,13 @@ export function AddPlantDialog({
 
   // Check slot availability (level-based)
   const levelSlotCheck = useMemo(() => {
-    if (!profile) return { hasSlot: true, currentCount: actualPlantCount, maxSlots: 999 }
-    return checkSlotAvailability(profile, actualPlantCount)
-  }, [profile, actualPlantCount])
+    // Dev bypass for slot limit
+    if (devOverrides.bypassSlotLimit) {
+      return { hasSlot: true, currentCount: actualPlantCount, maxSlots: 999, message: 'Dev bypass active' }
+    }
+    if (!effectiveProfile) return { hasSlot: true, currentCount: actualPlantCount, maxSlots: 999 }
+    return checkSlotAvailability(effectiveProfile, actualPlantCount)
+  }, [effectiveProfile, actualPlantCount, devOverrides.bypassSlotLimit])
 
   // Check subscription-based plant limit
   const subscriptionHasSlot = checkSubscriptionPlantLimit(actualPlantCount)
@@ -100,22 +112,27 @@ export function AddPlantDialog({
 
   // Check which tiers are unlocked (both level-based AND subscription-based)
   const tierStatus = useMemo(() => {
-    if (!profile) return { 1: true, 2: true, 3: true, 4: true, 5: true }
-    return {
-      1: isTierUnlocked(profile, 1) && canUsePlantTier(1),
-      2: isTierUnlocked(profile, 2) && canUsePlantTier(2),
-      3: isTierUnlocked(profile, 3) && canUsePlantTier(3),
-      4: isTierUnlocked(profile, 4) && canUsePlantTier(4),
-      5: isTierUnlocked(profile, 5) && canUsePlantTier(5),
+    // Dev bypass for tier limit
+    if (devOverrides.bypassTierLimit) {
+      return { 1: true, 2: true, 3: true, 4: true, 5: true }
     }
-  }, [profile, canUsePlantTier])
+    if (!effectiveProfile) return { 1: true, 2: true, 3: true, 4: true, 5: true }
+    return {
+      1: isTierUnlocked(effectiveProfile, 1) && canUsePlantTier(1),
+      2: isTierUnlocked(effectiveProfile, 2) && canUsePlantTier(2),
+      3: isTierUnlocked(effectiveProfile, 3) && canUsePlantTier(3),
+      4: isTierUnlocked(effectiveProfile, 4) && canUsePlantTier(4),
+      5: isTierUnlocked(effectiveProfile, 5) && canUsePlantTier(5),
+    }
+  }, [effectiveProfile, canUsePlantTier, devOverrides.bypassTierLimit])
 
   // Check if tier is locked due to subscription (not level)
   const isSubscriptionLocked = useCallback((tier: PlantTier): boolean => {
-    if (!profile) return false
+    if (devOverrides.bypassTierLimit) return false
+    if (!effectiveProfile) return false
     // If level unlocked but subscription doesn't allow
-    return isTierUnlocked(profile, tier) && !canUsePlantTier(tier)
-  }, [profile, canUsePlantTier])
+    return isTierUnlocked(effectiveProfile, tier) && !canUsePlantTier(tier)
+  }, [effectiveProfile, canUsePlantTier, devOverrides.bypassTierLimit])
 
   // Backward compatibility: filter by category if tier not set
   const basicPlants = plantTypes.filter((p) => p.category === 'basic')
@@ -306,7 +323,7 @@ export function AddPlantDialog({
             </DialogHeader>
 
             {/* Slot indicator */}
-            {profile && (
+            {effectiveProfile && (
               <div className="py-2">
                 <SlotIndicator
                   currentCount={actualPlantCount}

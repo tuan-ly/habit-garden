@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
 import type { PlantTier, UserPhase } from '@/types/database'
 
 /**
@@ -74,8 +74,16 @@ function loadPanelState(): boolean {
 }
 
 export function DevDebugProvider({ children }: { children: ReactNode }) {
-  const [overrides, setOverridesState] = useState<DevOverrides>(() => loadStoredOverrides())
-  const [isPanelOpen, setIsPanelOpen] = useState(() => loadPanelState())
+  const [overrides, setOverridesState] = useState<DevOverrides>({})
+  const [isPanelOpen, setIsPanelOpen] = useState(false)
+  const [isHydrated, setIsHydrated] = useState(false)
+
+  // Hydrate state from localStorage after mount (avoids SSR mismatch)
+  useEffect(() => {
+    setOverridesState(loadStoredOverrides())
+    setIsPanelOpen(loadPanelState())
+    setIsHydrated(true)
+  }, [])
 
   const setOverrides = useCallback((updates: Partial<DevOverrides>) => {
     setOverridesState((prev) => {
