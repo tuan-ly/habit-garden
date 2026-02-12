@@ -1,15 +1,26 @@
 'use client'
 
 import { useState } from 'react'
-import { Flower2, BarChart3, User as UserIcon, TreeDeciduous, Menu, X, Settings, LogOut, Trophy, Sparkles } from 'lucide-react'
+import { Flower2, BarChart3, User as UserIcon, TreeDeciduous, Menu, X, Settings, LogOut, Trophy, Sparkles, Crown } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { signOut } from '@/app/(auth)/actions'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import type { User } from '@supabase/supabase-js'
+import type { LucideIcon } from 'lucide-react'
 
-const navItems = [
+interface NavItem {
+  title: string
+  url: string
+  icon: LucideIcon
+  color: string
+  activeColor: string
+  glowColor: string
+  premium?: boolean
+}
+
+const navItems: NavItem[] = [
   {
     title: 'Garden',
     url: '/garden',
@@ -33,6 +44,15 @@ const navItems = [
     color: 'from-blue-400 to-indigo-500',
     activeColor: 'bg-blue-500',
     glowColor: 'shadow-blue-500/50'
+  },
+  {
+    title: 'Identity',
+    url: '/identity',
+    icon: Crown,
+    color: 'from-purple-400 to-violet-500',
+    activeColor: 'bg-purple-500',
+    glowColor: 'shadow-purple-500/50',
+    premium: true
   },
   {
     title: 'Profile',
@@ -101,6 +121,13 @@ export function GameNav({ user }: GameNavProps) {
                       {/* Sparkle for active */}
                       {isActive && (
                         <Sparkles className="absolute -top-1.5 -right-1.5 w-4 h-4 sm:w-5 sm:h-5 text-yellow-300 animate-pulse drop-shadow-lg" />
+                      )}
+
+                      {/* Premium badge */}
+                      {item.premium && !isActive && (
+                        <div className="absolute -top-0.5 -right-0.5 w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-md">
+                          <Crown className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-white" />
+                        </div>
                       )}
                     </div>
 

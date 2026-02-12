@@ -555,3 +555,62 @@ export interface TrackUpgradePromptDto {
   feature_context?: string
   action: UpgradePrompt['action']
 }
+
+// =====================================================
+// Identity System (Habien 2.0 Phase 6) - PREMIUM
+// =====================================================
+
+// Identity status
+export type IdentityStatus = 'active' | 'achieved' | 'paused'
+
+// Identity color options
+export type IdentityColor = 'purple' | 'blue' | 'green' | 'amber' | 'rose' | 'cyan' | 'pink' | 'orange'
+
+// Identity table
+export interface Identity {
+  id: string
+  user_id: string
+  name: string
+  description: string | null
+  icon: string
+  color: IdentityColor
+  status: IdentityStatus
+  progress_percentage: number
+  goals_count: number
+  created_at: string
+  updated_at: string
+}
+
+// Identity with linked goals
+export interface IdentityWithGoals extends Identity {
+  goals: Goal[]
+}
+
+// Identity preset suggestions (for UI)
+export interface IdentityPreset {
+  name: string
+  icon: string
+  color: IdentityColor
+  description: string
+}
+
+// Identity DTOs
+export interface CreateIdentityDto {
+  name: string
+  description?: string
+  icon?: string
+  color?: IdentityColor
+}
+
+export interface UpdateIdentityDto {
+  name?: string
+  description?: string
+  icon?: string
+  color?: IdentityColor
+  status?: IdentityStatus
+}
+
+export interface LinkGoalToIdentityDto {
+  goal_id: string
+  identity_id: string
+}

@@ -169,7 +169,7 @@ Chúng tôi tin rằng:
 
 ### Technical
 - [ ] "Tại sao chúng tôi chọn CSS animations thay vì Lottie"
-- [ ] "Xây dựng hệ thống weather deterministicằng TypeScript"
+- [ ] "Xây dựng hệ thống weather deterministic bằng TypeScript"
 - [ ] "Thiết kế achievement system có thể mở rộng"
 
 ### Product
