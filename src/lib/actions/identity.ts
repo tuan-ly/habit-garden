@@ -472,67 +472,6 @@ export async function getIdentityStats(identityId: string): Promise<{
     totalValue,
   }
 }
-
-// =====================================================
-// Identity Presets
-// =====================================================
-
-/**
- * Get preset identity suggestions
- */
-export async function getIdentityPresets() {
-  return [
-    {
-      name: 'Reader',
-      icon: '📚',
-      color: 'purple' as const,
-      description: 'I am someone who reads and learns from books',
-    },
-    {
-      name: 'Athlete',
-      icon: '🏃',
-      color: 'green' as const,
-      description: 'I am someone who takes care of my physical health',
-    },
-    {
-      name: 'Developer',
-      icon: '💻',
-      color: 'blue' as const,
-      description: 'I am someone who builds and creates with code',
-    },
-    {
-      name: 'Artist',
-      icon: '🎨',
-      color: 'rose' as const,
-      description: 'I am someone who expresses creativity through art',
-    },
-    {
-      name: 'Learner',
-      icon: '🎓',
-      color: 'amber' as const,
-      description: 'I am someone who is always growing and learning',
-    },
-    {
-      name: 'Mindful',
-      icon: '🧘',
-      color: 'cyan' as const,
-      description: 'I am someone who practices presence and peace',
-    },
-    {
-      name: 'Builder',
-      icon: '🔨',
-      color: 'orange' as const,
-      description: 'I am someone who creates and builds things',
-    },
-    {
-      name: 'Explorer',
-      icon: '🌍',
-      color: 'pink' as const,
-      description: 'I am someone who seeks new experiences',
-    },
-  ]
-}
-
 /**
  * Check if user can create identities
  */

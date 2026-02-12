@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { ArrowRight, ArrowLeft, Check, Sparkles, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { createIdentity, getIdentityPresets } from '@/lib/actions/identity'
+import { createIdentity } from '@/lib/actions/identity'
 import { toast } from 'sonner'
 import type { IdentityWithGoals, IdentityColor, IdentityPreset } from '@/types/database'
 
@@ -42,10 +42,20 @@ const COLOR_OPTIONS: { id: IdentityColor; label: string; gradient: string; ring:
 // Common emojis for identity icons
 const ICON_OPTIONS = ['🎯', '📚', '🏃', '💻', '🎨', '🎓', '🧘', '🔨', '🌍', '🎵', '✍️', '📷', '🌱', '💪', '🧠', '❤️']
 
+// Identity presets
+const IDENTITY_PRESETS: IdentityPreset[] = [
+  { name: 'Reader', icon: '📚', color: 'purple', description: 'I am someone who reads and learns from books' },
+  { name: 'Athlete', icon: '🏃', color: 'green', description: 'I am someone who takes care of my physical health' },
+  { name: 'Developer', icon: '💻', color: 'blue', description: 'I am someone who builds and creates with code' },
+  { name: 'Artist', icon: '🎨', color: 'rose', description: 'I am someone who expresses creativity through art' },
+  { name: 'Learner', icon: '🎓', color: 'amber', description: 'I am someone who is always growing and learning' },
+  { name: 'Mindful', icon: '🧘', color: 'cyan', description: 'I am someone who practices presence and peace' },
+]
+
 export function IdentityCreationDialog({ open, onOpenChange, onSuccess }: IdentityCreationDialogProps) {
   const [step, setStep] = useState<WizardStep>('preset')
   const [isPending, startTransition] = useTransition()
-  const presets = getIdentityPresets()
+  const presets = IDENTITY_PRESETS
 
   // Form state
   const [name, setName] = useState('')
