@@ -32,7 +32,9 @@
       "Bash(npm run build-storybook:*)",
       "Bash(timeout 15 npm run storybook:*)",
       "Bash(npx playwright install chromium)",
-      "Bash(npx playwright test:*)"
+      "Bash(npx playwright test:*)",
+      "mcp__supabase__search_docs",
+      "WebFetch(domain:developer.paddle.com)"
     ]
   }
 }

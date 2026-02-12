@@ -34,9 +34,21 @@
               "icon": "lucide-file",
               "title": "Brainstorm"
             }
+          },
+          {
+            "id": "b350e155a7d904c0",
+            "type": "leaf",
+            "state": {
+              "type": "release-notes",
+              "state": {
+                "currentVersion": "1.11.7"
+              },
+              "icon": "lucide-book-up",
+              "title": "Release Notes 1.11.7"
+            }
           }
         ],
-        "currentTab": 1
+        "currentTab": 2
       }
     ],
     "direction": "vertical"
@@ -198,7 +210,7 @@
       "bases:Create new base": false
     }
   },
-  "active": "a096048361983d90",
+  "active": "b350e155a7d904c0",
   "lastOpenFiles": [
     "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md.tmp.100676.1770386517833",
     "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md.tmp.100676.1770386506530",

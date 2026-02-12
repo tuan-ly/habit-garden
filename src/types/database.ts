@@ -500,7 +500,7 @@ export interface Subscription {
   user_id: string
   tier_id: SubscriptionTier
   status: SubscriptionStatus
-  payment_provider: 'polar' | 'stripe' | 'sepay' | null
+  payment_provider: 'polar' | 'stripe' | 'sepay' | 'paddle' | null
   provider_subscription_id: string | null
   provider_customer_id: string | null
   current_period_start: string | null

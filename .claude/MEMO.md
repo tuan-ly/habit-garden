@@ -1,22 +1,22 @@
 # Habit Garden - Project Memo
 
-> **Last Updated**: 2026-02-11
-> **Phase**: 4 - Polish & Launch
+> **Last Updated**: 2026-02-12
+> **Phase**: 5 - Payment Integration
 > **Stack**: Next.js 16, Supabase, Tailwind CSS 4, shadcn/ui
 
 ---
 
 ## 🎯 Current Sprint
 
-**Focus**: Habien 2.0 - Phase 5: Payment Integration
+**Focus**: Habien 2.0 - Phase 6: Identity System
 
 **Progress**:
 - ✅ Phase 1: Tier system, slot limits
 - ✅ Phase 2: Garden expansion system
 - ✅ Phase 3: Subscription Infrastructure
 - ✅ Phase 4: Feature Gating
-- [ ] **Phase 5: Payment Integration** ← NEXT
-- [ ] Phase 6: Identity System (PREMIUM)
+- ✅ Phase 5: Payment Integration (Paddle)
+- [ ] **Phase 6: Identity System (PREMIUM)** ← NEXT
 - [ ] Phase 7: Polish & Launch
 
 **Monetization Tiers**:
@@ -27,16 +27,15 @@
 | PREMIUM | $9.99/mo | Unlimited, Tier 1-5, 7x7+ garden, Identity, Level 20+ |
 
 **Next Actions**:
-1. Integrate payment provider (Polar.sh or Stripe)
-2. Create pricing page with tier comparison
-3. Implement checkout flow
-4. Add subscription webhook handlers
-5. Test upgrade/downgrade flows
+1. Set up Paddle account and create products
+2. Add credentials to `.env.local`
+3. Test checkout flow in sandbox
+4. Configure webhook URL in Paddle dashboard
+5. Test full upgrade/downgrade flows
 
 **Related Docs**:
-- [Monetization Design](../plans/goal-feature-uiux-design/MONETIZATION_DESIGN.md) ← NEW
+- [Monetization Design](../plans/goal-feature-uiux-design/MONETIZATION_DESIGN.md)
 - [Habien 2.0 Design](../plans/goal-feature-uiux-design/HABIEN_2.0_DESIGN.md)
-- [Brainstorm Reports](../plans/goal-feature-uiux-design/reports/)
 
 ---
 
@@ -58,6 +57,41 @@
 ---
 
 ## Latest Session
+
+### 2026-02-12: Phase 5 - Paddle Payment Integration
+- Integrated Paddle Billing for subscription payments
+- Created Paddle client with checkout overlay support
+- Added webhook handler at `/api/webhooks/paddle` with signature verification
+- Created server actions for subscription management (cancel, resume, portal)
+- Updated pricing section with 3-tier system (FREE/PRO/PREMIUM)
+- Connected upgrade modal to Paddle checkout flow
+- Added subscription management section to Settings page
+- Database migration for webhook audit log
+
+**New Files**:
+- [paddle.ts](src/lib/paddle.ts) - Paddle client utilities (refactored)
+- [paddle-utils.ts](src/lib/paddle-utils.ts) - Server-side helpers
+- [paddle.ts](src/lib/actions/paddle.ts) - Server actions
+- [route.ts](src/app/api/webhooks/paddle/route.ts) - Webhook handler
+- [subscription-section.tsx](src/components/settings/subscription-section.tsx) - Settings UI
+
+**Modified Files**:
+- [product-config.ts](src/components/landing/product-config.ts) - 3-tier system
+- [pricing-section.tsx](src/components/landing/pricing-section.tsx) - Updated UI
+- [upgrade-modal-container.tsx](src/components/game-ui/upgrade-modal-container.tsx) - Paddle checkout
+- [settings/page.tsx](src/app/(dashboard)/settings/page.tsx) - Added subscription section
+
+**Environment Variables Needed**:
+```
+NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=test_xxx
+PADDLE_API_KEY=pdl_xxx
+PADDLE_WEBHOOK_SECRET=pdl_ntfsec_xxx
+NEXT_PUBLIC_PADDLE_ENVIRONMENT=sandbox
+NEXT_PUBLIC_PADDLE_PRO_MONTHLY_PRICE_ID=pri_xxx
+NEXT_PUBLIC_PADDLE_PRO_YEARLY_PRICE_ID=pri_xxx
+NEXT_PUBLIC_PADDLE_PREMIUM_MONTHLY_PRICE_ID=pri_xxx
+NEXT_PUBLIC_PADDLE_PREMIUM_YEARLY_PRICE_ID=pri_xxx
+```
 
 ### 2026-02-11: Storybook Setup
 - Installed Storybook 8.6.15 with React Vite framework (Next.js 16 compatible)

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { User, Bell, Shield, Palette } from 'lucide-react'
 import { PerformanceSettings } from '@/components/settings/performance-settings'
+import { SubscriptionSection } from '@/components/settings/subscription-section'
 
 export default async function SettingsPage() {
   const supabase = await createClient()
@@ -56,6 +57,9 @@ export default async function SettingsPage() {
           <Button>Save Changes</Button>
         </CardContent>
       </Card>
+
+      {/* Subscription */}
+      <SubscriptionSection />
 
       {/* Notification Settings */}
       <Card>
