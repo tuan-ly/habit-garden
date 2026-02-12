@@ -30,7 +30,9 @@
       "mcp__supabase__list_organizations",
       "Bash(npx storybook@latest init:*)",
       "Bash(npm run build-storybook:*)",
-      "Bash(timeout 15 npm run storybook:*)"
+      "Bash(timeout 15 npm run storybook:*)",
+      "Bash(npx playwright install chromium)",
+      "Bash(npx playwright test:*)"
     ]
   }
 }
