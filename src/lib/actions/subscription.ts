@@ -205,7 +205,17 @@ export async function logSubscriptionEvent(
 }
 
 // Get user's subscription tier (quick check)
+// In dev mode, checks for dev panel override first
 export async function getUserTier(): Promise<SubscriptionTier> {
+  // Check for dev tier override first (dev mode only)
+  if (process.env.NODE_ENV === 'development') {
+    const { getDevTierOverride } = await import('./dev')
+    const devTier = await getDevTierOverride()
+    if (devTier) {
+      return devTier
+    }
+  }
+
   const supabase = await createClient()
 
   const {

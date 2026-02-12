@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useCallback } from 'react'
-import { X, RotateCcw, Bug, ChevronUp, ChevronDown, Sparkles, Zap } from 'lucide-react'
+import { useEffect, useCallback, useTransition } from 'react'
+import { X, RotateCcw, Bug, ChevronUp, ChevronDown, Sparkles, Zap, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -13,6 +13,7 @@ import { useDevDebug, type SubscriptionTier, type DevOverrides } from './dev-deb
 import { cn } from '@/lib/utils'
 import { getMaxPlants, getBasicUnlockedTiers, getGardenSize, getUserPhase } from '@/lib/progression-system'
 import { getXpForLevel, getLevelFromXp, getLevelTitle } from '@/lib/xp-system'
+import { devSetSubscriptionTier, devResetSubscriptionTier } from '@/lib/actions/dev'
 import type { PlantTier } from '@/types/database'
 
 interface ProfileSnapshot {
@@ -43,6 +44,8 @@ export function DevDebugPanel({ profile }: DevDebugPanelProps) {
     togglePanel,
     closePanel,
   } = useDevDebug()
+
+  const [isPending, startTransition] = useTransition()
 
   // Keyboard shortcut: Ctrl+Shift+D
   useEffect(() => {
@@ -88,7 +91,17 @@ export function DevDebugPanel({ profile }: DevDebugPanelProps) {
 
   const handleSubscriptionChange = useCallback(
     (value: string) => {
-      setOverrides({ subscriptionTier: value as SubscriptionTier })
+      const tier = value as SubscriptionTier
+      setOverrides({ subscriptionTier: tier })
+
+      // Set cookie so server actions respect the override
+      startTransition(async () => {
+        const cookieTier = tier.toLowerCase() as 'free' | 'pro' | 'premium'
+        const result = await devSetSubscriptionTier(cookieTier)
+        if (!result.success) {
+          console.error('[DEV] Failed to set tier cookie:', result.error)
+        }
+      })
     },
     [setOverrides]
   )
@@ -112,11 +125,25 @@ export function DevDebugPanel({ profile }: DevDebugPanelProps) {
 
   const quickSetPro = useCallback(() => {
     setOverrides({ subscriptionTier: 'PRO' })
+    startTransition(async () => {
+      await devSetSubscriptionTier('pro')
+    })
   }, [setOverrides])
 
   const quickSetPremium = useCallback(() => {
     setOverrides({ subscriptionTier: 'PREMIUM' })
+    startTransition(async () => {
+      await devSetSubscriptionTier('premium')
+    })
   }, [setOverrides])
+
+  const handleReset = useCallback(() => {
+    resetOverrides()
+    // Also clear the tier override cookie
+    startTransition(async () => {
+      await devResetSubscriptionTier()
+    })
+  }, [resetOverrides])
 
   if (!isDev) return null
 
@@ -159,16 +186,20 @@ export function DevDebugPanel({ profile }: DevDebugPanelProps) {
           <Badge variant="outline" className="text-[10px] text-purple-300 border-purple-500/50">
             DEV
           </Badge>
+          {isPending && (
+            <Loader2 className="w-3 h-3 text-purple-400 animate-spin" />
+          )}
         </div>
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="icon"
             className="h-7 w-7 text-slate-400 hover:text-white hover:bg-slate-800"
-            onClick={resetOverrides}
+            onClick={handleReset}
+            disabled={isPending}
             title="Reset all overrides"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
+            {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
           </Button>
           <Button
             variant="ghost"
