@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Crown, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -21,6 +21,33 @@ export function IdentityDashboard({ initialIdentities }: IdentityDashboardProps)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [selectedIdentity, setSelectedIdentity] = useState<IdentityWithGoals | null>(null)
   const [detailSheetOpen, setDetailSheetOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Prevent hydration mismatch - show nothing until mounted
+  if (!mounted) {
+    return (
+      <div className="max-w-lg mx-auto px-4 py-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <span>My Identities</span>
+              <Sparkles className="w-5 h-5 text-amber-500" />
+            </h1>
+            <p className="text-sm text-muted-foreground">Who you are becoming</p>
+          </div>
+        </div>
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-24 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   // Feature gate - show upgrade prompt if not PREMIUM
   if (!hasIdentity) {

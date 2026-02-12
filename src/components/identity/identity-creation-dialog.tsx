@@ -127,8 +127,8 @@ export function IdentityCreationDialog({ open, onOpenChange, onSuccess }: Identi
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-md max-h-[85vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-purple-500" />
             {step === 'preset' && 'Choose Your Identity'}
@@ -142,7 +142,7 @@ export function IdentityCreationDialog({ open, onOpenChange, onSuccess }: Identi
           </DialogDescription>
         </DialogHeader>
 
-        <div className="py-4">
+        <div className="py-4 flex-1 overflow-y-auto min-h-0">
           {/* Step 1: Preset selection */}
           {step === 'preset' && (
             <div className="space-y-3">
@@ -319,7 +319,7 @@ export function IdentityCreationDialog({ open, onOpenChange, onSuccess }: Identi
           )}
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
+        <DialogFooter className="gap-2 sm:gap-0 flex-shrink-0">
           {step !== 'preset' && (
             <Button variant="ghost" onClick={handleBack} disabled={isPending}>
               <ArrowLeft className="w-4 h-4 mr-1" />
