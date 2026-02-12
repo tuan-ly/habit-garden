@@ -35,7 +35,8 @@
       "Bash(npx playwright test:*)",
       "mcp__supabase__search_docs",
       "WebFetch(domain:developer.paddle.com)",
-      "Bash(npm run lint:*)"
+      "Bash(npm run lint:*)",
+      "Bash(dir:*)"
     ]
   }
 }
