@@ -82,7 +82,7 @@ export function GameNav({ user }: GameNavProps) {
             {/* Top glow line */}
             <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-green-500/50 to-transparent" />
 
-            <div className="flex items-center justify-around px-2 py-2 sm:px-3 sm:py-3">
+            <div className="flex items-center justify-around px-1 py-1.5 sm:px-2 sm:py-2">
               {navItems.map((item) => {
                 const isActive = pathname === item.url || pathname?.startsWith(item.url + '/')
                 return (
@@ -144,7 +144,7 @@ export function GameNav({ user }: GameNavProps) {
                     {/* Active dot indicator */}
                     {isActive && (
                       <div className={cn(
-                        "absolute -bottom-1 w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full",
+                        "absolute -bottom-0.5 w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full",
                         item.activeColor
                       )} />
                     )}
