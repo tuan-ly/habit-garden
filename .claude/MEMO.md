@@ -1,29 +1,41 @@
 # Habit Garden - Project Memo
 
-> **Last Updated**: 2026-02-05
-> **Phase**: 4 - Polish & Launch
+> **Last Updated**: 2026-02-12
+> **Phase**: 6 - Identity System
 > **Stack**: Next.js 16, Supabase, Tailwind CSS 4, shadcn/ui
 
 ---
 
 ## 🎯 Current Sprint
 
-**Focus**: Habien 2.0 - Progressive Growth System Design
+**Focus**: Habien 2.0 - Phase 7: Polish & Launch
 
 **Progress**:
-- ✅ Brainstorm complete (plant difficulty, outcome integration, creative expansion)
-- ✅ Design document created: [HABIEN_2.0_DESIGN.md](../plans/goal-feature-uiux-design/HABIEN_2.0_DESIGN.md)
-- ✅ Plant catalog designed: [PLANT_CATALOG.md](../plans/goal-feature-uiux-design/plant-designs/PLANT_CATALOG.md)
-- 🔄 Ready for implementation planning
+- ✅ Phase 1: Tier system, slot limits
+- ✅ Phase 2: Garden expansion system
+- ✅ Phase 3: Subscription Infrastructure
+- ✅ Phase 4: Feature Gating
+- ✅ Phase 5: Payment Integration (Paddle)
+- ✅ Phase 6: Identity System (PREMIUM)
+- [ ] **Phase 7: Polish & Launch** ← NEXT
 
-**Next Steps**:
-1. Review & finalize design document
-2. Create implementation plan (Phase 1: Foundation - tier system, slot limits)
-3. Start Phase 1 implementation
+**Monetization Tiers**:
+| Tier | Price | Key Features |
+|------|-------|--------------|
+| FREE | $0 | 3 plants, Tier 1-2, 3x3 garden, Level cap 10 |
+| PRO | $4.99/mo | 8 plants, Tier 1-4, 5x5 garden, Goals, Level cap 15 |
+| PREMIUM | $9.99/mo | Unlimited, Tier 1-5, 7x7+ garden, Identity, Level 20+ |
+
+**Next Actions**:
+1. Test Identity feature as PREMIUM user
+2. Upgrade flow UX polish
+3. Trial management (7-day free trial)
+4. Analytics for conversion tracking
+5. A/B test pricing
 
 **Related Docs**:
-- [Brainstorm Reports](../plans/goal-feature-uiux-design/reports/)
-- [Plant Designs](../plans/goal-feature-uiux-design/plant-designs/)
+- [Monetization Design](../plans/goal-feature-uiux-design/MONETIZATION_DESIGN.md)
+- [Habien 2.0 Design](../plans/goal-feature-uiux-design/HABIEN_2.0_DESIGN.md)
 
 ---
 
@@ -36,22 +48,166 @@
 | Watering System | Done |
 | Gamification | Done (XP, achievements, weather, streaks, journal rewards) |
 | Goal Tracking | Done (Build Capacity + Total Progress modes) |
+| Identity System | Done (PREMIUM feature, goal grouping) |
 | Adaptive Goals | Done |
 | PWA/UI Polish | Done |
 | Gentle Growth | Phase 1 Done |
 | Plant Detail Sheet | Done (tabs + reflective UX) |
+| Testing Infrastructure | Done (Vitest + Dev Debug Panel + Storybook) |
 
 ---
 
 ## Latest Session
 
-### 2026-02-02: UX Mode Consolidation
-- Consolidated 3 garden modes (View/Move/Add) into 1 toggle (Interact/Move)
-- **Interact mode** (default): Click plant -> GentleWateringModal, Click empty -> AddPlantDialog
-- **Move mode**: Click-to-select, click-to-place
-- Merged FloatingPlantCard UX into GentleWateringModal (stats bars + details link)
+### 2026-02-12: Phase 6 - Identity System (PREMIUM)
+- Created `identities` table with RLS policies and progress tracking
+- Added `identity_id` foreign key to goals table
+- Created auto-update trigger for identity progress calculation
+- Built server actions: CRUD, goal linking/unlinking, stats
+- Created UI components:
+  - [IdentityCard](src/components/identity/identity-card.tsx) - Display card with progress bar
+  - [IdentityDashboard](src/components/identity/identity-dashboard.tsx) - List view with feature gate
+  - [IdentityCreationDialog](src/components/identity/identity-creation-dialog.tsx) - 3-step wizard
+  - [IdentityDetailSheet](src/components/identity/identity-detail-sheet.tsx) - Full detail view with tabs
+- Added `/identity` page route (PREMIUM gated)
+- Added Identity nav item with PREMIUM badge to game navigation
+- 8 preset identity suggestions (Reader, Athlete, Developer, etc.)
 
-**Changed**: [mode-toolbar.tsx](src/components/garden/mode-toolbar.tsx), [isometric-garden.tsx](src/components/garden/isometric-garden.tsx), [gentle-watering-modal.tsx](src/components/plants/gentle-watering-modal.tsx)
+**New Files**:
+- [20260212_identity_system.sql](supabase/migrations/20260212_identity_system.sql)
+- [identity.ts](src/lib/actions/identity.ts) - Server actions
+- [src/components/identity/](src/components/identity/) - UI components
+- [identity/page.tsx](src/app/(dashboard)/identity/page.tsx) - Page route
+
+**Modified Files**:
+- [database.ts](src/types/database.ts) - Identity types
+- [game-nav.tsx](src/components/game-ui/game-nav.tsx) - Nav item with premium badge
+
+### 2026-02-12: Phase 5 - Paddle Payment Integration
+- Integrated Paddle Billing for subscription payments
+- Created Paddle client with checkout overlay support
+- Added webhook handler at `/api/webhooks/paddle` with signature verification
+- Created server actions for subscription management (cancel, resume, portal)
+- Updated pricing section with 3-tier system (FREE/PRO/PREMIUM)
+- Connected upgrade modal to Paddle checkout flow
+- Added subscription management section to Settings page
+- Database migration for webhook audit log
+
+**New Files**:
+- [paddle.ts](src/lib/paddle.ts) - Paddle client utilities (refactored)
+- [paddle-utils.ts](src/lib/paddle-utils.ts) - Server-side helpers
+- [paddle.ts](src/lib/actions/paddle.ts) - Server actions
+- [route.ts](src/app/api/webhooks/paddle/route.ts) - Webhook handler
+- [subscription-section.tsx](src/components/settings/subscription-section.tsx) - Settings UI
+
+**Modified Files**:
+- [product-config.ts](src/components/landing/product-config.ts) - 3-tier system
+- [pricing-section.tsx](src/components/landing/pricing-section.tsx) - Updated UI
+- [upgrade-modal-container.tsx](src/components/game-ui/upgrade-modal-container.tsx) - Paddle checkout
+- [settings/page.tsx](src/app/(dashboard)/settings/page.tsx) - Added subscription section
+
+**Environment Variables Needed**:
+```
+NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=test_xxx
+PADDLE_API_KEY=pdl_xxx
+PADDLE_WEBHOOK_SECRET=pdl_ntfsec_xxx
+NEXT_PUBLIC_PADDLE_ENVIRONMENT=sandbox
+NEXT_PUBLIC_PADDLE_PRO_MONTHLY_PRICE_ID=pri_xxx
+NEXT_PUBLIC_PADDLE_PRO_YEARLY_PRICE_ID=pri_xxx
+NEXT_PUBLIC_PADDLE_PREMIUM_MONTHLY_PRICE_ID=pri_xxx
+NEXT_PUBLIC_PADDLE_PREMIUM_YEARLY_PRICE_ID=pri_xxx
+```
+
+### 2026-02-11: Storybook Setup
+- Installed Storybook 8.6.15 with React Vite framework (Next.js 16 compatible)
+- Created 3 story files with multiple visual states:
+  - [TierBadge.stories.tsx](src/components/ui/__stories__/TierBadge.stories.tsx) - All tiers, sizes, locked states
+  - [SlotIndicator.stories.tsx](src/components/garden/__stories__/SlotIndicator.stories.tsx) - Fill states, variants
+  - [PlantVisual.stories.tsx](src/components/plants/__stories__/PlantVisual.stories.tsx) - Growth stages, moisture, weather
+- New npm scripts: `npm run storybook`, `npm run build-storybook`
+
+**New Files**: [.storybook/main.ts](.storybook/main.ts), [.storybook/preview.ts](.storybook/preview.ts), 3 story files
+
+### 2026-02-11: Phase 4 - Feature Gating
+- Created [SubscriptionContext](src/lib/context/subscription-context.tsx) for managing tier state across app
+- Added SubscriptionProvider to dashboard layout with dev override support
+- Gated Goals feature in PlantDetailSheet behind PRO tier
+- Updated AddPlantDialog with subscription-based plant tier/slot limits
+- Added level cap enforcement in xp-system with subscription tier support
+- Added upgrade prompts at Level 6 (Goals) and Level 13 (Identity)
+- Updated GameHud to show MAX level state when at subscription cap
+- Added 13 new tests for level cap functionality (202 tests total, 100% pass)
+
+**New Files**:
+- [subscription-context.tsx](src/lib/context/subscription-context.tsx)
+- [upgrade-modal-container.tsx](src/components/game-ui/upgrade-modal-container.tsx)
+
+**Modified Files**:
+- [plant-detail-sheet.tsx](src/components/plants/plant-detail-sheet.tsx) - PRO gate for goals
+- [add-plant-dialog.tsx](src/components/plants/add-plant-dialog.tsx) - Subscription tier limits
+- [game-hud.tsx](src/components/game-ui/game-hud.tsx) - Level cap display
+- [level-up-modal.tsx](src/components/game-ui/level-up-modal.tsx) - Upgrade prompts at L6/L13
+- [xp-system.ts](src/lib/xp-system.ts) - Level cap support
+
+### 2026-02-11: Phase 3 - Subscription Infrastructure
+- Created subscription database schema (4 tables: subscription_tiers, subscriptions, subscription_events, upgrade_prompts)
+- Added subscription_tier and subscription_status to profiles with auto-sync trigger
+- Created [subscription-limits.ts](src/lib/subscription-limits.ts) utility with tier limits, feature checks, upgrade prompts
+- Created [upgrade-modal.tsx](src/components/game-ui/upgrade-modal.tsx) with FeatureLock component
+- Added [subscription.ts](src/lib/actions/subscription.ts) server actions (get tier, check limits, track prompts)
+- Added 36 unit tests for subscription limits (100% pass)
+
+**New Files**:
+- [20260211_subscription_infrastructure.sql](supabase/migrations/20260211_subscription_infrastructure.sql)
+- [subscription-limits.ts](src/lib/subscription-limits.ts)
+- [upgrade-modal.tsx](src/components/game-ui/upgrade-modal.tsx)
+- [subscription.ts](src/lib/actions/subscription.ts)
+- [subscription-limits.test.ts](src/lib/__tests__/subscription-limits.test.ts)
+
+### 2026-02-11: Testing Infrastructure
+- Added **Dev Debug Panel** for quick feature testing (toggle with `Ctrl+Shift+D`)
+  - Override level, tier, subscription in dev mode
+  - Quick actions: Level Up, Max Level, Set PRO/PREMIUM
+  - Persists to localStorage
+- Added **Vitest Unit Tests** (153 tests, 100% pass)
+  - [progression-system.test.ts](src/lib/__tests__/progression-system.test.ts) - 82 tests
+  - [xp-system.test.ts](src/lib/__tests__/xp-system.test.ts) - 71 tests
+- New npm scripts: `npm test`, `npm run test:ui`, `npm run test:coverage`
+
+**New Files**: [dev-debug-context.tsx](src/components/dev/dev-debug-context.tsx), [dev-debug-panel.tsx](src/components/dev/dev-debug-panel.tsx), [vitest.config.ts](vitest.config.ts)
+
+**Next Steps for Testing**:
+- [x] Add Storybook for visual components
+- [ ] Add more story files (PlantCard, LevelUpModal, etc.)
+- [ ] Add E2E tests with Playwright (optional)
+- See [TESTING_STRATEGY.md](plans/20260211-1530-testing-strategy/TESTING_STRATEGY.md)
+
+### 2026-02-06: Monetization Design
+- Designed FREE/PRO/PREMIUM tier system
+- Created [MONETIZATION_DESIGN.md](../plans/goal-feature-uiux-design/MONETIZATION_DESIGN.md)
+- Updated implementation roadmap (7 phases)
+- Key: Goals gated to PRO, Identity gated to PREMIUM
+
+### 2026-02-06: Habien 2.0 Phase 2 - Garden Expansion System
+- Implemented level-based garden sizing (3x3 -> 5x5 -> 7x7 -> dynamic)
+- Added decoration unlock system (bushes/rocks at L1, mushrooms/flowers L5, lanterns L8, fences L10, ponds/fountains L12)
+- Created new SVG decorations: FencePost, FenceCorner, Pond, Fountain
+- Built LevelUpModal with confetti effect and unlock display
+
+**New Files**: [level-up-modal.tsx](src/components/game-ui/level-up-modal.tsx), [unlock-toast.tsx](src/components/game-ui/unlock-toast.tsx), [expansion-animation.tsx](src/components/garden/expansion-animation.tsx)
+
+### 2026-02-06: Habien 2.0 Phase 1 Implementation
+- Implemented tier system (1-5 tiers based on plant difficulty)
+- Added slot limits by level (1 slot at level 1, up to unlimited at level 15)
+- Created TierBadge and SlotIndicator UI components
+- Added tier filtering and slot validation to AddPlantDialog
+- Applied migration to Supabase
+
+**New Files**: [progression-system.ts](src/lib/progression-system.ts), [tier-badge.tsx](src/components/ui/tier-badge.tsx), [slot-indicator.tsx](src/components/ui/slot-indicator.tsx)
+
+### 2026-02-02: UX Mode Consolidation
+- Consolidated 3 garden modes into 1 toggle (Interact/Move)
+- Merged FloatingPlantCard UX into GentleWateringModal
 
 ---
 
@@ -59,8 +215,9 @@
 
 - [ ] Responsive design check
 - [ ] Achievement unlock popup notification
-- [ ] Level up celebration modal
+- [x] Level up celebration modal (Phase 2)
 - [ ] Performance optimization for large gardens
+- [ ] Wire LevelUpModal to XP system (trigger on level change)
 
 **Watering Logic Refinement** (from 2026-01-31):
 1. If already watered today -> hide "Just checking in"
@@ -91,11 +248,13 @@ src/components/
   plants/    - Plant visual, cards, dialogs, watering modal
   goals/     - Goal tracking UI
   game-ui/   - HUD, nav, mood selector
+  dev/       - Dev Debug Panel (dev-only)
 
 src/lib/
   actions/   - Server actions (plants, goals, profile, activity, journal)
   context/   - React contexts
   hooks/     - Custom hooks
+  __tests__/ - Unit tests (Vitest)
 ```
 
 ---

@@ -10,19 +10,26 @@
 
 **DO NOT** read all docs upfront. Only what's needed for the task.
 
+**App Language: English**
 ---
 
 ## Quick Start
 
-1. **Read** `.claude/MEMO.md` - Current status, recent sessions, working features
-2. **Identify** what task needs
-3. **Read additional context** only if needed
+1. **Read** `.claude/MEMO.md` - Start with **Current Sprint** section
+2. **Check** if task relates to current sprint
+3. **Read additional context** only if needed (design docs, DEVLOG.md)
 
 ---
 
 ## After Work
 
-**Update MEMO.md** with:
+**Always update Current Sprint** (top of MEMO.md):
+- What sprint/focus is active right now
+- Current progress (where we are)
+- Next steps (what to do next)
+- **Next Actions**: Explicitly propose what to do next in the sprint
+
+**Update Session Log** with:
 - Session date and title (1 line)
 - What changed (bullet points, max 5)
 - Key files (links)
@@ -36,6 +43,12 @@
 
 ---
 
+## Performance & Animation
+
+- **Minimize DOM Animations**: Avoid heavy CSS/JS animations that cause lag.
+- **Prefer Canvas**: Use HTML5 Canvas for complex visuals or many moving parts.
+- **Performance First**: Always prioritize frame rate and responsiveness.
+
 ## Project Quick Reference
 
 | Item | Value |
@@ -45,7 +58,7 @@
 | Plants Dir | `public/plants/[type]/[stage].png` |
 | Server Actions | `src/lib/actions/` |
 | Components | `src/components/` (garden, plants, goals, game-ui) |
-
+| Supabase | habit-garden (id: jkhkfsfjnilbfqfatonb) 
 ---
 
 ## Key Directories
@@ -69,6 +82,8 @@ src/lib/
 
 ```
 <type>: <description>
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 ```
 
 Types: feat, fix, refactor, docs, style, test, chore

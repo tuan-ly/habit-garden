@@ -22,7 +22,20 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(python3:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(npm run test:run:*)",
+      "Bash(timeout 10 npm run dev:*)",
+      "Bash(npm test:*)",
+      "mcp__supabase__get_cost",
+      "mcp__supabase__list_organizations",
+      "Bash(npx storybook@latest init:*)",
+      "Bash(npm run build-storybook:*)",
+      "Bash(timeout 15 npm run storybook:*)",
+      "Bash(npx playwright install chromium)",
+      "Bash(npx playwright test:*)",
+      "mcp__supabase__search_docs",
+      "WebFetch(domain:developer.paddle.com)",
+      "Bash(npm run lint:*)"
     ]
   }
 }

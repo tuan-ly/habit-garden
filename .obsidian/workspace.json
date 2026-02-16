@@ -34,9 +34,21 @@
               "icon": "lucide-file",
               "title": "Brainstorm"
             }
+          },
+          {
+            "id": "b350e155a7d904c0",
+            "type": "leaf",
+            "state": {
+              "type": "release-notes",
+              "state": {
+                "currentVersion": "1.11.7"
+              },
+              "icon": "lucide-book-up",
+              "title": "Release Notes 1.11.7"
+            }
           }
         ],
-        "currentTab": 1
+        "currentTab": 2
       }
     ],
     "direction": "vertical"
@@ -198,19 +210,32 @@
       "bases:Create new base": false
     }
   },
-  "active": "a096048361983d90",
+  "active": "b350e155a7d904c0",
   "lastOpenFiles": [
-    "plans/goal-feature-uiux-design/plant-designs/INDEX.md.tmp.148848.1770270199066",
-    "plans/goal-feature-uiux-design/plant-designs/INDEX.md.tmp.148848.1770270191679",
-    "plans/goal-feature-uiux-design/plant-designs/INDEX.md.tmp.148848.1770270185462",
-    "plans/goal-feature-uiux-design/plant-designs/INDEX.md.tmp.148848.1770270177885",
-    "plans/goal-feature-uiux-design/plant-designs/INDEX.md.tmp.148848.1770270171072",
-    "plans/goal-feature-uiux-design/HABIEN_2.0_DESIGN.md.tmp.148848.1770270144779",
-    "plans/goal-feature-uiux-design/HABIEN_2.0_DESIGN.md.tmp.148848.1770270137787",
-    "plans/goal-feature-uiux-design/HABIEN_2.0_DESIGN.md.tmp.148848.1770270106347",
-    "plans/goal-feature-uiux-design/HABIEN_2.0_DESIGN.md.tmp.148848.1770270097649",
-    "plans/goal-feature-uiux-design/plant-designs/PLANT_CATALOG.md.tmp.148848.1770270083932",
-    "CLAUDE.md.tmp.169896.1770269911879",
+    "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md.tmp.100676.1770386517833",
+    "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md.tmp.100676.1770386506530",
+    "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md.tmp.100676.1770386495366",
+    "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md.tmp.100676.1770386486030",
+    "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md.tmp.100676.1770386473583",
+    "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md.tmp.100676.1770386461641",
+    "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md.tmp.100676.1770386452102",
+    "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md.tmp.100676.1770386439443",
+    "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md.tmp.100676.1770386425320",
+    "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md.tmp.100676.1770386409285",
+    "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md",
+    "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md.tmp.100676.1770386090335",
+    "plans/goal-feature-uiux-design/MONETIZATION_DESIGN.md",
+    "plans/goal-feature-uiux-design/phase-02-garden-expansion.md",
+    "plans/goal-feature-uiux-design/plan.md",
+    "plans/goal-feature-uiux-design/scout/scout-01-phase2-files.md",
+    "plans/goal-feature-uiux-design/research/researcher-260206-garden-expansion-ux.md",
+    "plans/goal-feature-uiux-design/research/researcher-260206-decoration-systems.md",
+    "plans/20260206-habien-2.0-phase-1/phase-04-integration.md",
+    "plans/20260206-habien-2.0-phase-1/phase-03-ui.md",
+    "plans/20260206-habien-2.0-phase-1/phase-02-utilities.md",
+    "plans/20260206-habien-2.0-phase-1/phase-01-database.md",
+    "plans/20260206-habien-2.0-phase-1/plan.md",
+    "plans/reports/scout-260206-habien-tier-system.md",
     "plans/goal-feature-uiux-design/HABIEN_2.0_DESIGN.md",
     "plans/goal-feature-uiux-design/plant-designs/INDEX.md",
     "plans/goal-feature-uiux-design/plant-designs/SEASONAL_SPECIAL.md",

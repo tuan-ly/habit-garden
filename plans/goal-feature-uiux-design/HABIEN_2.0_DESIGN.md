@@ -219,7 +219,7 @@ Start simple:
 🌼 Dandelion  - 7 day tolerance - "Make a wish"
 🪴 Succulent  - 10 day tolerance - "Resilient"
 🌵 Cactus     - 14 day tolerance - "Desert survivor"
-🌱 Sprouts    - 3 day tolerance, fast growth (7 days)
+🍄 Mushroom   - 3 day tolerance, fastest (5 days), night bonus
 ☘️ Clover     - 5 day tolerance - Lucky events
 ```
 
@@ -391,7 +391,7 @@ TIER 1: FORGIVING FRIENDS
 Theme: "You cannot fail here"
 Tolerance: 3-14 days
 Target User: New, building confidence
-Plants: Dandelion, Succulent, Cactus, Sprouts, Clover
+Plants: Dandelion, Succulent, Cactus, Mushroom, Clover
 
 TIER 2: RELIABLE PARTNERS
 Theme: "Building real consistency"
@@ -685,77 +685,98 @@ function canPlantTier(
 
 ## 10. Implementation Roadmap
 
-### Phase 1: Foundation (Week 1-2)
+> **Note**: Monetization design is documented in [MONETIZATION_DESIGN.md](./MONETIZATION_DESIGN.md)
+
+### Phase 1: Foundation ✅ DONE
 **Goal**: Add tier system and slot limits
 
 ```
-[ ] Add `tier` column to plant_types (1-5)
-[ ] Add `max_plants`, `unlocked_tiers` to profiles
-[ ] Seed existing plant_types with tiers
-[ ] Create tier check function
-[ ] Create slot limit function
-[ ] Add tier badge UI
-[ ] Add slot limit UI
-[ ] Hide Tier 2+ in plant picker for low levels
+[x] Add `tier` column to plant_types (1-5)
+[x] Add `max_plants`, `unlocked_tiers` to profiles
+[x] Seed existing plant_types with tiers
+[x] Create tier check function
+[x] Create slot limit function
+[x] Add tier badge UI
+[x] Add slot limit UI
+[x] Hide Tier 2+ in plant picker for low levels
 ```
 
-### Phase 2: Progressive Unlock (Week 2-3)
-**Goal**: Features unlock by level
+### Phase 2: Garden Expansion ✅ DONE
+**Goal**: Level-based garden growth and decorations
 
 ```
-[ ] Create `features_unlocked` column in profiles
-[ ] Create unlock check system
-[ ] Create unlock notification system
-[ ] Hide Goals UI until Level 6
-[ ] Add "Goals unlocked!" notification at Level 6
-[ ] Add level-up modal with rewards/unlocks
+[x] Level-based garden sizing (3x3 → 5x5 → 7x7 → dynamic)
+[x] Decoration unlock system by level
+[x] New SVG decorations (fence, pond, fountain)
+[x] Level-up celebration modal
+[x] Unlock toast notifications
+[x] Garden expansion animation
 ```
 
-### Phase 3: Guardrails (Week 3-4)
-**Goal**: Protect users from overcommitment
+### Phase 3: Subscription Infrastructure (Week 1-2)
+**Goal**: Payment system and feature gating
 
 ```
-[ ] Create cooldowns table
-[ ] Implement new plant cooldown (7 days)
-[ ] Implement mourning period (3 days)
-[ ] Add difficulty warning modal
-[ ] Add overwhelm detection
-[ ] Add gentle nudges for overwhelmed users
+[ ] Database: subscription_tiers, subscriptions tables
+[ ] Payment integration (Polar.sh or Stripe)
+[ ] Add subscription_tier to profiles
+[ ] Create TierLimits system (replaces level-based limits)
+[ ] Subscription check middleware
+[ ] Basic paywall/upgrade modal component
+[ ] Settings → Subscription page
 ```
 
-### Phase 4: Goal Restructure (Week 4-6)
-**Goal**: Separate Goals from Plants
+**Key Changes**:
+- Garden size now based on subscription tier (not just level)
+- Plant slots based on subscription tier
+- Level caps by tier (FREE: 10, PRO: 15, PREMIUM: 20+)
+
+### Phase 4: Feature Gating (Week 2-3)
+**Goal**: Apply subscription limits across features
 
 ```
-[ ] Create new goals_v2 table (standalone)
-[ ] Create plant_goal_links table (N:1)
-[ ] Migrate existing goals to new structure
-[ ] Update goal creation flow
-[ ] Update plant watering to log to linked goals
-[ ] Update goal progress UI
+[ ] Gate Goals system behind PRO tier
+[ ] Gate Identity system behind PREMIUM tier
+[ ] Apply plant tier limits (FREE: 1-2, PRO: 1-4, PREMIUM: 1-5)
+[ ] Apply decoration limits by tier
+[ ] Level cap enforcement
+[ ] XP multiplier by tier (1.0x, 1.2x, 1.5x)
+[ ] Upgrade prompts at natural triggers (Level 6, 13)
 ```
 
-### Phase 5: Identity System (Week 6-8)
-**Goal**: Add Identity layer
+### Phase 5: Goals System (Week 3-5)
+**Goal**: Standalone goals with plant linking (PRO+)
+
+```
+[ ] Create goals_v2 table (standalone from plants)
+[ ] Goal creation flow with metrics
+[ ] Weekly reports (basic for PRO, detailed for PREMIUM)
+[ ] Plant-Goal linking (1:1 for PRO, N:1 for PREMIUM)
+[ ] Seasons system
+[ ] Goal progress tracking UI
+```
+
+### Phase 6: Identity System (Week 5-7)
+**Goal**: Identity layer for transformation (PREMIUM)
 
 ```
 [ ] Create identities table
-[ ] Link goals to identities
-[ ] Hide Identity UI until Level 13
-[ ] Create Identity creation flow
-[ ] Create Identity dashboard
-[ ] Add Identity suggestions based on goals
+[ ] Identity creation flow
+[ ] Goal grouping under identity
+[ ] Identity dashboard
+[ ] AI-powered identity suggestions
 ```
 
-### Phase 6: Polish (Week 8-10)
-**Goal**: Smooth experience
+### Phase 7: Polish & Launch (Week 7-8)
+**Goal**: Production-ready monetization
 
 ```
-[ ] Onboarding flow for new users
-[ ] Tutorial for each phase transition
-[ ] Achievement integration with tiers
-[ ] Performance optimization
-[ ] Analytics for drop-off points
+[ ] Upgrade flow UX polish
+[ ] Trial management (7-day free trial)
+[ ] Billing portal integration
+[ ] Analytics for conversion tracking
+[ ] A/B test pricing
+[ ] Regional pricing (VN, SEA discounts)
 ```
 
 ---
@@ -848,7 +869,7 @@ CREATE TABLE feature_unlocks (
 
 ```sql
 -- Seed plant_types with tiers
-UPDATE plant_types SET tier = 1 WHERE name IN ('Dandelion', 'Succulent', 'Cactus', 'Sprouts', 'Clover');
+UPDATE plant_types SET tier = 1 WHERE name IN ('Dandelion', 'Succulent', 'Cactus', 'Mushroom', 'Clover');
 UPDATE plant_types SET tier = 2 WHERE name IN ('Vegetable', 'Bush', 'Daisy', 'Mint', 'Lavender', 'Tomato');
 UPDATE plant_types SET tier = 3 WHERE name IN ('Rose', 'Orchid', 'Cherry Blossom', 'Tulip', 'Peony', 'Sunflower');
 UPDATE plant_types SET tier = 4 WHERE name IN ('Bamboo', 'Pine', 'Banyan', 'Bodhi', 'Bonsai');
@@ -947,6 +968,7 @@ UPDATE profiles SET
 
 ## Appendix B: Related Documents
 
+- [Monetization Design](./MONETIZATION_DESIGN.md) - FREE/PRO/PREMIUM tier system
 - [Plant Difficulty System](reports/brainstorm-260205-plant-difficulty-system.md)
 - [Outcome Integration](reports/brainstorm-260205-outcome-integration.md)
 - [Creative Expansion](reports/brainstorm-260205-creative-expansion.md)

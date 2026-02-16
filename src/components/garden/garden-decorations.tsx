@@ -2,15 +2,18 @@
 
 import { useMemo } from 'react'
 import type { TimeOfDay } from './themes'
+import type { DecorationType } from '@/lib/progression-system'
 
 interface GardenDecorationsProps {
   gridSize: number
   tileSize: number
   timeOfDay?: TimeOfDay
+  /** Decoration types unlocked at user's current level */
+  unlockedTypes?: DecorationType[]
 }
 
-// Decorative element types
-type DecoType = 'bush' | 'rock' | 'mushroom' | 'flower-patch' | 'fence-post' | 'lantern'
+// Decorative element types - extended with new decorations
+type DecoType = 'bush' | 'rock' | 'mushroom' | 'flower-patch' | 'fence-post' | 'fence-corner' | 'lantern' | 'pond' | 'fountain'
 
 interface DecoElement {
   type: DecoType
@@ -21,8 +24,16 @@ interface DecoElement {
   zIndex: number
 }
 
+// Default unlocked types (level 1)
+const DEFAULT_UNLOCKED: DecoType[] = ['bush', 'rock']
+
 // Generate deterministic random decorations around the garden
-function generateDecorations(gridSize: number, tileSize: number, seed: number = 777): DecoElement[] {
+function generateDecorations(
+  gridSize: number,
+  tileSize: number,
+  unlockedTypes: DecoType[] = DEFAULT_UNLOCKED,
+  seed: number = 777
+): DecoElement[] {
   const decos: DecoElement[] = []
 
   const random = (i: number) => {
@@ -31,112 +42,202 @@ function generateDecorations(gridSize: number, tileSize: number, seed: number = 
     return Math.round((x - Math.floor(x)) * 1000000) / 1000000
   }
 
+  const isUnlocked = (type: DecoType) => unlockedTypes.includes(type)
+
   const diamondWidth = gridSize * tileSize
   const diamondHeight = gridSize * (tileSize / 2)
   const centerX = diamondWidth / 2
 
-  /* 
-  // Add trees around the edges - Disabled as they cause confusion with growing plants
-  const treeCount = Math.max(4, Math.floor(gridSize * 1.5))
-  for (let i = 0; i < treeCount; i++) {
-    const angle = (i / treeCount) * Math.PI * 2
-    const distance = diamondWidth * 0.55 + random(i) * diamondWidth * 0.15
-    const x = centerX + Math.cos(angle) * distance * 0.5
-    const y = diamondHeight * 0.5 + Math.sin(angle) * distance * 0.25
+  // Add bushes (level 1)
+  if (isUnlocked('bush')) {
+    const bushCount = Math.floor(gridSize * 1.2)
+    for (let i = 0; i < bushCount; i++) {
+      const angle = (i / bushCount) * Math.PI * 2 + 0.3
+      const distance = diamondWidth * 0.45 + random(i + 100) * diamondWidth * 0.12
+      const x = centerX + Math.cos(angle) * distance * 0.5
+      const y = diamondHeight * 0.5 + Math.sin(angle) * distance * 0.25
 
-    // Don't place trees too close to bottom (would overlap with UI)
-    if (y > diamondHeight * 0.9) continue
+      if (y > diamondHeight * 0.85) continue
 
-    const type: DecoType = random(i * 2) > 0.5 ? 'tree-pine' : 'tree-oak'
-    decos.push({
-      type,
-      x,
-      y,
-      scale: 0.6 + random(i * 3) * 0.4,
-      flip: random(i * 4) > 0.5,
-      zIndex: Math.floor(y),
-    })
-  }
-  */
-
-  // Add bushes
-  const bushCount = Math.floor(gridSize * 1.2)
-  for (let i = 0; i < bushCount; i++) {
-    const angle = (i / bushCount) * Math.PI * 2 + 0.3
-    const distance = diamondWidth * 0.45 + random(i + 100) * diamondWidth * 0.12
-    const x = centerX + Math.cos(angle) * distance * 0.5
-    const y = diamondHeight * 0.5 + Math.sin(angle) * distance * 0.25
-
-    if (y > diamondHeight * 0.85) continue
-
-    decos.push({
-      type: 'bush',
-      x: Math.round(x * 10000) / 10000,
-      y: Math.round(y * 10000) / 10000,
-      scale: Math.round((0.5 + random(i + 101) * 0.3) * 10000) / 10000,
-      flip: random(i + 102) > 0.5,
-      zIndex: Math.floor(y),
-    })
+      decos.push({
+        type: 'bush',
+        x: Math.round(x * 10000) / 10000,
+        y: Math.round(y * 10000) / 10000,
+        scale: Math.round((0.5 + random(i + 101) * 0.3) * 10000) / 10000,
+        flip: random(i + 102) > 0.5,
+        zIndex: Math.floor(y),
+      })
+    }
   }
 
-  // Add rocks
-  const rockCount = Math.floor(gridSize * 0.8)
-  for (let i = 0; i < rockCount; i++) {
-    const angle = (i / rockCount) * Math.PI * 2 + 0.7
-    const distance = diamondWidth * 0.42 + random(i + 200) * diamondWidth * 0.1
-    const x = centerX + Math.cos(angle) * distance * 0.5
-    const y = diamondHeight * 0.5 + Math.sin(angle) * distance * 0.25
+  // Add rocks (level 1)
+  if (isUnlocked('rock')) {
+    const rockCount = Math.floor(gridSize * 0.8)
+    for (let i = 0; i < rockCount; i++) {
+      const angle = (i / rockCount) * Math.PI * 2 + 0.7
+      const distance = diamondWidth * 0.42 + random(i + 200) * diamondWidth * 0.1
+      const x = centerX + Math.cos(angle) * distance * 0.5
+      const y = diamondHeight * 0.5 + Math.sin(angle) * distance * 0.25
 
-    if (y > diamondHeight * 0.8) continue
+      if (y > diamondHeight * 0.8) continue
 
-    decos.push({
-      type: 'rock',
-      x: Math.round(x * 10000) / 10000,
-      y: Math.round(y * 10000) / 10000,
-      scale: Math.round((0.4 + random(i + 201) * 0.4) * 10000) / 10000,
-      flip: random(i + 202) > 0.5,
-      zIndex: Math.floor(y),
-    })
+      decos.push({
+        type: 'rock',
+        x: Math.round(x * 10000) / 10000,
+        y: Math.round(y * 10000) / 10000,
+        scale: Math.round((0.4 + random(i + 201) * 0.4) * 10000) / 10000,
+        flip: random(i + 202) > 0.5,
+        zIndex: Math.floor(y),
+      })
+    }
   }
 
-  // Add mushrooms
-  const mushroomCount = Math.floor(gridSize * 0.5)
-  for (let i = 0; i < mushroomCount; i++) {
-    const angle = (i / mushroomCount) * Math.PI * 2 + 1.2
-    const distance = diamondWidth * 0.4 + random(i + 300) * diamondWidth * 0.08
-    const x = centerX + Math.cos(angle) * distance * 0.5
-    const y = diamondHeight * 0.5 + Math.sin(angle) * distance * 0.25
+  // Add mushrooms (level 5)
+  if (isUnlocked('mushroom')) {
+    const mushroomCount = Math.floor(gridSize * 0.5)
+    for (let i = 0; i < mushroomCount; i++) {
+      const angle = (i / mushroomCount) * Math.PI * 2 + 1.2
+      const distance = diamondWidth * 0.4 + random(i + 300) * diamondWidth * 0.08
+      const x = centerX + Math.cos(angle) * distance * 0.5
+      const y = diamondHeight * 0.5 + Math.sin(angle) * distance * 0.25
 
-    if (y > diamondHeight * 0.75) continue
+      if (y > diamondHeight * 0.75) continue
 
-    decos.push({
-      type: 'mushroom',
-      x: Math.round(x * 10000) / 10000,
-      y: Math.round(y * 10000) / 10000,
-      scale: Math.round((0.3 + random(i + 301) * 0.25) * 10000) / 10000,
-      flip: random(i + 302) > 0.5,
-      zIndex: Math.floor(y),
-    })
+      decos.push({
+        type: 'mushroom',
+        x: Math.round(x * 10000) / 10000,
+        y: Math.round(y * 10000) / 10000,
+        scale: Math.round((0.3 + random(i + 301) * 0.25) * 10000) / 10000,
+        flip: random(i + 302) > 0.5,
+        zIndex: Math.floor(y),
+      })
+    }
   }
 
-  // Add flower patches
-  const flowerCount = Math.floor(gridSize * 0.6)
-  for (let i = 0; i < flowerCount; i++) {
-    const angle = (i / flowerCount) * Math.PI * 2 + 0.5
-    const distance = diamondWidth * 0.38 + random(i + 400) * diamondWidth * 0.1
-    const x = centerX + Math.cos(angle) * distance * 0.5
-    const y = diamondHeight * 0.5 + Math.sin(angle) * distance * 0.25
+  // Add flower patches (level 5)
+  if (isUnlocked('flower-patch')) {
+    const flowerCount = Math.floor(gridSize * 0.6)
+    for (let i = 0; i < flowerCount; i++) {
+      const angle = (i / flowerCount) * Math.PI * 2 + 0.5
+      const distance = diamondWidth * 0.38 + random(i + 400) * diamondWidth * 0.1
+      const x = centerX + Math.cos(angle) * distance * 0.5
+      const y = diamondHeight * 0.5 + Math.sin(angle) * distance * 0.25
 
-    if (y > diamondHeight * 0.75) continue
+      if (y > diamondHeight * 0.75) continue
 
-    decos.push({
-      type: 'flower-patch',
-      x: Math.round(x * 10000) / 10000,
-      y: Math.round(y * 10000) / 10000,
-      scale: Math.round((0.35 + random(i + 401) * 0.2) * 10000) / 10000,
-      flip: random(i + 402) > 0.5,
-      zIndex: Math.floor(y),
-    })
+      decos.push({
+        type: 'flower-patch',
+        x: Math.round(x * 10000) / 10000,
+        y: Math.round(y * 10000) / 10000,
+        scale: Math.round((0.35 + random(i + 401) * 0.2) * 10000) / 10000,
+        flip: random(i + 402) > 0.5,
+        zIndex: Math.floor(y),
+      })
+    }
+  }
+
+  // Add lanterns (level 8) - spaced around garden edges
+  if (isUnlocked('lantern')) {
+    const lanternCount = Math.max(2, Math.floor(gridSize * 0.3))
+    for (let i = 0; i < lanternCount; i++) {
+      const angle = (i / lanternCount) * Math.PI * 2 + 0.9
+      const distance = diamondWidth * 0.48 + random(i + 500) * diamondWidth * 0.05
+      const x = centerX + Math.cos(angle) * distance * 0.5
+      const y = diamondHeight * 0.5 + Math.sin(angle) * distance * 0.25
+
+      if (y > diamondHeight * 0.8) continue
+
+      decos.push({
+        type: 'lantern',
+        x: Math.round(x * 10000) / 10000,
+        y: Math.round(y * 10000) / 10000,
+        scale: Math.round((0.5 + random(i + 501) * 0.2) * 10000) / 10000,
+        flip: random(i + 502) > 0.5,
+        zIndex: Math.floor(y),
+      })
+    }
+  }
+
+  // Add fence posts (level 10) - along edges
+  if (isUnlocked('fence-post')) {
+    const fenceCount = Math.max(4, Math.floor(gridSize * 0.6))
+    for (let i = 0; i < fenceCount; i++) {
+      const angle = (i / fenceCount) * Math.PI * 2
+      const distance = diamondWidth * 0.52
+      const x = centerX + Math.cos(angle) * distance * 0.5
+      const y = diamondHeight * 0.5 + Math.sin(angle) * distance * 0.25
+
+      if (y > diamondHeight * 0.85) continue
+
+      decos.push({
+        type: 'fence-post',
+        x: Math.round(x * 10000) / 10000,
+        y: Math.round(y * 10000) / 10000,
+        scale: Math.round((0.45 + random(i + 600) * 0.1) * 10000) / 10000,
+        flip: false,
+        zIndex: Math.floor(y),
+      })
+    }
+  }
+
+  // Add fence corners (level 10) - at cardinal directions
+  if (isUnlocked('fence-corner')) {
+    const corners = [0, Math.PI / 2, Math.PI, Math.PI * 1.5]
+    for (let i = 0; i < corners.length; i++) {
+      const angle = corners[i]
+      const distance = diamondWidth * 0.54
+      const x = centerX + Math.cos(angle) * distance * 0.5
+      const y = diamondHeight * 0.5 + Math.sin(angle) * distance * 0.25
+
+      if (y > diamondHeight * 0.85) continue
+
+      decos.push({
+        type: 'fence-corner',
+        x: Math.round(x * 10000) / 10000,
+        y: Math.round(y * 10000) / 10000,
+        scale: 0.5,
+        flip: i > 1,
+        zIndex: Math.floor(y),
+      })
+    }
+  }
+
+  // Add pond (level 12) - single large pond near edge
+  if (isUnlocked('pond')) {
+    const pondAngle = Math.PI * 0.75 // Upper-left area
+    const pondDistance = diamondWidth * 0.35
+    const pondX = centerX + Math.cos(pondAngle) * pondDistance * 0.5
+    const pondY = diamondHeight * 0.5 + Math.sin(pondAngle) * pondDistance * 0.25
+
+    if (pondY <= diamondHeight * 0.7) {
+      decos.push({
+        type: 'pond',
+        x: Math.round(pondX * 10000) / 10000,
+        y: Math.round(pondY * 10000) / 10000,
+        scale: 0.8,
+        flip: false,
+        zIndex: Math.floor(pondY) - 1, // Below other elements
+      })
+    }
+  }
+
+  // Add fountain (level 12) - centerish if unlocked
+  if (isUnlocked('fountain')) {
+    const fountainAngle = Math.PI * 1.25 // Lower-right area
+    const fountainDistance = diamondWidth * 0.3
+    const fountainX = centerX + Math.cos(fountainAngle) * fountainDistance * 0.5
+    const fountainY = diamondHeight * 0.5 + Math.sin(fountainAngle) * fountainDistance * 0.25
+
+    if (fountainY <= diamondHeight * 0.75) {
+      decos.push({
+        type: 'fountain',
+        x: Math.round(fountainX * 10000) / 10000,
+        y: Math.round(fountainY * 10000) / 10000,
+        scale: 0.7,
+        flip: false,
+        zIndex: Math.floor(fountainY),
+      })
+    }
   }
 
   return decos.sort((a, b) => a.zIndex - b.zIndex)
@@ -253,6 +354,94 @@ function Lantern({ scale, flip, isNight }: { scale: number; flip: boolean; isNig
   )
 }
 
+// Fence post - wooden post decoration (level 10)
+function FencePost({ scale }: { scale: number; flip: boolean }) {
+  return (
+    <g transform={`scale(${scale})`}>
+      {/* Main post */}
+      <rect x="-3" y="-25" width="6" height="30" fill="#8d6e63" rx="1" />
+      {/* Post cap */}
+      <polygon points="0,-28 -5,-25 5,-25" fill="#6d4c41" />
+      {/* Wood grain */}
+      <line x1="-1" y1="-20" x2="-1" y2="0" stroke="#5d4037" strokeWidth="0.5" opacity="0.5" />
+      <line x1="1" y1="-15" x2="1" y2="2" stroke="#5d4037" strokeWidth="0.5" opacity="0.5" />
+    </g>
+  )
+}
+
+// Fence corner - corner post with crossbeams (level 10)
+function FenceCorner({ scale, flip }: { scale: number; flip: boolean }) {
+  return (
+    <g transform={`scale(${flip ? -scale : scale}, ${scale})`}>
+      {/* Main corner post */}
+      <rect x="-4" y="-30" width="8" height="35" fill="#8d6e63" rx="1" />
+      {/* Post cap */}
+      <polygon points="0,-33 -6,-30 6,-30" fill="#6d4c41" />
+      {/* Horizontal beam left */}
+      <rect x="-25" y="-20" width="22" height="4" fill="#a1887f" rx="1" />
+      <rect x="-25" y="-10" width="22" height="4" fill="#a1887f" rx="1" />
+      {/* Horizontal beam right */}
+      <rect x="3" y="-20" width="22" height="4" fill="#a1887f" rx="1" />
+      <rect x="3" y="-10" width="22" height="4" fill="#a1887f" rx="1" />
+    </g>
+  )
+}
+
+// Pond - water feature with lily pads (level 12)
+function Pond({ scale }: { scale: number; flip: boolean }) {
+  return (
+    <g transform={`scale(${scale})`}>
+      {/* Pond base - oval shape */}
+      <ellipse cx="0" cy="0" rx="40" ry="25" fill="#1565c0" opacity="0.6" />
+      <ellipse cx="0" cy="0" rx="35" ry="20" fill="#42a5f5" opacity="0.7" />
+      {/* Water shimmer */}
+      <ellipse cx="-10" cy="-5" rx="8" ry="4" fill="#90caf9" opacity="0.5" />
+      <ellipse cx="15" cy="5" rx="6" ry="3" fill="#90caf9" opacity="0.4" />
+      {/* Lily pads */}
+      <ellipse cx="-15" cy="8" rx="8" ry="5" fill="#4caf50" />
+      <ellipse cx="-17" cy="7" rx="2" ry="1.5" fill="#2e7d32" /> {/* Leaf notch illusion */}
+      <ellipse cx="20" cy="-3" rx="6" ry="4" fill="#66bb6a" />
+      <ellipse cx="22" cy="-4" rx="1.5" ry="1" fill="#388e3c" />
+      {/* Lily flower */}
+      <circle cx="-12" cy="6" r="3" fill="#fff" opacity="0.9" />
+      <circle cx="-12" cy="6" r="1" fill="#ffeb3b" />
+      {/* Rocks around edge */}
+      <ellipse cx="-35" cy="5" rx="6" ry="4" fill="#78909c" />
+      <ellipse cx="32" cy="-8" rx="5" ry="3" fill="#90a4ae" />
+      <ellipse cx="-25" cy="-15" rx="4" ry="3" fill="#607d8b" />
+    </g>
+  )
+}
+
+// Fountain - stone fountain with water spray (level 12)
+function Fountain({ scale, isNight }: { scale: number; flip: boolean; isNight: boolean }) {
+  return (
+    <g transform={`scale(${scale})`}>
+      {/* Base pool */}
+      <ellipse cx="0" cy="5" rx="30" ry="15" fill="#78909c" />
+      <ellipse cx="0" cy="3" rx="25" ry="12" fill="#42a5f5" opacity="0.7" />
+      {/* Middle tier */}
+      <ellipse cx="0" cy="-5" rx="18" ry="10" fill="#90a4ae" />
+      <ellipse cx="0" cy="-7" rx="14" ry="7" fill="#64b5f6" opacity="0.6" />
+      {/* Top tier */}
+      <ellipse cx="0" cy="-15" rx="10" ry="6" fill="#b0bec5" />
+      <ellipse cx="0" cy="-17" rx="6" ry="3" fill="#90caf9" opacity="0.5" />
+      {/* Center spout */}
+      <rect x="-3" y="-30" width="6" height="15" fill="#cfd8dc" rx="2" />
+      {/* Water spray particles */}
+      <circle cx="-5" cy="-35" r="2" fill="#e3f2fd" opacity="0.8" />
+      <circle cx="4" cy="-38" r="1.5" fill="#bbdefb" opacity="0.7" />
+      <circle cx="0" cy="-40" r="2.5" fill="#e3f2fd" opacity="0.9" />
+      <circle cx="-8" cy="-32" r="1" fill="#bbdefb" opacity="0.6" />
+      <circle cx="7" cy="-33" r="1.5" fill="#e3f2fd" opacity="0.7" />
+      {/* Night glow from water */}
+      {isNight && (
+        <ellipse cx="0" cy="-5" rx="20" ry="10" fill="#90caf9" opacity="0.1" className="animate-pulse" />
+      )}
+    </g>
+  )
+}
+
 // Render a single decoration
 function DecorationElement({ deco, timeOfDay }: { deco: DecoElement; timeOfDay: TimeOfDay }) {
   const isNight = timeOfDay === 'night'
@@ -270,14 +459,23 @@ function DecorationElement({ deco, timeOfDay }: { deco: DecoElement; timeOfDay: 
       {deco.type === 'mushroom' && <Mushroom scale={deco.scale} flip={deco.flip} />}
       {deco.type === 'flower-patch' && <FlowerPatch scale={deco.scale} flip={deco.flip} />}
       {deco.type === 'lantern' && <Lantern scale={deco.scale} flip={deco.flip} isNight={isNight} />}
+      {deco.type === 'fence-post' && <FencePost scale={deco.scale} flip={deco.flip} />}
+      {deco.type === 'fence-corner' && <FenceCorner scale={deco.scale} flip={deco.flip} />}
+      {deco.type === 'pond' && <Pond scale={deco.scale} flip={deco.flip} />}
+      {deco.type === 'fountain' && <Fountain scale={deco.scale} flip={deco.flip} isNight={isNight} />}
     </g>
   )
 }
 
-export function GardenDecorations({ gridSize, tileSize, timeOfDay = 'day' }: GardenDecorationsProps) {
+export function GardenDecorations({
+  gridSize,
+  tileSize,
+  timeOfDay = 'day',
+  unlockedTypes = DEFAULT_UNLOCKED
+}: GardenDecorationsProps) {
   const decorations = useMemo(
-    () => generateDecorations(gridSize, tileSize),
-    [gridSize, tileSize]
+    () => generateDecorations(gridSize, tileSize, unlockedTypes as DecoType[]),
+    [gridSize, tileSize, unlockedTypes]
   )
 
   const diamondWidth = gridSize * tileSize

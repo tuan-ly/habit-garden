@@ -11,6 +11,7 @@ interface FocusGardenViewProps {
   plantTypes: PlantType[]
   weather: WeatherType
   journalStreak?: number
+  userLevel?: number
 }
 
 // Check if a plant needs action today
@@ -50,7 +51,8 @@ export function FocusGardenView({
   plants,
   plantTypes,
   weather,
-  journalStreak = 0
+  journalStreak = 0,
+  userLevel = 1
 }: FocusGardenViewProps) {
   // Categorize plants
   const { needsAction, completed, urgentCount } = useMemo(() => {
@@ -117,6 +119,7 @@ export function FocusGardenView({
         plantTypes={plantTypes}
         weather={weather}
         journalStreak={journalStreak}
+        userLevel={userLevel}
         focusMode={true}
         focusStates={focusStates}
       />

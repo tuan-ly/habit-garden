@@ -27,6 +27,7 @@
 - What sprint/focus is active right now
 - Current progress (where we are)
 - Next steps (what to do next)
+- **Next Actions**: Explicitly propose what to do next in the sprint
 
 **Update Session Log** with:
 - Session date and title (1 line)
@@ -41,6 +42,26 @@
 **Keep MEMO.md under 200 lines.** Archive old sessions to DEVLOG.md.
 
 ---
+
+## Testing Workflow
+
+**For every new feature:**
+1. Write tests before or alongside implementation
+2. Run tests: `npm test` or `npm run test:watch`
+3. Ensure all tests pass
+4. **Generate commit message** for user to commit manually
+
+**Test location:** `src/lib/__tests__/` for utilities, co-locate component tests
+
+**IMPORTANT: After green tests** - Generate a commit message following the commit format. User will commit manually.
+
+---
+
+## Performance & Animation
+
+- **Minimize DOM Animations**: Avoid heavy CSS/JS animations that cause lag.
+- **Prefer Canvas**: Use HTML5 Canvas for complex visuals or many moving parts.
+- **Performance First**: Always prioritize frame rate and responsiveness.
 
 ## Project Quick Reference
 

@@ -6,4 +6,10 @@ export {
   useGardenSettingsOptional,
   type GardenEffectSettings,
 } from './garden-settings-context'
+export {
+  SubscriptionProvider,
+  useSubscription,
+  useSubscriptionOptional,
+  useFeatureGate,
+} from './subscription-context'
 

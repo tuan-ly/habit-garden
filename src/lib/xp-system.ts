@@ -27,8 +27,10 @@ export function getXpToNextLevel(level: number): number {
 
 /**
  * Calculate the level from total XP
+ * @param totalXp - Total XP accumulated
+ * @param maxLevel - Optional maximum level cap (for subscription tiers)
  */
-export function getLevelFromXp(totalXp: number): number {
+export function getLevelFromXp(totalXp: number, maxLevel?: number): number {
   let level = 1
   let xpRequired = 0
 
@@ -39,16 +41,28 @@ export function getLevelFromXp(totalXp: number): number {
     }
   }
 
+  // Apply level cap if specified
+  if (maxLevel !== undefined && level > maxLevel) {
+    return maxLevel
+  }
+
   return level
 }
 
 /**
  * Calculate progress percentage within current level
+ * @param totalXp - Total XP accumulated
+ * @param maxLevel - Optional maximum level cap (for subscription tiers)
  */
-export function getLevelProgress(totalXp: number): number {
-  const currentLevel = getLevelFromXp(totalXp)
+export function getLevelProgress(totalXp: number, maxLevel?: number): number {
+  const currentLevel = getLevelFromXp(totalXp, maxLevel)
   const xpForCurrentLevel = getXpForLevel(currentLevel)
   const xpToNext = getXpToNextLevel(currentLevel)
+
+  // If at max level, show 100% progress
+  if (maxLevel !== undefined && currentLevel >= maxLevel) {
+    return 100
+  }
 
   const xpInCurrentLevel = totalXp - xpForCurrentLevel
   return Math.min(100, Math.round((xpInCurrentLevel / xpToNext) * 100))
@@ -56,13 +70,22 @@ export function getLevelProgress(totalXp: number): number {
 
 /**
  * Get detailed level information from total XP
+ * @param totalXp - Total XP accumulated
+ * @param maxLevel - Optional maximum level cap (for subscription tiers)
  */
-export function getLevelInfo(totalXp: number) {
-  const level = getLevelFromXp(totalXp)
+export function getLevelInfo(totalXp: number, maxLevel?: number) {
+  const level = getLevelFromXp(totalXp, maxLevel)
   const xpForCurrentLevel = getXpForLevel(level)
   const xpToNextLevel = getXpToNextLevel(level)
   const xpInCurrentLevel = totalXp - xpForCurrentLevel
-  const progress = Math.min(100, Math.round((xpInCurrentLevel / xpToNextLevel) * 100))
+
+  // Check if at level cap
+  const isAtCap = maxLevel !== undefined && level >= maxLevel
+
+  // If at cap, progress is 100%
+  const progress = isAtCap
+    ? 100
+    : Math.min(100, Math.round((xpInCurrentLevel / xpToNextLevel) * 100))
 
   return {
     level,
@@ -74,6 +97,8 @@ export function getLevelInfo(totalXp: number) {
     progress,
     title: getLevelTitle(level),
     badge: getLevelBadge(level),
+    isAtCap,
+    maxLevel,
   }
 }
 
@@ -337,19 +362,35 @@ export function getLevelReward(level: number): LevelReward | null {
 
 /**
  * Check if user has reached a new level
+ * @param previousXp - XP before the action
+ * @param newXp - XP after the action
+ * @param maxLevel - Optional maximum level cap (for subscription tiers)
  */
 export function checkLevelUp(
   previousXp: number,
-  newXp: number
-): { leveledUp: boolean; newLevel: number; reward: LevelReward | null } {
-  const previousLevel = getLevelFromXp(previousXp)
-  const newLevel = getLevelFromXp(newXp)
+  newXp: number,
+  maxLevel?: number
+): {
+  leveledUp: boolean
+  newLevel: number
+  reward: LevelReward | null
+  hitLevelCap: boolean
+  uncappedLevel: number
+} {
+  const previousLevel = getLevelFromXp(previousXp, maxLevel)
+  const newLevelCapped = getLevelFromXp(newXp, maxLevel)
+  const uncappedLevel = getLevelFromXp(newXp) // Without cap
 
-  if (newLevel > previousLevel) {
+  // Check if we hit the level cap
+  const hitLevelCap = maxLevel !== undefined && uncappedLevel > maxLevel
+
+  if (newLevelCapped > previousLevel) {
     return {
       leveledUp: true,
-      newLevel,
-      reward: getLevelReward(newLevel),
+      newLevel: newLevelCapped,
+      reward: getLevelReward(newLevelCapped),
+      hitLevelCap,
+      uncappedLevel,
     }
   }
 
@@ -357,5 +398,7 @@ export function checkLevelUp(
     leveledUp: false,
     newLevel: previousLevel,
     reward: null,
+    hitLevelCap,
+    uncappedLevel,
   }
 }

@@ -35,11 +35,18 @@ import {
   isAnchorCell,
   validatePlantMove,
 } from '@/lib/utils/grid-positioning'
+import {
+  getGardenSize,
+  getUnlockedDecorations,
+  type DecorationType,
+} from '@/lib/progression-system'
 
 interface IsometricGardenProps {
   plantTypes: PlantType[]
   weather?: WeatherType | null
   journalStreak?: number
+  /** User's current level for garden size/decorations */
+  userLevel?: number
   /** Enable focus mode - hides ModeToolbar, changes click behavior */
   focusMode?: boolean
   /** Map of plant ID to focus state for visual treatment */
@@ -64,6 +71,7 @@ export function IsometricGarden({
   plantTypes,
   weather,
   journalStreak = 0,
+  userLevel = 1,
   focusMode = false,
   focusStates,
 }: IsometricGardenProps) {
@@ -195,10 +203,16 @@ export function IsometricGarden({
   // Filter out dead plants for the garden view
   const livingPlants = plants.filter((p) => p.status !== 'dead')
 
-  // Calculate grid size based on multi-cell plants
+  // Get level-based minimum garden size
+  const minimumGridSize = useMemo(() => getGardenSize(userLevel), [userLevel])
+
+  // Get unlocked decoration types for this level
+  const unlockedDecorations = useMemo(() => getUnlockedDecorations(userLevel), [userLevel])
+
+  // Calculate grid size based on multi-cell plants and level minimum
   const gridSize = useMemo(() => {
-    return calculateRequiredGridSize(livingPlants)
-  }, [livingPlants])
+    return calculateRequiredGridSize(livingPlants, minimumGridSize)
+  }, [livingPlants, minimumGridSize])
 
   // Build map of occupied cells
   const occupiedCells = useMemo(() => {
@@ -859,6 +873,7 @@ export function IsometricGarden({
                 gridSize={gridSize}
                 tileSize={tileSize}
                 timeOfDay={currentTimeOfDay}
+                unlockedTypes={unlockedDecorations}
               />
             )}
 

@@ -1,15 +1,26 @@
 'use client'
 
 import { useState } from 'react'
-import { Flower2, BarChart3, User as UserIcon, TreeDeciduous, Menu, X, Settings, LogOut, Trophy, Sparkles } from 'lucide-react'
+import { Flower2, BarChart3, User as UserIcon, TreeDeciduous, Menu, X, Settings, LogOut, Trophy, Sparkles, Crown } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { signOut } from '@/app/(auth)/actions'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import type { User } from '@supabase/supabase-js'
+import type { LucideIcon } from 'lucide-react'
 
-const navItems = [
+interface NavItem {
+  title: string
+  url: string
+  icon: LucideIcon
+  color: string
+  activeColor: string
+  glowColor: string
+  premium?: boolean
+}
+
+const navItems: NavItem[] = [
   {
     title: 'Garden',
     url: '/garden',
@@ -33,6 +44,15 @@ const navItems = [
     color: 'from-blue-400 to-indigo-500',
     activeColor: 'bg-blue-500',
     glowColor: 'shadow-blue-500/50'
+  },
+  {
+    title: 'Identity',
+    url: '/identity',
+    icon: Crown,
+    color: 'from-purple-400 to-violet-500',
+    activeColor: 'bg-purple-500',
+    glowColor: 'shadow-purple-500/50',
+    premium: true
   },
   {
     title: 'Profile',
@@ -62,7 +82,7 @@ export function GameNav({ user }: GameNavProps) {
             {/* Top glow line */}
             <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-green-500/50 to-transparent" />
 
-            <div className="flex items-center justify-around px-2 py-2 sm:px-3 sm:py-3">
+            <div className="flex items-center justify-around px-1 py-1.5 sm:px-2 sm:py-2">
               {navItems.map((item) => {
                 const isActive = pathname === item.url || pathname?.startsWith(item.url + '/')
                 return (
@@ -81,9 +101,9 @@ export function GameNav({ user }: GameNavProps) {
 
                     {/* Icon container */}
                     <div className={cn(
-                      "relative flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl transition-all duration-300",
+                      "relative flex items-center justify-center w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl transition-all duration-300",
                       isActive
-                        ? `bg-gradient-to-br ${item.color} shadow-lg ${item.glowColor} scale-110 -translate-y-2`
+                        ? `bg-gradient-to-br ${item.color} shadow-lg ${item.glowColor} scale-110 -translate-y-1.5`
                         : "bg-slate-800/80 group-hover:bg-slate-700/80 border border-slate-700/50"
                     )}>
                       {/* Inner glow for active */}
@@ -92,7 +112,7 @@ export function GameNav({ user }: GameNavProps) {
                       )}
 
                       <item.icon className={cn(
-                        "w-6 h-6 sm:w-8 sm:h-8 transition-all duration-300 relative z-10",
+                        "w-5 h-5 sm:w-6 sm:h-6 transition-all duration-300 relative z-10",
                         isActive
                           ? "text-white drop-shadow-lg"
                           : "text-slate-400 group-hover:text-slate-200"
@@ -100,13 +120,20 @@ export function GameNav({ user }: GameNavProps) {
 
                       {/* Sparkle for active */}
                       {isActive && (
-                        <Sparkles className="absolute -top-1.5 -right-1.5 w-4 h-4 sm:w-5 sm:h-5 text-yellow-300 animate-pulse drop-shadow-lg" />
+                        <Sparkles className="absolute -top-1 -right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-300 animate-pulse drop-shadow-lg" />
+                      )}
+
+                      {/* Premium badge */}
+                      {item.premium && !isActive && (
+                        <div className="absolute -top-0.5 -right-0.5 w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-md">
+                          <Crown className="w-1.5 h-1.5 sm:w-2 sm:h-2 text-white" />
+                        </div>
                       )}
                     </div>
 
                     {/* Label */}
                     <span className={cn(
-                      "text-[10px] sm:text-xs font-bold mt-1.5 transition-all duration-300 uppercase tracking-wider",
+                      "text-[9px] sm:text-[10px] font-bold mt-1 transition-all duration-300 uppercase tracking-wide",
                       isActive
                         ? "text-white translate-y-0.5"
                         : "text-slate-500 group-hover:text-slate-300"
@@ -117,7 +144,7 @@ export function GameNav({ user }: GameNavProps) {
                     {/* Active dot indicator */}
                     {isActive && (
                       <div className={cn(
-                        "absolute -bottom-1 w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full",
+                        "absolute -bottom-0.5 w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full",
                         item.activeColor
                       )} />
                     )}
@@ -130,10 +157,10 @@ export function GameNav({ user }: GameNavProps) {
                 onClick={() => setMenuOpen(true)}
                 className="relative group flex flex-col items-center py-1 px-1 sm:py-1 sm:px-2 transition-all duration-300"
               >
-                <div className="relative flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-slate-800/80 group-hover:bg-slate-700/80 border border-slate-700/50 transition-all duration-300">
-                  <Menu className="w-6 h-6 sm:w-8 sm:h-8 text-slate-400 group-hover:text-slate-200 transition-colors" />
+                <div className="relative flex items-center justify-center w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-800/80 group-hover:bg-slate-700/80 border border-slate-700/50 transition-all duration-300">
+                  <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-slate-400 group-hover:text-slate-200 transition-colors" />
                 </div>
-                <span className="text-[10px] sm:text-xs font-bold mt-1.5 text-slate-500 group-hover:text-slate-300 uppercase tracking-wider">
+                <span className="text-[9px] sm:text-[10px] font-bold mt-1 text-slate-500 group-hover:text-slate-300 uppercase tracking-wide">
                   Menu
                 </span>
               </button>

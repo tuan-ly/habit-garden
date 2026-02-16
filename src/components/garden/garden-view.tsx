@@ -14,6 +14,7 @@ import { GameHud } from '@/components/game-ui'
 import { cn } from '@/lib/utils'
 import { usePlants, useMood } from '@/lib/context'
 import { useBreathingRhythm } from '@/hooks/use-breathing-rhythm'
+import { useDevOverride } from '@/components/dev/dev-debug-context'
 import type { PlantWithType, PlantType, WeatherType, Profile } from '@/types/database'
 
 type ViewMode = 'garden' | 'list' | 'focus'
@@ -28,6 +29,9 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
   // Get plants from context with optimistic updates
   const { plants } = usePlants()
   const { mood } = useMood()
+
+  // Dev overrides for testing
+  const effectiveLevel = useDevOverride('level', profile?.level ?? 1)
 
   // Map mood to weather
   const moodWeather: WeatherType = (() => {
@@ -115,6 +119,7 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
           plantTypes={plantTypes}
           weather={displayWeather}
           journalStreak={profile?.journal_streak ?? 0}
+          userLevel={effectiveLevel}
         />
 
         <AddPlantDialog
@@ -173,6 +178,7 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
             plantTypes={plantTypes}
             weather={displayWeather}
             journalStreak={profile?.journal_streak ?? 0}
+            userLevel={effectiveLevel}
           />
         </div>
       )}
@@ -185,6 +191,7 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
             plantTypes={plantTypes}
             weather={displayWeather}
             journalStreak={profile?.journal_streak ?? 0}
+            userLevel={effectiveLevel}
           />
         </div>
       )}
