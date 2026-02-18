@@ -18,6 +18,9 @@ import { AddPlantDialog } from '@/components/plants/add-plant-dialog'
 import { PlantDetailSheet } from '@/components/plants/plant-detail-sheet'
 import { QuickLogModal } from '@/components/plants/quick-log-modal (archieved)'
 import { GentleWateringModal } from '@/components/plants/gentle-watering-modal'
+import { LevelUpModal } from '@/components/game-ui/level-up-modal'
+import { AchievementQueue } from '@/components/gamification/achievement-popup'
+import { ACHIEVEMENTS, type AchievementDefinition } from '@/lib/achievements'
 import {
   showAlreadyWateredToast,
   showWaterErrorToast,
@@ -146,6 +149,12 @@ export function IsometricGarden({
     previewCell: null,
     isValidPreview: false,
   })
+
+  // Level up modal state
+  const [levelUpData, setLevelUpData] = useState<{ newLevel: number; oldLevel: number } | null>(null)
+
+  // Achievement notification queue
+  const [pendingAchievements, setPendingAchievements] = useState<AchievementDefinition[]>([])
 
   // Cooldown tracking to prevent multiple rapid watering/logging clicks
   const actionCooldown = useRef<Set<string>>(new Set())
@@ -408,6 +417,19 @@ export function IsometricGarden({
             xpEarned: result.xpEarned || 0,
             streakCount: newStreak,
           })
+          // Handle level up notification
+          if (result.leveledUp && result.newLevel) {
+            setLevelUpData({ newLevel: result.newLevel, oldLevel: result.oldLevel ?? result.newLevel - 1 })
+          }
+          // Handle achievement notifications
+          if (result.newAchievementIds && result.newAchievementIds.length > 0) {
+            const defs = result.newAchievementIds
+              .map(id => ACHIEVEMENTS.find(a => a.id === id))
+              .filter(Boolean) as AchievementDefinition[]
+            if (defs.length > 0) {
+              setPendingAchievements(prev => [...prev, ...defs])
+            }
+          }
         }
       } catch (error) {
         // Cancel celebration on error
@@ -520,6 +542,19 @@ export function IsometricGarden({
               xpEarned: result.xpEarned || 0,
               streakCount: newStreak,
             })
+          }
+          // Handle level up notification
+          if (result.leveledUp && result.newLevel) {
+            setLevelUpData({ newLevel: result.newLevel, oldLevel: result.oldLevel ?? result.newLevel - 1 })
+          }
+          // Handle achievement notifications
+          if (result.newAchievementIds && result.newAchievementIds.length > 0) {
+            const defs = result.newAchievementIds
+              .map(id => ACHIEVEMENTS.find(a => a.id === id))
+              .filter(Boolean) as AchievementDefinition[]
+            if (defs.length > 0) {
+              setPendingAchievements(prev => [...prev, ...defs])
+            }
           }
         }
       } catch (error) {
@@ -1050,6 +1085,22 @@ export function IsometricGarden({
           plantIcon={celebration?.plantIcon}
           streakCount={celebration?.streakCount}
           onComplete={() => setCelebration(null)}
+        />
+      )}
+
+      {/* Level up modal */}
+      <LevelUpModal
+        open={!!levelUpData}
+        onOpenChange={(open) => { if (!open) setLevelUpData(null) }}
+        newLevel={levelUpData?.newLevel ?? 1}
+        oldLevel={levelUpData?.oldLevel}
+      />
+
+      {/* Achievement unlock notifications */}
+      {pendingAchievements.length > 0 && (
+        <AchievementQueue
+          achievements={pendingAchievements}
+          onComplete={() => setPendingAchievements([])}
         />
       )}
     </div>

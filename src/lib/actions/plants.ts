@@ -694,7 +694,7 @@ export async function resolveGrowthConflict(plantId: string): Promise<{ success:
 }
 
 // Check and unlock achievements after an action
-async function checkAndUnlockAchievements(userId: string): Promise<string[]> {
+export async function checkAndUnlockAchievements(userId: string): Promise<string[]> {
   const supabase = await createClient()
   const newlyUnlocked: string[] = []
 

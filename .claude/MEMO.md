@@ -28,10 +28,10 @@
 
 **Next Actions**:
 1. Test Identity feature as PREMIUM user
-2. Upgrade flow UX polish
+2. Upgrade flow UX polish (upgrade modal improvements)
 3. Trial management (7-day free trial)
 4. Analytics for conversion tracking
-5. A/B test pricing
+5. Responsive design audit
 
 **Related Docs**:
 - [Monetization Design](../plans/goal-feature-uiux-design/MONETIZATION_DESIGN.md)
@@ -58,6 +58,22 @@
 ---
 
 ## Latest Session
+
+### 2026-02-18: Phase 7 - Polish (LevelUpModal + AchievementPopup wired)
+- Exported `checkAndUnlockAchievements` from [plants.ts](src/lib/actions/plants.ts)
+- Extended [activity.ts](src/lib/actions/activity.ts): `logActivity()` now returns `leveledUp`, `newLevel`, `oldLevel`, `newAchievementIds`
+- Wired [IsometricGarden](src/components/garden/isometric-garden.tsx) to display:
+  - [LevelUpModal](src/components/game-ui/level-up-modal.tsx) with confetti on level up
+  - [AchievementQueue](src/components/gamification/achievement-popup.tsx) for newly unlocked achievements
+- 202 tests all pass
+
+**Next Actions**:
+1. Upgrade flow UX polish (upgrade modal design)
+2. Trial management (7-day free trial)
+3. Responsive design audit
+4. Analytics for conversion tracking
+
+---
 
 ### 2026-02-12: Phase 6 - Identity System (PREMIUM)
 - Created `identities` table with RLS policies and progress tracking
@@ -214,10 +230,10 @@ NEXT_PUBLIC_PADDLE_PREMIUM_YEARLY_PRICE_ID=pri_xxx
 ## Known Issues / TODO
 
 - [ ] Responsive design check
-- [ ] Achievement unlock popup notification
+- [x] Achievement unlock popup notification (wired 2026-02-18)
 - [x] Level up celebration modal (Phase 2)
 - [ ] Performance optimization for large gardens
-- [ ] Wire LevelUpModal to XP system (trigger on level change)
+- [x] Wire LevelUpModal to XP system (wired 2026-02-18)
 
 **Watering Logic Refinement** (from 2026-01-31):
 1. If already watered today -> hide "Just checking in"
