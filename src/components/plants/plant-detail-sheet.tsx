@@ -62,7 +62,7 @@ import {
   AdjustmentHistory,
 } from '@/components/goals'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { cn } from '@/lib/utils'
+import { cn, isToday } from '@/lib/utils'
 
 interface PlantDetailSheetProps {
   plant: PlantWithType | null
@@ -118,16 +118,18 @@ export function PlantDetailSheet({
 
   const [isPending, startTransition] = useTransition()
 
-  // Load essential data when sheet opens (Overview tab)
+  // Load essential data when sheet opens (Overview tab) - parallel requests
   useEffect(() => {
     if (plant && open) {
       setIsLoadingGoal(true)
-      getGoalForPlant(plant.id).then((g) => {
+      Promise.all([
+        getGoalForPlant(plant.id),
+        getPlantActivityHistory(plant.id, 7),
+      ]).then(([g, rhythm]) => {
         setGoal(g)
+        setQuickRhythm(rhythm)
         setIsLoadingGoal(false)
       })
-      // Only fetch 7 days for quick rhythm view
-      getPlantActivityHistory(plant.id, 7).then(setQuickRhythm)
     }
   }, [plant?.id, open])
 
@@ -164,11 +166,14 @@ export function PlantDetailSheet({
     }
   }, [activeTab, plant?.id, fullActivityHistory, statsLoading])
 
-  // Load full stats and adaptive analysis when viewing goal stats
+  // Load full stats and adaptive analysis when viewing goal stats - parallel requests
   useEffect(() => {
     if (goal && showGoalStats) {
-      getGoalStats(goal.id).then(setGoalStats)
-      getAdaptiveAnalysis(goal.id).then((analysis) => {
+      Promise.all([
+        getGoalStats(goal.id),
+        getAdaptiveAnalysis(goal.id),
+      ]).then(([stats, analysis]) => {
+        setGoalStats(stats)
         setAdaptiveAnalysis(analysis)
         if (analysis?.suggestion && analysis?.pendingAdjustment) {
           setShowAdaptiveSuggestion(true)
@@ -179,9 +184,7 @@ export function PlantDetailSheet({
 
   if (!plant) return null
 
-  const isWateredToday = plant.last_watered_at
-    ? new Date(plant.last_watered_at).toDateString() === new Date().toDateString()
-    : false
+  const isWateredToday = isToday(plant.last_watered_at)
 
   const isSleeping = plant.status === 'dead' || plant.status === 'sleeping'
   const isResting = plant.status === 'resting' || plant.status === 'dormant'

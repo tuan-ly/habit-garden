@@ -6,6 +6,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   type ReactNode,
 } from 'react'
 import {
@@ -73,7 +74,8 @@ export function SubscriptionProvider({
   initialTier = 'free',
 }: SubscriptionProviderProps) {
   const [serverTier, setServerTier] = useState<SubscriptionTier>(initialTier)
-  const [isLoading, setIsLoading] = useState(true)
+  // Skip loading state if we have SSR-provided tier
+  const [isLoading, setIsLoading] = useState(initialTier === 'free')
 
   // Upgrade modal state
   const [upgradeModal, setUpgradeModal] = useState<UpgradeModalState>({
@@ -88,10 +90,10 @@ export function SubscriptionProvider({
     ? (devTierOverride.toLowerCase() as SubscriptionTier)
     : serverTier
 
-  // Get tier limits
-  const limits = getTierLimits(tier)
+  // Get tier limits (memoized to prevent recalculation)
+  const limits = useMemo(() => getTierLimits(tier), [tier])
 
-  // Load tier from server on mount
+  // Load tier from server on mount (only if SSR didn't provide a non-free tier)
   useEffect(() => {
     let mounted = true
 
@@ -172,27 +174,31 @@ export function SubscriptionProvider({
     setUpgradeModal((prev) => ({ ...prev, open: false }))
   }, [])
 
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue = useMemo(
+    () => ({
+      tier,
+      isLoading,
+      hasGoals,
+      hasIdentity,
+      hasMetrics,
+      hasWeeklyReports,
+      canAddPlant,
+      canAddGoal,
+      canUsePlantTier,
+      isWithinLevelCap,
+      checkFeature,
+      limits,
+      showUpgradeModal,
+      hideUpgradeModal,
+      upgradeModal,
+      refreshTier,
+    }),
+    [tier, isLoading, hasGoals, hasIdentity, hasMetrics, hasWeeklyReports, canAddPlant, canAddGoal, canUsePlantTier, isWithinLevelCap, checkFeature, limits, showUpgradeModal, hideUpgradeModal, upgradeModal, refreshTier]
+  )
+
   return (
-    <SubscriptionContext.Provider
-      value={{
-        tier,
-        isLoading,
-        hasGoals,
-        hasIdentity,
-        hasMetrics,
-        hasWeeklyReports,
-        canAddPlant,
-        canAddGoal,
-        canUsePlantTier,
-        isWithinLevelCap,
-        checkFeature,
-        limits,
-        showUpgradeModal,
-        hideUpgradeModal,
-        upgradeModal,
-        refreshTier,
-      }}
-    >
+    <SubscriptionContext.Provider value={contextValue}>
       {children}
     </SubscriptionContext.Provider>
   )

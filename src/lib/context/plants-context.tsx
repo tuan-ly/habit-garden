@@ -5,6 +5,7 @@ import {
   useContext,
   useOptimistic,
   useCallback,
+  useMemo,
   useState,
   useTransition,
   type ReactNode,
@@ -465,22 +466,26 @@ export function PlantsProvider({
     [optimisticPlants]
   )
 
+  // Memoize context value to prevent unnecessary re-renders of all consumers
+  const contextValue = useMemo(
+    () => ({
+      plants: optimisticPlants,
+      isPending,
+      isSyncing,
+      waterPlant,
+      logGoal,
+      movePlant,
+      addPlant,
+      removePlant,
+      updatePlant,
+      refreshPlants,
+      getPlant,
+    }),
+    [optimisticPlants, isPending, isSyncing, waterPlant, logGoal, movePlant, addPlant, removePlant, updatePlant, refreshPlants, getPlant]
+  )
+
   return (
-    <PlantsContext.Provider
-      value={{
-        plants: optimisticPlants,
-        isPending,
-        isSyncing,
-        waterPlant,
-        logGoal,
-        movePlant,
-        addPlant,
-        removePlant,
-        updatePlant,
-        refreshPlants,
-        getPlant,
-      }}
-    >
+    <PlantsContext.Provider value={contextValue}>
       {children}
     </PlantsContext.Provider>
   )

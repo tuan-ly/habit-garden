@@ -7,22 +7,25 @@ import { SubscriptionProvider } from '@/lib/context/subscription-context'
 import { DevDebugProvider, DevDebugPanel } from '@/components/dev'
 import { UpgradeModalContainer } from '@/components/game-ui/upgrade-modal-container'
 import type { MoodLevel } from '@/lib/mood-system'
+import type { SubscriptionTier } from '@/lib/subscription-limits'
 import type { ReactNode } from 'react'
 
 interface DashboardProvidersProps {
   children: ReactNode
   initialMood?: MoodLevel
   initialWeeds?: { [plantId: string]: number }
+  initialTier?: SubscriptionTier
 }
 
 export function DashboardProviders({
   children,
   initialMood,
   initialWeeds = {},
+  initialTier = 'free',
 }: DashboardProvidersProps) {
   return (
     <DevDebugProvider>
-      <SubscriptionProvider>
+      <SubscriptionProvider initialTier={initialTier}>
         <MoodProvider initialMood={initialMood}>
           <WeedsProvider initialWeeds={initialWeeds}>
             <GardenSettingsProvider>

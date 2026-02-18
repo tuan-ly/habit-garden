@@ -944,14 +944,16 @@
   animation: pulse-slow 3s ease-in-out infinite;
 }
 
-/* Thriving plant enhancement */
+/* Thriving plant enhancement - GPU composited */
 .plant-thriving {
   filter: brightness(1.05) saturate(1.1);
+  will-change: filter;
 }
 
-/* Mature plant special glow */
+/* Mature plant special glow - GPU composited */
 .plant-mature-glow {
   filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.5));
+  will-change: filter;
 }
 
 /* Shimmer effect for progress bars */
@@ -2028,4 +2030,22 @@
 
 .animate-expansion-ripple {
   animation: expansion-ripple 1.5s ease-out forwards;
+}
+
+/* ========================================
+   Reduced Motion - Disable animations for accessibility & performance
+   ======================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .plant-thriving,
+  .plant-mature-glow {
+    filter: none;
+  }
 }
