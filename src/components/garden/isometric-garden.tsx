@@ -25,6 +25,7 @@ import {
   showWaterToast,
 } from '@/components/plants/water-toast'
 import { usePlants, useGardenSettingsOptional } from '@/lib/context'
+import { isToday } from '@/lib/utils'
 import { useGardenZoom, useVisibleTiles } from '@/lib/hooks'
 import { logActivity } from '@/lib/actions/activity'
 import type { PlantWithType, PlantType, WeatherType } from '@/types/database'
@@ -321,11 +322,9 @@ export function IsometricGarden({
     }
   }, [moveState.selectedPlant, livingPlants, movePlant])
 
-  // Check if plant is watered today
+  // Check if plant is watered today (uses cached date string)
   const isWateredToday = useCallback((plant: PlantWithType) => {
-    return plant.last_watered_at
-      ? new Date(plant.last_watered_at).toDateString() === new Date().toDateString()
-      : false
+    return isToday(plant.last_watered_at)
   }, [])
 
   // Handle quick water request - opens modal instead of immediate action
@@ -664,7 +663,8 @@ export function IsometricGarden({
       const newStreak = isFirstActivityToday ? plant.current_streak + 1 : plant.current_streak
 
       // Simple XP estimate: base watering (10) + morning (3) if applicable
-      const isMorning = new Date().getHours() >= 5 && new Date().getHours() < 9
+      const currentHour = new Date().getHours()
+      const isMorning = currentHour >= 5 && currentHour < 9
       let estimatedXp = isFirstActivityToday ? 10 + (isMorning ? 3 : 0) : 0
 
       // Note bonus estimate

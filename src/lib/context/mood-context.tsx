@@ -6,6 +6,7 @@ import {
   useState,
   useCallback,
   useEffect,
+  useMemo,
   type ReactNode,
 } from 'react'
 import type { MoodLevel } from '@/lib/mood-system'
@@ -47,11 +48,13 @@ export function MoodProvider({
   initialMood?: MoodLevel
 }) {
   const [mood, setMoodState] = useState<MoodLevel>(initialMood || DEFAULT_MOOD)
-  const [isMoodSet, setIsMoodSet] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isMoodSet, setIsMoodSet] = useState(!!initialMood && initialMood !== DEFAULT_MOOD)
+  const [isLoading, setIsLoading] = useState(!initialMood)
 
-  // Fetch initial mood on mount if not provided
+  // Only fetch from server if initialMood was not provided via SSR
   useEffect(() => {
+    if (initialMood) return // SSR already provided the mood
+
     const initMood = async () => {
       setIsLoading(true)
       const [fetchedMood, moodWasSet] = await Promise.all([
@@ -65,7 +68,7 @@ export function MoodProvider({
     }
 
     initMood()
-  }, [])
+  }, [initialMood])
 
   // Set mood handler
   const setMood = useCallback(
@@ -119,22 +122,26 @@ export function MoodProvider({
     [mood]
   )
 
+  // Memoize context value to prevent unnecessary consumer re-renders
+  const contextValue = useMemo(
+    () => ({
+      mood,
+      isLoading,
+      isMoodSet,
+      setMood,
+      xpMultiplier,
+      isToughDay: tough,
+      encouragement,
+      weatherIcon: config.icon,
+      weatherName: config.weather,
+      calculateXp,
+      getBonusXp,
+    }),
+    [mood, isLoading, isMoodSet, setMood, xpMultiplier, tough, encouragement, config.icon, config.weather, calculateXp, getBonusXp]
+  )
+
   return (
-    <MoodContext.Provider
-      value={{
-        mood,
-        isLoading,
-        isMoodSet,
-        setMood,
-        xpMultiplier,
-        isToughDay: tough,
-        encouragement,
-        weatherIcon: config.icon,
-        weatherName: config.weather,
-        calculateXp,
-        getBonusXp,
-      }}
-    >
+    <MoodContext.Provider value={contextValue}>
       {children}
     </MoodContext.Provider>
   )

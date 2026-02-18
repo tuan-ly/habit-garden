@@ -1,8 +1,8 @@
 'use client'
 
-import { cn } from '@/lib/utils'
+import { cn, isToday } from '@/lib/utils'
 import type { PlantWithType, PlantStatus, WeatherType } from '@/types/database'
-import { useEffect, useState, useRef, useMemo } from 'react'
+import { memo, useEffect, useState, useRef, useMemo } from 'react'
 import { PlantImage, getGrowthStage, type GrowthStage } from './plant-image'
 
 // Re-export growth stages for backwards compatibility
@@ -89,7 +89,7 @@ function isThriving(plant: PlantWithType): boolean {
   return plant.status !== 'dead' && plant.current_moisture >= 70 && plant.growth_percentage >= 25
 }
 
-export function PlantVisual({
+export const PlantVisual = memo(function PlantVisual({
   plant,
   size = 'md',
   showWateringEffect = false,
@@ -99,9 +99,7 @@ export function PlantVisual({
   alignBottom = false,
 }: PlantVisualProps) {
   // Auto-detect if watered today when not explicitly passed
-  const wateredToday = isWateredToday ?? (plant.last_watered_at
-    ? new Date(plant.last_watered_at).toDateString() === new Date().toDateString()
-    : false)
+  const wateredToday = isWateredToday ?? isToday(plant.last_watered_at)
   const [isWatering, setIsWatering] = useState(false)
   const [showGrowthBurst, setShowGrowthBurst] = useState(false)
   const previousStageRef = useRef<GrowthStage | null>(null)
@@ -274,7 +272,7 @@ export function PlantVisual({
       )}
     </div>
   )
-}
+})
 
 
 // Sub-component for cherry blossom petals effect
