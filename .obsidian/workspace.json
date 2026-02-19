@@ -39,16 +39,32 @@
             "id": "b350e155a7d904c0",
             "type": "leaf",
             "state": {
-              "type": "release-notes",
+              "type": "markdown",
               "state": {
-                "currentVersion": "1.11.7"
+                "file": "plans/20260212-1500-community-system/phase-05-polish.md",
+                "mode": "source",
+                "source": false
               },
-              "icon": "lucide-book-up",
-              "title": "Release Notes 1.11.7"
+              "icon": "lucide-file",
+              "title": "phase-05-polish"
+            }
+          },
+          {
+            "id": "4cb2b3d164157042",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "plans/20260212-1500-community-system/phase-05-polish.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "phase-05-polish"
             }
           }
         ],
-        "currentTab": 2
+        "currentTab": 3
       }
     ],
     "direction": "vertical"
@@ -210,8 +226,11 @@
       "bases:Create new base": false
     }
   },
-  "active": "b350e155a7d904c0",
+  "active": "eb3d70acc757fc9e",
   "lastOpenFiles": [
+    "plans/20260212-1500-community-system/phase-05-polish.md",
+    "plans/20260212-1500-community-system/Cons of comunity.md",
+    "Untitled.md",
     "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md.tmp.100676.1770386517833",
     "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md.tmp.100676.1770386506530",
     "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md.tmp.100676.1770386495366",
@@ -223,7 +242,6 @@
     "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md.tmp.100676.1770386425320",
     "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md.tmp.100676.1770386409285",
     "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md",
-    "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md.tmp.100676.1770386090335",
     "plans/goal-feature-uiux-design/MONETIZATION_DESIGN.md",
     "plans/goal-feature-uiux-design/phase-02-garden-expansion.md",
     "plans/goal-feature-uiux-design/plan.md",
@@ -245,7 +263,6 @@
     "plans/goal-feature-uiux-design/plant-designs/PLANT_CATALOG.md",
     "plans/goal-feature-uiux-design/reports/brainstorm-260205-outcome-integration.md",
     "plans/goal-feature-uiux-design/reports/brainstorm-260205-plant-difficulty-system.md",
-    "Brainstorm.md",
-    "MIGRATION-GUIDE.md"
+    "Brainstorm.md"
   ]
 }
