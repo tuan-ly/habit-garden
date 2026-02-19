@@ -159,6 +159,97 @@ export async function getUserStats() {
   }
 }
 
+// Update user's display name
+export async function updateDisplayName(displayName: string): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
+
+  const trimmed = displayName.trim()
+  if (!trimmed) return { success: false, error: 'Display name cannot be empty' }
+  if (trimmed.length > 50) return { success: false, error: 'Display name is too long' }
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      display_name: trimmed,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', user.id)
+
+  if (error) {
+    console.error('Error updating display name:', error)
+    return { success: false, error: error.message }
+  }
+
+  return { success: true }
+}
+
+// Claim an achievement reward (unlock + award XP)
+export async function claimAchievement(achievementId: string): Promise<{
+  success: boolean
+  xpAwarded?: number
+  error?: string
+}> {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
+
+  // Validate achievement exists
+  const achievement = ACHIEVEMENTS.find(a => a.id === achievementId)
+  if (!achievement) return { success: false, error: 'Achievement not found' }
+
+  // Check if already claimed
+  const { data: existing } = await supabase
+    .from('user_achievements')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('achievement_id', achievementId)
+    .single()
+
+  if (existing) return { success: false, error: 'Achievement already claimed' }
+
+  // Insert into user_achievements
+  const { error: insertError } = await supabase
+    .from('user_achievements')
+    .insert({
+      user_id: user.id,
+      achievement_id: achievementId,
+      unlocked_at: new Date().toISOString(),
+    })
+
+  if (insertError) {
+    console.error('Error claiming achievement:', insertError)
+    return { success: false, error: insertError.message }
+  }
+
+  // Award XP to profile
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('xp')
+    .eq('id', user.id)
+    .single()
+
+  const currentXp = profile?.xp || 0
+  const newXp = currentXp + achievement.xpReward
+
+  const { error: xpError } = await supabase
+    .from('profiles')
+    .update({
+      xp: newXp,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', user.id)
+
+  if (xpError) {
+    console.error('Error awarding XP:', xpError)
+  }
+
+  return { success: true, xpAwarded: achievement.xpReward }
+}
+
 export async function getAchievementsData(): Promise<{
   progress: AchievementProgress[]
   unlockedIds: string[]

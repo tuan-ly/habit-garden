@@ -21,10 +21,11 @@ import type {
   RestDay,
   PlantWithType,
 } from '@/types/database'
-import { calculateNoteBonus } from '@/lib/xp-system'
+import { calculateNoteBonus, checkLevelUp, getLevelFromXp } from '@/lib/xp-system'
 import { getTodayWeather, calculateWeatherXp } from '@/lib/weather-system'
 import { calculateRhythm } from '@/lib/plant-status'
 import { XP_VALUES, isMorningTime } from '@/lib/xp-constants'
+import { checkAndUnlockAchievements } from './plants'
 
 // =====================================================
 // Main Activity Logging - Single Unified Function
@@ -46,6 +47,10 @@ export interface LogActivityResult {
   newGoalValue?: number
   message?: string
   error?: string
+  leveledUp?: boolean
+  newLevel?: number
+  oldLevel?: number
+  newAchievementIds?: string[]
 }
 
 /**
@@ -70,6 +75,14 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
   }
 
   const today = new Date().toISOString().split('T')[0]
+
+  // Get current profile XP for level up detection
+  const { data: profileData } = await supabase
+    .from('profiles')
+    .select('xp')
+    .eq('id', user.id)
+    .single()
+  const oldXp = profileData?.xp || 0
 
   // Get plant with goal and type info
   const { data: plant, error: plantError } = await supabase
@@ -266,6 +279,12 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
     await updateUserXp(user.id, totalXp)
   }
 
+  // Check for level up
+  const levelUpResult = totalXp > 0 ? checkLevelUp(oldXp, oldXp + totalXp) : null
+
+  // Check and unlock achievements
+  const newAchievementIds = await checkAndUnlockAchievements(user.id)
+
   revalidatePath('/garden')
 
   // Generate appropriate message
@@ -284,6 +303,10 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
     isPersonalRecord,
     newGoalValue,
     message,
+    leveledUp: levelUpResult?.leveledUp,
+    newLevel: levelUpResult?.newLevel,
+    oldLevel: levelUpResult?.leveledUp ? getLevelFromXp(oldXp) : undefined,
+    newAchievementIds: newAchievementIds.length > 0 ? newAchievementIds : undefined,
   }
 }
 
