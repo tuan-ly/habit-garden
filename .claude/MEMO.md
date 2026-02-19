@@ -59,6 +59,19 @@
 
 ## Latest Session
 
+### 2026-02-19: Bug Fix - Moisture Decay System
+- **Issue**: Cây không tự động decay mỗi ngày
+- **Root Cause**: Cron job `update_daily_moisture()` chạy nhưng fail vì query bảng `daily_weather` không tồn tại
+- **Investigation**: Dùng Supabase MCP kiểm tra job run history - tất cả 10 lần chạy gần nhất đều status "failed"
+- **Solution**: Rewrite function `update_daily_moisture()` để bỏ qua weather modifier dependency
+- **Result**: ✅ Function hoạt động, moisture decay đúng (tested: 92→84→76)
+- **Next run**: Cron sẽ tự động chạy vào 17:00 UTC (00:00 VN) hàng ngày
+
+**Files Modified**:
+- [20260219_fix_moisture_decay.sql](../supabase/migrations/20260219_fix_moisture_decay.sql) - Migration với function fix
+
+---
+
 ### 2026-02-18: Phase 7 - Polish (LevelUpModal + AchievementPopup wired)
 - Exported `checkAndUnlockAchievements` from [plants.ts](src/lib/actions/plants.ts)
 - Extended [activity.ts](src/lib/actions/activity.ts): `logActivity()` now returns `leveledUp`, `newLevel`, `oldLevel`, `newAchievementIds`

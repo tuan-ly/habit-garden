@@ -228,6 +228,11 @@
   },
   "active": "eb3d70acc757fc9e",
   "lastOpenFiles": [
+    "supabase/migrations/20260219_fix_moisture_decay.sql",
+    "supabase/migrations/20260219_fix_moisture_decay.sql.tmp.104960.1771472451037",
+    "next.config.ts.tmp.41680.1771472007018",
+    "src/components/settings/general-settings.tsx",
+    "src/components/settings/account-settings.tsx",
     "plans/20260212-1500-community-system/phase-05-polish.md",
     "plans/20260212-1500-community-system/Cons of comunity.md",
     "Untitled.md",
@@ -237,10 +242,6 @@
     "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md.tmp.100676.1770386486030",
     "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md.tmp.100676.1770386473583",
     "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md.tmp.100676.1770386461641",
-    "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md.tmp.100676.1770386452102",
-    "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md.tmp.100676.1770386439443",
-    "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md.tmp.100676.1770386425320",
-    "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md.tmp.100676.1770386409285",
     "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md",
     "plans/goal-feature-uiux-design/MONETIZATION_DESIGN.md",
     "plans/goal-feature-uiux-design/phase-02-garden-expansion.md",
@@ -262,7 +263,6 @@
     "plans/goal-feature-uiux-design/plant-designs/TIER3_DEMANDING_BEAUTIES.md",
     "plans/goal-feature-uiux-design/plant-designs/PLANT_CATALOG.md",
     "plans/goal-feature-uiux-design/reports/brainstorm-260205-outcome-integration.md",
-    "plans/goal-feature-uiux-design/reports/brainstorm-260205-plant-difficulty-system.md",
-    "Brainstorm.md"
+    "plans/goal-feature-uiux-design/reports/brainstorm-260205-plant-difficulty-system.md"
   ]
 }
