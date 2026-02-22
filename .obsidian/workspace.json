@@ -212,6 +212,10 @@
   },
   "active": "eb3d70acc757fc9e",
   "lastOpenFiles": [
+    "plans/habien-v3/reports/brainstorm-260222-fun-first-v3-redesign.md",
+    "plans/habien-v3/reports/brainstorm-260222-fun-first-v3-redesign.md.tmp.15904.1771730018489",
+    "plans/habien-v3/reports",
+    "plans/habien-v3/VISION.md.tmp.15904.1771729956542",
     "plans/habien-v3/VISION.md",
     "plans/habien-v3/VISION.md.tmp.28252.1771728527453",
     "plans/habien-v3",
@@ -233,9 +237,6 @@
     "plans/20260212-1500-community-system/Cons of comunity.md",
     "Untitled.md",
     "src/components/plants/add-plant-dialog.tsx.tmp.134328.1771556603967",
-    "src/components/plants/__stories__/PlantCard.stories.tsx.tmp.134328.1771556562420",
-    "src/lib/progression-system.ts.tmp.25144.1771555602739",
-    "src/lib/progression-system.ts.tmp.25144.1771555600779",
     "plans/goal-feature-uiux-design/MONETIZATION_DESIGN_V2.md",
     "plans/goal-feature-uiux-design/MONETIZATION_DESIGN.md",
     "plans/goal-feature-uiux-design/phase-02-garden-expansion.md",
@@ -246,7 +247,6 @@
     "plans/20260206-habien-2.0-phase-1/phase-04-integration.md",
     "plans/20260206-habien-2.0-phase-1/phase-03-ui.md",
     "plans/20260206-habien-2.0-phase-1/phase-02-utilities.md",
-    "plans/20260206-habien-2.0-phase-1/phase-01-database.md",
-    "plans/20260206-habien-2.0-phase-1/plan.md"
+    "plans/20260206-habien-2.0-phase-1/phase-01-database.md"
   ]
 }
