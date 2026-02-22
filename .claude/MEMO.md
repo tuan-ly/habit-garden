@@ -1,33 +1,36 @@
 # Habit Garden - Project Memo
 
-> **Last Updated**: 2026-02-12
-> **Phase**: 6 - Identity System
+> **Last Updated**: 2026-02-22
+> **Phase**: Habien v3 - Identity-First Redesign
 > **Stack**: Next.js 16, Supabase, Tailwind CSS 4, shadcn/ui
 
 ---
 
 ## 🎯 Current Sprint
 
-**Focus**: Habien 2.0 - Phase 7: Polish & Launch
+**Focus**: Habien v3 - Phase 0: Identity Liberation
 
-**Progress**:
-- ✅ Phase 1: Tier system, slot limits
-- ✅ Phase 2: Garden expansion system
-- ✅ Phase 3: Subscription Infrastructure
-- ✅ Phase 4: Feature Gating
-- ✅ Phase 5: Payment Integration (Paddle)
-- ✅ Phase 6: Identity System (PREMIUM)
-- [ ] **Phase 7: Polish & Launch** ← NEXT
+**Branch**: `feature/habien-3.0` (from `feature/habien-2.0-phase-1`)
+**Supabase**: `habien-v3` (id: nokkicjusrucrpnnbzlg, region: ap-southeast-1)
+**Design Doc**: [plans/habien-v3/VISION.md](../plans/habien-v3/VISION.md)
 
-**Monetization Tiers**:
+**v3 Phases**:
+- [ ] **Phase 0: Identity Liberation** ← CURRENT
+- [ ] Phase 1: 2-Minute Rule + Anchors
+- [ ] Phase 2: XP De-emphasis + Reflection Engine
+- [ ] Phase 3: Garden Meaning (dormancy, established, identity zones)
+- [ ] Phase 4: Monetization Restructure
+- [ ] Phase 5: Garden Neighbors
+
+**v3 Monetization** (Identity = FREE):
 | Tier | Price | Key Features |
 |------|-------|--------------|
-| FREE | $0 | 3 plants, Tier 1-2, 3x3 garden, Level cap 10 |
-| PRO | $4.99/mo | 8 plants, Tier 1-4, 5x5 garden, Goals, Level cap 15 |
-| PREMIUM | $9.99/mo | Unlimited, Tier 1-5, 7x7+ garden, Identity, Level 20+ |
+| FREE "The Seed" | $0 | 3 identities, 3 habits, full 4-laws engine, simple garden |
+| PRO "The Garden" | $4.99/mo | Unlimited, tiers 1-4, 5x5 garden, analytics, insights |
+| PREMIUM "The Sage" | $9.99/mo | Buddies, AI coaching, tier 5, 7x7+, pattern recognition |
 
 **Next Actions**:
-1. Test Identity feature as PREMIUM user
+1. Identity-first onboarding redesign (FREE, Day 1)
 2. Upgrade flow UX polish (upgrade modal improvements)
 3. Trial management (7-day free trial)
 4. Analytics for conversion tracking
