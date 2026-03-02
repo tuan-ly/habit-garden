@@ -1,4 +1,4 @@
-import { initializePaddle, Paddle, type PaddleEventData } from '@paddle/paddle-js'
+import type { Paddle, PaddleEventData } from '@paddle/paddle-js'
 
 let paddleInstance: Paddle | undefined
 
@@ -28,6 +28,7 @@ export const getPaddleInstance = async (): Promise<Paddle | undefined> => {
   }
 
   try {
+    const { initializePaddle } = await import('@paddle/paddle-js')
     paddleInstance = await initializePaddle({
       environment: environment || 'sandbox',
       token: clientToken,
