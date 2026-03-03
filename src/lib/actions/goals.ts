@@ -322,7 +322,7 @@ export async function logGoalValue(dto: LogGoalDto): Promise<{
     const weatherGrowth = baseGrowth * weather.growthModifier
     const newGrowth = Math.min(100, plant.growth_percentage + weatherGrowth)
     const totalWaterings = plant.total_waterings + 1
-    const hasMatured = newGrowth >= 100 && plant.status === 'growing'
+    const hasMatured = newGrowth >= 100 && plant.status !== 'mature' && plant.status !== 'dead'
 
     // Create watering log (only once per day)
     await supabase

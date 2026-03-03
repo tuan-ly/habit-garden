@@ -82,9 +82,10 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
     setSheetOpen(true)
   }
 
-  const growingPlants = plants.filter((p) => p.status === 'growing')
+  // Include all living gentle-growth statuses (thriving/resting/waiting/sleeping/growing)
+  const growingPlants = plants.filter((p) => p.status !== 'mature' && p.status !== 'dead' && p.status !== 'dormant')
   const maturePlants = plants.filter((p) => p.status === 'mature')
-  const deadPlants = plants.filter((p) => p.status === 'dead')
+  const deadPlants = plants.filter((p) => p.status === 'dead' || p.status === 'dormant')
 
   // Empty state
   if (plants.length === 0) {

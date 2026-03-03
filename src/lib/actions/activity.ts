@@ -243,7 +243,7 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
       newStreak = plant.current_streak
     }
 
-    const hasMatured = newGrowth >= 100 && plant.status === 'growing'
+    const hasMatured = newGrowth >= 100 && plant.status !== 'mature' && plant.status !== 'dead'
 
     plantUpdate = {
       ...plantUpdate,

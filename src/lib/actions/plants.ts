@@ -475,8 +475,8 @@ export async function waterPlant(
   const newGrowth = Math.min(100, plant.growth_percentage + weatherGrowth)
   const totalWaterings = plant.total_waterings + 1
 
-  // Determine if plant has matured
-  const hasMatured = newGrowth >= 100 && plant.status === 'growing'
+  // Determine if plant has matured (any non-dead, non-mature status can mature)
+  const hasMatured = newGrowth >= 100 && plant.status !== 'mature' && plant.status !== 'dead'
 
   // Calculate potential grid size expansion
   // Logic: Mature -> 2x2, 1 Year -> 3x3, 2 Years -> 4x4

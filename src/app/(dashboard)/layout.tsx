@@ -33,22 +33,8 @@ export default async function DashboardLayout({
   const userTimezone = profile?.timezone ?? null
   const initialTier = (profile?.subscription_tier as 'free' | 'pro' | 'premium') ?? 'free'
 
-  // Fetch initial weeds for all plants
-  const { data: plantsWithWeeds } = await supabase
-    .from('plants')
-    .select('id, weed_count')
-    .eq('user_id', user.id)
-    .gt('weed_count', 0)
-
-  const initialWeeds: { [plantId: string]: number } = {}
-  if (plantsWithWeeds) {
-    plantsWithWeeds.forEach((plant) => {
-      initialWeeds[plant.id] = plant.weed_count || 0
-    })
-  }
-
   return (
-    <DashboardProviders initialMood={initialMood} initialWeeds={initialWeeds} initialTier={initialTier}>
+    <DashboardProviders initialMood={initialMood} initialTier={initialTier}>
       <div className="min-h-screen relative ">
         {/* Static gradient background - single layer, no animations for better performance */}
         <div className="fixed inset-0 bg-gradient-to-br from-sky-200 via-emerald-100 to-green-200 dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950 pointer-events-none" />

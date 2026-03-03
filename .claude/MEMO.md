@@ -62,6 +62,29 @@
 
 ## Latest Session
 
+### 2026-03-03: Bug Fix — Status System Inconsistency (3 root causes) ✅
+**Root causes found & fixed** (all stem from status system mismatch):
+
+1. **Moisture decay skipped `thriving` plants** → `activity.ts` sets status to `'thriving'` on log, but cron only processed `status='growing'`
+   - Fixed: `moisture-decay/route.ts` + Supabase `update_daily_moisture()` now use `.in('status', ['growing','thriving','resting','waiting','sleeping'])`
+   - Migration: [20260303_fix_moisture_decay_all_statuses.sql](../supabase/migrations/20260303_fix_moisture_decay_all_statuses.sql)
+
+2. **List view showed "0 growing"** → `garden-view.tsx` filtered `status === 'growing'` only, missing `thriving/resting/waiting/sleeping`
+   - Fixed: Now shows all non-dead, non-mature plants as "Growing"
+
+3. **`hasMatured` check wrong** → `plant.status === 'growing'` blocked `thriving` plants from becoming `mature`
+   - Fixed in: `plants.ts`, `activity.ts`, `goals.ts` → now `status !== 'mature' && status !== 'dead'`
+
+4. **Weed system cleanup** → removed dead UI code: `WeedsProvider`, `src/components/weeds/`, weed fetch in `layout.tsx`
+   - `weeds.ts` action file kept (DB backward compat)
+
+**Key insight**: Two competing status systems existed:
+- Old (DB cron): `growing` → `mature` or `dead`
+- New (Gentle Growth, `activity.ts`): `thriving`, `resting`, `waiting`, `sleeping`
+These were never reconciled → silent data inconsistencies.
+
+**Files Modified**: [moisture-decay/route.ts](src/app/api/cron/moisture-decay/route.ts), [garden-view.tsx](src/components/garden/garden-view.tsx), [plants.ts](src/lib/actions/plants.ts), [activity.ts](src/lib/actions/activity.ts), [goals.ts](src/lib/actions/goals.ts), [layout.tsx](src/app/(dashboard)/layout.tsx), [providers.tsx](src/app/(dashboard)/providers.tsx)
+
 ### 2026-03-03: Phase 2 Perf Audit — Auth Dedup + SSR Data Fetching ✅
 - Created [`src/lib/auth-cached.ts`](src/lib/auth-cached.ts) — `React.cache()` wrapper deduplicates `auth.getUser()` per request
 - Replaced 68 direct `auth.getUser()` calls across all 11 action files (plants/identity/goals/mood/adaptive/activity/journal/paddle/subscription/weeds/profile)
