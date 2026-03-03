@@ -11,7 +11,6 @@ import { cn } from '@/lib/utils'
 import {
   Droplets,
   TrendingUp,
-  Moon,
   Sparkles,
   Trophy,
   BookOpen,
@@ -91,20 +90,23 @@ interface JournalEntryCardProps {
 }
 
 function JournalEntryCard({ entry }: JournalEntryCardProps) {
-  const { icon, iconBg, iconColor } = getEntryStyle(entry)
+  const { icon, iconBg, borderColor } = getEntryStyle(entry)
   const formattedDate = formatEntryDate(entry.date)
 
   return (
     <div
       className={cn(
-        'relative p-4 rounded-xl',
+        'relative p-4 rounded-xl overflow-hidden',
         'bg-white/60 dark:bg-slate-800/40',
         'border border-slate-200/50 dark:border-slate-700/30',
         'transition-all hover:bg-white/80 dark:hover:bg-slate-800/60',
         entry.isPersonalRecord && 'ring-1 ring-amber-300/50 dark:ring-amber-500/30'
       )}
     >
-      <div className="flex items-start gap-3">
+      {/* Left accent border */}
+      <div className={cn('absolute left-0 top-0 bottom-0 w-1 rounded-l-xl', borderColor)} />
+
+      <div className="flex items-start gap-3 pl-1">
         {/* Icon */}
         <div className={cn('p-2 rounded-lg flex-shrink-0', iconBg)}>
           {icon}
@@ -157,14 +159,6 @@ function JournalEntryCard({ entry }: JournalEntryCardProps) {
 }
 
 function getEntryStyle(entry: JournalEntry) {
-  if (entry.type === 'rest_day' || entry.activityType === 'rest_day') {
-    return {
-      icon: <Moon className="h-4 w-4 text-blue-500" />,
-      iconBg: 'bg-blue-100 dark:bg-blue-900/50',
-      iconColor: 'text-blue-500',
-    }
-  }
-
   if (entry.activityType === 'completed') {
     return {
       icon: <CheckCircle2 className="h-4 w-4 text-green-500" />,
@@ -198,7 +192,6 @@ function getEntryStyle(entry: JournalEntry) {
 }
 
 function getNoNoteMessage(entry: JournalEntry): string {
-  if (entry.type === 'rest_day' || entry.activityType === 'rest_day') return 'Took a rest day'
   if (entry.activityType === 'completed') return 'Did it today!'
   if (entry.activityType === 'progress') return 'Progress logged'
   return 'Showed up today'
