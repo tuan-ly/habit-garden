@@ -1,7 +1,7 @@
 'use client'
 
 import { memo } from 'react'
-import { cn } from '@/lib/utils'
+import { cn, isToday } from '@/lib/utils'
 import type { PlantWithType } from '@/types/database'
 
 interface PlantOverlayBadgeProps {
@@ -27,9 +27,7 @@ function PlantOverlayBadgeComponent({
 }: PlantOverlayBadgeProps) {
   const hasGoal = !!plant.goal_mode
   const goal = plant.goal
-  const isWateredToday = plant.last_watered_at
-    ? new Date(plant.last_watered_at).toDateString() === new Date().toDateString()
-    : false
+  const isWateredToday = isToday(plant.last_watered_at)
 
   // Scale badge based on tile size (min 0.4 to prevent too small on large plants)
   const badgeScale = Math.max(0.4, (tileSize / 60) * 0.35)
@@ -163,9 +161,7 @@ export function PlantStatusDot({
   plant: PlantWithType
   className?: string
 }) {
-  const isWateredToday = plant.last_watered_at
-    ? new Date(plant.last_watered_at).toDateString() === new Date().toDateString()
-    : false
+  const isWateredToday = isToday(plant.last_watered_at)
 
   const isThirsty = plant.current_moisture < 30 && plant.status !== 'dead'
 

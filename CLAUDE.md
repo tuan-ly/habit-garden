@@ -5,6 +5,7 @@
 **MEMO.md is lean (~130 lines).** Read it at session start for quick context.
 
 **For deep dives**, read these on-demand:
+- `ARCHITECTURE.md` - **Feature registry + status system + data flow** (đọc trước khi chỉnh plants/status/moisture)
 - `DEVLOG.md` - Implementation history (when debugging or continuing past work)
 - `DECISIONS.md` - Architecture reasoning (when making design choices)
 

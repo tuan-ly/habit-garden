@@ -1,37 +1,40 @@
 # Habit Garden - Project Memo
 
-> **Last Updated**: 2026-02-12
-> **Phase**: 6 - Identity System
+> **Last Updated**: 2026-02-22
+> **Phase**: Habien v3 - Identity-First Redesign
 > **Stack**: Next.js 16, Supabase, Tailwind CSS 4, shadcn/ui
 
 ---
 
 ## 🎯 Current Sprint
 
-**Focus**: Habien 2.0 - Phase 7: Polish & Launch
+**Focus**: Habien v3 - Phase 0: Identity Liberation
 
-**Progress**:
-- ✅ Phase 1: Tier system, slot limits
-- ✅ Phase 2: Garden expansion system
-- ✅ Phase 3: Subscription Infrastructure
-- ✅ Phase 4: Feature Gating
-- ✅ Phase 5: Payment Integration (Paddle)
-- ✅ Phase 6: Identity System (PREMIUM)
-- [ ] **Phase 7: Polish & Launch** ← NEXT
+**Branch**: `feature/habien-3.0` (from `feature/habien-2.0-phase-1`)
+**Supabase**: `habien-v3` (id: nokkicjusrucrpnnbzlg, region: ap-southeast-1)
+**Design Doc**: [plans/habien-v3/VISION.md](../plans/habien-v3/VISION.md)
 
-**Monetization Tiers**:
+**v3 Phases**:
+- [ ] **Phase 0: Identity Liberation** ← CURRENT
+- [ ] Phase 1: 2-Minute Rule + Anchors
+- [ ] Phase 2: XP De-emphasis + Reflection Engine
+- [ ] Phase 3: Garden Meaning (dormancy, established, identity zones)
+- [ ] Phase 4: Monetization Restructure
+- [ ] Phase 5: Garden Neighbors
+
+**v3 Monetization** (Identity = FREE):
 | Tier | Price | Key Features |
 |------|-------|--------------|
-| FREE | $0 | 3 plants, Tier 1-2, 3x3 garden, Level cap 10 |
-| PRO | $4.99/mo | 8 plants, Tier 1-4, 5x5 garden, Goals, Level cap 15 |
-| PREMIUM | $9.99/mo | Unlimited, Tier 1-5, 7x7+ garden, Identity, Level 20+ |
+| FREE "The Seed" | $0 | 3 identities, 3 habits, full 4-laws engine, simple garden |
+| PRO "The Garden" | $4.99/mo | Unlimited, tiers 1-4, 5x5 garden, analytics, insights |
+| PREMIUM "The Sage" | $9.99/mo | Buddies, AI coaching, tier 5, 7x7+, pattern recognition |
 
 **Next Actions**:
-1. Test Identity feature as PREMIUM user
-2. Upgrade flow UX polish
+1. Identity-first onboarding redesign (FREE, Day 1)
+2. Upgrade flow UX polish (upgrade modal improvements)
 3. Trial management (7-day free trial)
 4. Analytics for conversion tracking
-5. A/B test pricing
+5. Responsive design audit
 
 **Related Docs**:
 - [Monetization Design](../plans/goal-feature-uiux-design/MONETIZATION_DESIGN.md)
@@ -58,6 +61,85 @@
 ---
 
 ## Latest Session
+
+### 2026-03-03: Bug Fix — Status System Inconsistency (3 root causes) ✅
+**Root causes found & fixed** (all stem from status system mismatch):
+
+1. **Moisture decay skipped `thriving` plants** → `activity.ts` sets status to `'thriving'` on log, but cron only processed `status='growing'`
+   - Fixed: `moisture-decay/route.ts` + Supabase `update_daily_moisture()` now use `.in('status', ['growing','thriving','resting','waiting','sleeping'])`
+   - Migration: [20260303_fix_moisture_decay_all_statuses.sql](../supabase/migrations/20260303_fix_moisture_decay_all_statuses.sql)
+
+2. **List view showed "0 growing"** → `garden-view.tsx` filtered `status === 'growing'` only, missing `thriving/resting/waiting/sleeping`
+   - Fixed: Now shows all non-dead, non-mature plants as "Growing"
+
+3. **`hasMatured` check wrong** → `plant.status === 'growing'` blocked `thriving` plants from becoming `mature`
+   - Fixed in: `plants.ts`, `activity.ts`, `goals.ts` → now `status !== 'mature' && status !== 'dead'`
+
+4. **Weed system cleanup** → removed dead UI code: `WeedsProvider`, `src/components/weeds/`, weed fetch in `layout.tsx`
+   - `weeds.ts` action file kept (DB backward compat)
+
+**Key insight**: Two competing status systems existed:
+- Old (DB cron): `growing` → `mature` or `dead`
+- New (Gentle Growth, `activity.ts`): `thriving`, `resting`, `waiting`, `sleeping`
+These were never reconciled → silent data inconsistencies.
+
+**Files Modified**: [moisture-decay/route.ts](src/app/api/cron/moisture-decay/route.ts), [garden-view.tsx](src/components/garden/garden-view.tsx), [plants.ts](src/lib/actions/plants.ts), [activity.ts](src/lib/actions/activity.ts), [goals.ts](src/lib/actions/goals.ts), [layout.tsx](src/app/(dashboard)/layout.tsx), [providers.tsx](src/app/(dashboard)/providers.tsx)
+
+### 2026-03-03: Phase 2 Perf Audit — Auth Dedup + SSR Data Fetching ✅
+- Created [`src/lib/auth-cached.ts`](src/lib/auth-cached.ts) — `React.cache()` wrapper deduplicates `auth.getUser()` per request
+- Replaced 68 direct `auth.getUser()` calls across all 11 action files (plants/identity/goals/mood/adaptive/activity/journal/paddle/subscription/weeds/profile)
+- `SubscriptionContext`: added SSR guard in `useEffect` — skips client fetch when `initialTier` provided by layout
+- `MoodContext`: already correctly wired via layout (no changes needed)
+- `profile.ts`: removed XP auto-sync side-effect from `getProfile()`; applied backfill migration to Supabase
+- `getUserStats()` + `getAchievementsData()`: sequential queries → `Promise.all`
+- Plan: [phase-02-auth-data-fetching.md](../plans/20260303-1200-perf-audit/phase-02-auth-data-fetching.md) ✅
+
+**Next**: Phase 4 — Component refactor + WeedsContext stale closure fix — [phase-04-component-refactor.md](../plans/20260303-1200-perf-audit/phase-04-component-refactor.md)
+
+### 2026-03-03: Phase 3 Perf Audit — Query Optimization ✅
+- Added 2 composite indexes: `idx_activity_logs_user_date`, `idx_goal_logs_goal_date` (others pre-existed)
+- `adaptive.ts` `autoApplyAdjustment()`: `select('*')` → 5 explicit columns
+- `activity.ts` `logActivity()`: goals sub-select narrowed to 5 used columns
+- `goals.ts` kept `select('*')` — spread pattern requires all columns
+- Plan: [phase-03-query-optimization.md](../plans/20260303-1200-perf-audit/phase-03-query-optimization.md) ✅
+
+### 2026-03-03: Phase 1 Perf Audit Fixes (Security + N+1)
+- **Fix 1 CRITICAL**: `autoApplyAdjustment()` — added `auth.getUser()` + `plants!inner(user_id)` ownership check before any DB write ([adaptive.ts](src/lib/actions/adaptive.ts))
+- **Fix 2 HIGH**: `getUserGoals()` — extracted `computeGoalStats()` pure helper, rewrote to 2 queries (was ~5N+2); `getGoalForPlant()` also uses helper ([goals.ts](src/lib/actions/goals.ts))
+- **Fix 3 HIGH**: `growWeeds()` — added `increment_weed_count` RPC, replaced N UPDATE loop with single batch call ([weeds.ts](src/lib/actions/weeds.ts))
+- All 202 tests pass; no TS errors in modified files
+- Plan: [phase-01-critical-fixes.md](../plans/20260303-1200-perf-audit/phase-01-critical-fixes.md) ✅
+
+---
+
+### 2026-02-19: Bug Fix - Moisture Decay System
+- **Issue**: Cây không tự động decay mỗi ngày
+- **Root Cause**: Cron job `update_daily_moisture()` chạy nhưng fail vì query bảng `daily_weather` không tồn tại
+- **Investigation**: Dùng Supabase MCP kiểm tra job run history - tất cả 10 lần chạy gần nhất đều status "failed"
+- **Solution**: Rewrite function `update_daily_moisture()` để bỏ qua weather modifier dependency
+- **Result**: ✅ Function hoạt động, moisture decay đúng (tested: 92→84→76)
+- **Next run**: Cron sẽ tự động chạy vào 17:00 UTC (00:00 VN) hàng ngày
+
+**Files Modified**:
+- [20260219_fix_moisture_decay.sql](../supabase/migrations/20260219_fix_moisture_decay.sql) - Migration với function fix
+
+---
+
+### 2026-02-18: Phase 7 - Polish (LevelUpModal + AchievementPopup wired)
+- Exported `checkAndUnlockAchievements` from [plants.ts](src/lib/actions/plants.ts)
+- Extended [activity.ts](src/lib/actions/activity.ts): `logActivity()` now returns `leveledUp`, `newLevel`, `oldLevel`, `newAchievementIds`
+- Wired [IsometricGarden](src/components/garden/isometric-garden.tsx) to display:
+  - [LevelUpModal](src/components/game-ui/level-up-modal.tsx) with confetti on level up
+  - [AchievementQueue](src/components/gamification/achievement-popup.tsx) for newly unlocked achievements
+- 202 tests all pass
+
+**Next Actions**:
+1. Upgrade flow UX polish (upgrade modal design)
+2. Trial management (7-day free trial)
+3. Responsive design audit
+4. Analytics for conversion tracking
+
+---
 
 ### 2026-02-12: Phase 6 - Identity System (PREMIUM)
 - Created `identities` table with RLS policies and progress tracking
@@ -214,10 +296,10 @@ NEXT_PUBLIC_PADDLE_PREMIUM_YEARLY_PRICE_ID=pri_xxx
 ## Known Issues / TODO
 
 - [ ] Responsive design check
-- [ ] Achievement unlock popup notification
+- [x] Achievement unlock popup notification (wired 2026-02-18)
 - [x] Level up celebration modal (Phase 2)
 - [ ] Performance optimization for large gardens
-- [ ] Wire LevelUpModal to XP system (trigger on level change)
+- [x] Wire LevelUpModal to XP system (wired 2026-02-18)
 
 **Watering Logic Refinement** (from 2026-01-31):
 1. If already watered today -> hide "Just checking in"

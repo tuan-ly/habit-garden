@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import type { MoodLevel } from '@/lib/mood-system'
 import { DEFAULT_MOOD } from '@/lib/mood-system'
+import { getAuthUser } from '@/lib/auth-cached'
 
 export interface MoodLog {
   id: string
@@ -19,9 +20,7 @@ export interface MoodLog {
 export async function getTodayMood(): Promise<MoodLevel> {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return DEFAULT_MOOD
 
   const today = new Date().toISOString().split('T')[0]
@@ -68,9 +67,7 @@ export async function setTodayMood(
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) {
     return { success: false, error: 'Not authenticated' }
   }
@@ -104,9 +101,7 @@ export async function setTodayMood(
 export async function getMoodHistory(startDate: string, endDate: string): Promise<MoodLog[]> {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return []
 
   const { data: moodLogs } = await supabase
@@ -124,9 +119,7 @@ export async function getMoodHistory(startDate: string, endDate: string): Promis
 export async function getMoodForDate(date: string): Promise<MoodLevel> {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return DEFAULT_MOOD
 
   const { data: moodLog } = await supabase
@@ -143,9 +136,7 @@ export async function getMoodForDate(date: string): Promise<MoodLevel> {
 export async function hasMoodSetToday(): Promise<boolean> {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return false
 
   const today = new Date().toISOString().split('T')[0]
@@ -170,9 +161,7 @@ export async function getMoodStats(days: number = 30): Promise<{
 }> {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) {
     return {
       total: 0,
@@ -228,9 +217,7 @@ export async function getMoodPatterns(days: number = 30): Promise<{
 }> {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) {
     return {
       weekdayAverages: {},

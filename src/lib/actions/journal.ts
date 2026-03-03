@@ -10,6 +10,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth-cached'
 import { revalidatePath } from 'next/cache'
 import type {
   ActivityLog,
@@ -72,7 +73,7 @@ export async function getPlantJournalEntries(
 ): Promise<JournalEntry[]> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return []
 
   // Get activities (include those with notes, but also recent ones)
@@ -210,7 +211,7 @@ const MILESTONE_DEFINITIONS: Array<{
 export async function getPlantMilestones(plantId: string): Promise<MilestoneData[]> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return []
 
   // Get plant data for days calculation
@@ -326,7 +327,7 @@ export async function getPlantMilestones(plantId: string): Promise<MilestoneData
 export async function getPlantReflections(plantId: string): Promise<Reflection[]> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return []
 
   const { data: reflections } = await supabase
@@ -382,7 +383,7 @@ export async function createReflection(
 ): Promise<CreateReflectionResult> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) {
     return { success: false, error: 'Not authenticated' }
   }
@@ -447,7 +448,7 @@ export async function createReflection(
 export async function getPlantJournalData(plantId: string): Promise<JournalData | null> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return null
 
   // Fetch all data in parallel

@@ -70,7 +70,6 @@ const MockPlantsProvider = ({ children, plants }: { children: React.ReactNode; p
   return (
     <PlantsProvider
       initialPlants={plants}
-      userId="mock-user"
     >
       {children}
     </PlantsProvider>

@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth-cached'
 import { revalidatePath } from 'next/cache'
 
 export interface PlantWeeds {
@@ -17,7 +18,7 @@ const MAX_WEEDS = 7
 export async function getPlantWeeds(plantId: string): Promise<PlantWeeds | null> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return null
 
   // Verify plant belongs to user
@@ -42,7 +43,7 @@ export async function getPlantWeeds(plantId: string): Promise<PlantWeeds | null>
 export async function getUserPlantsWithWeeds(): Promise<PlantWeeds[]> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return []
 
   const { data: plants } = await supabase
@@ -70,7 +71,7 @@ export async function clearWeed(plantId: string): Promise<{
 }> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) {
     return { success: false, error: 'Not authenticated' }
   }
@@ -142,7 +143,7 @@ export async function clearAllWeeds(plantId: string): Promise<{
 }> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) {
     return { success: false, error: 'Not authenticated' }
   }
@@ -230,38 +231,31 @@ export async function growWeeds(): Promise<{
     return { success: true, plantsAffected: 0 }
   }
 
-  // Update each plant
-  let plantsAffected = 0
-  for (const plant of plants) {
-    const lastWatered = plant.last_watered_at
-      ? new Date(plant.last_watered_at).toISOString().split('T')[0]
-      : null
+  // Filter eligible plants in JS (exclude those watered yesterday — grace period)
+  const eligibleIds = plants
+    .filter(plant => {
+      const lastWatered = plant.last_watered_at
+        ? new Date(plant.last_watered_at).toISOString().split('T')[0]
+        : null
+      return lastWatered !== yesterday
+    })
+    .map(p => p.id)
 
-    // Only add weed if not watered yesterday (give grace period)
-    if (lastWatered !== yesterday) {
-      const newWeedCount = Math.min(MAX_WEEDS, (plant.weed_count || 0) + 1)
-
-      await supabase
-        .from('plants')
-        .update({
-          weed_count: newWeedCount,
-          last_weed_added: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', plant.id)
-
-      plantsAffected++
-    }
+  if (eligibleIds.length === 0) {
+    return { success: true, plantsAffected: 0 }
   }
 
-  return { success: true, plantsAffected }
+  // Single batch update via RPC (replaces N serial UPDATEs)
+  await supabase.rpc('increment_weed_count', { plant_ids: eligibleIds, max_weeds: MAX_WEEDS })
+
+  return { success: true, plantsAffected: eligibleIds.length }
 }
 
 // Get total weeds across all plants
 export async function getTotalWeeds(): Promise<number> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return 0
 
   const { data } = await supabase

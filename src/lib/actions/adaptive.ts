@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import type { Goal, GoalLog, GoalAdjustment, AdjustmentType } from '@/types/database'
+import { getAuthUser } from '@/lib/auth-cached'
 import {
   analyzePerformance,
   detectTrigger,
@@ -28,7 +29,7 @@ export interface AdaptiveAnalysisResult {
 export async function getAdaptiveAnalysis(goalId: string): Promise<AdaptiveAnalysisResult | null> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return null
 
   // Get goal with plant
@@ -91,7 +92,7 @@ export async function createAdjustmentSuggestion(
 ): Promise<{ success: boolean; adjustment?: GoalAdjustment; error?: string }> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) {
     return { success: false, error: 'Not authenticated' }
   }
@@ -163,7 +164,7 @@ export async function applyAdjustment(
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) {
     return { success: false, error: 'Not authenticated' }
   }
@@ -275,7 +276,7 @@ export async function applyAdjustment(
 export async function rejectAdjustment(adjustmentId: string): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) {
     return { success: false, error: 'Not authenticated' }
   }
@@ -319,7 +320,7 @@ export async function rejectAdjustment(adjustmentId: string): Promise<{ success:
 export async function getAdjustmentHistory(goalId: string): Promise<GoalAdjustment[]> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return []
 
   const { data: adjustments } = await supabase
@@ -337,11 +338,17 @@ export async function getAdjustmentHistory(goalId: string): Promise<GoalAdjustme
 export async function autoApplyAdjustment(goalId: string): Promise<{ success: boolean; applied: boolean; error?: string }> {
   const supabase = await createClient()
 
-  // Get goal
+  const user = await getAuthUser()
+  if (!user) {
+    return { success: false, applied: false, error: 'Not authenticated' }
+  }
+
+  // Get goal with ownership check
   const { data: goal } = await supabase
     .from('goals')
-    .select('*')
+    .select('id, adaptive_mode, target_value, duration_weeks, weekly_targets, plant:plants!inner(user_id)')
     .eq('id', goalId)
+    .eq('plant.user_id', user.id)
     .single()
 
   if (!goal || goal.adaptive_mode !== 'auto') {
@@ -400,7 +407,7 @@ export async function autoApplyAdjustment(goalId: string): Promise<{ success: bo
 export async function activateRecoveryWeek(goalId: string): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) {
     return { success: false, error: 'Not authenticated' }
   }
@@ -474,7 +481,7 @@ export async function updateAdaptiveMode(
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) {
     return { success: false, error: 'Not authenticated' }
   }

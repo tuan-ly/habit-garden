@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth-cached'
 import type { SubscriptionTier, SubscriptionStatus } from '@/types/database'
 import type { UpgradeTrigger } from '@/lib/subscription-limits'
 
@@ -8,9 +9,7 @@ import type { UpgradeTrigger } from '@/lib/subscription-limits'
 export async function getSubscription() {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return null
 
   const { data, error } = await supabase
@@ -60,9 +59,7 @@ export async function trackUpgradePrompt(
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return { success: false, error: 'Not authenticated' }
 
   const { error } = await supabase.from('upgrade_prompts').insert({
@@ -86,9 +83,7 @@ export async function updateUpgradePromptAction(
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return { success: false, error: 'Not authenticated' }
 
   // Find the most recent prompt of this type
@@ -143,9 +138,7 @@ export async function hasSeenPromptRecently(
 ): Promise<boolean> {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return false
 
   const sevenDaysAgo = new Date()
@@ -175,9 +168,7 @@ export async function logSubscriptionEvent(
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return { success: false, error: 'Not authenticated' }
 
   // Get subscription ID
@@ -205,12 +196,20 @@ export async function logSubscriptionEvent(
 }
 
 // Get user's subscription tier (quick check)
+// In dev mode, checks for dev panel override first
 export async function getUserTier(): Promise<SubscriptionTier> {
+  // Check for dev tier override first (dev mode only)
+  if (process.env.NODE_ENV === 'development') {
+    const { getDevTierOverride } = await import('./dev')
+    const devTier = await getDevTierOverride()
+    if (devTier) {
+      return devTier
+    }
+  }
+
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return 'free'
 
   const { data, error } = await supabase
@@ -255,9 +254,7 @@ export async function checkLimits(): Promise<{
 }> {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) {
     return {
       canAddPlant: false,

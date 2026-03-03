@@ -18,6 +18,9 @@ import { AddPlantDialog } from '@/components/plants/add-plant-dialog'
 import { PlantDetailSheet } from '@/components/plants/plant-detail-sheet'
 import { QuickLogModal } from '@/components/plants/quick-log-modal (archieved)'
 import { GentleWateringModal } from '@/components/plants/gentle-watering-modal'
+import { LevelUpModal } from '@/components/game-ui/level-up-modal'
+import { AchievementQueue } from '@/components/gamification/achievement-popup'
+import { ACHIEVEMENTS, type AchievementDefinition } from '@/lib/achievements'
 import {
   showAlreadyWateredToast,
   showWaterErrorToast,
@@ -25,6 +28,7 @@ import {
   showWaterToast,
 } from '@/components/plants/water-toast'
 import { usePlants, useGardenSettingsOptional } from '@/lib/context'
+import { isToday } from '@/lib/utils'
 import { useGardenZoom, useVisibleTiles } from '@/lib/hooks'
 import { logActivity } from '@/lib/actions/activity'
 import type { PlantWithType, PlantType, WeatherType } from '@/types/database'
@@ -145,6 +149,12 @@ export function IsometricGarden({
     previewCell: null,
     isValidPreview: false,
   })
+
+  // Level up modal state
+  const [levelUpData, setLevelUpData] = useState<{ newLevel: number; oldLevel: number } | null>(null)
+
+  // Achievement notification queue
+  const [pendingAchievements, setPendingAchievements] = useState<AchievementDefinition[]>([])
 
   // Cooldown tracking to prevent multiple rapid watering/logging clicks
   const actionCooldown = useRef<Set<string>>(new Set())
@@ -321,11 +331,9 @@ export function IsometricGarden({
     }
   }, [moveState.selectedPlant, livingPlants, movePlant])
 
-  // Check if plant is watered today
+  // Check if plant is watered today (uses cached date string)
   const isWateredToday = useCallback((plant: PlantWithType) => {
-    return plant.last_watered_at
-      ? new Date(plant.last_watered_at).toDateString() === new Date().toDateString()
-      : false
+    return isToday(plant.last_watered_at)
   }, [])
 
   // Handle quick water request - opens modal instead of immediate action
@@ -409,6 +417,19 @@ export function IsometricGarden({
             xpEarned: result.xpEarned || 0,
             streakCount: newStreak,
           })
+          // Handle level up notification
+          if (result.leveledUp && result.newLevel) {
+            setLevelUpData({ newLevel: result.newLevel, oldLevel: result.oldLevel ?? result.newLevel - 1 })
+          }
+          // Handle achievement notifications
+          if (result.newAchievementIds && result.newAchievementIds.length > 0) {
+            const defs = result.newAchievementIds
+              .map(id => ACHIEVEMENTS.find(a => a.id === id))
+              .filter(Boolean) as AchievementDefinition[]
+            if (defs.length > 0) {
+              setPendingAchievements(prev => [...prev, ...defs])
+            }
+          }
         }
       } catch (error) {
         // Cancel celebration on error
@@ -521,6 +542,19 @@ export function IsometricGarden({
               xpEarned: result.xpEarned || 0,
               streakCount: newStreak,
             })
+          }
+          // Handle level up notification
+          if (result.leveledUp && result.newLevel) {
+            setLevelUpData({ newLevel: result.newLevel, oldLevel: result.oldLevel ?? result.newLevel - 1 })
+          }
+          // Handle achievement notifications
+          if (result.newAchievementIds && result.newAchievementIds.length > 0) {
+            const defs = result.newAchievementIds
+              .map(id => ACHIEVEMENTS.find(a => a.id === id))
+              .filter(Boolean) as AchievementDefinition[]
+            if (defs.length > 0) {
+              setPendingAchievements(prev => [...prev, ...defs])
+            }
           }
         }
       } catch (error) {
@@ -664,7 +698,8 @@ export function IsometricGarden({
       const newStreak = isFirstActivityToday ? plant.current_streak + 1 : plant.current_streak
 
       // Simple XP estimate: base watering (10) + morning (3) if applicable
-      const isMorning = new Date().getHours() >= 5 && new Date().getHours() < 9
+      const currentHour = new Date().getHours()
+      const isMorning = currentHour >= 5 && currentHour < 9
       let estimatedXp = isFirstActivityToday ? 10 + (isMorning ? 3 : 0) : 0
 
       // Note bonus estimate
@@ -1018,6 +1053,10 @@ export function IsometricGarden({
         goalMode={wateringPlant?.goal_mode || undefined}
         isWateredToday={wateringPlant ? isWateredToday(wateringPlant) : false}
         journalStreak={journalStreak}
+        periodProgress={wateringPlant?.today_value}
+        currentPeriodTarget={wateringPlant?.goal?.current_week_target}
+        periodLabel={wateringPlant?.goal ? `Week ${wateringPlant.goal.week_number}` : undefined}
+        daysLeftInPeriod={wateringPlant?.goal ? (() => { const d = new Date().getDay(); return d === 0 ? 0 : 7 - d })() : undefined}
       />
 
       {/* Add plant dialog */}
@@ -1050,6 +1089,22 @@ export function IsometricGarden({
           plantIcon={celebration?.plantIcon}
           streakCount={celebration?.streakCount}
           onComplete={() => setCelebration(null)}
+        />
+      )}
+
+      {/* Level up modal */}
+      <LevelUpModal
+        open={!!levelUpData}
+        onOpenChange={(open) => { if (!open) setLevelUpData(null) }}
+        newLevel={levelUpData?.newLevel ?? 1}
+        oldLevel={levelUpData?.oldLevel}
+      />
+
+      {/* Achievement unlock notifications */}
+      {pendingAchievements.length > 0 && (
+        <AchievementQueue
+          achievements={pendingAchievements}
+          onComplete={() => setPendingAchievements([])}
         />
       )}
     </div>

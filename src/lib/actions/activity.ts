@@ -14,6 +14,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth-cached'
 import { revalidatePath } from 'next/cache'
 import type {
   ActivityLog,
@@ -21,10 +22,11 @@ import type {
   RestDay,
   PlantWithType,
 } from '@/types/database'
-import { calculateNoteBonus } from '@/lib/xp-system'
+import { calculateNoteBonus, checkLevelUp, getLevelFromXp } from '@/lib/xp-system'
 import { getTodayWeather, calculateWeatherXp } from '@/lib/weather-system'
 import { calculateRhythm } from '@/lib/plant-status'
 import { XP_VALUES, isMorningTime } from '@/lib/xp-constants'
+import { checkAndUnlockAchievements } from './plants'
 
 // =====================================================
 // Main Activity Logging - Single Unified Function
@@ -46,6 +48,10 @@ export interface LogActivityResult {
   newGoalValue?: number
   message?: string
   error?: string
+  leveledUp?: boolean
+  newLevel?: number
+  oldLevel?: number
+  newAchievementIds?: string[]
 }
 
 /**
@@ -64,12 +70,20 @@ export interface LogActivityResult {
 export async function logActivity(dto: LogActivityDto): Promise<LogActivityResult> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) {
     return { success: false, error: 'Not authenticated' }
   }
 
   const today = new Date().toISOString().split('T')[0]
+
+  // Get current profile XP for level up detection
+  const { data: profileData } = await supabase
+    .from('profiles')
+    .select('xp')
+    .eq('id', user.id)
+    .single()
+  const oldXp = profileData?.xp || 0
 
   // Get plant with goal and type info
   const { data: plant, error: plantError } = await supabase
@@ -77,7 +91,7 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
     .select(`
       *,
       plant_type:plant_types(*),
-      goals(*)
+      goals(id, season_status, goal_mode, current_value, days_active)
     `)
     .eq('id', dto.plant_id)
     .eq('user_id', user.id)
@@ -229,7 +243,7 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
       newStreak = plant.current_streak
     }
 
-    const hasMatured = newGrowth >= 100 && plant.status === 'growing'
+    const hasMatured = newGrowth >= 100 && plant.status !== 'mature' && plant.status !== 'dead'
 
     plantUpdate = {
       ...plantUpdate,
@@ -266,6 +280,12 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
     await updateUserXp(user.id, totalXp)
   }
 
+  // Check for level up
+  const levelUpResult = totalXp > 0 ? checkLevelUp(oldXp, oldXp + totalXp) : null
+
+  // Check and unlock achievements
+  const newAchievementIds = await checkAndUnlockAchievements(user.id)
+
   revalidatePath('/garden')
 
   // Generate appropriate message
@@ -284,6 +304,10 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
     isPersonalRecord,
     newGoalValue,
     message,
+    leveledUp: levelUpResult?.leveledUp,
+    newLevel: levelUpResult?.newLevel,
+    oldLevel: levelUpResult?.leveledUp ? getLevelFromXp(oldXp) : undefined,
+    newAchievementIds: newAchievementIds.length > 0 ? newAchievementIds : undefined,
   }
 }
 
@@ -374,7 +398,7 @@ export interface MarkRestDayDto {
 export async function markRestDay(dto: MarkRestDayDto): Promise<RestDayResult> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) {
     return { success: false, error: 'Not authenticated' }
   }
@@ -503,7 +527,7 @@ export async function getPlantActivityHistory(
 ): Promise<ActivityHistory | null> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return null
 
   const startDate = new Date()
@@ -571,7 +595,7 @@ async function updateUserXp(userId: string, xp: number): Promise<void> {
 export async function isRestDayToday(plantId: string): Promise<boolean> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return false
 
   const today = new Date().toISOString().split('T')[0]
@@ -592,7 +616,7 @@ export async function isRestDayToday(plantId: string): Promise<boolean> {
 export async function getRestDaysRemaining(plantId: string): Promise<number> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return 0
 
   // Get plant's allowed rest days
@@ -624,7 +648,7 @@ export async function getRestDaysRemaining(plantId: string): Promise<number> {
 export async function hasActivityToday(plantId: string): Promise<boolean> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return false
 
   const today = new Date().toISOString().split('T')[0]

@@ -24,44 +24,26 @@ export default async function DashboardLayout({
   // Fetch initial mood for the provider
   const initialMood = await getTodayMood()
 
-  // Fetch user's timezone for auto-sync
+  // Fetch user's timezone and subscription tier for auto-sync
   const { data: profile } = await supabase
     .from('profiles')
-    .select('timezone')
+    .select('timezone, subscription_tier')
     .eq('id', user.id)
     .single()
   const userTimezone = profile?.timezone ?? null
-
-  // Fetch initial weeds for all plants
-  const { data: plantsWithWeeds } = await supabase
-    .from('plants')
-    .select('id, weed_count')
-    .eq('user_id', user.id)
-    .gt('weed_count', 0)
-
-  const initialWeeds: { [plantId: string]: number } = {}
-  if (plantsWithWeeds) {
-    plantsWithWeeds.forEach((plant) => {
-      initialWeeds[plant.id] = plant.weed_count || 0
-    })
-  }
+  const initialTier = (profile?.subscription_tier as 'free' | 'pro' | 'premium') ?? 'free'
 
   return (
-    <DashboardProviders initialMood={initialMood} initialWeeds={initialWeeds}>
+    <DashboardProviders initialMood={initialMood} initialTier={initialTier}>
       <div className="min-h-screen relative ">
-        {/* Animated gradient background */}
+        {/* Static gradient background - single layer, no animations for better performance */}
         <div className="fixed inset-0 bg-gradient-to-br from-sky-200 via-emerald-100 to-green-200 dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950 pointer-events-none" />
 
-        {/* Subtle animated patterns */}
-        <div className="fixed inset-0 opacity-30 dark:opacity-20 pointer-events-none">
-          <div className="absolute top-0 left-0 w-96 h-96 bg-green-300 dark:bg-green-500 rounded-full blur-3xl animate-pulse-slow" style={{ animationDuration: '8s' }} />
-          <div className="absolute bottom-0 right-0 w-80 h-80 bg-emerald-300 dark:bg-emerald-500 rounded-full blur-3xl animate-pulse-slow" style={{ animationDuration: '10s', animationDelay: '2s' }} />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-teal-200 dark:bg-teal-600 rounded-full blur-3xl animate-pulse-slow" style={{ animationDuration: '12s', animationDelay: '4s' }} />
+        {/* Static soft glow accents - no animations, GPU-composited via will-change */}
+        <div className="fixed inset-0 opacity-20 dark:opacity-15 pointer-events-none" style={{ willChange: 'auto' }}>
+          <div className="absolute top-0 left-0 w-96 h-96 bg-green-300 dark:bg-green-500 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 right-0 w-80 h-80 bg-emerald-300 dark:bg-emerald-500 rounded-full blur-3xl" />
         </div>
-
-        {/* Subtle grid pattern overlay */}
-        <div className="fixed inset-0 opacity-5 dark:opacity-10 pointer-events-none"
-          style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)', backgroundSize: '40px 40px' }} />
 
         {/* Main content area - full screen, children handle their own scrolling */}
         <main className="relative h-dvh">

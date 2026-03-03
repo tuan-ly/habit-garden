@@ -26,7 +26,8 @@ export async function GET(request: NextRequest) {
     // Get today's weather for moisture decay modifier
     const weather = getTodayWeather()
 
-    // Get all growing plants with their plant type info
+    // Get all living (non-dead, non-mature) plants with their plant type info
+    // Must include all gentle-growth statuses: growing, thriving, resting, waiting, sleeping
     const { data: plants, error: plantsError } = await supabase
       .from('plants')
       .select(`
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
         updated_at,
         plant_type:plant_types(moisture_decay_rate)
       `)
-      .eq('status', 'growing')
+      .in('status', ['growing', 'thriving', 'resting', 'waiting', 'sleeping'])
 
     if (plantsError) {
       console.error('Error fetching plants:', plantsError)

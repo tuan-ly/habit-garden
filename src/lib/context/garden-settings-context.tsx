@@ -6,6 +6,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   type ReactNode,
 } from 'react'
 
@@ -83,15 +84,19 @@ export function GardenSettingsProvider({ children }: GardenSettingsProviderProps
     setIsLoaded(true)
   }, [])
 
-  // Persist settings to localStorage whenever they change
+  // Persist settings to localStorage (debounced to avoid rapid writes)
   useEffect(() => {
     if (!isLoaded || typeof window === 'undefined') return
 
-    try {
-      localStorage.setItem(GARDEN_SETTINGS_KEY, JSON.stringify(settings))
-    } catch {
-      // Ignore storage errors
-    }
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(GARDEN_SETTINGS_KEY, JSON.stringify(settings))
+      } catch {
+        // Ignore storage errors
+      }
+    }, 300)
+
+    return () => clearTimeout(timer)
   }, [settings, isLoaded])
 
   const updateSetting = useCallback(
@@ -130,16 +135,19 @@ export function GardenSettingsProvider({ children }: GardenSettingsProviderProps
     })
   }, [])
 
+  const contextValue = useMemo(
+    () => ({
+      settings,
+      updateSetting,
+      resetSettings,
+      enableAll,
+      disableAll,
+    }),
+    [settings, updateSetting, resetSettings, enableAll, disableAll]
+  )
+
   return (
-    <GardenSettingsContext.Provider
-      value={{
-        settings,
-        updateSetting,
-        resetSettings,
-        enableAll,
-        disableAll,
-      }}
-    >
+    <GardenSettingsContext.Provider value={contextValue}>
       {children}
     </GardenSettingsContext.Provider>
   )

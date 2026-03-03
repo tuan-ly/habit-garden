@@ -1,0 +1,1 @@
+Tôi có ý tưởng là khi tưới cây bằng bình nước có AI (có thể là random) thì sẽ nhận được phản hồi về thói quen đó: bạn đã đi hành trình này rất tốt, vì sao bạn bắt đầu, cần cải thiện điều gì, hoặc AI sẽ nhận diện identity của bạn.

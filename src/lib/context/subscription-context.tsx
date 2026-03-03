@@ -6,6 +6,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   type ReactNode,
 } from 'react'
 import {
@@ -70,10 +71,11 @@ interface SubscriptionProviderProps {
 
 export function SubscriptionProvider({
   children,
-  initialTier = 'free',
+  initialTier,
 }: SubscriptionProviderProps) {
-  const [serverTier, setServerTier] = useState<SubscriptionTier>(initialTier)
-  const [isLoading, setIsLoading] = useState(true)
+  const [serverTier, setServerTier] = useState<SubscriptionTier>(initialTier ?? 'free')
+  // Skip loading state if SSR already provided a tier
+  const [isLoading, setIsLoading] = useState(initialTier === undefined)
 
   // Upgrade modal state
   const [upgradeModal, setUpgradeModal] = useState<UpgradeModalState>({
@@ -88,11 +90,16 @@ export function SubscriptionProvider({
     ? (devTierOverride.toLowerCase() as SubscriptionTier)
     : serverTier
 
-  // Get tier limits
-  const limits = getTierLimits(tier)
+  // Get tier limits (memoized to prevent recalculation)
+  const limits = useMemo(() => getTierLimits(tier), [tier])
 
-  // Load tier from server on mount
+  // Load tier from server on mount only if SSR did not provide an initialTier
   useEffect(() => {
+    if (initialTier !== undefined) {
+      setIsLoading(false)
+      return // SSR already provided the tier
+    }
+
     let mounted = true
 
     async function loadTier() {
@@ -114,7 +121,7 @@ export function SubscriptionProvider({
     return () => {
       mounted = false
     }
-  }, [])
+  }, [initialTier])
 
   // Refresh tier from server
   const refreshTier = useCallback(async () => {
@@ -172,27 +179,31 @@ export function SubscriptionProvider({
     setUpgradeModal((prev) => ({ ...prev, open: false }))
   }, [])
 
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue = useMemo(
+    () => ({
+      tier,
+      isLoading,
+      hasGoals,
+      hasIdentity,
+      hasMetrics,
+      hasWeeklyReports,
+      canAddPlant,
+      canAddGoal,
+      canUsePlantTier,
+      isWithinLevelCap,
+      checkFeature,
+      limits,
+      showUpgradeModal,
+      hideUpgradeModal,
+      upgradeModal,
+      refreshTier,
+    }),
+    [tier, isLoading, hasGoals, hasIdentity, hasMetrics, hasWeeklyReports, canAddPlant, canAddGoal, canUsePlantTier, isWithinLevelCap, checkFeature, limits, showUpgradeModal, hideUpgradeModal, upgradeModal, refreshTier]
+  )
+
   return (
-    <SubscriptionContext.Provider
-      value={{
-        tier,
-        isLoading,
-        hasGoals,
-        hasIdentity,
-        hasMetrics,
-        hasWeeklyReports,
-        canAddPlant,
-        canAddGoal,
-        canUsePlantTier,
-        isWithinLevelCap,
-        checkFeature,
-        limits,
-        showUpgradeModal,
-        hideUpgradeModal,
-        upgradeModal,
-        refreshTier,
-      }}
-    >
+    <SubscriptionContext.Provider value={contextValue}>
       {children}
     </SubscriptionContext.Provider>
   )

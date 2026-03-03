@@ -13,6 +13,9 @@ export { GoalWeekCard } from './goal-week-card'
 export { GoalModifyModal } from './goal-modify-modal'
 export { GoalComparison } from './goal-comparison'
 
+// Journey Map
+export { GoalJourneyMap } from './goal-journey-map'
+
 // Adaptive Goals
 export { AdaptiveSuggestionModal } from './adaptive-suggestion-modal'
 export { AdaptiveSettings } from './adaptive-settings'

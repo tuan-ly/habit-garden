@@ -18,7 +18,7 @@ export function GameHud({ profile }: GameHudProps) {
   const { limits, showUpgradeModal } = useSubscription()
 
   // Dev overrides for testing
-  const effectiveXp = useDevOverride('xp', profile?.xp ?? 0)
+  const effectiveXp = useDevOverride('xp', profile?.xp ?? 0) ?? 0
 
   const levelInfo = profile ? getLevelInfo(effectiveXp, limits.levelCap) : null
 

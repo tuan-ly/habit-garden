@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useEffect } from 'react'
+import { memo, useMemo, useState, useEffect } from 'react'
 import type { WeatherType } from '@/types/database'
 import type { TimeOfDay } from './themes'
 
@@ -271,7 +271,7 @@ function ParticleElement({ particle }: { particle: Particle }) {
   }
 }
 
-export function AmbientParticles({ weather, timeOfDay = 'day', className }: AmbientParticlesProps) {
+export const AmbientParticles = memo(function AmbientParticles({ weather, timeOfDay = 'day', className }: AmbientParticlesProps) {
   // Use state to handle client-only rendering
   const [mounted, setMounted] = useState(false)
 
@@ -299,4 +299,4 @@ export function AmbientParticles({ weather, timeOfDay = 'day', className }: Ambi
       ))}
     </div>
   )
-}
+})

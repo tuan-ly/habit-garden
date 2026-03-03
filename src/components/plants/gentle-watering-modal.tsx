@@ -39,6 +39,7 @@ import {
   Lightbulb,
   Info,
   Moon,
+  Check,
 } from 'lucide-react'
 import { resolveGrowthConflict } from '@/lib/actions/plants'
 import { waterPlantSimple, logProgress } from '@/lib/actions/activity'
@@ -63,6 +64,10 @@ interface GentleWateringModalProps {
   goalUnit?: string
   goalMode?: 'build_capacity' | 'total_progress'
   isWateredToday?: boolean
+  periodProgress?: number
+  currentPeriodTarget?: number
+  periodLabel?: string
+  daysLeftInPeriod?: number
 }
 
 // Calculate note bonus based on note length
@@ -91,6 +96,10 @@ export function GentleWateringModal({
   goalUnit = '',
   goalMode,
   isWateredToday = false,
+  periodProgress,
+  currentPeriodTarget,
+  periodLabel,
+  daysLeftInPeriod,
 }: GentleWateringModalProps) {
   const [mode, setMode] = useState<ActionMode>('choose')
   const [notes, setNotes] = useState('')
@@ -393,6 +402,51 @@ export function GentleWateringModal({
                   <p className="text-xs text-purple-300/70 mb-1">Why I started:</p>
                   <p className="text-sm text-purple-200 italic">&ldquo;{plant.why_i_started}&rdquo;</p>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Goal Context Strip */}
+          {hasGoal && currentPeriodTarget !== undefined && currentPeriodTarget > 0 && mode === 'choose' && (
+            <div className={cn(
+              'rounded-lg p-3 space-y-2',
+              (periodProgress ?? 0) >= currentPeriodTarget
+                ? 'bg-emerald-900/20 border border-emerald-500/20'
+                : 'bg-indigo-900/20 border border-indigo-500/20'
+            )}>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-400 font-medium flex items-center gap-1.5">
+                  <BarChart3 className="w-3.5 h-3.5" />
+                  {periodLabel ?? 'This Week'}
+                </span>
+                {(periodProgress ?? 0) >= currentPeriodTarget ? (
+                  <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                    <Check className="w-3 h-3" /> Done!
+                  </span>
+                ) : (
+                  <span className="text-amber-400 font-semibold">
+                    {Math.round((currentPeriodTarget - (periodProgress ?? 0)) * 10) / 10} {goalUnit} to go
+                  </span>
+                )}
+              </div>
+              <div className="h-1.5 w-full bg-slate-700 rounded-full overflow-hidden">
+                <div
+                  className={cn(
+                    'h-full rounded-full transition-all duration-500',
+                    (periodProgress ?? 0) >= currentPeriodTarget
+                      ? 'bg-gradient-to-r from-emerald-500 to-green-400'
+                      : 'bg-gradient-to-r from-indigo-500 to-blue-400'
+                  )}
+                  style={{
+                    width: `${Math.min(100, currentPeriodTarget > 0 ? ((periodProgress ?? 0) / currentPeriodTarget) * 100 : 0)}%`
+                  }}
+                />
+              </div>
+              <div className="flex justify-between text-[10px] text-slate-500">
+                <span>{periodProgress ?? 0} / {currentPeriodTarget} {goalUnit}</span>
+                {daysLeftInPeriod !== undefined && (
+                  <span>{daysLeftInPeriod} day{daysLeftInPeriod !== 1 ? 's' : ''} left</span>
+                )}
               </div>
             </div>
           )}
