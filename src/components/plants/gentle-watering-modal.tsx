@@ -454,6 +454,17 @@ export function GentleWateringModal({
           {/* MODE: Choose Action */}
           {mode === 'choose' && (
             <div className="space-y-3">
+              {/* Tiny Seed Reminder - only if easy mode is on and has tiny_seed text */}
+              {plant.easy_mode && plant.tiny_seed && (
+                <div className="flex items-start gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/50 px-3 py-2">
+                  <span className="text-base mt-0.5">🌱</span>
+                  <div>
+                    <div className="text-xs font-medium text-emerald-700 dark:text-emerald-400">Easy Mode reminder</div>
+                    <div className="text-xs text-emerald-600 dark:text-emerald-500">&ldquo;{plant.tiny_seed}&rdquo;</div>
+                  </div>
+                </div>
+              )}
+
               {/* I Did It  - Primary */}
               <Button
                 onClick={() => setMode('log')}

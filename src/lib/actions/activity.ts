@@ -25,7 +25,7 @@ import type {
 import { calculateNoteBonus, checkLevelUp, getLevelFromXp } from '@/lib/xp-system'
 import { getTodayWeather, calculateWeatherXp } from '@/lib/weather-system'
 import { calculateRhythm } from '@/lib/plant-status'
-import { XP_VALUES, isMorningTime } from '@/lib/xp-constants'
+import { XP_VALUES, WELCOME_BACK_BONUS, isMorningTime, EASY_MODE_BONUS_PERCENT, EASY_MODE_BONUS_DAYS } from '@/lib/xp-constants'
 import { checkAndUnlockAchievements } from './plants'
 
 // =====================================================
@@ -39,6 +39,8 @@ export interface LogActivityDto {
   /** Required for 'progress' type */
   value?: number
   notes?: string
+  /** One-time bonus for first watering after 3+ days absence */
+  is_welcome_back?: boolean
 }
 
 export interface LogActivityResult {
@@ -166,6 +168,23 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
   // Apply weather modifier
   const weather = getTodayWeather()
   totalXp = calculateWeatherXp(totalXp, weather.type)
+
+  // Welcome back bonus (one-time on return after 3+ days absence)
+  if (dto.is_welcome_back) {
+    totalXp += WELCOME_BACK_BONUS
+  }
+
+  // Easy Mode bonus: +20% XP for first 30 days
+  if (plant.easy_mode && totalXp > 0) {
+    const plantStart = plant.started_at || plant.created_at
+    const plantAgeInDays = Math.floor(
+      (Date.now() - new Date(plantStart).getTime()) / (1000 * 60 * 60 * 24)
+    )
+    if (plantAgeInDays <= EASY_MODE_BONUS_DAYS) {
+      const bonus = Math.round(totalXp * EASY_MODE_BONUS_PERCENT)
+      totalXp += bonus
+    }
+  }
 
   // =====================================================
   // Update Goal Value (for 'progress' type only)

@@ -55,6 +55,10 @@ interface IsometricGardenProps {
   focusMode?: boolean
   /** Map of plant ID to focus state for visual treatment */
   focusStates?: Map<string, FocusState>
+  /** True when user should receive the Welcome Back XP bonus on next watering */
+  welcomeBackPending?: boolean
+  /** Called after the Welcome Back bonus has been applied (first watering) */
+  onWelcomeBackUsed?: () => void
 }
 
 // Get responsive tile size - returns default for SSR, actual for client
@@ -78,6 +82,8 @@ export function IsometricGarden({
   userLevel = 1,
   focusMode = false,
   focusStates,
+  welcomeBackPending = false,
+  onWelcomeBackUsed,
 }: IsometricGardenProps) {
   // Get plants from context with optimistic updates
   const { plants, movePlant, updatePlant } = usePlants()
@@ -403,6 +409,7 @@ export function IsometricGarden({
           plant_id: plant.id,
           activity_type: 'watering',
           notes,
+          is_welcome_back: welcomeBackPending,
         })
 
         if (!result.success) {
@@ -410,6 +417,10 @@ export function IsometricGarden({
           setCelebration(null)
           showWaterErrorToast(result.error || 'Unknown error')
         } else {
+          // Clear welcome back pending after first successful water
+          if (welcomeBackPending) {
+            onWelcomeBackUsed?.()
+          }
           // Show toast with actual XP from server
           showWaterToast({
             plantName: plant.name,
@@ -442,7 +453,7 @@ export function IsometricGarden({
         }, 3000)
       }
     },
-    [wateringPlant, updatePlant]
+    [wateringPlant, updatePlant, welcomeBackPending, onWelcomeBackUsed]
   )
 
   // Handle "I did it" action from gentle watering modal (log progress + water)
@@ -518,12 +529,17 @@ export function IsometricGarden({
           activity_type: hasGoal && value !== undefined ? 'progress' : 'completed',
           value: hasGoal ? value : undefined,
           notes,
+          is_welcome_back: welcomeBackPending,
         })
 
         if (!result.success) {
           setCelebration(null)
           showWaterErrorToast(result.error || 'Failed to log')
         } else {
+          // Clear welcome back pending after first successful log
+          if (welcomeBackPending) {
+            onWelcomeBackUsed?.()
+          }
           // Show appropriate toast
           if (hasGoal && value !== undefined) {
             showGoalLogToast({
@@ -567,7 +583,7 @@ export function IsometricGarden({
         }, 3000)
       }
     },
-    [wateringPlant, isWateredToday, updatePlant]
+    [wateringPlant, isWateredToday, updatePlant, welcomeBackPending, onWelcomeBackUsed]
   )
 
   // Track last tap time for double-tap detection

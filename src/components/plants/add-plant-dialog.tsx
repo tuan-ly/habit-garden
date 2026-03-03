@@ -69,6 +69,8 @@ export function AddPlantDialog({
   const [selectedType, setSelectedType] = useState<PlantType | null>(null)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [easyMode, setEasyMode] = useState(false)
+  const [tinySeed, setTinySeed] = useState('')
   const [isPending, startTransition] = useTransition()
 
   // Calculate actual plant count (from context or prop)
@@ -193,6 +195,8 @@ export function AddPlantDialog({
         habit_description: description.trim() || undefined,
         grid_row: gridPosition?.row,
         grid_col: gridPosition?.col,
+        easy_mode: easyMode,
+        tiny_seed: easyMode && tinySeed.trim() ? tinySeed.trim() : null,
       })
 
       if (result.success && result.plant) {
@@ -217,6 +221,8 @@ export function AddPlantDialog({
     setSelectedType(null)
     setName('')
     setDescription('')
+    setEasyMode(false)
+    setTinySeed('')
   }
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -428,6 +434,60 @@ export function AddPlantDialog({
                   onChange={(e) => setDescription(e.target.value)}
                   rows={3}
                 />
+              </div>
+
+              {/* Easy Mode Toggle */}
+              <div className="rounded-xl border border-emerald-100 dark:border-emerald-900/50 bg-emerald-50/50 dark:bg-emerald-950/30 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🌱</span>
+                    <div>
+                      <div className="font-medium text-sm">Easy Mode</div>
+                      <div className="text-xs text-muted-foreground">Start with the 2-minute version</div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={easyMode}
+                    onClick={() => setEasyMode(!easyMode)}
+                    className={cn(
+                      "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      easyMode ? "bg-emerald-500" : "bg-input"
+                    )}
+                  >
+                    <span className={cn(
+                      "inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm",
+                      easyMode ? "translate-x-6" : "translate-x-1"
+                    )} />
+                  </button>
+                </div>
+
+                {/* XP bonus callout - always visible */}
+                <div className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                  <span>⚡</span>
+                  <span>+20% XP bonus for your first 30 days</span>
+                </div>
+
+                {/* Tiny seed input - only when easy mode is ON */}
+                {easyMode && (
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      What&apos;s the 2-minute version?
+                    </label>
+                    <input
+                      type="text"
+                      value={tinySeed}
+                      onChange={(e) => setTinySeed(e.target.value)}
+                      placeholder={`e.g., "Read just 1 page"`}
+                      maxLength={100}
+                      className="w-full text-sm rounded-lg border bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      This is what counts when you really don&apos;t feel like it.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="p-3 rounded-lg bg-muted">

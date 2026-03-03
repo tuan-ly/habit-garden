@@ -1,3 +1,9 @@
+export const WELCOME_BACK_BONUS = 25
+
+// Easy Mode (2-Minute Rule) bonus
+export const EASY_MODE_BONUS_PERCENT = 0.20  // 20% bonus
+export const EASY_MODE_BONUS_DAYS = 30       // For first 30 days
+
 export const XP_VALUES = {
   // Constants
   MORNING_START_HOUR: 5,

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { PlantCard } from '@/components/plants/plant-card'
 import { PlantDetailSheet } from '@/components/plants/plant-detail-sheet'
 import { AddPlantDialog } from '@/components/plants/add-plant-dialog'
@@ -9,6 +9,7 @@ import { IsometricGarden } from './isometric-garden'
 import { FocusGardenView } from './focus-garden-view'
 import { GardenSky } from './garden-sky'
 import { WeatherEffects } from './weather-effects'
+import { WelcomeBackModal } from '@/components/game-ui/welcome-back-modal'
 import { TreesIcon, LayoutGrid, Plus, Target, Flower2 } from 'lucide-react'
 import { GameHud } from '@/components/game-ui'
 import { cn } from '@/lib/utils'
@@ -16,6 +17,16 @@ import { usePlants, useMood } from '@/lib/context'
 import { useBreathingRhythm } from '@/hooks/use-breathing-rhythm'
 import { useDevOverride } from '@/components/dev/dev-debug-context'
 import type { PlantWithType, PlantType, WeatherType, Profile } from '@/types/database'
+
+const LAST_VISIT_KEY = 'habit-garden-last-visit'
+const ABSENCE_THRESHOLD_DAYS = 3
+
+function getDaysDiff(dateStr: string, today: string): number {
+  const prev = new Date(dateStr)
+  const now = new Date(today)
+  const diffMs = now.getTime() - prev.getTime()
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24))
+}
 
 type ViewMode = 'garden' | 'list' | 'focus'
 
@@ -57,6 +68,44 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [isZenMode, setIsZenMode] = useState(false)
+
+  // Welcome back system
+  const [welcomeBackOpen, setWelcomeBackOpen] = useState(false)
+  const [welcomeBackDays, setWelcomeBackDays] = useState(0)
+  const [welcomeBackPending, setWelcomeBackPending] = useState(false)
+
+  // Detect absence on mount and show welcome back modal if away >= 3 days
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0]
+    const lastVisit = localStorage.getItem(LAST_VISIT_KEY)
+
+    if (lastVisit && lastVisit !== today) {
+      const daysDiff = getDaysDiff(lastVisit, today)
+      if (daysDiff >= ABSENCE_THRESHOLD_DAYS) {
+        setWelcomeBackDays(daysDiff)
+        setWelcomeBackPending(true)
+        setWelcomeBackOpen(true)
+      }
+    }
+
+    // Always update last visit to today
+    localStorage.setItem(LAST_VISIT_KEY, today)
+  }, [])
+
+  const sleepingPlantCount = plants.filter(
+    (p) => p.status === 'sleeping' || p.status === 'waiting'
+  ).length
+
+  // After onboarding: auto-open AddPlantDialog if flagged and garden is empty
+  useEffect(() => {
+    const shouldPrompt = localStorage.getItem("habit-garden-prompt-add-plant")
+    if (shouldPrompt === "true" && plants.length === 0) {
+      localStorage.removeItem("habit-garden-prompt-add-plant")
+      // Small delay so the garden renders before the dialog appears
+      const timer = setTimeout(() => setAddDialogOpen(true), 600)
+      return () => clearTimeout(timer)
+    }
+  }, [plants.length])
   const [currentZenTrack, setCurrentZenTrack] = useState(0)
   const breathingValue = useBreathingRhythm(isZenMode)
 
@@ -121,12 +170,23 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
           weather={displayWeather}
           journalStreak={profile?.journal_streak ?? 0}
           userLevel={effectiveLevel}
+          welcomeBackPending={welcomeBackPending}
+          onWelcomeBackUsed={() => setWelcomeBackPending(false)}
         />
 
         <AddPlantDialog
           plantTypes={plantTypes}
           open={addDialogOpen}
           onOpenChange={setAddDialogOpen}
+        />
+
+        {/* Welcome back modal */}
+        <WelcomeBackModal
+          open={welcomeBackOpen}
+          onOpenChange={setWelcomeBackOpen}
+          daysMissed={welcomeBackDays}
+          sleepingPlantCount={sleepingPlantCount}
+          onStartWatering={() => setWelcomeBackOpen(false)}
         />
       </div>
     )
@@ -180,6 +240,8 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
             weather={displayWeather}
             journalStreak={profile?.journal_streak ?? 0}
             userLevel={effectiveLevel}
+            welcomeBackPending={welcomeBackPending}
+            onWelcomeBackUsed={() => setWelcomeBackPending(false)}
           />
         </div>
       )}
@@ -313,6 +375,15 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
           onOpenChange={setSheetOpen}
         />
       )}
+
+      {/* Welcome back modal */}
+      <WelcomeBackModal
+        open={welcomeBackOpen}
+        onOpenChange={setWelcomeBackOpen}
+        daysMissed={welcomeBackDays}
+        sleepingPlantCount={sleepingPlantCount}
+        onStartWatering={() => setWelcomeBackOpen(false)}
+      />
     </div>
   )
 }
