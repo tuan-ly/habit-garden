@@ -42,7 +42,8 @@
       "Bash(npx supabase:*)",
       "Bash(npm uninstall lottie-react)",
       "Bash(node -e \":*)",
-      "Bash(xargs grep -l \"export.*function.*goal\\\\|export.*const.*goal\")"
+      "Bash(xargs grep -l \"export.*function.*goal\\\\|export.*const.*goal\")",
+      "Bash(gemini --version)"
     ]
   }
 }
