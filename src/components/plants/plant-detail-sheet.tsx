@@ -184,10 +184,6 @@ export function PlantDetailSheet({
     }
   }, [goal?.id, showGoalStats])
 
-  if (!plant) return null
-
-  const isWateredToday = isToday(plant.last_watered_at)
-
   // Days remaining in current period
   const periodDaysLeft = useMemo(() => {
     if (!goal) return 0
@@ -200,6 +196,10 @@ export function PlantDetailSheet({
       return 0
     }
   }, [goal?.id, goal?.periodNumber])
+
+  if (!plant) return null
+
+  const isWateredToday = isToday(plant.last_watered_at)
 
   const isSleeping = plant.status === 'dead' || plant.status === 'sleeping'
   const isResting = plant.status === 'resting' || plant.status === 'dormant'
