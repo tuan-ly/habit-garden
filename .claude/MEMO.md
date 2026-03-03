@@ -15,6 +15,7 @@
 **Design Doc**: [plans/habien-v3/VISION.md](../plans/habien-v3/VISION.md)
 
 **v3 Phases**:
+
 - [ ] **Phase 0: Identity Liberation** ← CURRENT
 - [ ] Phase 1: 2-Minute Rule + Anchors
 - [ ] Phase 2: XP De-emphasis + Reflection Engine
@@ -30,6 +31,7 @@
 | PREMIUM "The Sage" | $9.99/mo | Buddies, AI coaching, tier 5, 7x7+, pattern recognition |
 
 **Next Actions**:
+
 1. Identity-first onboarding redesign (FREE, Day 1)
 2. Upgrade flow UX polish (upgrade modal improvements)
 3. Trial management (7-day free trial)
@@ -37,6 +39,7 @@
 5. Responsive design audit
 
 **Related Docs**:
+
 - [Monetization Design](../plans/goal-feature-uiux-design/MONETIZATION_DESIGN.md)
 - [Habien 2.0 Design](../plans/goal-feature-uiux-design/HABIEN_2.0_DESIGN.md)
 
@@ -44,25 +47,28 @@
 
 ## Quick Status
 
-| Area | Status |
-|------|--------|
-| Auth | Done |
-| Garden/Plants | Done |
-| Watering System | Done |
-| Gamification | Done (XP, achievements, weather, streaks, journal rewards) |
-| Goal Tracking | Done (Build Capacity + Total Progress modes) |
-| Identity System | Done (PREMIUM feature, goal grouping) |
-| Adaptive Goals | Done |
-| PWA/UI Polish | Done |
-| Gentle Growth | Phase 1 Done |
-| Plant Detail Sheet | Done (tabs + reflective UX) |
-| Testing Infrastructure | Done (Vitest + Dev Debug Panel + Storybook) |
+| Area                   | Status                                                     |
+| ---------------------- | ---------------------------------------------------------- |
+| Auth                   | Done                                                       |
+| Garden/Plants          | Done                                                       |
+| Watering System        | Done                                                       |
+| Gamification           | Done (XP, achievements, weather, streaks, journal rewards) |
+| Goal Tracking          | Done (Build Capacity + Total Progress modes)               |
+| Identity System        | Done (PREMIUM feature, goal grouping)                      |
+| Adaptive Goals         | Done                                                       |
+| PWA/UI Polish          | Done                                                       |
+| Gentle Growth          | Phase 1 Done                                               |
+| Plant Detail Sheet     | Done (tabs + reflective UX)                                |
+| Testing Infrastructure | Done (Vitest + Dev Debug Panel + Storybook)                |
 
 ---
 
 ## Latest Session
 
+fix: add .npmrc with legacy-peer-deps to fix Vercel build
+
 ### 2026-03-03: Remove Rest Day & Water Reserves ✅
+
 **Design change**: "Not today" = show up and water the plant (resting from habit, not from the app). No separate rest day tracking needed.
 
 - Removed `markRestDay`, `isRestDayToday`, `getRestDaysRemaining` from `activity.ts`
@@ -84,6 +90,7 @@
 ---
 
 ### 2026-03-03: Bug Fix — Status System Inconsistency (3 root causes) ✅
+
 **Root causes found & fixed** (all stem from status system mismatch):
 
 1. **Moisture decay skipped `thriving` plants** → `activity.ts` sets status to `'thriving'` on log, but cron only processed `status='growing'`
@@ -100,13 +107,15 @@
    - `weeds.ts` action file kept (DB backward compat)
 
 **Key insight**: Two competing status systems existed:
+
 - Old (DB cron): `growing` → `mature` or `dead`
 - New (Gentle Growth, `activity.ts`): `thriving`, `resting`, `waiting`, `sleeping`
-These were never reconciled → silent data inconsistencies.
+  These were never reconciled → silent data inconsistencies.
 
-**Files Modified**: [moisture-decay/route.ts](src/app/api/cron/moisture-decay/route.ts), [garden-view.tsx](src/components/garden/garden-view.tsx), [plants.ts](src/lib/actions/plants.ts), [activity.ts](src/lib/actions/activity.ts), [goals.ts](src/lib/actions/goals.ts), [layout.tsx](src/app/(dashboard)/layout.tsx), [providers.tsx](src/app/(dashboard)/providers.tsx)
+**Files Modified**: [moisture-decay/route.ts](src/app/api/cron/moisture-decay/route.ts), [garden-view.tsx](src/components/garden/garden-view.tsx), [plants.ts](src/lib/actions/plants.ts), [activity.ts](src/lib/actions/activity.ts), [goals.ts](src/lib/actions/goals.ts), [layout.tsx](<src/app/(dashboard)/layout.tsx>), [providers.tsx](<src/app/(dashboard)/providers.tsx>)
 
 ### 2026-03-03: Phase 2 Perf Audit — Auth Dedup + SSR Data Fetching ✅
+
 - Created [`src/lib/auth-cached.ts`](src/lib/auth-cached.ts) — `React.cache()` wrapper deduplicates `auth.getUser()` per request
 - Replaced 68 direct `auth.getUser()` calls across all 11 action files (plants/identity/goals/mood/adaptive/activity/journal/paddle/subscription/weeds/profile)
 - `SubscriptionContext`: added SSR guard in `useEffect` — skips client fetch when `initialTier` provided by layout
@@ -118,6 +127,7 @@ These were never reconciled → silent data inconsistencies.
 **Next**: Phase 4 — Component refactor + WeedsContext stale closure fix — [phase-04-component-refactor.md](../plans/20260303-1200-perf-audit/phase-04-component-refactor.md)
 
 ### 2026-03-03: Phase 3 Perf Audit — Query Optimization ✅
+
 - Added 2 composite indexes: `idx_activity_logs_user_date`, `idx_goal_logs_goal_date` (others pre-existed)
 - `adaptive.ts` `autoApplyAdjustment()`: `select('*')` → 5 explicit columns
 - `activity.ts` `logActivity()`: goals sub-select narrowed to 5 used columns
@@ -125,6 +135,7 @@ These were never reconciled → silent data inconsistencies.
 - Plan: [phase-03-query-optimization.md](../plans/20260303-1200-perf-audit/phase-03-query-optimization.md) ✅
 
 ### 2026-03-03: Phase 1 Perf Audit Fixes (Security + N+1)
+
 - **Fix 1 CRITICAL**: `autoApplyAdjustment()` — added `auth.getUser()` + `plants!inner(user_id)` ownership check before any DB write ([adaptive.ts](src/lib/actions/adaptive.ts))
 - **Fix 2 HIGH**: `getUserGoals()` — extracted `computeGoalStats()` pure helper, rewrote to 2 queries (was ~5N+2); `getGoalForPlant()` also uses helper ([goals.ts](src/lib/actions/goals.ts))
 - **Fix 3 HIGH**: `growWeeds()` — added `increment_weed_count` RPC, replaced N UPDATE loop with single batch call ([weeds.ts](src/lib/actions/weeds.ts))
@@ -134,6 +145,7 @@ These were never reconciled → silent data inconsistencies.
 ---
 
 ### 2026-02-19: Bug Fix - Moisture Decay System
+
 - **Issue**: Cây không tự động decay mỗi ngày
 - **Root Cause**: Cron job `update_daily_moisture()` chạy nhưng fail vì query bảng `daily_weather` không tồn tại
 - **Investigation**: Dùng Supabase MCP kiểm tra job run history - tất cả 10 lần chạy gần nhất đều status "failed"
@@ -142,11 +154,13 @@ These were never reconciled → silent data inconsistencies.
 - **Next run**: Cron sẽ tự động chạy vào 17:00 UTC (00:00 VN) hàng ngày
 
 **Files Modified**:
+
 - [20260219_fix_moisture_decay.sql](../supabase/migrations/20260219_fix_moisture_decay.sql) - Migration với function fix
 
 ---
 
 ### 2026-02-18: Phase 7 - Polish (LevelUpModal + AchievementPopup wired)
+
 - Exported `checkAndUnlockAchievements` from [plants.ts](src/lib/actions/plants.ts)
 - Extended [activity.ts](src/lib/actions/activity.ts): `logActivity()` now returns `leveledUp`, `newLevel`, `oldLevel`, `newAchievementIds`
 - Wired [IsometricGarden](src/components/garden/isometric-garden.tsx) to display:
@@ -155,6 +169,7 @@ These were never reconciled → silent data inconsistencies.
 - 202 tests all pass
 
 **Next Actions**:
+
 1. Upgrade flow UX polish (upgrade modal design)
 2. Trial management (7-day free trial)
 3. Responsive design audit
@@ -163,6 +178,7 @@ These were never reconciled → silent data inconsistencies.
 ---
 
 ### 2026-02-12: Phase 6 - Identity System (PREMIUM)
+
 - Created `identities` table with RLS policies and progress tracking
 - Added `identity_id` foreign key to goals table
 - Created auto-update trigger for identity progress calculation
@@ -177,16 +193,19 @@ These were never reconciled → silent data inconsistencies.
 - 8 preset identity suggestions (Reader, Athlete, Developer, etc.)
 
 **New Files**:
+
 - [20260212_identity_system.sql](supabase/migrations/20260212_identity_system.sql)
 - [identity.ts](src/lib/actions/identity.ts) - Server actions
 - [src/components/identity/](src/components/identity/) - UI components
-- [identity/page.tsx](src/app/(dashboard)/identity/page.tsx) - Page route
+- [identity/page.tsx](<src/app/(dashboard)/identity/page.tsx>) - Page route
 
 **Modified Files**:
+
 - [database.ts](src/types/database.ts) - Identity types
 - [game-nav.tsx](src/components/game-ui/game-nav.tsx) - Nav item with premium badge
 
 ### 2026-02-12: Phase 5 - Paddle Payment Integration
+
 - Integrated Paddle Billing for subscription payments
 - Created Paddle client with checkout overlay support
 - Added webhook handler at `/api/webhooks/paddle` with signature verification
@@ -197,6 +216,7 @@ These were never reconciled → silent data inconsistencies.
 - Database migration for webhook audit log
 
 **New Files**:
+
 - [paddle.ts](src/lib/paddle.ts) - Paddle client utilities (refactored)
 - [paddle-utils.ts](src/lib/paddle-utils.ts) - Server-side helpers
 - [paddle.ts](src/lib/actions/paddle.ts) - Server actions
@@ -204,12 +224,14 @@ These were never reconciled → silent data inconsistencies.
 - [subscription-section.tsx](src/components/settings/subscription-section.tsx) - Settings UI
 
 **Modified Files**:
+
 - [product-config.ts](src/components/landing/product-config.ts) - 3-tier system
 - [pricing-section.tsx](src/components/landing/pricing-section.tsx) - Updated UI
 - [upgrade-modal-container.tsx](src/components/game-ui/upgrade-modal-container.tsx) - Paddle checkout
-- [settings/page.tsx](src/app/(dashboard)/settings/page.tsx) - Added subscription section
+- [settings/page.tsx](<src/app/(dashboard)/settings/page.tsx>) - Added subscription section
 
 **Environment Variables Needed**:
+
 ```
 NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=test_xxx
 PADDLE_API_KEY=pdl_xxx
@@ -222,6 +244,7 @@ NEXT_PUBLIC_PADDLE_PREMIUM_YEARLY_PRICE_ID=pri_xxx
 ```
 
 ### 2026-02-11: Storybook Setup
+
 - Installed Storybook 8.6.15 with React Vite framework (Next.js 16 compatible)
 - Created 3 story files with multiple visual states:
   - [TierBadge.stories.tsx](src/components/ui/__stories__/TierBadge.stories.tsx) - All tiers, sizes, locked states
@@ -232,6 +255,7 @@ NEXT_PUBLIC_PADDLE_PREMIUM_YEARLY_PRICE_ID=pri_xxx
 **New Files**: [.storybook/main.ts](.storybook/main.ts), [.storybook/preview.ts](.storybook/preview.ts), 3 story files
 
 ### 2026-02-11: Phase 4 - Feature Gating
+
 - Created [SubscriptionContext](src/lib/context/subscription-context.tsx) for managing tier state across app
 - Added SubscriptionProvider to dashboard layout with dev override support
 - Gated Goals feature in PlantDetailSheet behind PRO tier
@@ -242,10 +266,12 @@ NEXT_PUBLIC_PADDLE_PREMIUM_YEARLY_PRICE_ID=pri_xxx
 - Added 13 new tests for level cap functionality (202 tests total, 100% pass)
 
 **New Files**:
+
 - [subscription-context.tsx](src/lib/context/subscription-context.tsx)
 - [upgrade-modal-container.tsx](src/components/game-ui/upgrade-modal-container.tsx)
 
 **Modified Files**:
+
 - [plant-detail-sheet.tsx](src/components/plants/plant-detail-sheet.tsx) - PRO gate for goals
 - [add-plant-dialog.tsx](src/components/plants/add-plant-dialog.tsx) - Subscription tier limits
 - [game-hud.tsx](src/components/game-ui/game-hud.tsx) - Level cap display
@@ -253,6 +279,7 @@ NEXT_PUBLIC_PADDLE_PREMIUM_YEARLY_PRICE_ID=pri_xxx
 - [xp-system.ts](src/lib/xp-system.ts) - Level cap support
 
 ### 2026-02-11: Phase 3 - Subscription Infrastructure
+
 - Created subscription database schema (4 tables: subscription_tiers, subscriptions, subscription_events, upgrade_prompts)
 - Added subscription_tier and subscription_status to profiles with auto-sync trigger
 - Created [subscription-limits.ts](src/lib/subscription-limits.ts) utility with tier limits, feature checks, upgrade prompts
@@ -261,6 +288,7 @@ NEXT_PUBLIC_PADDLE_PREMIUM_YEARLY_PRICE_ID=pri_xxx
 - Added 36 unit tests for subscription limits (100% pass)
 
 **New Files**:
+
 - [20260211_subscription_infrastructure.sql](supabase/migrations/20260211_subscription_infrastructure.sql)
 - [subscription-limits.ts](src/lib/subscription-limits.ts)
 - [upgrade-modal.tsx](src/components/game-ui/upgrade-modal.tsx)
@@ -268,6 +296,7 @@ NEXT_PUBLIC_PADDLE_PREMIUM_YEARLY_PRICE_ID=pri_xxx
 - [subscription-limits.test.ts](src/lib/__tests__/subscription-limits.test.ts)
 
 ### 2026-02-11: Testing Infrastructure
+
 - Added **Dev Debug Panel** for quick feature testing (toggle with `Ctrl+Shift+D`)
   - Override level, tier, subscription in dev mode
   - Quick actions: Level Up, Max Level, Set PRO/PREMIUM
@@ -280,18 +309,21 @@ NEXT_PUBLIC_PADDLE_PREMIUM_YEARLY_PRICE_ID=pri_xxx
 **New Files**: [dev-debug-context.tsx](src/components/dev/dev-debug-context.tsx), [dev-debug-panel.tsx](src/components/dev/dev-debug-panel.tsx), [vitest.config.ts](vitest.config.ts)
 
 **Next Steps for Testing**:
+
 - [x] Add Storybook for visual components
 - [ ] Add more story files (PlantCard, LevelUpModal, etc.)
 - [ ] Add E2E tests with Playwright (optional)
 - See [TESTING_STRATEGY.md](plans/20260211-1530-testing-strategy/TESTING_STRATEGY.md)
 
 ### 2026-02-06: Monetization Design
+
 - Designed FREE/PRO/PREMIUM tier system
 - Created [MONETIZATION_DESIGN.md](../plans/goal-feature-uiux-design/MONETIZATION_DESIGN.md)
 - Updated implementation roadmap (7 phases)
 - Key: Goals gated to PRO, Identity gated to PREMIUM
 
 ### 2026-02-06: Habien 2.0 Phase 2 - Garden Expansion System
+
 - Implemented level-based garden sizing (3x3 -> 5x5 -> 7x7 -> dynamic)
 - Added decoration unlock system (bushes/rocks at L1, mushrooms/flowers L5, lanterns L8, fences L10, ponds/fountains L12)
 - Created new SVG decorations: FencePost, FenceCorner, Pond, Fountain
@@ -300,6 +332,7 @@ NEXT_PUBLIC_PADDLE_PREMIUM_YEARLY_PRICE_ID=pri_xxx
 **New Files**: [level-up-modal.tsx](src/components/game-ui/level-up-modal.tsx), [unlock-toast.tsx](src/components/game-ui/unlock-toast.tsx), [expansion-animation.tsx](src/components/garden/expansion-animation.tsx)
 
 ### 2026-02-06: Habien 2.0 Phase 1 Implementation
+
 - Implemented tier system (1-5 tiers based on plant difficulty)
 - Added slot limits by level (1 slot at level 1, up to unlimited at level 15)
 - Created TierBadge and SlotIndicator UI components
@@ -309,6 +342,7 @@ NEXT_PUBLIC_PADDLE_PREMIUM_YEARLY_PRICE_ID=pri_xxx
 **New Files**: [progression-system.ts](src/lib/progression-system.ts), [tier-badge.tsx](src/components/ui/tier-badge.tsx), [slot-indicator.tsx](src/components/ui/slot-indicator.tsx)
 
 ### 2026-02-02: UX Mode Consolidation
+
 - Consolidated 3 garden modes into 1 toggle (Interact/Move)
 - Merged FloatingPlantCard UX into GentleWateringModal
 
@@ -323,6 +357,7 @@ NEXT_PUBLIC_PADDLE_PREMIUM_YEARLY_PRICE_ID=pri_xxx
 - [x] Wire LevelUpModal to XP system (wired 2026-02-18)
 
 **Watering Logic Refinement** (from 2026-01-31):
+
 1. If already watered today -> hide "Just checking in"
 2. `waterPlantSimple` should NOT give base XP, only note XP
 3. Base XP only on first water/log of the day
