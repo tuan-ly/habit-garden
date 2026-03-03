@@ -21,8 +21,6 @@ export interface TierLimits {
   hasWeeklyReports: boolean
 
   // Watering
-  restDaysPerWeek: number
-  waterReserves: number
   backfillDays: number
   quickNoteChars: number // -1 = unlimited
 
@@ -56,8 +54,6 @@ export const TIER_LIMITS: Record<SubscriptionTier, TierLimits> = {
     hasIdentity: false,
     hasMetrics: false,
     hasWeeklyReports: false,
-    restDaysPerWeek: 1,
-    waterReserves: 3,
     backfillDays: 0,
     quickNoteChars: 50,
     levelCap: 10,
@@ -77,8 +73,6 @@ export const TIER_LIMITS: Record<SubscriptionTier, TierLimits> = {
     hasIdentity: false,
     hasMetrics: true,
     hasWeeklyReports: true,
-    restDaysPerWeek: 2,
-    waterReserves: 7,
     backfillDays: 3,
     quickNoteChars: 500,
     levelCap: 15,
@@ -98,8 +92,6 @@ export const TIER_LIMITS: Record<SubscriptionTier, TierLimits> = {
     hasIdentity: true,
     hasMetrics: true,
     hasWeeklyReports: true,
-    restDaysPerWeek: 3,
-    waterReserves: 14,
     backfillDays: 7,
     quickNoteChars: -1,
     levelCap: 20,

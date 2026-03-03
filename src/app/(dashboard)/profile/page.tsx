@@ -160,40 +160,6 @@ export default async function ProfilePage() {
         {/* Timezone Selector */}
         <TimezoneSelector currentTimezone={profile?.timezone || 'Asia/Ho_Chi_Minh'} />
 
-        {/* Water Reserves - Game Style */}
-        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-xl sm:rounded-2xl p-3 sm:p-5 border border-white/20 dark:border-slate-700/50 shadow-lg">
-          <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center shadow-md shadow-blue-500/30">
-              <Droplets className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-            </div>
-            <div>
-              <h2 className="text-sm sm:text-base font-bold">Water Reserves</h2>
-              <p className="text-[10px] sm:text-xs text-slate-500">Protect your plants when away</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-            {Array.from({ length: profile?.water_reserves ?? 0 }).map((_, i) => (
-              <div
-                key={i}
-                className="h-9 w-9 sm:h-12 sm:w-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center shadow-md shadow-blue-500/30 animate-gentle-float"
-                style={{ animationDelay: `${i * 0.2}s` }}
-              >
-                <Droplets className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
-              </div>
-            ))}
-            {(profile?.water_reserves ?? 0) === 0 && (
-              <div className="text-center py-3 sm:py-4 w-full">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-2 sm:mb-3 rounded-xl sm:rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                  <Droplets className="w-6 h-6 sm:w-8 sm:h-8 text-slate-300" />
-                </div>
-                <p className="text-sm sm:text-base text-slate-500">No water reserves</p>
-                <p className="text-[10px] sm:text-xs text-slate-400">Level up to earn reserves!</p>
-              </div>
-            )}
-          </div>
-        </div>
-
         {/* Achievements - Game Style */}
         {achievementsData && (
           <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-xl sm:rounded-2xl p-3 sm:p-5 border border-white/20 dark:border-slate-700/50 shadow-lg">

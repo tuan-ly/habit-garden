@@ -66,7 +66,6 @@ The long-term emotional hook: **Looking at your garden 3 years from now and seei
 | 16 | XP & Leveling (15-20 levels) | Gamification | Tier (level cap) | Done |
 | 17 | Achievements (30+) | Gamification | None / PRO | Done + Extending |
 | 18 | Weather System | Gamification | None | Done |
-| 19 | Water Reserves | Gamification | Level | Done |
 | 20 | Mood Tracking | Wellbeing | None | Done |
 | 21 | Plant Tiers (1-5) | Progression | Level + Tier | Done |
 | 22 | Slot Limits | Progression | Level | Done |
@@ -100,8 +99,8 @@ Landing Page → Sign Up → "Plant your first seed"
                     Daily Watering Loop ◄────────────────┐
                     ┌──────────┼──────────┐              │
                     ▼          ▼          ▼              │
-              "Just water"  "I did it!"  Rest Day        │
-              (+10 XP)      (+10 XP)     (intentional)   │
+              "Not today"   "I did it!"                  │
+              (+10 XP)      (+10 XP)                     │
                     │          │          │              │
                     ▼          ▼          ▼              │
                  Plant grows, streak increases           │
@@ -123,7 +122,6 @@ Landing Page → Sign Up → "Plant your first seed"
 - Weather effects (XP bonuses)
 - Achievements (15 basic)
 - Basic journal
-- Water reserves (from Level 3)
 - Anchors unlock at Level 3
 - Reflection journal unlocks at Level 4
 - Mirror Moments (identity discovery) — FREE
@@ -132,7 +130,7 @@ Landing Page → Sign Up → "Plant your first seed"
 - First watering → "First Drop" achievement
 - First plant → "First Seed" achievement
 - 3-day streak → Streak achievement
-- Level 3 → Water reserves + Anchor feature unlock
+- Level 3 → Anchor feature unlock
 - Level 4 → Reflection journal unlock
 - Day 7 of Easy Mode → "Tiny but Mighty" achievement
 - 7-day anchor streak → "Anchored" achievement (+10% XP for this plant)
@@ -225,7 +223,6 @@ PREMIUM unlocks:
 - Unlimited plants, all tiers (1-5)
 - 7x7+ garden (dynamic expansion)
 - Level cap 20+
-- 14 water reserves, 3 rest days/week
 
 ---
 
@@ -278,11 +275,10 @@ Garden View (main screen)
   ├── See ancient tree aura effects on nearby plants (Ancient+)
   │
   ├── Tap plant → Quick actions:
-  │   ├── Water ("Just checking in") → +10 XP + bonuses
-  │   ├── Complete ("I did it!") → +10 XP + growth
+  │   ├── "I did it!" → +10 XP + growth (habit completed)
+  │   ├── "Not today" → +10 XP (showing up, resting from habit; still waters plant)
   │   ├── Easy Mode check-in (if enabled) → +2 bonus XP
   │   ├── Log Progress (if has goal) → value + XP
-  │   ├── Rest Day → intentional break
   │   └── Revive! (if dormant) → +25 XP + "Welcome back!" moment
   │
   ├── Long press plant → Plant Detail Sheet:
@@ -314,7 +310,7 @@ User returns after 3+ days:
 Pattern of declining check-ins detected:
   "Your garden senses you might need a breather.
    It's okay. Even gardens have winters.
-   [Put plants to sleep] | [Take a rest day] | [I'm fine]"
+   [Put plants to sleep] | [Not today] | [I'm fine]"
   → Manual dormancy option (no decay while dormant)
 
 Dramatic pattern break (was daily 60+ days, now 7+ days absent):
@@ -384,7 +380,6 @@ Subscription Management (Settings)
 | **XP sources** | Watering (+10), notes (+5), Easy Mode (+2 bonus), anchor check-in (+3), weather bonus, mood bonus, morning bonus, reflection journal (15-25), milestone stages (200-2500), welcome back (+25) |
 | **Achievements** | 30+ with 4 tiers, XP rewards (20-10000), hidden achievements, Mirror Moments |
 | **Weather** | Daily random: sunny/cloudy/rainy/stormy/rainbow (5% rare!), affects XP & growth |
-| **Water reserves** | Emergency watering currency, earned at level-ups |
 | **Level-up celebration** | Confetti, modal, unlock display |
 | **Plant tiers** | 5 difficulty tiers, unlock by level |
 | **Slot limits** | 1 slot (L1) → unlimited (L14+) |
@@ -427,7 +422,7 @@ Subscription Management (Settings)
 | **Mood check-in** | Daily 1-5 scale (stormy → sunny) |
 | **Mood XP bonus** | Tough days earn MORE XP (up to 1.5x) — rewards persistence |
 | **Gentle Growth** | Plants never die, only go dormant. Rest is respected. |
-| **Rest days** | Intentional breaks (1-3/week by tier) |
+| **"Not today" watering** | Show up, water the plant, rest from the habit — no separate tracking, no guilt |
 | **Struggle-Aware System** | Welcome Back flow, Permission to Rest, Life Change Detection — all warm, no guilt |
 | **Manual dormancy** | User can put plants to sleep (no decay, no judgment) |
 
@@ -486,8 +481,6 @@ Subscription Management (Settings)
 | Achievements | 15 basic | Full set (30+) | Full set |
 | Garden Themes | 1 | 5 | All + customs |
 | Decorations | Basic | Full | Premium (animated) |
-| Water Reserves | 3 | 7 | 14 |
-| Rest Days/Week | 1 | 2 | 3 |
 | Backfill Watering | - | 3 days | 7 days |
 | XP Multiplier | 1.0x | 1.2x | 1.5x |
 | Garden Neighbors | - | - | 1-3 buddies |
@@ -535,8 +528,7 @@ plants ──────── User's plants:
 ### Activity Tables
 
 ```
-activity_logs ── Unified: watering, completed, progress, rest_day, reflection, revival
-rest_days ────── Intentional rest tracking
+activity_logs ── Unified: watering, completed, progress, reflection, revival
 reflections ──── Milestone reflections
 ```
 

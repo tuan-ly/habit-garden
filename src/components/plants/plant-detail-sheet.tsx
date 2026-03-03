@@ -373,10 +373,7 @@ export function PlantDetailSheet({
                     </div>
                     <div className="rounded-xl bg-slate-900/80 p-3">
                       <RhythmView
-                        activityDates={quickRhythm.activities
-                          .filter(a => a.activity_type !== 'rest_day')
-                          .map(a => a.logged_date)}
-                        restDates={quickRhythm.restDays.map(r => r.rest_date)}
+                        activityDates={quickRhythm.activities.map(a => a.logged_date)}
                         days={7}
                         size="md"
                       />
@@ -668,10 +665,7 @@ export function PlantDetailSheet({
                         </h4>
                         <div className="rounded-2xl bg-slate-900/80 p-4 space-y-4">
                           <RhythmView
-                            activityDates={fullActivityHistory.activities
-                              .filter(a => a.activity_type !== 'rest_day')
-                              .map(a => a.logged_date)}
-                            restDates={fullActivityHistory.restDays.map(r => r.rest_date)}
+                            activityDates={fullActivityHistory.activities.map(a => a.logged_date)}
                             days={14}
                             size="md"
                             showLegend

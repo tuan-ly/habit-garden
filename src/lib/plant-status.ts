@@ -25,7 +25,6 @@ export interface PlantStatusInput {
   gracePeriodDays?: number
   hasLoggedToday?: boolean
   hasWateredToday?: boolean
-  isRestDay?: boolean
 }
 
 /**
@@ -38,7 +37,6 @@ export function calculatePlantStatus(input: PlantStatusInput): PlantStatus {
     gracePeriodDays = 7,
     hasLoggedToday = false,
     hasWateredToday = false,
-    isRestDay = false,
   } = input
 
   // Mature plants stay mature (celebration state)
@@ -59,8 +57,8 @@ export function calculatePlantStatus(input: PlantStatusInput): PlantStatus {
   // Calculate days since last activity
   const daysInactive = calculateDaysInactive(lastWateredAt)
 
-  // Resting: 1-3 days or intentional rest day
-  if (isRestDay || daysInactive <= 3) {
+  // Resting: 1-3 days inactive
+  if (daysInactive <= 3) {
     return 'resting'
   }
 
@@ -94,7 +92,7 @@ export function calculateDaysInactive(lastWateredAt: string | null): number {
 /**
  * Get friendly status info for UI display
  */
-export function getPlantStateInfo(plant: Plant, hasLoggedToday = false, isRestDay = false): PlantStateInfo {
+export function getPlantStateInfo(plant: Plant, hasLoggedToday = false): PlantStateInfo {
   const today = new Date().toISOString().split('T')[0]
   const hasWateredToday = plant.last_watered_at
     ? new Date(plant.last_watered_at).toISOString().split('T')[0] === today
@@ -106,7 +104,6 @@ export function getPlantStateInfo(plant: Plant, hasLoggedToday = false, isRestDa
     gracePeriodDays: plant.grace_period_days || 7,
     hasLoggedToday,
     hasWateredToday,
-    isRestDay,
   })
 
   const daysInactive = calculateDaysInactive(plant.last_watered_at)
@@ -115,7 +112,7 @@ export function getPlantStateInfo(plant: Plant, hasLoggedToday = false, isRestDa
     status,
     daysInactive,
     canWater: !hasWateredToday,
-    isResting: isRestDay || status === 'resting',
+    isResting: status === 'resting',
     ...getStatusMessage(status, daysInactive),
   }
 }

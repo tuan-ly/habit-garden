@@ -16,13 +16,5 @@ export {
   WeatherOverlay,
 } from './weather-display'
 
-// Water Reserves
-export {
-  WaterReservesDisplay,
-  WaterReservesCard,
-  WaterReservesBadge,
-  ReserveUsedNotification,
-} from './water-reserves'
-
 // Stats Dashboard
 export { StatsDashboard, StatsRow, MiniDashboard } from './stats-dashboard'

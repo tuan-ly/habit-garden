@@ -18,9 +18,6 @@ export const XP_VALUES = {
   NOTE_ANY: 3,
   NOTE_LONG: 2,        // > 50 chars
   NOTE_VERY_LONG: 2,   // > 100 chars
-  
-  // Rest Days
-  REST_DAY_BASE: 2
 } as const
 
 // Helper to check if it's morning

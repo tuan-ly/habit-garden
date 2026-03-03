@@ -62,6 +62,27 @@
 
 ## Latest Session
 
+### 2026-03-03: Remove Rest Day & Water Reserves ✅
+**Design change**: "Not today" = show up and water the plant (resting from habit, not from the app). No separate rest day tracking needed.
+
+- Removed `markRestDay`, `isRestDayToday`, `getRestDaysRemaining` from `activity.ts`
+- Removed `restDays` from `ActivityHistory` and `getPlantActivityHistory`
+- Removed `rest_day` from `ActivityType`, `RestDay` interface, `MarkRestDayDto`, `rest_days_allowed` from Plant, `rest_days_used` from Goal in `database.ts`
+- Removed `restDaysPerWeek` and `waterReserves` from `subscription-limits.ts`
+- Removed `isRestDay` param from `plant-status.ts`
+- Removed `REST_DAY_BASE` from `xp-constants.ts`
+- Removed Water Reserves section from `profile/page.tsx`
+- Removed WaterReservesCard from `stats-dashboard.tsx`, exports from `gamification/index.ts`
+- Updated `gentle-watering-modal.tsx`: "Not today" → waters plant (same as checking in), no rest day branding
+- Updated `rhythm-view.tsx` and `plant-detail-sheet.tsx`: removed restDates prop
+- Updated `journal.ts` and `journal-timeline.tsx`: removed rest_day entry type
+- Updated `product-config.ts`: removed rest days/water reserves from tier features
+- Updated `APP_FEATURES.md` and `MEMO.md`
+
+**Key files**: [activity.ts](src/lib/actions/activity.ts), [gentle-watering-modal.tsx](src/components/plants/gentle-watering-modal.tsx), [database.ts](src/types/database.ts)
+
+---
+
 ### 2026-03-03: Bug Fix — Status System Inconsistency (3 root causes) ✅
 **Root causes found & fixed** (all stem from status system mismatch):
 
@@ -314,7 +335,7 @@ NEXT_PUBLIC_PADDLE_PREMIUM_YEARLY_PRICE_ID=pri_xxx
 
 **Watering**: One-tap watering + celebration, Moisture tracking, Streaks
 
-**Gamification**: XP (15 levels), Weather XP bonus, 20+ achievements, Water reserves
+**Gamification**: XP (15 levels), Weather XP bonus, 20+ achievements
 
 **Goals**: Build Capacity mode, Total Progress mode, Weekly targets, Adaptive suggestions, Personal records
 
@@ -343,7 +364,7 @@ src/lib/
 
 ## Database Quick Reference
 
-**Tables**: `plants`, `plant_types`, `goals`, `goal_logs`, `profiles`, `watering_logs`, `mood_logs`, `achievements`, `activity_logs`, `rest_days`, `reflections`
+**Tables**: `plants`, `plant_types`, `goals`, `goal_logs`, `profiles`, `watering_logs`, `mood_logs`, `achievements`, `activity_logs`, `reflections`
 
 **Cron**: `update_daily_moisture()` at 17:00 UTC (00:00 VN)
 

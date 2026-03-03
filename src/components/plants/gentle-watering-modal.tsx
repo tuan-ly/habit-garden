@@ -5,13 +5,13 @@
  *
  * Philosophy:
  * - 🌟 "I did it!" = Log progress + water (primary action)
- * - 🌙 "Not today" = Rest day (secondary, guilt-free)
+ * - 🌙 "Not today" = Showing up but resting from the habit; still waters the plant
  *
- * Rest Day UX (Option B):
+ * "Not today" UX:
  * - Low friction path for rest
  * - Empathetic messaging ("Resting is part of growing")
  * - Still earns XP for checking in
- * - Streak protected
+ * - Same watering action — no separate rest day tracking
  */
 
 import { useState, useEffect, useRef, useMemo } from 'react'
@@ -46,7 +46,7 @@ import { waterPlantSimple, logProgress } from '@/lib/actions/activity'
 import { toast } from 'sonner'
 import { XP_VALUES, isMorningTime } from '@/lib/xp-constants'
 
-type ActionMode = 'choose' | 'water' | 'log' | 'rest'
+type ActionMode = 'choose' | 'water' | 'log'
 
 interface GentleWateringModalProps {
   plant: PlantWithType | null
@@ -513,7 +513,7 @@ export function GentleWateringModal({
             </div>
           )}
 
-          {/* MODE: Rest Day (Water only) */}
+          {/* MODE: Not Today (Water only — showing up, resting from habit) */}
           {mode === 'water' && (
             <div className="space-y-4">
               <button
@@ -528,9 +528,9 @@ export function GentleWateringModal({
                 <div className="flex items-start gap-3">
                   <Moon className="w-5 h-5 text-indigo-400 flex-shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="text-sm font-semibold text-indigo-200">Rest days matter 💜</h4>
+                    <h4 className="text-sm font-semibold text-indigo-200">Showing up matters 💜</h4>
                     <p className="text-xs text-indigo-200/70 mt-1">
-                      Checking in keeps your streak alive. Your body and mind need recovery to grow stronger.
+                      Resting is part of growing. You&apos;re still here — that counts for everything.
                     </p>
                   </div>
                 </div>
@@ -594,7 +594,7 @@ export function GentleWateringModal({
                 </div>
               </div>
 
-              {/* Rest Day Button */}
+              {/* Water button */}
               <Button
                 onClick={handleWater}
                 disabled={isLoading}
@@ -609,12 +609,12 @@ export function GentleWateringModal({
                 {isLoading ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Resting...
+                    Watering...
                   </>
                 ) : (
                   <>
                     <Moon className="w-5 h-5 mr-2" />
-                    Take Rest Day (+{totalXp} XP)
+                    Water plant (+{totalXp} XP)
                   </>
                 )}
               </Button>

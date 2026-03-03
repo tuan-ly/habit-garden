@@ -12,12 +12,11 @@ export type GentlePlantStatus = 'thriving' | 'growing' | 'resting' | 'waiting' |
 export type VisualStage = 'seed' | 'sprout' | 'growing' | 'mature' | 'established' | 'ancient' | 'legendary'
 
 // Activity types for unified logging
-// - 'watering' = Just checking in (water only)
+// - 'watering' = Just checking in / "Not today" (water only, with or without habit completion)
 // - 'completed' = I did it! (plants without goals)
 // - 'progress' = I did it! with value (plants with goals)
-// - 'rest_day' = Intentional rest
 // - 'reflection' = Milestone reflection
-export type ActivityType = 'watering' | 'completed' | 'progress' | 'rest_day' | 'reflection'
+export type ActivityType = 'watering' | 'completed' | 'progress' | 'reflection'
 
 // Season status for goals
 export type SeasonStatus = 'active' | 'completed' | 'ended'
@@ -154,7 +153,6 @@ export interface Plant {
   why_i_started: string | null // Motivation for starting this habit
   maturity_level: number // 1-10 scale
   visual_stage: VisualStage // Display stage
-  rest_days_allowed: number // Per week
   grace_period_days: number // Days before sleeping
   days_this_week: number // Rhythm tracking
   days_this_month: number
@@ -243,7 +241,6 @@ export interface Goal {
   completed_at: string | null
   days_active: number
   best_streak: number
-  rest_days_used: number
   end_reflection: string | null
   lessons_learned: string | null
   created_at: string
@@ -402,16 +399,6 @@ export interface ActivityLog {
   created_at: string
 }
 
-// Rest days - Intentional rest tracking
-export interface RestDay {
-  id: string
-  plant_id: string
-  user_id: string
-  rest_date: string
-  reason: string | null
-  created_at: string
-}
-
 // Reflections - Milestone reflections
 export interface Reflection {
   id: string
@@ -438,11 +425,6 @@ export interface LogActivityDto {
   value?: number
   notes?: string
   difficulty?: 'easy' | 'normal' | 'hard'
-}
-
-export interface MarkRestDayDto {
-  plant_id: string
-  reason?: string
 }
 
 export interface CreateReflectionDto {

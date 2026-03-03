@@ -14,7 +14,6 @@ import { getAuthUser } from '@/lib/auth-cached'
 import { revalidatePath } from 'next/cache'
 import type {
   ActivityLog,
-  RestDay,
   Reflection,
   CreateReflectionDto,
   MilestoneType,
@@ -27,8 +26,8 @@ import type {
 export interface JournalEntry {
   id: string
   date: string
-  type: 'activity' | 'rest_day' | 'reflection'
-  activityType?: 'watering' | 'completed' | 'progress' | 'rest_day' | 'reflection'
+  type: 'activity' | 'reflection'
+  activityType?: 'watering' | 'completed' | 'progress' | 'reflection'
   notes: string | null
   value?: number | null
   xpEarned?: number
@@ -85,15 +84,6 @@ export async function getPlantJournalEntries(
     .order('logged_at', { ascending: false })
     .limit(limit)
 
-  // Get rest days with reasons
-  const { data: restDays } = await supabase
-    .from('rest_days')
-    .select('*')
-    .eq('plant_id', plantId)
-    .eq('user_id', user.id)
-    .order('rest_date', { ascending: false })
-    .limit(20)
-
   const entries: JournalEntry[] = []
   const today = new Date()
   const yesterday = new Date(today)
@@ -126,20 +116,6 @@ export async function getPlantJournalEntries(
       isPersonalRecord: activity.is_personal_record,
       dateGroup: getDateGroup(activity.logged_date),
     })
-  }
-
-  // Add rest days (if not already in activities)
-  const activityDates = new Set((activities || []).map(a => a.logged_date))
-  for (const rest of restDays || []) {
-    if (!activityDates.has(rest.rest_date)) {
-      entries.push({
-        id: rest.id,
-        date: rest.rest_date,
-        type: 'rest_day',
-        notes: rest.reason,
-        dateGroup: getDateGroup(rest.rest_date),
-      })
-    }
   }
 
   // Sort by date descending

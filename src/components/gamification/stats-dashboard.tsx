@@ -2,11 +2,9 @@
 
 import { cn } from '@/lib/utils'
 import { getLevelInfo } from '@/lib/xp-system'
-import { getMaxReserves } from '@/lib/water-reserves'
 import { getTodayWeather, getWeatherForecast } from '@/lib/weather-system'
 import {
   Flame,
-  Droplets,
   TreeDeciduous,
   Sprout,
   Skull,
@@ -17,7 +15,6 @@ import {
   Award,
 } from 'lucide-react'
 import { XpProgress } from './xp-progress'
-import { WaterReservesCard } from './water-reserves'
 import { WeatherEffectsPanel, WeatherForecast } from './weather-display'
 import type { Profile } from '@/types/database'
 
@@ -38,7 +35,6 @@ interface StatsDashboardProps {
 
 export function StatsDashboard({ profile, stats, className }: StatsDashboardProps) {
   const levelInfo = getLevelInfo(profile.xp)
-  const maxReserves = getMaxReserves(profile.level)
 
   return (
     <div className={cn('space-y-6', className)}>
@@ -159,15 +155,6 @@ export function StatsDashboard({ profile, stats, className }: StatsDashboardProp
         </div>
       </section>
 
-      {/* Water Reserves */}
-      <section>
-        <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-          <Droplets className="h-5 w-5 text-primary" />
-          Streak Protection
-        </h2>
-        <WaterReservesCard current={profile.water_reserves} level={profile.level} />
-      </section>
-
       {/* Weather Forecast */}
       <section>
         <WeatherForecast days={5} />
@@ -263,12 +250,6 @@ export function StatsRow({ profile, stats, className }: StatsRowProps) {
           <span className="font-medium">{stats.currentStreak}</span>
         </div>
       )}
-
-      {/* Water Reserves */}
-      <div className="flex items-center gap-1 text-blue-500">
-        <Droplets className="h-4 w-4" />
-        <span>{profile.water_reserves}</span>
-      </div>
 
       {/* Weather */}
       <span className="text-lg" title={weather.name}>

@@ -4,13 +4,14 @@
  * Activity Actions - Unified Plant Activity Logging
  *
  * Single log table for ALL plant activities:
- * - 'watering' = "Just checking in" (water only, no completion)
+ * - 'watering' = "Just checking in" / "Not today" (water only, no completion)
  * - 'completed' = "I did it" for non-goal plants
  * - 'progress' = "I did it" for goal plants (with numeric value)
  *
  * Key Logic:
  * - When logging 'completed' or 'progress': if not watered today, add watering XP
  * - Always update plant status (moisture, growth, streak) on completed/progress
+ * - "Not today" = user shows up but rests; still watered (uses 'watering' type)
  */
 
 import { createClient } from '@/lib/supabase/server'
@@ -19,7 +20,6 @@ import { revalidatePath } from 'next/cache'
 import type {
   ActivityLog,
   ActivityType,
-  RestDay,
   PlantWithType,
 } from '@/types/database'
 import { calculateNoteBonus, checkLevelUp, getLevelFromXp } from '@/lib/xp-system'
@@ -377,140 +377,11 @@ export async function logProgress(dto: {
 }
 
 // =====================================================
-// Rest Day (Self-care, not failure)
-// =====================================================
-
-export interface RestDayResult {
-  success: boolean
-  message?: string
-  error?: string
-}
-
-export interface MarkRestDayDto {
-  plant_id: string
-  reason?: string
-}
-
-/**
- * Mark today as a rest day for a plant
- * Rest days are valid and celebrated, not penalized
- */
-export async function markRestDay(dto: MarkRestDayDto): Promise<RestDayResult> {
-  const supabase = await createClient()
-
-  const user = await getAuthUser()
-  if (!user) {
-    return { success: false, error: 'Not authenticated' }
-  }
-
-  const today = new Date().toISOString().split('T')[0]
-
-  // Check if plant belongs to user
-  const { data: plant } = await supabase
-    .from('plants')
-    .select('id, rest_days_allowed')
-    .eq('id', dto.plant_id)
-    .eq('user_id', user.id)
-    .single()
-
-  if (!plant) {
-    return { success: false, error: 'Plant not found' }
-  }
-
-  // Check rest days this week
-  const weekStart = new Date()
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay())
-  const weekStartStr = weekStart.toISOString().split('T')[0]
-
-  const { count: restDaysThisWeek } = await supabase
-    .from('rest_days')
-    .select('*', { count: 'exact', head: true })
-    .eq('plant_id', dto.plant_id)
-    .gte('rest_date', weekStartStr)
-
-  const allowedRestDays = plant.rest_days_allowed || 2
-  if ((restDaysThisWeek || 0) >= allowedRestDays) {
-    return {
-      success: false,
-      error: `You've used all ${allowedRestDays} rest days this week. Take it easy, but try to stay engaged!`,
-    }
-  }
-
-  // Check if already a rest day
-  const { data: existingRestDay } = await supabase
-    .from('rest_days')
-    .select('id')
-    .eq('plant_id', dto.plant_id)
-    .eq('rest_date', today)
-    .single()
-
-  if (existingRestDay) {
-    return { success: false, error: 'Already marked as rest day' }
-  }
-
-  // Create rest day entry
-  const { error: restError } = await supabase
-    .from('rest_days')
-    .insert({
-      plant_id: dto.plant_id,
-      user_id: user.id,
-      rest_date: today,
-      reason: dto.reason || null,
-    })
-
-  if (restError) {
-    console.error('Error creating rest day:', restError)
-    return { success: false, error: restError.message }
-  }
-
-  // Also create activity log for rest day
-  await supabase
-    .from('activity_logs')
-    .insert({
-      plant_id: dto.plant_id,
-      user_id: user.id,
-      activity_type: 'rest_day',
-      logged_date: today,
-      notes: dto.reason || 'Taking a rest day',
-      xp_earned: XP_VALUES.REST_DAY_BASE,
-      is_first_of_day: true,
-    })
-
-  // Update goal rest_days_used if applicable
-  const { data: activeGoal } = await supabase
-    .from('goals')
-    .select('id, rest_days_used')
-    .eq('plant_id', dto.plant_id)
-    .eq('season_status', 'active')
-    .single()
-
-  if (activeGoal) {
-    await supabase
-      .from('goals')
-      .update({
-        rest_days_used: (activeGoal.rest_days_used || 0) + 1,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', activeGoal.id)
-  }
-
-  // Update user XP (small reward for self-care)
-  await updateUserXp(user.id, XP_VALUES.REST_DAY_BASE)
-
-  revalidatePath('/garden')
-  return {
-    success: true,
-    message: 'Rest day marked. Taking care of yourself is part of the journey 💚',
-  }
-}
-
-// =====================================================
 // Get Activity History
 // =====================================================
 
 export interface ActivityHistory {
   activities: ActivityLog[]
-  restDays: RestDay[]
   rhythm: {
     daysThisWeek: number
     daysThisMonth: number
@@ -543,24 +414,12 @@ export async function getPlantActivityHistory(
     .gte('logged_date', startDateStr)
     .order('logged_at', { ascending: false })
 
-  // Get rest days
-  const { data: restDays } = await supabase
-    .from('rest_days')
-    .select('*')
-    .eq('plant_id', plantId)
-    .eq('user_id', user.id)
-    .gte('rest_date', startDateStr)
-    .order('rest_date', { ascending: false })
-
   // Calculate rhythm
-  const activityDates = (activities || [])
-    .filter(a => a.activity_type !== 'rest_day')
-    .map(a => a.logged_date)
+  const activityDates = (activities || []).map(a => a.logged_date)
   const rhythm = calculateRhythm(activityDates)
 
   return {
     activities: (activities || []) as ActivityLog[],
-    restDays: (restDays || []) as RestDay[],
     rhythm,
   }
 }
@@ -587,59 +446,6 @@ async function updateUserXp(userId: string, xp: number): Promise<void> {
       })
       .eq('id', userId)
   }
-}
-
-/**
- * Check if today is a rest day for a plant
- */
-export async function isRestDayToday(plantId: string): Promise<boolean> {
-  const supabase = await createClient()
-
-  const user = await getAuthUser()
-  if (!user) return false
-
-  const today = new Date().toISOString().split('T')[0]
-
-  const { data: restDay } = await supabase
-    .from('rest_days')
-    .select('id')
-    .eq('plant_id', plantId)
-    .eq('rest_date', today)
-    .single()
-
-  return !!restDay
-}
-
-/**
- * Get rest days remaining this week for a plant
- */
-export async function getRestDaysRemaining(plantId: string): Promise<number> {
-  const supabase = await createClient()
-
-  const user = await getAuthUser()
-  if (!user) return 0
-
-  // Get plant's allowed rest days
-  const { data: plant } = await supabase
-    .from('plants')
-    .select('rest_days_allowed')
-    .eq('id', plantId)
-    .single()
-
-  const allowedRestDays = plant?.rest_days_allowed || 2
-
-  // Count rest days this week
-  const weekStart = new Date()
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay())
-  const weekStartStr = weekStart.toISOString().split('T')[0]
-
-  const { count: usedRestDays } = await supabase
-    .from('rest_days')
-    .select('*', { count: 'exact', head: true })
-    .eq('plant_id', plantId)
-    .gte('rest_date', weekStartStr)
-
-  return Math.max(0, allowedRestDays - (usedRestDays || 0))
 }
 
 /**

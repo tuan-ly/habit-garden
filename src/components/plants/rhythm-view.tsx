@@ -13,8 +13,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 interface RhythmViewProps {
   /** Array of dates with activity (YYYY-MM-DD format) */
   activityDates: string[]
-  /** Array of rest day dates (YYYY-MM-DD format) */
-  restDates?: string[]
   /** Number of days to show (default 14) */
   days?: number
   /** Show week labels */
@@ -27,7 +25,6 @@ interface RhythmViewProps {
 
 export function RhythmView({
   activityDates,
-  restDates = [],
   days = 14,
   showWeekLabels = false,
   size = 'md',
@@ -41,7 +38,6 @@ export function RhythmView({
   })
 
   const activitySet = new Set(activityDates)
-  const restSet = new Set(restDates)
 
   // Size classes
   const dotSize = {
@@ -60,26 +56,16 @@ export function RhythmView({
     <div className="space-y-2">
       <TooltipProvider delayDuration={200}>
         <div className={cn('flex flex-wrap', gap)}>
-          {dateArray.map((date, i) => {
+          {dateArray.map((date) => {
             const hasActivity = activitySet.has(date)
-            const isRestDay = restSet.has(date)
             const isToday = date === new Date().toISOString().split('T')[0]
 
             const dateObj = new Date(date)
             const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' })
             const dateLabel = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 
-            // Determine dot style
-            let dotStyle = 'bg-slate-700' // Empty
-            let tooltipText = 'No activity'
-
-            if (hasActivity) {
-              dotStyle = 'bg-emerald-500'
-              tooltipText = 'Active'
-            } else if (isRestDay) {
-              dotStyle = 'bg-blue-500'
-              tooltipText = 'Rest day'
-            }
+            const dotStyle = hasActivity ? 'bg-emerald-500' : 'bg-slate-700'
+            const tooltipText = hasActivity ? 'Active' : 'No activity'
 
             return (
               <Tooltip key={date}>
@@ -90,7 +76,7 @@ export function RhythmView({
                       'rounded-full transition-all',
                       dotStyle,
                       isToday && 'ring-2 ring-white/30 ring-offset-1 ring-offset-slate-900',
-                      !hasActivity && !isRestDay && 'opacity-40',
+                      !hasActivity && 'opacity-40',
                     )}
                   />
                 </TooltipTrigger>
@@ -100,9 +86,7 @@ export function RhythmView({
                     <div className="text-slate-400">{dateLabel}</div>
                     <div className={cn(
                       'mt-1',
-                      hasActivity && 'text-emerald-400',
-                      isRestDay && 'text-blue-400',
-                      !hasActivity && !isRestDay && 'text-slate-500',
+                      hasActivity ? 'text-emerald-400' : 'text-slate-500',
                     )}>
                       {tooltipText}
                     </div>
@@ -119,10 +103,6 @@ export function RhythmView({
           <div className="flex items-center gap-1">
             <div className="w-2 h-2 rounded-full bg-emerald-500" />
             <span>Active</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-blue-500" />
-            <span>Rest</span>
           </div>
           <div className="flex items-center gap-1">
             <div className="w-2 h-2 rounded-full bg-slate-700 opacity-40" />
@@ -175,13 +155,11 @@ export function RhythmStats({
  */
 interface WeeklyRhythmProps {
   activityDates: string[]
-  restDates?: string[]
   weeks?: number
 }
 
 export function WeeklyRhythm({
   activityDates,
-  restDates = [],
   weeks = 12,
 }: WeeklyRhythmProps) {
   const today = new Date()
@@ -192,7 +170,6 @@ export function WeeklyRhythm({
   startDate.setDate(startDate.getDate() - startDate.getDay())
 
   const activitySet = new Set(activityDates)
-  const restSet = new Set(restDates)
 
   // Generate week columns
   const weekColumns: string[][] = []
@@ -229,27 +206,19 @@ export function WeeklyRhythm({
         {/* Week columns */}
         {weekColumns.map((week, weekIndex) => (
           <div key={weekIndex} className="flex flex-col gap-0.5">
-            {week.map((date, dayIndex) => {
+            {week.map((date) => {
               const hasActivity = activitySet.has(date)
-              const isRestDay = restSet.has(date)
               const isToday = date === today.toISOString().split('T')[0]
-
-              let bgColor = 'bg-slate-800'
-              if (hasActivity) {
-                bgColor = 'bg-emerald-500'
-              } else if (isRestDay) {
-                bgColor = 'bg-blue-500/70'
-              }
 
               return (
                 <div
                   key={date}
                   className={cn(
                     'w-3 h-3 rounded-sm transition-colors',
-                    bgColor,
+                    hasActivity ? 'bg-emerald-500' : 'bg-slate-800',
                     isToday && 'ring-1 ring-white/50',
                   )}
-                  title={`${date}${hasActivity ? ' - Active' : isRestDay ? ' - Rest' : ''}`}
+                  title={`${date}${hasActivity ? ' - Active' : ''}`}
                 />
               )
             })}
