@@ -10,6 +10,7 @@ import type {
   Goal,
 } from '@/types/database'
 import { getUserTier } from './subscription'
+import { getAuthUser } from '@/lib/auth-cached'
 
 // =====================================================
 // Identity CRUD Operations
@@ -21,9 +22,7 @@ import { getUserTier } from './subscription'
 export async function getIdentities(): Promise<IdentityWithGoals[]> {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return []
 
   const { data, error } = await supabase
@@ -49,9 +48,7 @@ export async function getIdentities(): Promise<IdentityWithGoals[]> {
 export async function getIdentity(identityId: string): Promise<IdentityWithGoals | null> {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return null
 
   const { data, error } = await supabase
@@ -89,9 +86,7 @@ export async function createIdentity(dto: CreateIdentityDto): Promise<{
 }> {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) {
     return { success: false, error: 'Not authenticated' }
   }
@@ -148,9 +143,7 @@ export async function updateIdentity(
 }> {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) {
     return { success: false, error: 'Not authenticated' }
   }
@@ -219,9 +212,7 @@ export async function deleteIdentity(identityId: string): Promise<{
 }> {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) {
     return { success: false, error: 'Not authenticated' }
   }
@@ -266,9 +257,7 @@ export async function linkGoalToIdentity(
 }> {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) {
     return { success: false, error: 'Not authenticated' }
   }
@@ -325,9 +314,7 @@ export async function unlinkGoalFromIdentity(goalId: string): Promise<{
 }> {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) {
     return { success: false, error: 'Not authenticated' }
   }
@@ -373,9 +360,7 @@ export async function unlinkGoalFromIdentity(goalId: string): Promise<{
 export async function getUnlinkedGoals(): Promise<Goal[]> {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return []
 
   const { data, error } = await supabase
@@ -419,9 +404,7 @@ export async function getIdentityStats(identityId: string): Promise<{
 } | null> {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return null
 
   // Verify ownership

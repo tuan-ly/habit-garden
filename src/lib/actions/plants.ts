@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import type { CreatePlantDto, PlantWithType, PlantType, Difficulty, WeatherType, PlantGoalInfo, TodayGoalLog, GoalMode, PlantTier, Profile } from '@/types/database'
+import { getAuthUser } from '@/lib/auth-cached'
 import { getTodayWeather, calculateWeatherXp } from '@/lib/weather-system'
 import { calculateWateringXp, calculateNoteBonus } from '@/lib/xp-system'
 import { getTodayMood } from '@/lib/actions/mood'
@@ -23,7 +24,7 @@ import {
 export async function getPlants(): Promise<PlantWithType[]> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return []
 
   const today = new Date().toISOString().split('T')[0]
@@ -146,7 +147,7 @@ export async function getPlantTypes(): Promise<PlantType[]> {
 export async function createPlant(dto: CreatePlantDto): Promise<{ success: boolean; plant?: PlantWithType; error?: string }> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) {
     return { success: false, error: 'Not authenticated' }
   }
@@ -324,7 +325,7 @@ export async function createPlant(dto: CreatePlantDto): Promise<{ success: boole
 export async function deletePlant(plantId: string): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) {
     return { success: false, error: 'Not authenticated' }
   }
@@ -361,7 +362,7 @@ export async function waterPlant(
 }> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) {
     return { success: false, error: 'Not authenticated' }
   }
@@ -619,7 +620,7 @@ export async function waterPlant(
  */
 export async function resolveGrowthConflict(plantId: string): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return { success: false, error: 'Not authenticated' }
 
   // 1. Get the plant
@@ -878,7 +879,7 @@ export async function getGardenStats(
 ): Promise<GardenStatsData | null> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return null
 
   // Parse date from YYYY-MM-DD string without timezone issues
@@ -1094,7 +1095,7 @@ export async function getAggregatedGardenStats(
 ): Promise<AggregatedGardenStats | null> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return null
 
   // Parse date from YYYY-MM-DD string without timezone issues
@@ -1305,7 +1306,7 @@ export async function updatePlantPosition(
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) {
     return { success: false, error: 'Not authenticated' }
   }
@@ -1340,7 +1341,7 @@ export async function expandPlantSize(
 ): Promise<{ success: boolean; relocatedPlants?: string[]; error?: string }> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) {
     return { success: false, error: 'Not authenticated' }
   }
@@ -1516,7 +1517,7 @@ export async function expandPlantSize(
 export async function getPlant(plantId: string): Promise<PlantWithType | null> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return null
 
   const { data, error } = await supabase

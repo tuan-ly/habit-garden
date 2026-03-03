@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth-cached'
 import { Environment, Paddle } from '@paddle/paddle-node-sdk'
 
 /**
@@ -28,9 +29,7 @@ function getPaddleClient(): Paddle | null {
 export async function getCustomerPortalUrl(): Promise<string | null> {
   try {
     const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const user = await getAuthUser()
 
     if (!user) return null
 
@@ -77,9 +76,7 @@ export async function cancelSubscription(): Promise<{
 }> {
   try {
     const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const user = await getAuthUser()
 
     if (!user) {
       return { success: false, error: 'Not authenticated' }
@@ -132,9 +129,7 @@ export async function resumeSubscription(): Promise<{
 }> {
   try {
     const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const user = await getAuthUser()
 
     if (!user) {
       return { success: false, error: 'Not authenticated' }
@@ -193,9 +188,7 @@ export async function updateSubscriptionPlan(
 }> {
   try {
     const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const user = await getAuthUser()
 
     if (!user) {
       return { success: false, error: 'Not authenticated' }
@@ -258,9 +251,7 @@ export async function getSubscriptionDetails(): Promise<{
 } | null> {
   try {
     const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const user = await getAuthUser()
 
     if (!user) return null
 

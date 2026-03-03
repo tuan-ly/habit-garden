@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import type { Goal, GoalLog, CreateGoalDto, LogGoalDto, GoalMode, ProgressionType } from '@/types/database'
+import { getAuthUser } from '@/lib/auth-cached'
 import { calculateTarget, generateProgressionPlan, type ProgressionType as ProgType } from '@/lib/progression'
 import { calculateWateringXp, calculateNoteBonus } from '@/lib/xp-system'
 import { getTodayWeather, calculateWeatherXp } from '@/lib/weather-system'
@@ -52,7 +53,7 @@ export interface GoalStatistics {
 export async function createGoal(dto: CreateGoalDto): Promise<{ success: boolean; goal?: Goal; error?: string }> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) {
     return { success: false, error: 'Not authenticated' }
   }
@@ -133,7 +134,7 @@ export async function logGoalValue(dto: LogGoalDto): Promise<{
 }> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) {
     return { success: false, error: 'Not authenticated' }
   }
@@ -413,7 +414,7 @@ export async function logGoalValue(dto: LogGoalDto): Promise<{
 export async function getGoalStats(goalId: string): Promise<GoalStatistics | null> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return null
 
   // Get goal with plant
@@ -546,81 +547,62 @@ export async function getGoalStats(goalId: string): Promise<GoalStatistics | nul
   }
 }
 
-// Get goal for a plant
-export async function getGoalForPlant(plantId: string): Promise<GoalWithStats | null> {
-  const supabase = await createClient()
+// Pure in-memory computation of GoalWithStats from a goal and its logs.
+// `logs` should cover at least the current period and current week date ranges.
+// Callers that pass logs from a 30-day window get correct results for all
+// weekly/daily frequencies; monthly frequency periods are also ≤30 days.
+function computeGoalStats(goal: Goal, logs: Pick<GoalLog, 'value' | 'is_personal_record' | 'logged_at'>[]): GoalWithStats {
+  // Period info
+  const periodInfo = getPeriodInfo(goal)
+  const currentPeriodTarget = getPeriodTarget(goal, periodInfo.periodNumber)
 
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-
-  const { data: goal, error } = await supabase
-    .from('goals')
-    .select('*')
-    .eq('plant_id', plantId)
-    .single()
-
-  if (error || !goal) return null
-
-  // Get period info based on frequency
-  const periodInfo = getPeriodInfo(goal as Goal)
-  const currentPeriodTarget = getPeriodTarget(goal as Goal, periodInfo.periodNumber)
-
-  // Also calculate week info for legacy compatibility
+  // Legacy week info
   const startDate = new Date(goal.started_at)
   const daysSinceStart = Math.floor((Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24))
   const weekNumber = Math.floor(daysSinceStart / 7) + 1
   const weeklyTargets = goal.weekly_targets as number[] || []
   const currentWeekTarget = weeklyTargets[Math.min(weekNumber - 1, weeklyTargets.length - 1)] || goal.target_value
 
-  // Get logs for current period
-  const { data: periodLogs } = await supabase
-    .from('goal_logs')
-    .select('value, is_personal_record')
-    .eq('goal_id', goal.id)
-    .gte('logged_at', periodInfo.periodStart.toISOString())
-    .lte('logged_at', periodInfo.periodEnd.toISOString())
+  // Filter logs to current period
+  const periodLogs = logs.filter(log => {
+    const logDate = new Date(log.logged_at)
+    return logDate >= periodInfo.periodStart && logDate <= periodInfo.periodEnd
+  })
 
-  // Calculate period progress
+  // Period progress
   let periodProgress = 0
   if (goal.goal_mode === 'total_progress') {
-    periodProgress = (periodLogs || []).reduce((sum, log) => sum + Number(log.value), 0)
+    periodProgress = periodLogs.reduce((sum, log) => sum + Number(log.value), 0)
   } else {
-    periodProgress = periodLogs && periodLogs.length > 0
+    periodProgress = periodLogs.length > 0
       ? Math.max(...periodLogs.map(log => Number(log.value)))
       : 0
   }
 
-  // Get logs for current week (legacy)
+  // Filter logs to current week (legacy)
   const weekStart = new Date(startDate)
   weekStart.setDate(weekStart.getDate() + (weekNumber - 1) * 7)
   const weekEnd = new Date(weekStart)
   weekEnd.setDate(weekStart.getDate() + 6)
   weekEnd.setHours(23, 59, 59, 999)
 
-  const { data: weeklyLogs } = await supabase
-    .from('goal_logs')
-    .select('value, is_personal_record')
-    .eq('goal_id', goal.id)
-    .gte('logged_at', weekStart.toISOString())
-    .lte('logged_at', weekEnd.toISOString())
+  const weeklyLogs = logs.filter(log => {
+    const logDate = new Date(log.logged_at)
+    return logDate >= weekStart && logDate <= weekEnd
+  })
 
   let weeklyProgress = 0
   if (goal.goal_mode === 'total_progress') {
-    weeklyProgress = (weeklyLogs || []).reduce((sum, log) => sum + Number(log.value), 0)
+    weeklyProgress = weeklyLogs.reduce((sum, log) => sum + Number(log.value), 0)
   } else {
-    weeklyProgress = weeklyLogs && weeklyLogs.length > 0
+    weeklyProgress = weeklyLogs.length > 0
       ? Math.max(...weeklyLogs.map(log => Number(log.value)))
       : 0
   }
 
   const overallProgress = (Number(goal.current_value) / Number(goal.target_value)) * 100
   const isOnTrack = periodProgress >= currentPeriodTarget * 0.8 // Consider 80%+ as on track
-
-  const { count: personalRecords } = await supabase
-    .from('goal_logs')
-    .select('*', { count: 'exact', head: true })
-    .eq('goal_id', goal.id)
-    .eq('is_personal_record', true)
+  const personalRecords = logs.filter(log => log.is_personal_record).length
 
   return {
     ...goal,
@@ -633,7 +615,7 @@ export async function getGoalForPlant(plantId: string): Promise<GoalWithStats | 
     // Overall
     overallProgress: Math.min(100, overallProgress),
     isOnTrack,
-    personalRecords: personalRecords || 0,
+    personalRecords,
     // Legacy
     weeklyProgress,
     currentWeekTarget,
@@ -641,13 +623,41 @@ export async function getGoalForPlant(plantId: string): Promise<GoalWithStats | 
   } as GoalWithStats
 }
 
+// Get goal for a plant
+export async function getGoalForPlant(plantId: string): Promise<GoalWithStats | null> {
+  const supabase = await createClient()
+
+  const user = await getAuthUser()
+  if (!user) return null
+
+  const { data: goal, error } = await supabase
+    .from('goals')
+    .select('*')
+    .eq('plant_id', plantId)
+    .single()
+
+  if (error || !goal) return null
+
+  // Fetch all logs needed for period + week calculations.
+  // 30 days covers daily, weekly, and monthly period windows.
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+  const { data: logs } = await supabase
+    .from('goal_logs')
+    .select('value, is_personal_record, logged_at')
+    .eq('goal_id', goal.id)
+    .gte('logged_at', thirtyDaysAgo)
+
+  return computeGoalStats(goal as Goal, logs || [])
+}
+
 // Get all goals for the user
 export async function getUserGoals(): Promise<GoalWithStats[]> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return []
 
+  // Query 1: all goals with plant info
   const { data: goals, error } = await supabase
     .from('goals')
     .select(`
@@ -656,19 +666,27 @@ export async function getUserGoals(): Promise<GoalWithStats[]> {
     `)
     .eq('plant.user_id', user.id)
 
-  if (error || !goals) return []
+  if (error || !goals || goals.length === 0) return []
 
-  // Calculate stats for each goal
-  const goalsWithStats: GoalWithStats[] = []
+  // Query 2: all logs for all goals (last 30 days covers all period windows)
+  const goalIds = goals.map(g => g.id)
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+  const { data: allLogs } = await supabase
+    .from('goal_logs')
+    .select('goal_id, value, is_personal_record, logged_at')
+    .in('goal_id', goalIds)
+    .gte('logged_at', thirtyDaysAgo)
 
-  for (const goal of goals) {
-    const stats = await getGoalForPlant(goal.plant_id)
-    if (stats) {
-      goalsWithStats.push(stats)
-    }
+  // Group logs by goal_id
+  const logsByGoal = new Map<string, Pick<GoalLog, 'value' | 'is_personal_record' | 'logged_at'>[]>()
+  for (const log of (allLogs || [])) {
+    const arr = logsByGoal.get(log.goal_id) || []
+    arr.push(log)
+    logsByGoal.set(log.goal_id, arr)
   }
 
-  return goalsWithStats
+  // Compute stats in-memory — O(goals + logs), no extra DB round-trips
+  return goals.map(goal => computeGoalStats(goal as Goal, logsByGoal.get(goal.id) || []))
 }
 
 // Modify an existing goal
@@ -680,7 +698,7 @@ export async function modifyGoal(dto: {
 }): Promise<{ success: boolean; goal?: Goal; error?: string }> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) {
     return { success: false, error: 'Not authenticated' }
   }

@@ -62,6 +62,33 @@
 
 ## Latest Session
 
+### 2026-03-03: Phase 2 Perf Audit — Auth Dedup + SSR Data Fetching ✅
+- Created [`src/lib/auth-cached.ts`](src/lib/auth-cached.ts) — `React.cache()` wrapper deduplicates `auth.getUser()` per request
+- Replaced 68 direct `auth.getUser()` calls across all 11 action files (plants/identity/goals/mood/adaptive/activity/journal/paddle/subscription/weeds/profile)
+- `SubscriptionContext`: added SSR guard in `useEffect` — skips client fetch when `initialTier` provided by layout
+- `MoodContext`: already correctly wired via layout (no changes needed)
+- `profile.ts`: removed XP auto-sync side-effect from `getProfile()`; applied backfill migration to Supabase
+- `getUserStats()` + `getAchievementsData()`: sequential queries → `Promise.all`
+- Plan: [phase-02-auth-data-fetching.md](../plans/20260303-1200-perf-audit/phase-02-auth-data-fetching.md) ✅
+
+**Next**: Phase 4 — Component refactor + WeedsContext stale closure fix — [phase-04-component-refactor.md](../plans/20260303-1200-perf-audit/phase-04-component-refactor.md)
+
+### 2026-03-03: Phase 3 Perf Audit — Query Optimization ✅
+- Added 2 composite indexes: `idx_activity_logs_user_date`, `idx_goal_logs_goal_date` (others pre-existed)
+- `adaptive.ts` `autoApplyAdjustment()`: `select('*')` → 5 explicit columns
+- `activity.ts` `logActivity()`: goals sub-select narrowed to 5 used columns
+- `goals.ts` kept `select('*')` — spread pattern requires all columns
+- Plan: [phase-03-query-optimization.md](../plans/20260303-1200-perf-audit/phase-03-query-optimization.md) ✅
+
+### 2026-03-03: Phase 1 Perf Audit Fixes (Security + N+1)
+- **Fix 1 CRITICAL**: `autoApplyAdjustment()` — added `auth.getUser()` + `plants!inner(user_id)` ownership check before any DB write ([adaptive.ts](src/lib/actions/adaptive.ts))
+- **Fix 2 HIGH**: `getUserGoals()` — extracted `computeGoalStats()` pure helper, rewrote to 2 queries (was ~5N+2); `getGoalForPlant()` also uses helper ([goals.ts](src/lib/actions/goals.ts))
+- **Fix 3 HIGH**: `growWeeds()` — added `increment_weed_count` RPC, replaced N UPDATE loop with single batch call ([weeds.ts](src/lib/actions/weeds.ts))
+- All 202 tests pass; no TS errors in modified files
+- Plan: [phase-01-critical-fixes.md](../plans/20260303-1200-perf-audit/phase-01-critical-fixes.md) ✅
+
+---
+
 ### 2026-02-19: Bug Fix - Moisture Decay System
 - **Issue**: Cây không tự động decay mỗi ngày
 - **Root Cause**: Cron job `update_daily_moisture()` chạy nhưng fail vì query bảng `daily_weather` không tồn tại

@@ -14,6 +14,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth-cached'
 import { revalidatePath } from 'next/cache'
 import type {
   ActivityLog,
@@ -69,7 +70,7 @@ export interface LogActivityResult {
 export async function logActivity(dto: LogActivityDto): Promise<LogActivityResult> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) {
     return { success: false, error: 'Not authenticated' }
   }
@@ -90,7 +91,7 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
     .select(`
       *,
       plant_type:plant_types(*),
-      goals(*)
+      goals(id, season_status, goal_mode, current_value, days_active)
     `)
     .eq('id', dto.plant_id)
     .eq('user_id', user.id)
@@ -397,7 +398,7 @@ export interface MarkRestDayDto {
 export async function markRestDay(dto: MarkRestDayDto): Promise<RestDayResult> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) {
     return { success: false, error: 'Not authenticated' }
   }
@@ -526,7 +527,7 @@ export async function getPlantActivityHistory(
 ): Promise<ActivityHistory | null> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return null
 
   const startDate = new Date()
@@ -594,7 +595,7 @@ async function updateUserXp(userId: string, xp: number): Promise<void> {
 export async function isRestDayToday(plantId: string): Promise<boolean> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return false
 
   const today = new Date().toISOString().split('T')[0]
@@ -615,7 +616,7 @@ export async function isRestDayToday(plantId: string): Promise<boolean> {
 export async function getRestDaysRemaining(plantId: string): Promise<number> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return 0
 
   // Get plant's allowed rest days
@@ -647,7 +648,7 @@ export async function getRestDaysRemaining(plantId: string): Promise<number> {
 export async function hasActivityToday(plantId: string): Promise<boolean> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return false
 
   const today = new Date().toISOString().split('T')[0]

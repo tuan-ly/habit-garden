@@ -71,11 +71,11 @@ interface SubscriptionProviderProps {
 
 export function SubscriptionProvider({
   children,
-  initialTier = 'free',
+  initialTier,
 }: SubscriptionProviderProps) {
-  const [serverTier, setServerTier] = useState<SubscriptionTier>(initialTier)
-  // Skip loading state if we have SSR-provided tier
-  const [isLoading, setIsLoading] = useState(initialTier === 'free')
+  const [serverTier, setServerTier] = useState<SubscriptionTier>(initialTier ?? 'free')
+  // Skip loading state if SSR already provided a tier
+  const [isLoading, setIsLoading] = useState(initialTier === undefined)
 
   // Upgrade modal state
   const [upgradeModal, setUpgradeModal] = useState<UpgradeModalState>({
@@ -93,8 +93,13 @@ export function SubscriptionProvider({
   // Get tier limits (memoized to prevent recalculation)
   const limits = useMemo(() => getTierLimits(tier), [tier])
 
-  // Load tier from server on mount (only if SSR didn't provide a non-free tier)
+  // Load tier from server on mount only if SSR did not provide an initialTier
   useEffect(() => {
+    if (initialTier !== undefined) {
+      setIsLoading(false)
+      return // SSR already provided the tier
+    }
+
     let mounted = true
 
     async function loadTier() {
@@ -116,7 +121,7 @@ export function SubscriptionProvider({
     return () => {
       mounted = false
     }
-  }, [])
+  }, [initialTier])
 
   // Refresh tier from server
   const refreshTier = useCallback(async () => {

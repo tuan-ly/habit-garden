@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth-cached'
 import type { Profile } from '@/types/database'
 import { ACHIEVEMENTS, type AchievementProgress } from '@/lib/achievements'
 import { getLevelFromXp } from '@/lib/xp-system'
@@ -9,7 +10,7 @@ import { getLevelFromXp } from '@/lib/xp-system'
 export async function updateTimezone(timezone: string): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return { success: false, error: 'Not authenticated' }
 
   // Validate timezone is a valid IANA timezone
@@ -39,7 +40,7 @@ export async function updateTimezone(timezone: string): Promise<{ success: boole
 export async function syncUserXp(): Promise<{ success: boolean; xp?: number; error?: string }> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return { success: false, error: 'Not authenticated' }
 
   // Calculate total XP from watering_logs
@@ -75,7 +76,7 @@ export async function syncUserXp(): Promise<{ success: boolean; xp?: number; err
 export async function getProfile(): Promise<Profile | null> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return null
 
   const { data, error } = await supabase
@@ -89,55 +90,20 @@ export async function getProfile(): Promise<Profile | null> {
     return null
   }
 
-  // Auto-sync XP if profile.xp is 0 but user has waterings
-  if (data && data.xp === 0) {
-    const { data: waterings } = await supabase
-      .from('watering_logs')
-      .select('xp_earned')
-      .eq('user_id', user.id)
-
-    const totalXp = waterings?.reduce((sum, w) => sum + (w.xp_earned ?? 0), 0) ?? 0
-
-    if (totalXp > 0) {
-      // Update profile with correct XP
-      await supabase
-        .from('profiles')
-        .update({
-          xp: totalXp,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', user.id)
-
-      data.xp = totalXp
-    }
-  }
-
   return data as Profile
 }
 
 export async function getUserStats() {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return null
 
-  // Get plants count by status
-  const { data: plants } = await supabase
-    .from('plants')
-    .select('status, current_streak, longest_streak')
-    .eq('user_id', user.id)
-
-  // Get total waterings
-  const { count: totalWaterings } = await supabase
-    .from('watering_logs')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-
-  // Get achievements count
-  const { count: achievementsCount } = await supabase
-    .from('user_achievements')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', user.id)
+  const [{ data: plants }, { count: totalWaterings }, { count: achievementsCount }] = await Promise.all([
+    supabase.from('plants').select('status, current_streak, longest_streak').eq('user_id', user.id),
+    supabase.from('watering_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+    supabase.from('user_achievements').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+  ])
 
   // Get best streak across all plants
   const bestStreak = Math.max(...(plants?.map(p => p.longest_streak) || [0]), 0)
@@ -163,7 +129,7 @@ export async function getUserStats() {
 export async function updateDisplayName(displayName: string): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return { success: false, error: 'Not authenticated' }
 
   const trimmed = displayName.trim()
@@ -194,7 +160,7 @@ export async function claimAchievement(achievementId: string): Promise<{
 }> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return { success: false, error: 'Not authenticated' }
 
   // Validate achievement exists
@@ -256,39 +222,24 @@ export async function getAchievementsData(): Promise<{
 } | null> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return null
 
-  // Get user's unlocked achievements
-  const { data: userAchievements } = await supabase
-    .from('user_achievements')
-    .select('achievement_id')
-    .eq('user_id', user.id)
+  const [
+    { data: userAchievements },
+    { data: plants },
+    { data: profile },
+    { count: totalWaterings },
+    { count: morningWaterings },
+  ] = await Promise.all([
+    supabase.from('user_achievements').select('achievement_id').eq('user_id', user.id),
+    supabase.from('plants').select('status, current_streak, longest_streak, total_waterings').eq('user_id', user.id),
+    supabase.from('profiles').select('xp').eq('id', user.id).single(),
+    supabase.from('watering_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+    supabase.from('watering_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('morning_bonus', true),
+  ])
 
   const unlockedIds = userAchievements?.map(a => a.achievement_id) || []
-
-  // Get stats for progress calculation
-  const { data: plants } = await supabase
-    .from('plants')
-    .select('status, current_streak, longest_streak, total_waterings')
-    .eq('user_id', user.id)
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('xp')
-    .eq('id', user.id)
-    .single()
-
-  const { count: totalWaterings } = await supabase
-    .from('watering_logs')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-
-  const { count: morningWaterings } = await supabase
-    .from('watering_logs')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-    .eq('morning_bonus', true)
 
   // Calculate stats
   const totalPlants = plants?.length || 0
