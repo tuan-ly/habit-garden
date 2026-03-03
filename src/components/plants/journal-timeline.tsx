@@ -159,11 +159,21 @@ function JournalEntryCard({ entry }: JournalEntryCardProps) {
 }
 
 function getEntryStyle(entry: JournalEntry) {
+  if (entry.type === 'rest_day' || entry.activityType === 'rest_day') {
+    return {
+      icon: <Moon className="h-4 w-4 text-violet-500" />,
+      iconBg: 'bg-violet-100 dark:bg-violet-900/50',
+      iconColor: 'text-violet-500',
+      borderColor: 'bg-violet-400 dark:bg-violet-500',
+    }
+  }
+
   if (entry.activityType === 'completed') {
     return {
       icon: <CheckCircle2 className="h-4 w-4 text-green-500" />,
       iconBg: 'bg-green-100 dark:bg-green-900/50',
       iconColor: 'text-green-500',
+      borderColor: 'bg-green-400 dark:bg-green-500',
     }
   }
 
@@ -172,6 +182,7 @@ function getEntryStyle(entry: JournalEntry) {
       icon: <TrendingUp className="h-4 w-4 text-indigo-500" />,
       iconBg: 'bg-indigo-100 dark:bg-indigo-900/50',
       iconColor: 'text-indigo-500',
+      borderColor: 'bg-indigo-400 dark:bg-indigo-500',
     }
   }
 
@@ -180,18 +191,21 @@ function getEntryStyle(entry: JournalEntry) {
       icon: <Sparkles className="h-4 w-4 text-purple-500" />,
       iconBg: 'bg-purple-100 dark:bg-purple-900/50',
       iconColor: 'text-purple-500',
+      borderColor: 'bg-purple-400 dark:bg-purple-500',
     }
   }
 
   // Default: watering (just checking in)
   return {
-    icon: <Droplets className="h-4 w-4 text-emerald-500" />,
-    iconBg: 'bg-emerald-100 dark:bg-emerald-900/50',
-    iconColor: 'text-emerald-500',
+    icon: <Droplets className="h-4 w-4 text-blue-500" />,
+    iconBg: 'bg-blue-100 dark:bg-blue-900/50',
+    iconColor: 'text-blue-500',
+    borderColor: 'bg-blue-400 dark:bg-blue-500',
   }
 }
 
 function getNoNoteMessage(entry: JournalEntry): string {
+  if (entry.type === 'rest_day' || entry.activityType === 'rest_day') return 'Took a rest day'
   if (entry.activityType === 'completed') return 'Did it today!'
   if (entry.activityType === 'progress') return 'Progress logged'
   return 'Showed up today'
