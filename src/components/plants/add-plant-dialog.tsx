@@ -59,7 +59,7 @@ export function AddPlantDialog({
   const effectiveLevel = useDevOverride('level', profile?.level ?? 1)
 
   // Create effective profile with dev override
-  const effectiveProfile = profile ? { ...profile, level: effectiveLevel } : null
+  const effectiveProfile = profile ? { ...profile, level: effectiveLevel ?? profile.level } : null
 
   // Support both controlled and uncontrolled modes
   const isControlled = controlledOpen !== undefined

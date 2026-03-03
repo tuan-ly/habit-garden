@@ -13,6 +13,7 @@ import {
   Calendar,
   TrendingUp,
   Award,
+  Droplets,
 } from 'lucide-react'
 import { XpProgress } from './xp-progress'
 import { WeatherEffectsPanel, WeatherForecast } from './weather-display'

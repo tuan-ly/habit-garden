@@ -34,7 +34,6 @@ const createMockPlant = (overrides: Partial<PlantWithType> = {}): PlantWithType 
   why_i_started: null,
   maturity_level: 5,
   visual_stage: 'growing',
-  rest_days_allowed: 1,
   grace_period_days: 3,
   days_this_week: 4,
   days_this_month: 15,
