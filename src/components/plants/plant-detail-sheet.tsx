@@ -53,14 +53,16 @@ import { ReflectionModal } from './reflection-modal'
 import {
   GoalSetupWizard,
   GoalLogModal,
-  GoalProgress,
   GoalModeBadge,
   GoalStats,
+  PeriodTargetDisplay,
+  GoalJourneyMap,
   AdaptiveSuggestionModal,
   AdaptiveSettings,
   PerformanceOverview,
   AdjustmentHistory,
 } from '@/components/goals'
+import { getPeriodInfo } from '@/lib/goal-utils'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn, isToday } from '@/lib/utils'
 
@@ -185,6 +187,19 @@ export function PlantDetailSheet({
   if (!plant) return null
 
   const isWateredToday = isToday(plant.last_watered_at)
+
+  // Days remaining in current period
+  const periodDaysLeft = useMemo(() => {
+    if (!goal) return 0
+    try {
+      const info = getPeriodInfo(goal)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      return Math.max(0, Math.ceil((info.periodEnd.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)))
+    } catch {
+      return 0
+    }
+  }, [goal?.id, goal?.periodNumber])
 
   const isSleeping = plant.status === 'dead' || plant.status === 'sleeping'
   const isResting = plant.status === 'resting' || plant.status === 'dormant'
@@ -389,7 +404,14 @@ export function PlantDetailSheet({
                         Details
                       </Button>
                     </div>
-                    <GoalProgress goal={goal} />
+                    <PeriodTargetDisplay goal={goal} variant="full" />
+                    {periodDaysLeft > 0 && (
+                      <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        <span>{periodDaysLeft} day{periodDaysLeft !== 1 ? 's' : ''} remaining in {goal.periodLabel}</span>
+                      </div>
+                    )}
+                    <GoalJourneyMap goal={goal} />
                   </div>
                 )}
 

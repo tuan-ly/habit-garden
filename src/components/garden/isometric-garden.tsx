@@ -1053,6 +1053,10 @@ export function IsometricGarden({
         goalMode={wateringPlant?.goal_mode || undefined}
         isWateredToday={wateringPlant ? isWateredToday(wateringPlant) : false}
         journalStreak={journalStreak}
+        periodProgress={wateringPlant?.today_value}
+        currentPeriodTarget={wateringPlant?.goal?.current_week_target}
+        periodLabel={wateringPlant?.goal ? `Week ${wateringPlant.goal.week_number}` : undefined}
+        daysLeftInPeriod={wateringPlant?.goal ? (() => { const d = new Date().getDay(); return d === 0 ? 0 : 7 - d })() : undefined}
       />
 
       {/* Add plant dialog */}

@@ -129,7 +129,7 @@ export function PlantCard({ plant: initialPlant, onClick, weather }: PlantCardPr
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {goal && <GoalProgressRing goal={goal} size="sm" />}
+            {goal && <GoalProgressRing goal={goal} size="sm" showPeriod={true} />}
             <StreakFire streak={plant.current_streak} show={plant.current_streak > 0 && !hasGoal} />
           </div>
         </div>
@@ -139,23 +139,37 @@ export function PlantCard({ plant: initialPlant, onClick, weather }: PlantCardPr
           <div className="space-y-3 mb-4 p-3 bg-white/60 dark:bg-black/20 rounded-xl backdrop-blur-sm">
             <MoistureBar value={plant.current_moisture} />
             <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground font-medium">Week {goal.weekNumber}</span>
-              <span className="font-bold text-primary">
-                {Number(goal.current_value).toFixed(1)} / {goal.target_value} {goal.unit}
+              <span className="text-muted-foreground font-medium">{goal.periodLabel}</span>
+              <span className={cn(
+                'font-bold',
+                goal.periodProgress >= goal.currentPeriodTarget
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : !goal.isOnTrack
+                  ? 'text-amber-600 dark:text-amber-400'
+                  : 'text-primary'
+              )}>
+                {Math.round(goal.periodProgress * 10) / 10} / {Math.round(goal.currentPeriodTarget * 10) / 10} {goal.unit}
               </span>
             </div>
-            {/* Progress bar for goal */}
+            {/* Progress bar for goal (period-based) */}
             <div className="h-2 w-full rounded-full bg-muted/50 overflow-hidden shadow-inner">
               <div
                 className={cn(
                   'h-full rounded-full transition-all duration-500',
-                  goal.isOnTrack
+                  goal.periodProgress >= goal.currentPeriodTarget
                     ? 'bg-gradient-to-r from-green-400 to-emerald-500'
+                    : goal.isOnTrack
+                    ? 'bg-gradient-to-r from-primary/80 to-primary'
                     : 'bg-gradient-to-r from-amber-400 to-orange-500'
                 )}
-                style={{ width: `${Math.min(100, goal.overallProgress)}%` }}
+                style={{ width: `${Math.min(100, goal.currentPeriodTarget > 0 ? (goal.periodProgress / goal.currentPeriodTarget) * 100 : 0)}%` }}
               />
             </div>
+            {goal.periodProgress < goal.currentPeriodTarget && (
+              <p className="text-[10px] text-amber-600 dark:text-amber-400">
+                {Math.round((goal.currentPeriodTarget - goal.periodProgress) * 10) / 10} {goal.unit} to go
+              </p>
+            )}
           </div>
         ) : (
           <div className="space-y-3 mb-4 p-3 bg-white/60 dark:bg-black/20 rounded-xl backdrop-blur-sm">
