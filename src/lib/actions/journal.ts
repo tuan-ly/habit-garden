@@ -28,7 +28,7 @@ export interface JournalEntry {
   id: string
   date: string
   type: 'activity' | 'rest_day' | 'reflection'
-  activityType?: 'watering' | 'progress' | 'rest_day' | 'reflection'
+  activityType?: 'watering' | 'completed' | 'progress' | 'rest_day' | 'reflection'
   notes: string | null
   value?: number | null
   xpEarned?: number

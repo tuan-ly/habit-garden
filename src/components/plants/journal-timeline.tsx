@@ -16,6 +16,7 @@ import {
   Trophy,
   BookOpen,
   Zap,
+  CheckCircle2,
 } from 'lucide-react'
 import type { JournalEntry } from '@/lib/actions/journal'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -164,6 +165,14 @@ function getEntryStyle(entry: JournalEntry) {
     }
   }
 
+  if (entry.activityType === 'completed') {
+    return {
+      icon: <CheckCircle2 className="h-4 w-4 text-green-500" />,
+      iconBg: 'bg-green-100 dark:bg-green-900/50',
+      iconColor: 'text-green-500',
+    }
+  }
+
   if (entry.activityType === 'progress') {
     return {
       icon: <TrendingUp className="h-4 w-4 text-indigo-500" />,
@@ -180,7 +189,7 @@ function getEntryStyle(entry: JournalEntry) {
     }
   }
 
-  // Default: watering
+  // Default: watering (just checking in)
   return {
     icon: <Droplets className="h-4 w-4 text-emerald-500" />,
     iconBg: 'bg-emerald-100 dark:bg-emerald-900/50',
@@ -189,7 +198,8 @@ function getEntryStyle(entry: JournalEntry) {
 }
 
 function getNoNoteMessage(entry: JournalEntry): string {
-  if (entry.type === 'rest_day') return 'Took a rest day'
+  if (entry.type === 'rest_day' || entry.activityType === 'rest_day') return 'Took a rest day'
+  if (entry.activityType === 'completed') return 'Did it today!'
   if (entry.activityType === 'progress') return 'Progress logged'
   return 'Showed up today'
 }
