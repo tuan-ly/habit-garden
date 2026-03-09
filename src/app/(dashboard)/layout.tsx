@@ -21,15 +21,11 @@ export default async function DashboardLayout({
     redirect('/login')
   }
 
-  // Fetch initial mood for the provider
-  const initialMood = await getTodayMood()
-
-  // Fetch user's timezone and subscription tier for auto-sync
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('timezone, subscription_tier')
-    .eq('id', user.id)
-    .single()
+  // Fetch mood and profile in parallel (both depend on auth, not each other)
+  const [initialMood, { data: profile }] = await Promise.all([
+    getTodayMood(),
+    supabase.from('profiles').select('timezone, subscription_tier').eq('id', user.id).single()
+  ])
   const userTimezone = profile?.timezone ?? null
   const initialTier = (profile?.subscription_tier as 'free' | 'pro' | 'premium') ?? 'free'
 

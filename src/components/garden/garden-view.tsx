@@ -358,15 +358,6 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
         onOpenChange={setAddDialogOpen}
       />
 
-      {/* Plant detail sheet for list view */}
-      {viewMode === 'list' && (
-        <PlantDetailSheet
-          plant={selectedPlant}
-          open={sheetOpen}
-          onOpenChange={setSheetOpen}
-        />
-      )}
-
       {/* Welcome back modal */}
       <WelcomeBackModal
         open={welcomeBackOpen}

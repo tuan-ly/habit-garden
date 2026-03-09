@@ -8,7 +8,7 @@ import { MoistureBar } from './moisture-bar'
 import { GrowthProgress } from './growth-progress'
 import { PlantVisual, StreakFire, XpPopup } from './plant-visual'
 import { usePlants } from '@/lib/context'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import { cn } from '@/lib/utils'
 import { getGoalForPlant, type GoalWithStats } from '@/lib/actions/goals'
 import { GoalProgressRing, GoalModeBadge } from '@/components/goals'
@@ -36,7 +36,7 @@ interface PlantCardProps {
   weather?: WeatherType | null
 }
 
-export function PlantCard({ plant: initialPlant, onClick, weather }: PlantCardProps) {
+export const PlantCard = memo(function PlantCard({ plant: initialPlant, onClick, weather }: PlantCardProps) {
   // Get the latest plant data from context (with optimistic updates)
   const { plants, waterPlant } = usePlants()
   const plant = plants.find(p => p.id === initialPlant.id) || initialPlant
@@ -218,4 +218,4 @@ export function PlantCard({ plant: initialPlant, onClick, weather }: PlantCardPr
       </CardContent>
     </Card>
   )
-}
+})
