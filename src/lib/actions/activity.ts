@@ -170,8 +170,25 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
   totalXp = calculateWeatherXp(totalXp, weather.type)
 
   // Welcome back bonus (one-time on return after 3+ days absence)
+  // Validated server-side: check last activity date in DB, ignore client flag
   if (dto.is_welcome_back) {
-    totalXp += WELCOME_BACK_BONUS
+    const { data: lastActivity } = await supabase
+      .from('activity_logs')
+      .select('logged_date')
+      .eq('user_id', user.id)
+      .lt('logged_date', today)
+      .order('logged_date', { ascending: false })
+      .limit(1)
+      .single()
+
+    if (lastActivity) {
+      const prev = new Date(lastActivity.logged_date)
+      const now = new Date(today)
+      const daysSince = Math.floor((now.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24))
+      if (daysSince >= 3) {
+        totalXp += WELCOME_BACK_BONUS
+      }
+    }
   }
 
   // Easy Mode bonus: +20% XP for first 30 days

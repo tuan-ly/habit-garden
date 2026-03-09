@@ -23,6 +23,7 @@ import { useDevOverride, useDevDebug } from '@/components/dev/dev-debug-context'
 import { toast } from 'sonner'
 import { TierBadge } from '@/components/ui/tier-badge'
 import { SlotIndicator } from '@/components/garden/slot-indicator'
+import { Switch } from '@/components/ui/switch'
 import {
   isTierUnlocked,
   getTierInfo,
@@ -446,21 +447,12 @@ export function AddPlantDialog({
                       <div className="text-xs text-muted-foreground">Start with the 2-minute version</div>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={easyMode}
-                    onClick={() => setEasyMode(!easyMode)}
-                    className={cn(
-                      "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                      easyMode ? "bg-emerald-500" : "bg-input"
-                    )}
-                  >
-                    <span className={cn(
-                      "inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm",
-                      easyMode ? "translate-x-6" : "translate-x-1"
-                    )} />
-                  </button>
+                  <Switch
+                    id="easy-mode"
+                    checked={easyMode}
+                    onCheckedChange={setEasyMode}
+                    className="data-[state=checked]:bg-emerald-500"
+                  />
                 </div>
 
                 {/* XP bonus callout - always visible */}

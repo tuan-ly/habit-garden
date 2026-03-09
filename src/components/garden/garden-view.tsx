@@ -179,15 +179,6 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
           open={addDialogOpen}
           onOpenChange={setAddDialogOpen}
         />
-
-        {/* Welcome back modal */}
-        <WelcomeBackModal
-          open={welcomeBackOpen}
-          onOpenChange={setWelcomeBackOpen}
-          daysMissed={welcomeBackDays}
-          sleepingPlantCount={sleepingPlantCount}
-          onStartWatering={() => setWelcomeBackOpen(false)}
-        />
       </div>
     )
   }
@@ -382,7 +373,10 @@ export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
         onOpenChange={setWelcomeBackOpen}
         daysMissed={welcomeBackDays}
         sleepingPlantCount={sleepingPlantCount}
-        onStartWatering={() => setWelcomeBackOpen(false)}
+        onStartWatering={() => {
+          setWelcomeBackOpen(false)
+          handleViewModeChange('garden')
+        }}
       />
     </div>
   )

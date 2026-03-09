@@ -20,7 +20,7 @@ function getEmoji(daysMissed: number): string {
   if (daysMissed >= 31) return '🌿'
   if (daysMissed >= 15) return '✨'
   if (daysMissed >= 8) return '🌙'
-  return '🌙'
+  return '💧'
 }
 
 function getSubtext(daysMissed: number): string {

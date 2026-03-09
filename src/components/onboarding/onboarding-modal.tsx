@@ -154,11 +154,6 @@ function ScreenHowItWorks({ onNext, onSkip }: { onNext: () => void; onSkip: () =
               <span className="text-[11px] text-slate-400 dark:text-slate-500 leading-tight">
                 {step.detail}
               </span>
-
-              {/* Arrow connector (not after last) */}
-              {i < steps.length - 1 && (
-                <div className="absolute" style={{ display: "none" }} />
-              )}
             </div>
           ))}
         </div>
