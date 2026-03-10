@@ -157,6 +157,9 @@ export interface Plant {
   days_this_week: number // Rhythm tracking
   days_this_month: number
   consistency_percentage: number
+  // Easy Mode (2-Minute Rule)
+  easy_mode?: boolean          // Whether 2-minute rule is enabled
+  tiny_seed?: string | null    // The tiny habit description (e.g., "Read 1 page")
   created_at: string
   updated_at: string
 }
@@ -335,6 +338,9 @@ export interface CreatePlantDto {
   /** Optional grid position - if not provided, will be auto-assigned */
   grid_row?: number
   grid_col?: number
+  /** Easy Mode (2-Minute Rule) */
+  easy_mode?: boolean
+  tiny_seed?: string | null
 }
 
 export interface UpdatePlantDto {

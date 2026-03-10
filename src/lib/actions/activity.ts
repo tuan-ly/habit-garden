@@ -25,7 +25,7 @@ import type {
 import { calculateNoteBonus, checkLevelUp, getLevelFromXp } from '@/lib/xp-system'
 import { getTodayWeather, calculateWeatherXp } from '@/lib/weather-system'
 import { calculateRhythm } from '@/lib/plant-status'
-import { XP_VALUES, isMorningTime } from '@/lib/xp-constants'
+import { XP_VALUES, WELCOME_BACK_BONUS, isMorningTime, EASY_MODE_BONUS_PERCENT, EASY_MODE_BONUS_DAYS } from '@/lib/xp-constants'
 import { checkAndUnlockAchievements } from './plants'
 
 // =====================================================
@@ -39,6 +39,8 @@ export interface LogActivityDto {
   /** Required for 'progress' type */
   value?: number
   notes?: string
+  /** One-time bonus for first watering after 3+ days absence */
+  is_welcome_back?: boolean
 }
 
 export interface LogActivityResult {
@@ -91,7 +93,7 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
     .select(`
       *,
       plant_type:plant_types(*),
-      goals(id, season_status, goal_mode, current_value, days_active)
+      goals(id, season_status, goal_mode, current_value, days_active, started_at, target_value, weekly_targets)
     `)
     .eq('id', dto.plant_id)
     .eq('user_id', user.id)
@@ -167,6 +169,40 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
   const weather = getTodayWeather()
   totalXp = calculateWeatherXp(totalXp, weather.type)
 
+  // Welcome back bonus (one-time on return after 3+ days absence)
+  // Validated server-side: check last activity date in DB, ignore client flag
+  if (dto.is_welcome_back) {
+    const { data: lastActivity } = await supabase
+      .from('activity_logs')
+      .select('logged_date')
+      .eq('user_id', user.id)
+      .lt('logged_date', today)
+      .order('logged_date', { ascending: false })
+      .limit(1)
+      .single()
+
+    if (lastActivity) {
+      const prev = new Date(lastActivity.logged_date)
+      const now = new Date(today)
+      const daysSince = Math.floor((now.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24))
+      if (daysSince >= 3) {
+        totalXp += WELCOME_BACK_BONUS
+      }
+    }
+  }
+
+  // Easy Mode bonus: +20% XP for first 30 days
+  if (plant.easy_mode && totalXp > 0) {
+    const plantStart = plant.started_at || plant.created_at
+    const plantAgeInDays = Math.floor(
+      (Date.now() - new Date(plantStart).getTime()) / (1000 * 60 * 60 * 24)
+    )
+    if (plantAgeInDays <= EASY_MODE_BONUS_DAYS) {
+      const bonus = Math.round(totalXp * EASY_MODE_BONUS_PERCENT)
+      totalXp += bonus
+    }
+  }
+
   // =====================================================
   // Update Goal Value (for 'progress' type only)
   // =====================================================
@@ -179,6 +215,14 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
       newGoalValue = Math.max(Number(activeGoal.current_value), dto.value)
     }
 
+    // Calculate week number for goal log
+    const startDate = new Date(activeGoal.started_at || today)
+    const daysSinceStart = Math.floor((Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+    const weekNumber = Math.floor(daysSinceStart / 7) + 1
+    const weeklyTargets = (activeGoal.weekly_targets as number[]) || []
+    const weeklyTarget = weeklyTargets[Math.min(weekNumber - 1, weeklyTargets.length - 1)] || activeGoal.target_value
+    const exceededTarget = dto.value >= weeklyTarget
+
     // Update goal
     await supabase
       .from('goals')
@@ -188,6 +232,22 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
         updated_at: new Date().toISOString(),
       })
       .eq('id', activeGoal.id)
+
+    // Also insert into goal_logs so periodProgress is tracked correctly
+    await supabase
+      .from('goal_logs')
+      .insert({
+        goal_id: activeGoal.id,
+        plant_id: dto.plant_id,
+        user_id: user.id,
+        value: dto.value,
+        logged_date: today,
+        notes: dto.notes || null,
+        week_number: weekNumber,
+        weekly_target: weeklyTarget,
+        is_personal_record: isPersonalRecord,
+        exceeded_target: exceededTarget,
+      })
   }
 
   // =====================================================

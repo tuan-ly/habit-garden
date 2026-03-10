@@ -142,6 +142,7 @@ export function GentleWateringModal({
       setMode('choose')
       setNotes('')
       setLogValue('')
+      setIsLoading(false)
     }
   }, [open])
 
@@ -156,16 +157,14 @@ export function GentleWateringModal({
     if (isLoading || !plant) return
     setIsLoading(true)
 
-    // If external onWater callback is provided, trigger handler first then close modal
-    // This ensures celebration renders before modal close animation starts
+    // If external onWater callback is provided, fire-and-forget then close modal
+    // Parent handles optimistic updates + server sync independently
     if (onWater) {
-      // Fire the handler first - this sets celebration state in parent
-      // Pass totalXp (watering XP) calculated by modal
-      onWater(notes.trim() || undefined, totalXp).finally(() => {
-        setIsLoading(false)
-      })
+      // Fire the handler (non-blocking) - sets celebration + optimistic state in parent
+      onWater(notes.trim() || undefined, totalXp)
+      // Reset loading immediately - parent owns the async flow
+      setIsLoading(false)
       // Small delay to ensure celebration renders before modal starts closing
-      // This fixes mobile issue where celebration wasn't visible
       setTimeout(() => onOpenChange(false), 100)
       return
     }
@@ -194,16 +193,14 @@ export function GentleWateringModal({
 
     const value = logValue.trim() ? parseFloat(logValue) : undefined
 
-    // If external callback is provided, trigger handler first then close modal
-    // This ensures celebration renders before modal close animation starts
+    // If external callback is provided, fire-and-forget then close modal
+    // Parent handles optimistic updates + server sync independently
     if (onLogAndWater) {
-      // Fire the handler first - this sets celebration state in parent
-      // Pass logXp (progress logging XP) calculated by modal
-      onLogAndWater(value, notes.trim() || undefined, logXp).finally(() => {
-        setIsLoading(false)
-      })
+      // Fire the handler (non-blocking) - sets celebration + optimistic state in parent
+      onLogAndWater(value, notes.trim() || undefined, logXp)
+      // Reset loading immediately - parent owns the async flow
+      setIsLoading(false)
       // Small delay to ensure celebration renders before modal starts closing
-      // This fixes mobile issue where celebration wasn't visible
       setTimeout(() => onOpenChange(false), 100)
       return
     }
@@ -454,6 +451,17 @@ export function GentleWateringModal({
           {/* MODE: Choose Action */}
           {mode === 'choose' && (
             <div className="space-y-3">
+              {/* Tiny Seed Reminder - only if easy mode is on and has tiny_seed text */}
+              {plant.easy_mode && plant.tiny_seed && (
+                <div className="flex items-start gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/50 px-3 py-2">
+                  <span className="text-base mt-0.5">🌱</span>
+                  <div>
+                    <div className="text-xs font-medium text-emerald-700 dark:text-emerald-400">Easy Mode reminder</div>
+                    <div className="text-xs text-emerald-600 dark:text-emerald-500">&ldquo;{plant.tiny_seed}&rdquo;</div>
+                  </div>
+                </div>
+              )}
+
               {/* I Did It  - Primary */}
               <Button
                 onClick={() => setMode('log')}
