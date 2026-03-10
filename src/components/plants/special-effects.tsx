@@ -96,6 +96,7 @@ export function SpecialEffectRenderer({
     if (!config?.particleEmoji || !isActive) return
 
     const interval = setInterval(() => {
+      if (document.hidden) return
       const count = config.particleCount || 1
       const newParticles = Array.from({ length: count }, (_, i) => ({
         id: Date.now() + i,
@@ -103,8 +104,8 @@ export function SpecialEffectRenderer({
         y: Math.random() * 30, // 0-30%
       }))
 
-      setParticles((prev) => [...prev.slice(-(config.particleCount || 3) * 2), ...newParticles])
-    }, 3000)
+      setParticles((prev) => [...prev.slice(-4), ...newParticles])
+    }, 5000)
 
     return () => clearInterval(interval)
   }, [config, isActive])
@@ -170,14 +171,15 @@ export function CherryBlossomEffect({ active, intensity = 'medium' }: CherryBlos
     }
 
     const interval = setInterval(() => {
+      if (document.hidden) return
       const newPetals = Array.from({ length: count }, (_, i) => ({
         id: Date.now() + i,
         x: Math.random() * 100,
         delay: Math.random() * 1000,
         size: Math.random() * 0.5 + 0.5, // 0.5-1x size
       }))
-      setPetals((prev) => [...prev.slice(-count * 3), ...newPetals])
-    }, 2500)
+      setPetals((prev) => [...prev.slice(-count * 2), ...newPetals])
+    }, 4000)
 
     return () => clearInterval(interval)
   }, [active, count])
@@ -245,8 +247,9 @@ export function LotusRipple({ active }: LotusRippleProps) {
     if (!active) return
 
     const interval = setInterval(() => {
-      setRipples((prev) => [...prev.slice(-2), Date.now()])
-    }, 2000)
+      if (document.hidden) return
+      setRipples((prev) => [...prev.slice(-1), Date.now()])
+    }, 4000)
 
     return () => clearInterval(interval)
   }, [active])
@@ -299,12 +302,13 @@ export function MoneyTreeEffect({ active, onCoinCollect }: MoneyTreeEffectProps)
     if (!active) return
 
     const interval = setInterval(() => {
+      if (document.hidden) return
       setCoins((prev) => [
         ...prev.slice(-3),
         { id: Date.now(), x: Math.random() * 60 + 20 },
       ])
       onCoinCollect?.()
-    }, 4000)
+    }, 6000)
 
     return () => clearInterval(interval)
   }, [active, onCoinCollect])

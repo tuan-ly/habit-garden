@@ -28,7 +28,7 @@ export function WeatherEffects({ weather, className, contained, breathingValue =
             setRainDrops([]);
             return;
         }
-        const count = weather === 'stormy' ? 80 : 30;
+        const count = weather === 'stormy' ? 40 : 20;
         const drops = Array.from({ length: count }).map((_, i) => ({
             id: i,
             left: `${Math.random() * 100}%`,
@@ -83,6 +83,7 @@ export function WeatherEffects({ weather, className, contained, breathingValue =
         <div className={cn(
             contained ? "absolute" : "fixed",
             "inset-0 pointer-events-none z-20 overflow-hidden",
+            "[contain:strict]",
             className
         )}>
             {/* Rain drops animation */}
@@ -97,6 +98,7 @@ export function WeatherEffects({ weather, className, contained, breathingValue =
                         left: drop.left,
                         animationDelay: drop.delay,
                         animationDuration: drop.duration,
+                        willChange: 'transform',
                         opacity: breathingValue > 0 ? 0.3 + breathingValue * 0.7 : undefined,
                     }}
                 />

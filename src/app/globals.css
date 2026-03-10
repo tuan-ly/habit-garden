@@ -183,12 +183,12 @@
   0%,
   100% {
     transform: scale(0.95);
-    filter: brightness(1);
+    opacity: 0.9;
   }
 
   50% {
-    transform: scale(1);
-    filter: brightness(1.1);
+    transform: scale(1.05);
+    opacity: 1;
   }
 }
 
@@ -198,12 +198,12 @@
   0%,
   100% {
     transform: scale(1);
-    filter: drop-shadow(0 0 0 transparent);
+    opacity: 1;
   }
 
   50% {
     transform: scale(1.02);
-    filter: drop-shadow(0 2px 8px rgba(34, 197, 94, 0.3));
+    opacity: 0.9;
   }
 }
 
@@ -214,13 +214,11 @@
   100% {
     transform: rotate(-5deg) scale(0.95);
     opacity: 0.7;
-    filter: saturate(0.5);
   }
 
   50% {
     transform: rotate(-8deg) scale(0.93);
     opacity: 0.6;
-    filter: saturate(0.4);
   }
 }
 
@@ -282,7 +280,7 @@
 
   50% {
     transform: scale(1.2);
-    filter: brightness(1.3);
+    opacity: 1;
   }
 
   100% {
@@ -448,12 +446,10 @@
   0%,
   100% {
     transform: rotate(-5deg);
-    filter: brightness(1);
   }
 
   50% {
     transform: rotate(5deg);
-    filter: brightness(1.15);
   }
 }
 
@@ -483,11 +479,13 @@
 
   0%,
   100% {
-    filter: drop-shadow(0 0 0 transparent);
+    transform: scale(1);
+    opacity: 1;
   }
 
   50% {
-    filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.4));
+    transform: scale(1.02);
+    opacity: 0.95;
   }
 }
 
@@ -517,12 +515,12 @@
   0%,
   100% {
     transform: scale(1);
-    filter: hue-rotate(0deg);
+    opacity: 0.8;
   }
 
   50% {
-    transform: scale(1.05);
-    filter: hue-rotate(10deg);
+    transform: scale(1.1);
+    opacity: 1;
   }
 }
 
@@ -554,19 +552,23 @@
 
   0%,
   100% {
-    filter: brightness(1);
+    transform: scale(1);
+    opacity: 1;
   }
 
   25% {
-    filter: brightness(1.2);
+    transform: scale(1.02);
+    opacity: 0.95;
   }
 
   50% {
-    filter: brightness(1);
+    transform: scale(1);
+    opacity: 1;
   }
 
   75% {
-    filter: brightness(1.15);
+    transform: scale(1.01);
+    opacity: 0.97;
   }
 }
 
@@ -583,11 +585,11 @@
 
   0%,
   100% {
-    filter: brightness(1.05) saturate(1.1);
+    opacity: 0.95;
   }
 
   50% {
-    filter: brightness(1.15) saturate(1.2);
+    opacity: 1;
   }
 }
 
@@ -600,11 +602,11 @@
 
   0%,
   100% {
-    filter: brightness(0.95) contrast(1.05);
+    opacity: 0.95;
   }
 
   50% {
-    filter: brightness(1) contrast(1.1);
+    opacity: 1;
   }
 }
 
@@ -636,11 +638,15 @@
 /* Rainbow - color shift */
 @keyframes rainbow-shift {
   0% {
-    filter: hue-rotate(0deg) brightness(1.1);
+    opacity: 0.8;
+  }
+
+  50% {
+    opacity: 1;
   }
 
   100% {
-    filter: hue-rotate(360deg) brightness(1.1);
+    opacity: 0.8;
   }
 }
 
@@ -683,7 +689,6 @@
   0% {
     transform: scale(0.8);
     opacity: 0;
-    filter: brightness(2);
   }
 
   30% {
@@ -693,7 +698,7 @@
 
   100% {
     transform: scale(1);
-    filter: brightness(1);
+    opacity: 1;
   }
 }
 
@@ -722,12 +727,12 @@
   0%,
   100% {
     transform: scale(1) translateY(0);
-    filter: brightness(1);
+    opacity: 0.9;
   }
 
   50% {
     transform: scale(1.1) translateY(-2px);
-    filter: brightness(1.2);
+    opacity: 1;
   }
 }
 
@@ -785,13 +790,13 @@
 /* Sun glow pulse animation */
 @keyframes sun-glow {
   0%, 100% {
-    filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.5));
     transform: scale(1);
+    opacity: 0.8;
   }
 
   50% {
-    filter: drop-shadow(0 0 35px rgba(251, 191, 36, 0.7));
-    transform: scale(1.05);
+    transform: scale(1.1);
+    opacity: 1;
   }
 }
 
@@ -946,14 +951,15 @@
 
 /* Thriving plant enhancement - GPU composited */
 .plant-thriving {
-  filter: brightness(1.05) saturate(1.1);
-  will-change: filter;
+  opacity: 0.95;
+  will-change: transform;
 }
 
 /* Mature plant special glow - GPU composited */
 .plant-mature-glow {
-  filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.5));
-  will-change: filter;
+  /* Use transform + opacity instead of filter for GPU performance */
+  animation: mature-breathe 3s ease-in-out infinite;
+  will-change: transform;
 }
 
 /* Shimmer effect for progress bars */
@@ -1972,10 +1978,12 @@
 /* Pulse glow for highlighted plants (needs action) */
 @keyframes pulse-glow {
   0%, 100% {
-    filter: brightness(1) drop-shadow(0 0 0 transparent);
+    transform: scale(1);
+    opacity: 0.8;
   }
   50% {
-    filter: brightness(1.1) drop-shadow(0 0 12px rgba(251, 191, 36, 0.6));
+    transform: scale(1.05);
+    opacity: 1;
   }
 }
 
@@ -2046,6 +2054,6 @@
 
   .plant-thriving,
   .plant-mature-glow {
-    filter: none;
+    animation: none;
   }
 }

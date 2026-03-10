@@ -4,6 +4,9 @@ import { useRef, useEffect, memo } from 'react'
 import type { WeatherType } from '@/types/database'
 import type { TimeOfDay } from './themes'
 
+// Fix 2: Target 30fps instead of unlimited 60fps
+const FRAME_INTERVAL = 1000 / 30
+
 interface AmbientParticlesCanvasProps {
     weather?: WeatherType | null
     timeOfDay?: TimeOfDay
@@ -71,8 +74,8 @@ function generateParticles(
             maxLife: Infinity,
         })
 
-        // Pollen (5 particles)
-        for (let i = 0; i < 5; i++) {
+        // Pollen (reduced from 5 to 4 particles)
+        for (let i = 0; i < 4; i++) {
             particles.push({
                 type: 'pollen',
                 x: rand() * width,
@@ -112,9 +115,9 @@ function generateParticles(
         }
     }
 
-    // Night: fireflies
+    // Night: fireflies (reduced from 8 to 6)
     if (timeOfDay === 'night') {
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < 6; i++) {
             particles.push({
                 type: 'firefly',
                 x: rand() * width,
@@ -157,6 +160,62 @@ function generateParticles(
     return particles
 }
 
+// Fix 1: Pre-create cached gradient textures on an offscreen canvas.
+// Each cache entry is keyed by particle type + size so we reuse across frames.
+function createGradientCache(size: number): { pollen: HTMLCanvasElement; firefly: HTMLCanvasElement } {
+    // Pollen gradient
+    const pollenSize = size * 2
+    const pollenCanvas = document.createElement('canvas')
+    pollenCanvas.width = pollenSize * 2 + 2
+    pollenCanvas.height = pollenSize * 2 + 2
+    const pollenCtx = pollenCanvas.getContext('2d')!
+    const pollenGrad = pollenCtx.createRadialGradient(
+        pollenCanvas.width / 2, pollenCanvas.height / 2, 0,
+        pollenCanvas.width / 2, pollenCanvas.height / 2, pollenSize
+    )
+    pollenGrad.addColorStop(0, 'rgba(255,235,59,0.8)')
+    pollenGrad.addColorStop(1, 'transparent')
+    pollenCtx.fillStyle = pollenGrad
+    pollenCtx.beginPath()
+    pollenCtx.arc(pollenCanvas.width / 2, pollenCanvas.height / 2, pollenSize, 0, Math.PI * 2)
+    pollenCtx.fill()
+
+    // Firefly gradient (glow radius = size * 4)
+    const glowRadius = size * 4
+    const fireflyCanvas = document.createElement('canvas')
+    fireflyCanvas.width = glowRadius * 2 + 2
+    fireflyCanvas.height = glowRadius * 2 + 2
+    const fireflyCtx = fireflyCanvas.getContext('2d')!
+    const cx = fireflyCanvas.width / 2
+    const cy = fireflyCanvas.height / 2
+    const fireflyGrad = fireflyCtx.createRadialGradient(cx, cy, 0, cx, cy, glowRadius)
+    fireflyGrad.addColorStop(0, 'rgba(255,235,59,1)')
+    fireflyGrad.addColorStop(0.3, 'rgba(255,235,59,0.5)')
+    fireflyGrad.addColorStop(1, 'transparent')
+    fireflyCtx.fillStyle = fireflyGrad
+    fireflyCtx.beginPath()
+    fireflyCtx.arc(cx, cy, glowRadius, 0, Math.PI * 2)
+    fireflyCtx.fill()
+    // White core dot
+    fireflyCtx.fillStyle = '#fff'
+    fireflyCtx.beginPath()
+    fireflyCtx.arc(cx, cy, size * 0.5, 0, Math.PI * 2)
+    fireflyCtx.fill()
+
+    return { pollen: pollenCanvas, firefly: fireflyCanvas }
+}
+
+// Cache map: key = rounded size string, value = offscreen canvases
+const gradientCacheMap = new Map<string, { pollen: HTMLCanvasElement; firefly: HTMLCanvasElement }>()
+
+function getGradientCache(size: number) {
+    const key = size.toFixed(1)
+    if (!gradientCacheMap.has(key)) {
+        gradientCacheMap.set(key, createGradientCache(size))
+    }
+    return gradientCacheMap.get(key)!
+}
+
 function AmbientParticlesCanvasComponent({
     weather,
     timeOfDay = 'day',
@@ -168,6 +227,8 @@ function AmbientParticlesCanvasComponent({
     const particlesRef = useRef<Particle[]>([])
     const rafRef = useRef<number>(0)
     const lastTimeRef = useRef<number>(0)
+    // Fix 2: track last render time for 30fps throttle
+    const lastRenderTimeRef = useRef<number>(0)
 
     // Initialize particles
     useEffect(() => {
@@ -186,6 +247,19 @@ function AmbientParticlesCanvasComponent({
         if (weather === 'stormy') return
 
         const animate = (timestamp: number) => {
+            // Fix 3: skip if tab not visible
+            if (document.hidden) {
+                rafRef.current = requestAnimationFrame(animate)
+                return
+            }
+
+            // Fix 2: throttle to ~30fps
+            if (timestamp - lastRenderTimeRef.current < FRAME_INTERVAL) {
+                rafRef.current = requestAnimationFrame(animate)
+                return
+            }
+            lastRenderTimeRef.current = timestamp
+
             if (!lastTimeRef.current) lastTimeRef.current = timestamp
             const delta = (timestamp - lastTimeRef.current) / 16.67 // normalize to ~60fps
             lastTimeRef.current = timestamp
@@ -215,13 +289,11 @@ function AmbientParticlesCanvasComponent({
                         // Oscillate position
                         const offsetY = Math.sin(p.lifespan * 2 + p.phase) * 3
                         ctx.globalAlpha = p.opacity * (0.5 + 0.5 * Math.sin(p.lifespan * 3 + p.phase))
-                        const gradient = ctx.createRadialGradient(0, offsetY, 0, 0, offsetY, p.size * 2)
-                        gradient.addColorStop(0, 'rgba(255,235,59,0.8)')
-                        gradient.addColorStop(1, 'transparent')
-                        ctx.fillStyle = gradient
-                        ctx.beginPath()
-                        ctx.arc(0, offsetY, p.size * 2, 0, Math.PI * 2)
-                        ctx.fill()
+                        // Fix 1: draw from cached gradient canvas instead of createRadialGradient
+                        const pollenCache = getGradientCache(p.size)
+                        const pw = pollenCache.pollen.width
+                        const ph = pollenCache.pollen.height
+                        ctx.drawImage(pollenCache.pollen, -pw / 2, offsetY - ph / 2)
                         break
                     }
 
@@ -230,21 +302,11 @@ function AmbientParticlesCanvasComponent({
                         const glowIntensity = Math.sin(p.lifespan * 4 + p.phase) * 0.5 + 0.5
                         p.opacity = glowIntensity * 0.9
                         ctx.globalAlpha = p.opacity
-
-                        const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, p.size * 4)
-                        gradient.addColorStop(0, 'rgba(255,235,59,1)')
-                        gradient.addColorStop(0.3, 'rgba(255,235,59,0.5)')
-                        gradient.addColorStop(1, 'transparent')
-                        ctx.fillStyle = gradient
-                        ctx.beginPath()
-                        ctx.arc(0, 0, p.size * 4, 0, Math.PI * 2)
-                        ctx.fill()
-
-                        // Core
-                        ctx.fillStyle = '#fff'
-                        ctx.beginPath()
-                        ctx.arc(0, 0, p.size * 0.5, 0, Math.PI * 2)
-                        ctx.fill()
+                        // Fix 1: draw from cached gradient canvas (includes glow + white core)
+                        const fireflyCache = getGradientCache(p.size)
+                        const fw = fireflyCache.firefly.width
+                        const fh = fireflyCache.firefly.height
+                        ctx.drawImage(fireflyCache.firefly, -fw / 2, -fh / 2)
                         break
                     }
 
@@ -320,8 +382,19 @@ function AmbientParticlesCanvasComponent({
 
         rafRef.current = requestAnimationFrame(animate)
 
+        // Fix 3: pause/resume on visibility change
+        const handleVisibilityChange = () => {
+            if (!document.hidden) {
+                // Reset timing so delta doesn't spike after a long hidden period
+                lastTimeRef.current = 0
+                lastRenderTimeRef.current = 0
+            }
+        }
+        document.addEventListener('visibilitychange', handleVisibilityChange)
+
         return () => {
             cancelAnimationFrame(rafRef.current)
+            document.removeEventListener('visibilitychange', handleVisibilityChange)
         }
     }, [weather, timeOfDay, width, height])
 

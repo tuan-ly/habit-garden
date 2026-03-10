@@ -120,7 +120,7 @@ export function GardenSky({ weather, className, contained, timeOfDay: forcedTime
 
   // Generate clouds and stars
   const clouds = useMemo(() => generateClouds(6), [])
-  const stars = useMemo(() => generateStars(40), [])
+  const stars = useMemo(() => generateStars(20), [])
 
   // Create gradient string
   const gradientStyle = useMemo(() => {
@@ -237,6 +237,7 @@ export function GardenSky({ weather, className, contained, timeOfDay: forcedTime
               : cloud.opacity * 0.5,
             animation: `cloud-drift-enhanced ${cloud.speed}s linear infinite`,
             animationDelay: `${-cloud.speed * (i / clouds.length)}s`,
+            willChange: 'transform',
           }}
         >
           <svg width="120" height="60" viewBox="0 0 120 60" fill="none">
@@ -295,12 +296,12 @@ export function GardenSky({ weather, className, contained, timeOfDay: forcedTime
       </div>
 
       {/* Decorative trees on sides - with better styling */}
-      <div className="absolute bottom-28 sm:bottom-32 left-2 text-2xl opacity-30 drop-shadow-md">🌲</div>
-      <div className="absolute bottom-28 sm:bottom-32 left-10 sm:left-14 text-3xl opacity-40 drop-shadow-md">🌳</div>
-      <div className="absolute bottom-36 sm:bottom-40 left-6 text-xl opacity-25 drop-shadow-md">🌲</div>
-      <div className="absolute bottom-28 sm:bottom-32 right-2 text-2xl opacity-30 drop-shadow-md">🌲</div>
-      <div className="absolute bottom-28 sm:bottom-32 right-10 sm:right-14 text-3xl opacity-40 drop-shadow-md">🌳</div>
-      <div className="absolute bottom-36 sm:bottom-40 right-6 text-xl opacity-25 drop-shadow-md">🌲</div>
+      <div className="absolute bottom-28 sm:bottom-32 left-2 text-2xl opacity-30">🌲</div>
+      <div className="absolute bottom-28 sm:bottom-32 left-10 sm:left-14 text-3xl opacity-40">🌳</div>
+      <div className="absolute bottom-36 sm:bottom-40 left-6 text-xl opacity-25">🌲</div>
+      <div className="absolute bottom-28 sm:bottom-32 right-2 text-2xl opacity-30">🌲</div>
+      <div className="absolute bottom-28 sm:bottom-32 right-10 sm:right-14 text-3xl opacity-40">🌳</div>
+      <div className="absolute bottom-36 sm:bottom-40 right-6 text-xl opacity-25">🌲</div>
 
       {/* Birds silhouettes for sunny days */}
       {timeOfDay === 'day' && (weather === 'sunny' || !weather) && (
