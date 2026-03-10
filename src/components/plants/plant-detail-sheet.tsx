@@ -153,14 +153,14 @@ export function PlantDetailSheet({
     }
   }, [plant?.id, open])
 
-  // Reset tab when sheet closes
+  // Reset tab when sheet closes or plant changes
   useEffect(() => {
     if (!open) {
       setActiveTab('overview')
-      setJournalData(null)
-      setFullActivityHistory(null)
     }
-  }, [open])
+    setJournalData(null)
+    setFullActivityHistory(null)
+  }, [open, plant?.id])
 
   // Lazy load Journal tab data
   useEffect(() => {
@@ -237,6 +237,8 @@ export function PlantDetailSheet({
       setEarnedXp(result.xpEarned || 0)
       setShowXp(true)
       setTimeout(() => setShowXp(false), 1500)
+      setQuickRhythm(null)
+      setFullActivityHistory(null)
     }
     setTimeout(() => setIsWatering(false), 800)
   }
@@ -260,6 +262,9 @@ export function PlantDetailSheet({
         },
       })
     }
+    // Invalidate cached activity data so Stats/Overview re-fetch fresh data
+    setQuickRhythm(null)
+    setFullActivityHistory(null)
     // Refresh journal data if on journal tab
     if (activeTab === 'journal') {
       const data = await getPlantJournalData(plant.id)
