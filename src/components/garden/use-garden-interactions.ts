@@ -174,7 +174,8 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
         setCelebration(null)
         showWaterErrorToast('Failed to water plant')
       } finally {
-        setTimeout(() => actionCooldown.current.delete(plant.id), 3000)
+        // Short cooldown to prevent double-clicks; optimistic last_watered_at prevents logical dupes
+        setTimeout(() => actionCooldown.current.delete(plant.id), 500)
       }
     },
     [wateringPlant, updatePlant, welcomeBackPending, onWelcomeBackUsed, handleServerResult]
@@ -271,7 +272,8 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
         setCelebration(null)
         showWaterErrorToast('Failed to log progress')
       } finally {
-        setTimeout(() => actionCooldown.current.delete(plant.id), 3000)
+        // Short cooldown to prevent double-clicks; optimistic last_watered_at prevents logical dupes
+        setTimeout(() => actionCooldown.current.delete(plant.id), 500)
       }
     },
     [wateringPlant, isWateredToday, updatePlant, welcomeBackPending, onWelcomeBackUsed, handleServerResult]

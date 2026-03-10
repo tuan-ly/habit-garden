@@ -142,6 +142,7 @@ export function GentleWateringModal({
       setMode('choose')
       setNotes('')
       setLogValue('')
+      setIsLoading(false)
     }
   }, [open])
 
@@ -156,16 +157,14 @@ export function GentleWateringModal({
     if (isLoading || !plant) return
     setIsLoading(true)
 
-    // If external onWater callback is provided, trigger handler first then close modal
-    // This ensures celebration renders before modal close animation starts
+    // If external onWater callback is provided, fire-and-forget then close modal
+    // Parent handles optimistic updates + server sync independently
     if (onWater) {
-      // Fire the handler first - this sets celebration state in parent
-      // Pass totalXp (watering XP) calculated by modal
-      onWater(notes.trim() || undefined, totalXp).finally(() => {
-        setIsLoading(false)
-      })
+      // Fire the handler (non-blocking) - sets celebration + optimistic state in parent
+      onWater(notes.trim() || undefined, totalXp)
+      // Reset loading immediately - parent owns the async flow
+      setIsLoading(false)
       // Small delay to ensure celebration renders before modal starts closing
-      // This fixes mobile issue where celebration wasn't visible
       setTimeout(() => onOpenChange(false), 100)
       return
     }
@@ -194,16 +193,14 @@ export function GentleWateringModal({
 
     const value = logValue.trim() ? parseFloat(logValue) : undefined
 
-    // If external callback is provided, trigger handler first then close modal
-    // This ensures celebration renders before modal close animation starts
+    // If external callback is provided, fire-and-forget then close modal
+    // Parent handles optimistic updates + server sync independently
     if (onLogAndWater) {
-      // Fire the handler first - this sets celebration state in parent
-      // Pass logXp (progress logging XP) calculated by modal
-      onLogAndWater(value, notes.trim() || undefined, logXp).finally(() => {
-        setIsLoading(false)
-      })
+      // Fire the handler (non-blocking) - sets celebration + optimistic state in parent
+      onLogAndWater(value, notes.trim() || undefined, logXp)
+      // Reset loading immediately - parent owns the async flow
+      setIsLoading(false)
       // Small delay to ensure celebration renders before modal starts closing
-      // This fixes mobile issue where celebration wasn't visible
       setTimeout(() => onOpenChange(false), 100)
       return
     }
