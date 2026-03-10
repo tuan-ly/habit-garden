@@ -121,17 +121,35 @@ export function PlantDetailSheet({
   const [isPending, startTransition] = useTransition()
 
   // Load essential data when sheet opens (Overview tab) - parallel requests
+  // Uses plant.goal_mode as instant signal to avoid stale goal flicker
   useEffect(() => {
     if (plant && open) {
-      setIsLoadingGoal(true)
-      Promise.all([
-        getGoalForPlant(plant.id),
-        getPlantActivityHistory(plant.id, 7),
-      ]).then(([g, rhythm]) => {
-        setGoal(g)
-        setQuickRhythm(rhythm)
+      // Immediately clear stale goal to prevent showing old plant's goal
+      setGoal(null)
+      setQuickRhythm(null)
+
+      const hasGoalMode = !!plant.goal_mode
+
+      if (hasGoalMode) {
+        // Plant has a goal - fetch goal data + rhythm in parallel
+        setIsLoadingGoal(true)
+        let cancelled = false
+        Promise.all([
+          getGoalForPlant(plant.id),
+          getPlantActivityHistory(plant.id, 7),
+        ]).then(([g, rhythm]) => {
+          if (!cancelled) {
+            setGoal(g)
+            setQuickRhythm(rhythm)
+            setIsLoadingGoal(false)
+          }
+        })
+        return () => { cancelled = true }
+      } else {
+        // No goal - just fetch rhythm, skip goal query entirely
         setIsLoadingGoal(false)
-      })
+        getPlantActivityHistory(plant.id, 7).then(setQuickRhythm)
+      }
     }
   }, [plant?.id, open])
 
@@ -382,7 +400,19 @@ export function PlantDetailSheet({
                 )}
 
                 {/* Goal Progress (compact) */}
-                {goal && (
+                {isLoadingGoal && hasGoal && (
+                  <div className="rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/30 p-4 space-y-3 ring-1 ring-indigo-100 dark:ring-indigo-900/50 animate-pulse">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-900/50">
+                        <Target className="h-4 w-4 text-indigo-500/40" />
+                      </div>
+                      <div className="h-4 w-24 bg-indigo-200/60 dark:bg-indigo-800/40 rounded" />
+                    </div>
+                    <div className="h-3 w-full bg-indigo-200/40 dark:bg-indigo-800/30 rounded-full" />
+                    <div className="h-3 w-2/3 bg-indigo-200/30 dark:bg-indigo-800/20 rounded mx-auto" />
+                  </div>
+                )}
+                {!isLoadingGoal && goal && (
                   <div className="rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/30 p-4 space-y-3 ring-1 ring-indigo-100 dark:ring-indigo-900/50">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -414,7 +444,7 @@ export function PlantDetailSheet({
 
                 {/* Primary Action Button */}
                 <div className="space-y-2.5">
-                  {hasGoal && goal ? (
+                  {hasGoal && (isLoadingGoal || goal) ? (
                     <Button
                       className={cn(
                         'w-full h-12 text-base font-semibold rounded-xl shadow-lg transition-all',
@@ -424,10 +454,10 @@ export function PlantDetailSheet({
                       size="lg"
                       variant={isWateredToday ? 'secondary' : 'default'}
                       onClick={() => setShowGoalLog(true)}
-                      disabled={isWateredToday}
+                      disabled={isWateredToday || isLoadingGoal}
                     >
                       <Plus className="h-5 w-5 mr-2" />
-                      {isWateredToday ? 'Logged for today' : isSleeping ? 'Wake & Log Progress' : 'Log Progress'}
+                      {isLoadingGoal ? 'Loading...' : isWateredToday ? 'Logged for today' : isSleeping ? 'Wake & Log Progress' : 'Log Progress'}
                     </Button>
                   ) : (
                     <Button
@@ -913,7 +943,7 @@ function HeroHeader({
             </SheetTitle>
             <SheetDescription className="flex items-center justify-center gap-2 mt-1">
               <span className="text-slate-500 dark:text-slate-400">{plant.plant_type.name}</span>
-              {hasGoal && goal && <GoalModeBadge mode={goal.goal_mode} />}
+              {hasGoal && (goal ? <GoalModeBadge mode={goal.goal_mode} /> : <GoalModeBadge mode={plant.goal_mode!} />)}
             </SheetDescription>
           </div>
         </SheetHeader>
