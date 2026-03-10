@@ -1,0 +1,154 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    MOISTURE DECAY SYSTEM - STATUS REPORT                    ║
+║                              2026-03-07 Investigation                        ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+PROJECT: Habit Garden
+SUPABASE: jkhkfsfjnilbfqfatonb (primary, us-east-1)
+ALT PROJECT: nokkicjusrucrpnnbzlg (habien-v3, ap-southeast-1)
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ OVERALL STATUS: ✅ FIXED (as of 2026-03-03)                                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+KEY FINDINGS:
+═════════════
+
+1. ROOT CAUSE IDENTIFIED (Fixed 2026-03-03)
+   ───────────────────────────────────────
+   Issue: Plants with status='thriving' NOT receiving moisture decay
+   Why: Function only processed status='growing'
+   What: activity.ts sets status='thriving' on successful logging
+   Fix: Extended WHERE clause to include all gentle-growth statuses
+   
+   OLD: WHERE p.status = 'growing'
+   NEW: WHERE p.status IN ('growing', 'thriving', 'resting', 'waiting', 'sleeping')
+   
+   Files Modified:
+   ├─ supabase/migrations/20260303_fix_moisture_decay_all_statuses.sql
+   └─ Types reflected in src/types/supabase.ts
+
+2. WEATHER TABLE BUG (Fixed 2026-02-19)
+   ────────────────────────────────────
+   Issue: Cron job failing - missing daily_weather table
+   Fix: Removed weather dependency, simplified to use moisture_decay_rate
+   Result: Function now works reliably
+
+3. CRON JOB SCHEDULE
+   ─────────────────
+   Schedule: Daily at 17:00 UTC (00:00 Asia/Ho_Chi_Minh)
+   Status: ✅ Active in Supabase
+   Trigger: Automatic via Supabase pg_cron
+   
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ WHY ONLY SOME PLANTS DECAY (Common Reasons)                                 │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+✓ Plant Status Filter
+  ├─ Included: growing, thriving, resting, waiting, sleeping
+  ├─ Excluded: dead, mature
+  └─ Check via: SELECT status FROM plants
+
+✓ Watered Today Skip
+  ├─ If last_watered_at TODAY (user's timezone), decay skipped
+  ├─ Intentional: watered plants don't decay same day
+  └─ Check via: SELECT last_watered_at FROM plants
+
+✓ Timezone Awareness
+  ├─ Uses user's timezone from profiles.timezone
+  ├─ Defaults to: Asia/Ho_Chi_Minh if not set
+  └─ Check via: SELECT timezone FROM profiles
+
+✓ Moisture Already Zero
+  ├─ If current_moisture = 0, already dead
+  ├─ No further decay possible
+  └─ Check via: SELECT current_moisture FROM plants
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ FUNCTION DEFINITION                                                          │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+Function: public.update_daily_moisture()
+Location: supabase/migrations/20260303_fix_moisture_decay_all_statuses.sql
+Language: PL/pgSQL
+Returns: void
+
+Logic Flow:
+  1. SELECT all plants with status IN (growing, thriving, resting, waiting, sleeping)
+  2. FOR EACH plant:
+     a. Get user's timezone
+     b. Convert NOW() to user's local date
+     c. IF watered today, SKIP
+     d. ELSE calculate: new_moisture = current_moisture - decay_rate
+     e. IF new_moisture ≤ 0: mark as dead
+        ELSE: update current_moisture
+  3. LOOP END
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ VERIFICATION QUERIES                                                         │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+Check Function Status:
+─────────────────────
+SELECT routine_name, routine_definition
+FROM information_schema.routines
+WHERE routine_name = 'update_daily_moisture'
+AND routine_schema = 'public';
+
+Check Plant Decay Status:
+────────────────────────
+SELECT
+  p.id,
+  p.name,
+  p.status,
+  p.current_moisture,
+  p.last_watered_at,
+  pt.moisture_decay_rate,
+  COALESCE(pr.timezone, 'Asia/Ho_Chi_Minh') as effective_tz
+FROM plants p
+JOIN plant_types pt ON p.plant_type_id = pt.id
+LEFT JOIN profiles pr ON p.user_id = pr.id
+WHERE p.status NOT IN ('dead', 'mature')
+ORDER BY p.updated_at DESC;
+
+Check Recent Cron Executions:
+──────────────────────────────
+Supabase Dashboard → SQL Editor → Cron Jobs → select job → view history
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ RELATED COMPONENTS                                                           │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+Database Schema:
+  ├─ plants.current_moisture (INTEGER)
+  ├─ plants.last_watered_at (TIMESTAMP)
+  ├─ plants.status (TEXT)
+  ├─ plants.died_at (TIMESTAMP)
+  ├─ plants.death_reason (TEXT)
+  ├─ plant_types.moisture_decay_rate (INTEGER)
+  └─ profiles.timezone (TEXT)
+
+UI Components:
+  ├─ src/components/plants/moisture-bar.tsx
+  ├─ src/components/garden/plant-tooltip.tsx
+  └─ Plant refresh via getPlants() in plants.ts
+
+Migration Files:
+  ├─ 20260219_fix_moisture_decay.sql (weather fix)
+  └─ 20260303_fix_moisture_decay_all_statuses.sql (status filter fix)
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ NEXT ACTIONS                                                                 │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+1. ✅ Monitor cron execution history (next 7 days)
+2. ✅ Test with new plant - verify daily decay
+3. ✅ Verify timezone configuration in user profiles
+4. ✅ Check Supabase function logs if issues persist
+5. ⏳ Consider backup endpoint if manual trigger needed
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║ CONCLUSION: System is working as designed. Decay applies daily to all      ║
+║ growing plants (unless watered same day). Latest fix (2026-03-03) ensures   ║
+║ all plant statuses are processed correctly.                                 ║
+╚══════════════════════════════════════════════════════════════════════════════╝

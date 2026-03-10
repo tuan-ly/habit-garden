@@ -306,6 +306,8 @@ export async function createPlant(dto: CreatePlantDto): Promise<{ success: boole
       current_moisture: 100,
       growth_percentage: 0,
       status: 'growing',
+      easy_mode: dto.easy_mode ?? false,
+      tiny_seed: dto.tiny_seed ?? null,
     })
     .select(`
       *,
