@@ -93,7 +93,7 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
     .select(`
       *,
       plant_type:plant_types(*),
-      goals(id, season_status, goal_mode, current_value, days_active)
+      goals(id, season_status, goal_mode, current_value, days_active, started_at, target_value, weekly_targets)
     `)
     .eq('id', dto.plant_id)
     .eq('user_id', user.id)
@@ -215,6 +215,14 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
       newGoalValue = Math.max(Number(activeGoal.current_value), dto.value)
     }
 
+    // Calculate week number for goal log
+    const startDate = new Date(activeGoal.started_at || today)
+    const daysSinceStart = Math.floor((Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+    const weekNumber = Math.floor(daysSinceStart / 7) + 1
+    const weeklyTargets = (activeGoal.weekly_targets as number[]) || []
+    const weeklyTarget = weeklyTargets[Math.min(weekNumber - 1, weeklyTargets.length - 1)] || activeGoal.target_value
+    const exceededTarget = dto.value >= weeklyTarget
+
     // Update goal
     await supabase
       .from('goals')
@@ -224,6 +232,22 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
         updated_at: new Date().toISOString(),
       })
       .eq('id', activeGoal.id)
+
+    // Also insert into goal_logs so periodProgress is tracked correctly
+    await supabase
+      .from('goal_logs')
+      .insert({
+        goal_id: activeGoal.id,
+        plant_id: dto.plant_id,
+        user_id: user.id,
+        value: dto.value,
+        logged_date: today,
+        notes: dto.notes || null,
+        week_number: weekNumber,
+        weekly_target: weeklyTarget,
+        is_personal_record: isPersonalRecord,
+        exceeded_target: exceededTarget,
+      })
   }
 
   // =====================================================
