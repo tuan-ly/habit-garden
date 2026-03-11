@@ -3,6 +3,7 @@
 import { MoodProvider } from '@/lib/context/mood-context'
 import { GardenSettingsProvider } from '@/lib/context/garden-settings-context'
 import { SubscriptionProvider } from '@/lib/context/subscription-context'
+import { InventoryProvider } from '@/lib/context'
 import { DevDebugProvider, DevDebugPanel } from '@/components/dev'
 import { UpgradeModalContainer } from '@/components/game-ui/upgrade-modal-container'
 import type { MoodLevel } from '@/lib/mood-system'
@@ -25,11 +26,13 @@ export function DashboardProviders({
       <SubscriptionProvider initialTier={initialTier}>
         <MoodProvider initialMood={initialMood}>
           <GardenSettingsProvider>
-            {children}
-            {/* Dev Debug Panel - only renders in development */}
-            <DevDebugPanel />
-            {/* Global upgrade modal */}
-            <UpgradeModalContainer />
+            <InventoryProvider>
+              {children}
+              {/* Dev Debug Panel - only renders in development */}
+              <DevDebugPanel />
+              {/* Global upgrade modal */}
+              <UpgradeModalContainer />
+            </InventoryProvider>
           </GardenSettingsProvider>
         </MoodProvider>
       </SubscriptionProvider>

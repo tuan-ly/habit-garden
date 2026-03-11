@@ -8,6 +8,7 @@ import type { Profile } from '@/types/database'
 import { MoodSelector } from '@/components/mood'
 import { useSubscription } from '@/lib/context'
 import { useDevOverride } from '@/components/dev/dev-debug-context'
+import { CoinDisplay } from '@/components/shop/coin-display'
 
 interface GameHudProps {
   profile?: Profile | null
@@ -143,9 +144,10 @@ export function GameHud({ profile }: GameHudProps) {
         </div>
       )}
 
-      {/* Right side: Mood/Weather Selector */}
-      <div className="fixed top-2 right-2 sm:top-3 sm:right-3 z-40 pointer-events-auto">
+      {/* Right side: Mood/Weather Selector + Coin Display */}
+      <div className="fixed top-2 right-2 sm:top-3 sm:right-3 z-40 pointer-events-auto flex flex-col items-end gap-2">
         <MoodSelector />
+        <CoinDisplay />
       </div>
     </>
   )

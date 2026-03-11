@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Flower2, BarChart3, User as UserIcon, TreeDeciduous, Menu, X, Settings, LogOut, Trophy, Sparkles, Crown } from 'lucide-react'
+import { Flower2, BarChart3, User as UserIcon, TreeDeciduous, Menu, X, Settings, LogOut, Trophy, Sparkles, Crown, Hammer, ShoppingBag } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -36,6 +36,22 @@ const navItems: NavItem[] = [
     color: 'from-teal-400 to-cyan-500',
     activeColor: 'bg-teal-500',
     glowColor: 'shadow-teal-500/50'
+  },
+  {
+    title: 'Workshop',
+    url: '/workshop',
+    icon: Hammer,
+    color: 'from-orange-400 to-amber-500',
+    activeColor: 'bg-orange-500',
+    glowColor: 'shadow-orange-500/50'
+  },
+  {
+    title: 'Shop',
+    url: '/shop',
+    icon: ShoppingBag,
+    color: 'from-pink-400 to-rose-500',
+    activeColor: 'bg-pink-500',
+    glowColor: 'shadow-pink-500/50'
   },
   {
     title: 'Stats',
@@ -236,6 +252,34 @@ export function GameNav({ user }: GameNavProps) {
                     <div className="flex-1">
                       <p className="font-semibold">Profile</p>
                       <p className="text-xs text-slate-500">View achievements & stats</p>
+                    </div>
+                  </Link>
+
+                  <Link
+                    href="/workshop"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center shadow-md shadow-orange-500/30 group-hover:scale-110 transition-transform">
+                      <Hammer className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold">Workshop</p>
+                      <p className="text-xs text-slate-500">Craft decorations from materials</p>
+                    </div>
+                  </Link>
+
+                  <Link
+                    href="/shop"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center shadow-md shadow-pink-500/30 group-hover:scale-110 transition-transform">
+                      <ShoppingBag className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold">Shop</p>
+                      <p className="text-xs text-slate-500">Buy decorations with coins</p>
                     </div>
                   </Link>
 

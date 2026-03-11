@@ -71,6 +71,7 @@ export interface Profile {
   xp: number
   level: number
   water_reserves: number
+  coins: number
   timezone: string
   // Journal tracking
   journal_streak: number
@@ -601,4 +602,146 @@ export interface UpdateIdentityDto {
 export interface LinkGoalToIdentityDto {
   goal_id: string
   identity_id: string
+}
+
+// =====================================================
+// Decoration & Crafting System Types
+// =====================================================
+
+export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
+export type DecorationCategory = 'furniture' | 'nature' | 'lighting' | 'path' | 'water' | 'seasonal' | 'special'
+export type InventoryItemType = 'material' | 'decoration'
+export type AcquisitionMethod = 'harvest' | 'craft' | 'purchase' | 'reward' | 'gift'
+export type DecorationRotation = 0 | 90 | 180 | 270
+
+// Material definition (produced by mature plants)
+export interface Material {
+  id: string
+  slug: string
+  name: string
+  description: string | null
+  icon: string
+  image_url: string | null
+  rarity: ItemRarity
+  plant_type_id: string | null
+  created_at: string
+}
+
+// Decoration type definition
+export interface DecorationType {
+  id: string
+  slug: string
+  name: string
+  description: string | null
+  icon: string
+  image_url: string | null
+  grid_size: 1 | 2
+  category: DecorationCategory
+  rarity: ItemRarity
+  unlock_level: number
+  coin_price: number | null
+  subscription_tier: SubscriptionTier
+  is_craftable: boolean
+  created_at: string
+}
+
+// Recipe definition
+export interface Recipe {
+  id: string
+  decoration_type_id: string
+  name: string
+  unlock_level: number
+  craft_time_minutes: number
+  is_active: boolean
+  created_at: string
+}
+
+// Recipe ingredient
+export interface RecipeIngredient {
+  id: string
+  recipe_id: string
+  material_id: string
+  quantity: number
+}
+
+// Full recipe with relations (for UI display)
+export interface RecipeWithDetails extends Recipe {
+  decoration_type: DecorationType
+  ingredients: (RecipeIngredient & { material: Material })[]
+}
+
+// Inventory item (stored materials + decorations)
+export interface InventoryItem {
+  id: string
+  user_id: string
+  item_type: InventoryItemType
+  material_id: string | null
+  decoration_type_id: string | null
+  quantity: number
+  acquired_via: AcquisitionMethod
+  created_at: string
+  updated_at: string
+}
+
+// Inventory item with joined data (for UI)
+export interface InventoryItemWithDetails extends InventoryItem {
+  material?: Material
+  decoration_type?: DecorationType
+}
+
+// Placed decoration (on the garden grid)
+export interface PlacedDecoration {
+  id: string
+  user_id: string
+  decoration_type_id: string
+  grid_row: number
+  grid_col: number
+  grid_size: number
+  rotation: DecorationRotation
+  placed_at: string
+}
+
+// Placed decoration with type info (for rendering)
+export interface PlacedDecorationWithType extends PlacedDecoration {
+  decoration_type: DecorationType
+}
+
+// Coin transaction record
+export interface CoinTransaction {
+  id: string
+  user_id: string
+  amount: number
+  reason: string
+  reference_id: string | null
+  balance_after: number
+  created_at: string
+}
+
+// =====================================================
+// DTOs for Decoration Actions
+// =====================================================
+
+export interface CraftDecorationDto {
+  recipe_id: string
+}
+
+export interface PurchaseDecorationDto {
+  decoration_type_id: string
+}
+
+export interface PlaceDecorationDto {
+  inventory_item_id: string
+  grid_row: number
+  grid_col: number
+  rotation?: DecorationRotation
+}
+
+export interface MoveDecorationDto {
+  placed_decoration_id: string
+  grid_row: number
+  grid_col: number
+}
+
+export interface PickUpDecorationDto {
+  placed_decoration_id: string
 }

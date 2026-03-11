@@ -309,6 +309,52 @@ export function getConflictingPlants(
 }
 
 /**
+ * Build a combined occupied cells map that includes both plants and decorations
+ */
+export function buildOccupiedCellsMapCombined(
+  plants: PlantWithType[],
+  decorations: Array<{ id: string; grid_row: number; grid_col: number; grid_size: number }>
+): {
+  plantMap: Map<string, PlantWithType>
+  decorationMap: Map<string, { id: string; grid_row: number; grid_col: number; grid_size: number }>
+  allOccupied: Set<string>
+} {
+  const plantMap = buildOccupiedCellsMap(plants)
+  const decorationMap = new Map<string, { id: string; grid_row: number; grid_col: number; grid_size: number }>()
+  const allOccupied = new Set<string>([...plantMap.keys()])
+
+  for (const deco of decorations) {
+    const cells = getOccupiedCells({
+      grid_size: deco.grid_size,
+      grid_row: deco.grid_row,
+      grid_col: deco.grid_col,
+    })
+    for (const cell of cells) {
+      const key = `${cell.row}-${cell.col}`
+      decorationMap.set(key, deco)
+      allOccupied.add(key)
+    }
+  }
+
+  return { plantMap, decorationMap, allOccupied }
+}
+
+/**
+ * Convert decorations to PlantForGrid format for collision checking.
+ * This lets us reuse existing hasCollision() and canPlacePlantAt() functions.
+ */
+export function decorationsAsGridItems(
+  decorations: Array<{ id: string; grid_row: number; grid_col: number; grid_size: number }>
+): PlantForGrid[] {
+  return decorations.map(d => ({
+    id: d.id,
+    grid_size: d.grid_size,
+    grid_row: d.grid_row,
+    grid_col: d.grid_col,
+  }))
+}
+
+/**
  * Calculate moves required to displace conflicting plants to nearest empty spots.
  * Returns a map of PlantID -> NewPosition, or null if resolution fails.
  */

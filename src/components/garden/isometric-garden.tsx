@@ -15,13 +15,14 @@ import { GardenTileGrid } from './garden-tile-grid'
 import { GardenModals } from './garden-modals'
 import { GardenCelebrationLayer } from './garden-celebration-layer'
 import { useGardenInteractions } from './use-garden-interactions'
-import { usePlants, useGardenSettingsOptional } from '@/lib/context'
+import { usePlants, useGardenSettingsOptional, useInventoryOptional } from '@/lib/context'
 import { useGardenZoom, useVisibleTiles } from '@/lib/hooks'
 import type { PlantWithType, PlantType, WeatherType } from '@/types/database'
 import {
   calculateRequiredGridSize,
   buildOccupiedCellsMap,
   isAnchorCell,
+  decorationsAsGridItems,
 } from '@/lib/utils/grid-positioning'
 import {
   getGardenSize,
@@ -61,6 +62,8 @@ export function IsometricGarden({
 }: IsometricGardenProps) {
   const { plants, movePlant, updatePlant } = usePlants()
   const gardenSettings = useGardenSettingsOptional()
+  const inventory = useInventoryOptional()
+  const placedDecorations = inventory?.placedDecorations ?? []
 
   // Zoom and pan
   const {
@@ -127,7 +130,12 @@ export function IsometricGarden({
   const livingPlants = useMemo(() => plants.filter((p) => p.status !== 'dead'), [plants])
   const minimumGridSize = useMemo(() => getGardenSize(userLevel), [userLevel])
   const unlockedDecorations = useMemo(() => getUnlockedDecorations(userLevel), [userLevel])
-  const gridSize = useMemo(() => calculateRequiredGridSize(livingPlants, minimumGridSize), [livingPlants, minimumGridSize])
+  // Include decorations in grid size calculation so placed decos don't get cut off
+  const allGridItems = useMemo(
+    () => [...livingPlants, ...decorationsAsGridItems(placedDecorations)],
+    [livingPlants, placedDecorations]
+  )
+  const gridSize = useMemo(() => calculateRequiredGridSize(allGridItems, minimumGridSize), [allGridItems, minimumGridSize])
   const occupiedCells = useMemo(() => buildOccupiedCellsMap(livingPlants), [livingPlants])
 
   const multiCellAreas: MultiCellArea[] = useMemo(() => {
@@ -348,6 +356,7 @@ export function IsometricGarden({
               moveState={interactions.moveState}
               focusStates={focusStates}
               weather={weather}
+              placedDecorations={placedDecorations}
               onTileClick={interactions.handleTileClick}
               onTileHover={handleTileHover}
               onTileLeave={handleTileLeave}

@@ -1,5 +1,7 @@
 'use client'
 
+import Image from 'next/image'
+import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import type { PlantWithType, PlantStatus } from '@/types/database'
 
@@ -14,13 +16,13 @@ const GROWTH_STAGES = {
 
 export type GrowthStage = keyof typeof GROWTH_STAGES
 
-// Size configurations - using text sizes for emoji
+// Size configurations - pixel dimensions for <img> + classNames for container
 const SIZE_CONFIG = {
-    sm: { className: 'w-8 h-8 text-2xl', classNameAlignBottom: 'w-8 text-2xl' },
-    md: { className: 'w-10 h-10 text-3xl', classNameAlignBottom: 'w-10 text-3xl' },
-    lg: { className: 'w-12 h-12 text-4xl', classNameAlignBottom: 'w-12 text-4xl' },
-    xl: { className: 'w-16 h-16 text-5xl', classNameAlignBottom: 'w-16 text-5xl' },
-    '2xl': { className: 'w-24 h-24 text-7xl', classNameAlignBottom: 'w-24 text-7xl' },
+    sm:  { width: 32,  height: 32,  className: 'w-8 h-8',   classNameAlignBottom: 'w-8' },
+    md:  { width: 40,  height: 40,  className: 'w-10 h-10', classNameAlignBottom: 'w-10' },
+    lg:  { width: 48,  height: 48,  className: 'w-12 h-12', classNameAlignBottom: 'w-12' },
+    xl:  { width: 64,  height: 64,  className: 'w-16 h-16', classNameAlignBottom: 'w-16' },
+    '2xl': { width: 96, height: 96, className: 'w-24 h-24', classNameAlignBottom: 'w-24' },
 } as const
 
 interface PlantImageProps {
@@ -43,7 +45,7 @@ function getGrowthStage(growthPercentage: number, status: PlantStatus): GrowthSt
     return 'mature'
 }
 
-// Map plant type names to folder names (kept for future use)
+// Map plant type names to folder names
 function getPlantFolder(plantTypeName: string): string {
     const PLANT_TYPE_FOLDERS: Record<string, string> = {
         'generic': 'generic',
@@ -84,9 +86,16 @@ export function PlantImage({
     const currentStage = getGrowthStage(plant.growth_percentage, plant.status)
     const sizeConfig = SIZE_CONFIG[size]
 
-    // Temporarily use emoji icon from plant_type instead of PNG images
-    // TODO: Replace with Image component when proper plant images are ready
+    const imagePath = getPlantImagePath(plant.plant_type.name, currentStage, isDead)
     const icon = plant.plant_type.icon || '🌱'
+
+    // Track image load errors for emoji fallback
+    const [imgError, setImgError] = useState(false)
+
+    // Reset error state when plant type or stage changes
+    useEffect(() => {
+        setImgError(false)
+    }, [plant.plant_type.name, currentStage, isDead])
 
     return (
         <div
@@ -98,16 +107,32 @@ export function PlantImage({
                 className
             )}
         >
-            <span
-                className={cn(
-                    'transition-all duration-300 select-none leading-none',
-                    isDead && 'grayscale opacity-60'
-                )}
-                role="img"
-                aria-label={`${plant.plant_type.name} - ${currentStage}`}
-            >
-                {icon}
-            </span>
+            {imgError ? (
+                // Emoji fallback when image fails to load
+                <span
+                    className={cn(
+                        'transition-all duration-300 select-none leading-none',
+                        isDead && 'grayscale opacity-60'
+                    )}
+                    role="img"
+                    aria-label={`${plant.plant_type.name} - ${currentStage}`}
+                >
+                    {icon}
+                </span>
+            ) : (
+                <Image
+                    src={imagePath}
+                    alt={`${plant.plant_type.name} - ${currentStage}`}
+                    width={sizeConfig.width}
+                    height={sizeConfig.height}
+                    loading="lazy"
+                    onError={() => setImgError(true)}
+                    className={cn(
+                        'transition-all duration-300 object-contain',
+                        isDead && 'grayscale opacity-60'
+                    )}
+                />
+            )}
 
             {/* Wilting indicator for low moisture */}
             {!isDead && plant.current_moisture < 30 && (

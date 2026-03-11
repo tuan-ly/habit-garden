@@ -35,6 +35,11 @@ export interface TierLimits {
   offlineDays: number
   devices: number // -1 = unlimited
 
+  // Decorations & Crafting
+  maxPlacedDecorations: number // max decorations on grid
+  hasCrafting: boolean
+  hasShop: boolean
+
   // Premium only
   earlyAccess?: boolean
   prioritySupport?: boolean
