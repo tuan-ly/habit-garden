@@ -436,6 +436,20 @@ export function getLevelUnlocks(level: number): LevelUnlock[] {
     unlocks.push({ type: 'decoration', name: 'Water Features', icon: '💧', description: 'Ponds and fountains!' })
   }
 
+  // Crafting & Workshop unlocks
+  if (level === 3) {
+    unlocks.push({ type: 'decoration', name: 'Crafting Workshop', icon: '🔨', description: 'Craft decorations from materials!' })
+  }
+  if (level === 5) {
+    unlocks.push({ type: 'decoration', name: 'Nature Recipes', icon: '🌸', description: 'Nature decoration recipes unlocked!' })
+  }
+  if (level === 8) {
+    unlocks.push({ type: 'decoration', name: 'Lighting Recipes', icon: '💡', description: 'Lighting decoration recipes unlocked!' })
+  }
+  if (level === 10) {
+    unlocks.push({ type: 'decoration', name: 'Special Recipes', icon: '⚗️', description: 'Rare decoration recipes unlocked!' })
+  }
+
   // Tier unlocks
   if (level === 7) {
     unlocks.push({ type: 'tier', name: 'Tier 2 Plants', icon: '⭐⭐', description: 'Reliable Partners unlocked!' })

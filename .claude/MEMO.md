@@ -1,47 +1,47 @@
 # Habit Garden - Project Memo
 
-> **Last Updated**: 2026-02-22
-> **Phase**: Habien v3 - Identity-First Redesign
+> **Last Updated**: 2026-03-12
+> **Phase**: Decoration & Crafting System
 > **Stack**: Next.js 16, Supabase, Tailwind CSS 4, shadcn/ui
 
 ---
 
 ## 🎯 Current Sprint
 
-**Focus**: Habien v3 - Phase 0: Identity Liberation
+**Focus**: Decoration System + Plant Images + Crafting System (Phase 7 complete)
 
-**Branch**: `feature/habien-3.0` (from `feature/habien-2.0-phase-1`)
-**Supabase**: `habien-v3` (id: nokkicjusrucrpnnbzlg, region: ap-southeast-1)
-**Design Doc**: [plans/habien-v3/VISION.md](../plans/habien-v3/VISION.md)
+**Plan**: [sharded-conjuring-dahl.md](../../.claude/plans/sharded-conjuring-dahl.md)
 
-**v3 Phases**:
+**Phases**:
 
-- [ ] **Phase 0: Identity Liberation** ← CURRENT
-- [ ] Phase 1: 2-Minute Rule + Anchors
-- [ ] Phase 2: XP De-emphasis + Reflection Engine
-- [ ] Phase 3: Garden Meaning (dormancy, established, identity zones)
-- [ ] Phase 4: Monetization Restructure
-- [ ] Phase 5: Garden Neighbors
+- [x] **Phase 1: Plant Images** — PNG images with emoji fallback
+- [x] **Phase 2: Database Schema + Coins** — 7 new tables, seed data, coin economy
+- [x] **Phase 3: Server Actions + Inventory Context** — Backend logic, crafting, coins, decorations
+- [x] **Phase 4: Grid Integration** — Decorations rendered on isometric tiles
+- [x] **Phase 5: Edit Mode Overlay** — Full decoration placement UI
+- [x] **Phase 6: Crafting UI + Shop** — Workshop, shop, harvest dialog
+- [x] **Phase 7: Polish & Gating** — Subscription limits, level gates, coin wiring
 
-**v3 Monetization** (Identity = FREE):
-| Tier | Price | Key Features |
-|------|-------|--------------|
-| FREE "The Seed" | $0 | 3 identities, 3 habits, full 4-laws engine, simple garden |
-| PRO "The Garden" | $4.99/mo | Unlimited, tiers 1-4, 5x5 garden, analytics, insights |
-| PREMIUM "The Sage" | $9.99/mo | Buddies, AI coaching, tier 5, 7x7+, pattern recognition |
+**Completed in Phase 7**:
+- Added `maxPlacedDecorations`, `hasCrafting`, `hasShop` to `TierLimits` + all tier configs
+- Added `canPlaceMoreDecorations()`, `getRemainingDecorationSlots()`, `canAccessRecipe()`, `getRequiredTierForRecipe()` to subscription-limits.ts
+- Added crafting/decoration unlock entries to progression-system.ts `getLevelUnlocks()`
+- Wired `awardCoins()` into `activity.ts` logActivity() — coins for watering + streaks + plant maturity
+- Wired `harvestMaterial()` into maturity flow — auto-harvest when plant matures
+- Updated `LogActivityResult` with `coinsEarned` and `harvestedMaterial` fields
+- Fixed `GardenMode` type propagation to `garden-tile-grid.tsx` and `use-garden-interactions.ts`
+
+**Remaining Work (not blocking)**:
+1. SSR data fetching for `InventoryProvider` (currently uses `initialCoins=0`)
+2. Plant image assets: 42 PNG files needed (only 6 exist)
+3. Decoration/material image assets: ~30+ PNG files needed
+4. Run migration on Supabase: `20260311_crafting_decoration_system.sql`
 
 **Next Actions**:
-
-1. Identity-first onboarding redesign (FREE, Day 1)
-2. Upgrade flow UX polish (upgrade modal improvements)
-3. Trial management (7-day free trial)
-4. Analytics for conversion tracking
-5. Responsive design audit
-
-**Related Docs**:
-
-- [Monetization Design](../plans/goal-feature-uiux-design/MONETIZATION_DESIGN.md)
-- [Habien 2.0 Design](../plans/goal-feature-uiux-design/HABIEN_2.0_DESIGN.md)
+1. Generate plant/decoration PNG assets with AI
+2. Run migration on Supabase
+3. SSR fetch for InventoryProvider initial data
+4. Integration testing with real data
 
 ---
 
@@ -64,6 +64,19 @@
 ---
 
 ## Latest Session
+
+### 2026-03-12: Decoration System Phase 7 — Polish & Gating ✅
+
+- Completed subscription gating: `maxPlacedDecorations` (free: 5, pro: 20, premium: unlimited), `hasCrafting`, `hasShop` added to TierLimits
+- Added recipe access gating by tier (`canAccessRecipe()`) — free: common/uncommon ≤ level 5, pro: up to rare ≤ level 10, premium: all
+- Wired coin rewards into `logActivity()`: watering coins + streak bonuses + maturity bonus (50 coins)
+- Wired `harvestMaterial()` into maturity flow — auto-harvest when plant reaches 100% growth
+- Added crafting-related level unlocks to progression system (Workshop at L3, Nature at L5, Lighting at L8, Special at L10)
+- Fixed `GardenMode` type to propagate `'decorate'` mode across garden-tile-grid and use-garden-interactions
+
+**Key files**: [subscription-limits.ts](src/lib/subscription-limits.ts), [activity.ts](src/lib/actions/activity.ts), [progression-system.ts](src/lib/progression-system.ts)
+
+---
 
 fix: add .npmrc with legacy-peer-deps to fix Vercel build
 

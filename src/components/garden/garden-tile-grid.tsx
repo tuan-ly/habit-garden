@@ -7,6 +7,7 @@ import { DecorationImage } from './decoration-image'
 import { isAnchorCell } from '@/lib/utils/grid-positioning'
 import type { PlantWithType, PlacedDecorationWithType, WeatherType } from '@/types/database'
 import type { MoveState } from './use-garden-interactions'
+import type { GardenMode } from './mode-toolbar'
 
 interface TileData {
   row: number
@@ -22,7 +23,7 @@ interface GardenTileGridProps {
   tileSize: number
   visibleTileKeys: Set<string>
   hoveredTile: string | null
-  mode: 'interact' | 'edit'
+  mode: GardenMode
   moveState: MoveState
   focusStates?: Map<string, FocusState>
   weather?: WeatherType | null

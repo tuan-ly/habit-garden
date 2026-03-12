@@ -33,7 +33,7 @@ export function HarvestDialog({
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.8, opacity: 0 }}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
             className="bg-background rounded-2xl p-6 shadow-2xl border max-w-sm mx-4 text-center"
           >
             {/* Celebration */}

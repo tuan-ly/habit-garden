@@ -128,7 +128,7 @@ export async function craftDecoration(
   }
 
   // 5. Add crafted decoration to inventory
-  const decorationType = recipe.decoration_type as { id: string; name: string }
+  const decorationType = recipe.decoration_type as unknown as { id: string; name: string }
   const { data: existingDeco } = await supabase
     .from('user_inventory')
     .select('id, quantity')

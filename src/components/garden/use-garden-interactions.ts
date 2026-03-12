@@ -11,6 +11,7 @@ import { isToday } from '@/lib/utils'
 import { logActivity } from '@/lib/actions/activity'
 import { validatePlantMove } from '@/lib/utils/grid-positioning'
 import type { PlantWithType } from '@/types/database'
+import type { GardenMode } from './mode-toolbar'
 
 // Double tap threshold for opening detail sheet
 const DOUBLE_TAP_THRESHOLD = 300
@@ -35,7 +36,7 @@ interface UseGardenInteractionsOpts {
   updatePlant: (id: string, updates: Partial<PlantWithType>) => void
   welcomeBackPending: boolean
   onWelcomeBackUsed?: () => void
-  mode: 'interact' | 'edit'
+  mode: GardenMode
   didPan: boolean
   resetDidPan: () => void
   occupiedCells: Map<string, PlantWithType>

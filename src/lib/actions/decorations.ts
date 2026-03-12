@@ -288,7 +288,7 @@ export async function purchaseDecoration(
     'purchase_decoration',
     decoType.id
   )
-  if ('error' in spendResult) return { error: spendResult.error }
+  if ('error' in spendResult) return { error: String(spendResult.error) }
 
   // Add to inventory
   const { data: existing } = await supabase

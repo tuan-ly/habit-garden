@@ -27,6 +27,9 @@ import { getTodayWeather, calculateWeatherXp } from '@/lib/weather-system'
 import { calculateRhythm } from '@/lib/plant-status'
 import { XP_VALUES, WELCOME_BACK_BONUS, isMorningTime, EASY_MODE_BONUS_PERCENT, EASY_MODE_BONUS_DAYS } from '@/lib/xp-constants'
 import { checkAndUnlockAchievements } from './plants'
+import { calculateWateringReward, COINS_PLANT_MATURED } from '@/lib/coin-rewards'
+import { awardCoins } from './coins'
+import { harvestMaterial } from './inventory'
 
 // =====================================================
 // Main Activity Logging - Single Unified Function
@@ -54,6 +57,8 @@ export interface LogActivityResult {
   newLevel?: number
   oldLevel?: number
   newAchievementIds?: string[]
+  coinsEarned?: number
+  harvestedMaterial?: { name: string; icon: string }
 }
 
 /**
@@ -283,6 +288,8 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
   let plantUpdate: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
   }
+  let hasMatured = false
+  let newStreak = 0
 
   if (dto.activity_type === 'completed' || dto.activity_type === 'progress') {
     // Full update: moisture, growth, streak (like watering + more)
@@ -296,14 +303,14 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
       ? new Date(plant.last_watered_at).toISOString().split('T')[0]
       : null
     const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
-    let newStreak = 1
+    newStreak = 1
     if (lastWateredDate === yesterday) {
       newStreak = plant.current_streak + 1
     } else if (lastWateredDate === today) {
       newStreak = plant.current_streak
     }
 
-    const hasMatured = newGrowth >= 100 && plant.status !== 'mature' && plant.status !== 'dead'
+    hasMatured = newGrowth >= 100 && plant.status !== 'mature' && plant.status !== 'dead'
 
     plantUpdate = {
       ...plantUpdate,
@@ -331,6 +338,37 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
     .from('plants')
     .update(plantUpdate)
     .eq('id', dto.plant_id)
+
+  // =====================================================
+  // Coin Rewards
+  // =====================================================
+
+  let coinsEarned = 0
+  let harvestedMaterial: { name: string; icon: string } | undefined
+
+  if (dto.activity_type === 'completed' || dto.activity_type === 'progress' || dto.activity_type === 'watering') {
+    // Award coins for watering
+    const coinReward = calculateWateringReward(isFirstActivityToday, newStreak)
+    if (coinReward.total > 0) {
+      coinsEarned += coinReward.total
+      await awardCoins(coinReward.total, 'watering', dto.plant_id)
+    }
+
+    // Award coins + harvest material when plant matures
+    if (hasMatured) {
+      coinsEarned += COINS_PLANT_MATURED
+      await awardCoins(COINS_PLANT_MATURED, 'plant_matured', dto.plant_id)
+
+      // Harvest material from the matured plant
+      const harvestResult = await harvestMaterial(dto.plant_id)
+      if ('material' in harvestResult) {
+        harvestedMaterial = {
+          name: harvestResult.material.name,
+          icon: harvestResult.material.icon,
+        }
+      }
+    }
+  }
 
   // =====================================================
   // Update User XP
@@ -368,6 +406,8 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
     newLevel: levelUpResult?.newLevel,
     oldLevel: levelUpResult?.leveledUp ? getLevelFromXp(oldXp) : undefined,
     newAchievementIds: newAchievementIds.length > 0 ? newAchievementIds : undefined,
+    coinsEarned: coinsEarned > 0 ? coinsEarned : undefined,
+    harvestedMaterial,
   }
 }
 

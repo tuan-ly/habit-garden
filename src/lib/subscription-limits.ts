@@ -68,6 +68,9 @@ export const TIER_LIMITS: Record<SubscriptionTier, TierLimits> = {
     decorations: ['basic'],
     offlineDays: 0,
     devices: 1,
+    maxPlacedDecorations: 5,
+    hasCrafting: true,
+    hasShop: true,
   },
   pro: {
     maxPlants: 8,
@@ -87,6 +90,9 @@ export const TIER_LIMITS: Record<SubscriptionTier, TierLimits> = {
     decorations: ['basic', 'advanced'],
     offlineDays: 3,
     devices: 3,
+    maxPlacedDecorations: 20,
+    hasCrafting: true,
+    hasShop: true,
   },
   premium: {
     maxPlants: -1,
@@ -106,6 +112,9 @@ export const TIER_LIMITS: Record<SubscriptionTier, TierLimits> = {
     decorations: ['all'],
     offlineDays: 30,
     devices: -1,
+    maxPlacedDecorations: -1,
+    hasCrafting: true,
+    hasShop: true,
     earlyAccess: true,
     prioritySupport: true,
     aiSuggestions: true,
@@ -165,6 +174,8 @@ export type Feature =
   | 'ai_suggestions'
   | 'early_access'
   | 'priority_support'
+  | 'crafting'
+  | 'shop'
 
 export function hasFeature(tier: SubscriptionTier, feature: Feature): boolean {
   const limits = getTierLimits(tier)
@@ -186,6 +197,10 @@ export function hasFeature(tier: SubscriptionTier, feature: Feature): boolean {
       return limits.earlyAccess ?? false
     case 'priority_support':
       return limits.prioritySupport ?? false
+    case 'crafting':
+      return limits.hasCrafting
+    case 'shop':
+      return limits.hasShop
     default:
       return false
   }
@@ -386,5 +401,73 @@ export function getRequiredTierForFeature(feature: Feature): SubscriptionTier {
 export function getMinimumSubscriptionForPlantTier(plantTier: number): SubscriptionTier {
   if (plantTier <= 2) return 'free'
   if (plantTier <= 4) return 'pro'
+  return 'premium'
+}
+
+// ============================================
+// Decoration & Crafting Gating
+// ============================================
+
+/**
+ * Check if user can place more decorations on the grid
+ */
+export function canPlaceMoreDecorations(tier: SubscriptionTier, currentCount: number): boolean {
+  const limits = getTierLimits(tier)
+  if (limits.maxPlacedDecorations === -1) return true
+  return currentCount < limits.maxPlacedDecorations
+}
+
+/**
+ * Get remaining decoration placement slots
+ */
+export function getRemainingDecorationSlots(
+  tier: SubscriptionTier,
+  currentCount: number
+): number | 'unlimited' {
+  const limits = getTierLimits(tier)
+  if (limits.maxPlacedDecorations === -1) return 'unlimited'
+  return Math.max(0, limits.maxPlacedDecorations - currentCount)
+}
+
+/**
+ * Check if a recipe is accessible based on tier and level
+ * Free: unlock_level ≤ 5, common/uncommon rarity only
+ * Pro: unlock_level ≤ 10, up to rare
+ * Premium: all levels, all rarities
+ */
+export function canAccessRecipe(
+  tier: SubscriptionTier,
+  recipeUnlockLevel: number,
+  recipeRarity: string
+): boolean {
+  const rarityOrder: Record<string, number> = {
+    common: 0,
+    uncommon: 1,
+    rare: 2,
+    epic: 3,
+    legendary: 4,
+  }
+
+  switch (tier) {
+    case 'free':
+      return recipeUnlockLevel <= 5 && (rarityOrder[recipeRarity] ?? 0) <= 1
+    case 'pro':
+      return recipeUnlockLevel <= 10 && (rarityOrder[recipeRarity] ?? 0) <= 2
+    case 'premium':
+      return true
+    default:
+      return false
+  }
+}
+
+/**
+ * Get the minimum tier required to access a recipe
+ */
+export function getRequiredTierForRecipe(
+  recipeUnlockLevel: number,
+  recipeRarity: string
+): SubscriptionTier {
+  if (canAccessRecipe('free', recipeUnlockLevel, recipeRarity)) return 'free'
+  if (canAccessRecipe('pro', recipeUnlockLevel, recipeRarity)) return 'pro'
   return 'premium'
 }
