@@ -12,7 +12,7 @@ import { canCraft, getMissingMaterials, getRecipeCostSummary } from '@/lib/craft
 import { Hammer, Gem, Check, X, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { RecipeWithDetails, InventoryItemWithDetails } from '@/types/database'
-import { motion, AnimatePresence } from 'motion/react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface CraftingWorkshopProps {
   open: boolean

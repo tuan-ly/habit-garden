@@ -1,9 +1,9 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { Pencil, Palette } from 'lucide-react'
+import { Pencil } from 'lucide-react'
 
-export type GardenMode = 'interact' | 'edit' | 'decorate'
+export type GardenMode = 'interact' | 'arrange'
 
 interface ModeToolbarProps {
   mode: GardenMode
@@ -14,12 +14,10 @@ interface ModeToolbarProps {
 /**
  * Mode toggle toolbar for the garden.
  * - interact: Click plant → watering modal
- * - edit:     Add / move plants around the grid
- * - decorate: Place / move decorations in edit mode overlay
+ * - arrange:  Add / move plants, place / move decorations
  */
 export function ModeToolbar({ mode, onModeChange, className }: ModeToolbarProps) {
-  const isEditing = mode === 'edit'
-  const isDecorating = mode === 'decorate'
+  const isArranging = mode === 'arrange'
 
   return (
     <div
@@ -28,47 +26,23 @@ export function ModeToolbar({ mode, onModeChange, className }: ModeToolbarProps)
         className
       )}
     >
-      {/* Edit mode button */}
       <button
-        onClick={() => onModeChange(isEditing ? 'interact' : 'edit')}
+        onClick={() => onModeChange(isArranging ? 'interact' : 'arrange')}
         className={cn(
           'relative flex flex-col items-center justify-center gap-1 w-14 h-14 rounded-xl transition-all duration-200',
           'hover:scale-105 active:scale-95',
-          isEditing
-            ? 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/30'
+          isArranging
+            ? 'bg-gradient-to-br from-amber-500 to-emerald-500 text-white shadow-lg shadow-amber-500/30'
             : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700/50 hover:text-slate-200'
         )}
-        title={isEditing ? 'Exit edit mode' : 'Edit garden'}
-        aria-pressed={isEditing}
+        title={isArranging ? 'Done arranging' : 'Arrange garden'}
+        aria-pressed={isArranging}
       >
         <Pencil className="w-5 h-5" strokeWidth={2.5} />
-        <span className="text-[10px] font-medium leading-none">Edit</span>
+        <span className="text-[10px] font-medium leading-none">Arrange</span>
 
-        {/* Active indicator glow */}
-        {isEditing && (
+        {isArranging && (
           <div className="absolute inset-0 rounded-xl bg-amber-400/20 animate-pulse pointer-events-none" />
-        )}
-      </button>
-
-      {/* Decorate mode button */}
-      <button
-        onClick={() => onModeChange(isDecorating ? 'interact' : 'decorate')}
-        className={cn(
-          'relative flex flex-col items-center justify-center gap-1 w-14 h-14 rounded-xl transition-all duration-200',
-          'hover:scale-105 active:scale-95',
-          isDecorating
-            ? 'bg-gradient-to-br from-purple-500 to-pink-600 text-white shadow-lg shadow-purple-500/30'
-            : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700/50 hover:text-slate-200'
-        )}
-        title={isDecorating ? 'Exit decorate mode' : 'Decorate garden'}
-        aria-pressed={isDecorating}
-      >
-        <Palette className="w-5 h-5" strokeWidth={2.5} />
-        <span className="text-[10px] font-medium leading-none">Decorate</span>
-
-        {/* Active indicator glow */}
-        {isDecorating && (
-          <div className="absolute inset-0 rounded-xl bg-purple-400/20 animate-pulse pointer-events-none" />
         )}
       </button>
     </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Flower2, BarChart3, User as UserIcon, TreeDeciduous, Menu, X, Settings, LogOut, Trophy, Sparkles, Crown, Hammer, ShoppingBag } from 'lucide-react'
+import { Flower2, BarChart3, User as UserIcon, TreeDeciduous, Menu, X, Settings, LogOut, Sparkles, Crown, Hammer, ShoppingBag } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -38,16 +38,8 @@ const navItems: NavItem[] = [
     glowColor: 'shadow-teal-500/50'
   },
   {
-    title: 'Workshop',
-    url: '/workshop',
-    icon: Hammer,
-    color: 'from-orange-400 to-amber-500',
-    activeColor: 'bg-orange-500',
-    glowColor: 'shadow-orange-500/50'
-  },
-  {
-    title: 'Shop',
-    url: '/shop',
+    title: 'Store',
+    url: '/store',
     icon: ShoppingBag,
     color: 'from-pink-400 to-rose-500',
     activeColor: 'bg-pink-500',
@@ -60,23 +52,6 @@ const navItems: NavItem[] = [
     color: 'from-blue-400 to-indigo-500',
     activeColor: 'bg-blue-500',
     glowColor: 'shadow-blue-500/50'
-  },
-  {
-    title: 'Identity',
-    url: '/identity',
-    icon: Crown,
-    color: 'from-purple-400 to-violet-500',
-    activeColor: 'bg-purple-500',
-    glowColor: 'shadow-purple-500/50',
-    premium: true
-  },
-  {
-    title: 'Profile',
-    url: '/profile',
-    icon: Trophy,
-    color: 'from-amber-400 to-orange-500',
-    activeColor: 'bg-amber-500',
-    glowColor: 'shadow-amber-500/50'
   },
 ]
 
@@ -256,7 +231,24 @@ export function GameNav({ user }: GameNavProps) {
                   </Link>
 
                   <Link
-                    href="/workshop"
+                    href="/identity"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-400 to-violet-500 flex items-center justify-center shadow-md shadow-purple-500/30 group-hover:scale-110 transition-transform">
+                      <Crown className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold">Identity</p>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-bold dark:bg-amber-900/40 dark:text-amber-400">PREMIUM</span>
+                      </div>
+                      <p className="text-xs text-slate-500">Define who you want to become</p>
+                    </div>
+                  </Link>
+
+                  <Link
+                    href="/store?tab=craft"
                     onClick={() => setMenuOpen(false)}
                     className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
                   >
@@ -270,7 +262,7 @@ export function GameNav({ user }: GameNavProps) {
                   </Link>
 
                   <Link
-                    href="/shop"
+                    href="/store?tab=shop"
                     onClick={() => setMenuOpen(false)}
                     className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
                   >

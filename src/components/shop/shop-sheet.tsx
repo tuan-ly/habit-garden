@@ -9,7 +9,7 @@ import { useInventory } from '@/lib/context'
 import { ShoppingBag, Coins, Loader2, Check, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { DecorationType } from '@/types/database'
-import { motion, AnimatePresence } from 'motion/react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface ShopSheetProps {
   open: boolean

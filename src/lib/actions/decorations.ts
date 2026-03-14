@@ -8,6 +8,7 @@ import type {
   MoveDecorationDto,
   PickUpDecorationDto,
   DecorationRotation,
+  DecorationType,
 } from '@/types/database'
 import { spendCoins } from './coins'
 
@@ -350,6 +351,27 @@ export async function rotateDecoration(
 
   if (updateError) return { error: updateError.message }
   return { success: true, newRotation }
+}
+
+/**
+ * Get decoration types available for purchase with coins
+ */
+export async function getShopItems(): Promise<
+  { items: DecorationType[] } | { error: string }
+> {
+  const user = await getAuthUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('decoration_types')
+    .select('id, slug, name, description, icon, image_url, grid_size, category, rarity, unlock_level, coin_price, subscription_tier, is_craftable, created_at')
+    .not('coin_price', 'is', null)
+    .order('coin_price', { ascending: true })
+
+  if (error) return { error: error.message }
+  return { items: (data ?? []) as DecorationType[] }
 }
 
 // ============================================

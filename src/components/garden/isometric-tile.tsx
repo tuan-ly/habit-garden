@@ -35,6 +35,8 @@ interface IsometricTileProps {
   isSelectedForMove?: boolean
   /** Preview plant to show faded on this tile (for move preview) */
   previewPlant?: PlantWithType
+  /** Shadow type: 'plant' for full shadow, 'small' for decoration shadow, 'none' (default) for no shadow */
+  shadowType?: 'plant' | 'small' | 'none'
 }
 
 /**
@@ -75,6 +77,7 @@ function IsometricTileComponent({
   showAddHint = false,
   isSelectedForMove = false,
   previewPlant,
+  shadowType = 'none',
 }: IsometricTileProps) {
   // Isometric tile positioning:
   // The grid's top point (0,0) is at the top-center of the diamond
@@ -177,19 +180,23 @@ function IsometricTileComponent({
         </div>
       )}
 
-      {/* Plant shadow - centered in merged area, scales with plant grid size */}
-      {children && (
+      {/* Plant/decoration shadow - centered in merged area, scales with grid size */}
+      {shadowType !== 'none' && (
         <div
           className="absolute pointer-events-none rounded-full"
           style={{
             left: tileSize / 2,
-            // Shadow at center of merged area
             top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight),
-            // Shadow scales based on plant grid size (1x1→0.4, 2x2→0.7, 3x3→1.0)
-            width: tileSize * (0.4 + (plantGridSize - 1) * 0.3),
-            height: tileSize * (0.15 + (plantGridSize - 1) * 0.1),
+            width: tileSize * (shadowType === 'plant'
+              ? (0.4 + (plantGridSize - 1) * 0.3)
+              : (0.25 + (plantGridSize - 1) * 0.2)),
+            height: tileSize * (shadowType === 'plant'
+              ? (0.15 + (plantGridSize - 1) * 0.1)
+              : (0.1 + (plantGridSize - 1) * 0.06)),
             transform: 'translate(-50%, -50%)',
-            background: 'radial-gradient(ellipse, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.1) 50%, transparent 100%)',
+            background: shadowType === 'plant'
+              ? 'radial-gradient(ellipse, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.1) 50%, transparent 100%)'
+              : 'radial-gradient(ellipse, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.05) 50%, transparent 100%)',
           }}
         />
       )}

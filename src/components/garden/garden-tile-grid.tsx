@@ -91,9 +91,10 @@ export const GardenTileGrid = memo(function GardenTileGrid({
             tileSize={tileSize}
             plant={isAnchor ? plant : null}
             hideBadge={isSelectedForMove}
-            showAddHint={mode === 'edit' && !moveState.selectedPlant}
+            showAddHint={mode === 'arrange' && !moveState.selectedPlant}
             isSelectedForMove={isSelectedForMove}
             previewPlant={isPreviewTile && moveState.selectedPlant && moveState.isValidPreview ? moveState.selectedPlant : undefined}
+            shadowType={plant && isAnchor ? 'plant' : decoration ? 'small' : 'none'}
           >
             {plant && isAnchor && (
               <div className={isSelectedForMove ? 'opacity-40 scale-95 transition-all' : ''}>

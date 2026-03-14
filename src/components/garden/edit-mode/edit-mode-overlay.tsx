@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { useInventory } from '@/lib/context'
 import { useEditMode } from './use-edit-mode'
 import { EditModeToolbar } from './edit-mode-toolbar'

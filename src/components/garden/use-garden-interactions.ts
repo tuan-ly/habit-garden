@@ -356,7 +356,7 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
         case 'interact':
           if (plant) handlePlantTap(plant)
           break
-        case 'edit':
+        case 'arrange':
           if (moveState.selectedPlant) {
             if (moveState.selectedPlant.id === plant?.id) {
               cancelMoveSelection()
@@ -390,7 +390,7 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
       const plant = occupiedCells.get(`${row}-${col}`)
       // Intentionally not using setHoveredTile here — parent manages hoveredTile state
       // This returns the tile key so parent can set it
-      if (mode === 'edit' && moveState.selectedPlant) {
+      if (mode === 'arrange' && moveState.selectedPlant) {
         updateMovePreview(row, col)
       }
     },

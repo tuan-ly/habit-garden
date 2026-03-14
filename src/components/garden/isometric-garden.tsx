@@ -10,6 +10,7 @@ import { AmbientParticles } from './ambient-particles'
 import { AmbientParticlesCanvas } from './ambient-particles-canvas'
 import { ZoomControls } from './zoom-controls'
 import { ModeToolbar, type GardenMode } from './mode-toolbar'
+import { EditModeOverlay } from './edit-mode/edit-mode-overlay'
 import { getTimeOfDay, type TimeOfDay, defaultTheme } from './themes'
 import { GardenTileGrid } from './garden-tile-grid'
 import { GardenModals } from './garden-modals'
@@ -250,11 +251,11 @@ export function IsometricGarden({
             </div>
             <h3 className="text-lg sm:text-xl font-bold mb-2">Your Garden Awaits!</h3>
             <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 mb-4">
-              Switch to <span className="font-semibold text-emerald-600">Add mode</span> using the toolbar on the left, then tap any tile to plant your first habit!
+              Switch to <span className="font-semibold text-emerald-600">Arrange mode</span> using the toolbar on the left, then tap any tile to plant your first habit!
             </p>
             <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-emerald-600 dark:text-emerald-400">
               <span className="animate-bounce">👈</span>
-              <span>Use the ➕ button to start</span>
+              <span>Use the Arrange button to start</span>
             </div>
           </div>
         </div>
@@ -266,7 +267,7 @@ export function IsometricGarden({
         className="flex-1 w-full overflow-hidden"
         style={{
           touchAction: 'manipulation',
-          cursor: isPanning ? 'grabbing' : mode === 'edit' ? (interactions.moveState.selectedPlant ? 'crosshair' : 'grab') : 'default',
+          cursor: isPanning ? 'grabbing' : mode === 'arrange' ? (interactions.moveState.selectedPlant ? 'crosshair' : 'grab') : 'default',
           WebkitUserSelect: 'none',
           WebkitTouchCallout: 'none',
         }}
@@ -402,6 +403,16 @@ export function IsometricGarden({
         journalStreak={journalStreak}
         isWateredToday={interactions.isWateredToday}
       />
+
+      {/* Decoration edit overlay (visible in arrange mode) */}
+      {inventory && (
+        <EditModeOverlay
+          isActive={mode === 'arrange'}
+          gridSize={gridSize}
+          occupiedCells={new Set(occupiedCells.keys())}
+          onDone={() => setModeWithReset('interact')}
+        />
+      )}
 
       {/* Celebrations */}
       <GardenCelebrationLayer

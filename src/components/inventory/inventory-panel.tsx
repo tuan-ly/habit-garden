@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { motion } from 'motion/react'
+import { motion } from 'framer-motion'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { Package, Gem, ChevronUp, ChevronDown } from 'lucide-react'
