@@ -152,13 +152,7 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
       }
     }
   } else if (dto.activity_type === 'watering') {
-    // Plain watering: only XP if first of day
-    if (isFirstActivityToday) {
-      totalXp += XP_VALUES.WATERING_BASE
-      if (isMorning) {
-        totalXp += XP_VALUES.MORNING_BONUS
-      }
-    }
+    // "Just checking in" / "Not today" — no base XP, only note bonus below
   }
 
   // Note bonus (applies to all activity types)

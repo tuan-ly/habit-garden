@@ -120,12 +120,10 @@ export function GentleWateringModal({
   // isWateredToday is passed from parent - means ANY activity exists today
   const isFirstActivityToday = !isWateredToday
 
-  // 1. Watering XP (Just checking in)
-  // Base + Morning + Note (only if first activity today)
-  const wateringBaseXp = isFirstActivityToday
-    ? (XP_VALUES.WATERING_BASE + (isMorning ? XP_VALUES.MORNING_BONUS : 0))
-    : 0
-  const totalXp = wateringBaseXp + noteBonus
+  // 1. Watering XP (Just checking in / "Not today")
+  // No base XP — only note bonus. Base XP is reserved for actual habit completion.
+  const wateringBaseXp = 0
+  const totalXp = noteBonus
 
   // 2. Log Progress XP (I did it) - includes watering XP if first activity today
   // Watering Base + Morning + Note + (PR bonus calculated on server)

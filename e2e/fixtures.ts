@@ -58,3 +58,29 @@ export async function isVisible(
     return false
   }
 }
+
+/**
+ * Helper: Login and navigate to garden page
+ * DRYs up the common beforeEach pattern across auth-required test files
+ */
+export async function loginAndGoToGarden(page: typeof base.prototype) {
+  await page.goto('/login')
+  await page.getByLabel('Email').fill(TEST_USER.email)
+  await page.getByLabel('Password').fill(TEST_USER.password)
+  await page.getByRole('button', { name: /sign in/i }).click()
+  await page.waitForURL('**/garden', { timeout: 15000 })
+}
+
+/**
+ * Helper: Open a plant interaction modal by clicking the first visible plant
+ * Returns true if modal was opened, false if no plant found
+ */
+export async function openPlantModal(page: typeof base.prototype): Promise<boolean> {
+  const plantElement = page.locator('[class*="plant-card"], [class*="PlantCard"]').first()
+  if (!(await plantElement.isVisible().catch(() => false))) return false
+
+  await plantElement.click()
+  const dialog = page.getByRole('dialog').or(page.locator('[role="dialog"]'))
+  await dialog.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {})
+  return dialog.isVisible()
+}
