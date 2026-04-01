@@ -29,18 +29,30 @@ export async function getPlants(): Promise<PlantWithType[]> {
 
   const today = new Date().toISOString().split('T')[0]
 
-  // Fetch plants with plant_type
+  // Fetch plants with plant_type (explicit columns for performance)
   const { data: plantsData, error } = await supabase
     .from('plants')
     .select(`
-      *,
-      plant_type:plant_types(*)
+      id, user_id, plant_type_id, name, habit_description, started_at,
+      current_moisture, growth_percentage, total_waterings,
+      current_streak, longest_streak, last_watered_at, status, matured_at,
+      died_at, death_reason, goal_mode, reminder_time, reminder_enabled, adaptive_mode,
+      position, grid_size, grid_row, grid_col, growth_blocked,
+      why_i_started, maturity_level, visual_stage, grace_period_days,
+      days_this_week, days_this_month, consistency_percentage,
+      easy_mode, tiny_seed, created_at, updated_at,
+      plant_type:plant_types(
+        id, name, name_vi, icon, description, description_vi,
+        maturity_days, frequency_type, frequency_target,
+        moisture_decay_rate, moisture_boost, special_effect,
+        category, difficulty, is_premium, tier, tier_unlock_level, created_at
+      )
     `)
     .eq('user_id', user.id)
     .order('position', { ascending: true })
 
   if (error) {
-    console.error('Error fetching plants:', error)
+    console.error('Error fetching plants:', error.message, error.details, error.hint, error.code)
     return []
   }
 
@@ -53,13 +65,26 @@ export async function getPlants(): Promise<PlantWithType[]> {
   const plantsWithGoalMode = plantsData.filter(p => p.goal_mode)
   const plantIdsWithGoal = plantsWithGoalMode.map(p => p.id)
 
-  // Fetch goals for plants that have goal_mode
+  // Fetch goals and today's logs in parallel for plants that have goal_mode
   let goalsMap = new Map<string, PlantGoalInfo>()
+  let todayLogsMap = new Map<string, TodayGoalLog[]>()
+
   if (plantIdsWithGoal.length > 0) {
-    const { data: goals } = await supabase
-      .from('goals')
-      .select('id, plant_id, goal_mode, tracking_metric, unit, target_value, current_value, weekly_targets, started_at')
-      .in('plant_id', plantIdsWithGoal)
+    const [goalsResult, todayLogsResult] = await Promise.all([
+      supabase
+        .from('goals')
+        .select('id, plant_id, goal_mode, tracking_metric, unit, target_value, current_value, weekly_targets, started_at')
+        .in('plant_id', plantIdsWithGoal),
+      supabase
+        .from('goal_logs')
+        .select('id, plant_id, value, notes, logged_at')
+        .in('plant_id', plantIdsWithGoal)
+        .eq('logged_date', today)
+        .order('logged_at', { ascending: false }),
+    ])
+
+    const goals = goalsResult.data
+    const todayLogs = todayLogsResult.data
 
     if (goals) {
       for (const goal of goals) {
@@ -83,17 +108,6 @@ export async function getPlants(): Promise<PlantWithType[]> {
         })
       }
     }
-  }
-
-  // Fetch today's goal logs for all plants
-  let todayLogsMap = new Map<string, TodayGoalLog[]>()
-  if (plantIdsWithGoal.length > 0) {
-    const { data: todayLogs } = await supabase
-      .from('goal_logs')
-      .select('id, plant_id, value, notes, logged_at')
-      .in('plant_id', plantIdsWithGoal)
-      .eq('logged_date', today)
-      .order('logged_at', { ascending: false })
 
     if (todayLogs) {
       for (const log of todayLogs) {
@@ -116,8 +130,12 @@ export async function getPlants(): Promise<PlantWithType[]> {
     const todayLogCount = todayLogs.length
     const todayValue = todayLogs.reduce((sum, log) => sum + log.value, 0)
 
+    // Supabase returns plant_type as array for joined relations, extract first element
+    const plantType = Array.isArray(plant.plant_type) ? plant.plant_type[0] : plant.plant_type
+
     return {
       ...plant,
+      plant_type: plantType,
       goal,
       today_logs: todayLogs,
       today_log_count: todayLogCount,

@@ -13,10 +13,10 @@ import { WelcomeBackModal } from '@/components/game-ui/welcome-back-modal'
 import { TreesIcon, LayoutGrid, Plus, Target, Flower2 } from 'lucide-react'
 import { GameHud } from '@/components/game-ui'
 import { cn } from '@/lib/utils'
-import { usePlants, useMood } from '@/lib/context'
+import { usePlants, useMood, usePlantTypes, useProfile } from '@/lib/context'
 import { useBreathingRhythm } from '@/hooks/use-breathing-rhythm'
 import { useDevOverride } from '@/components/dev/dev-debug-context'
-import type { PlantWithType, PlantType, WeatherType, Profile } from '@/types/database'
+import type { PlantWithType, WeatherType } from '@/types/database'
 
 const LAST_VISIT_KEY = 'habit-garden-last-visit'
 const ABSENCE_THRESHOLD_DAYS = 3
@@ -31,15 +31,16 @@ function getDaysDiff(dateStr: string, today: string): number {
 type ViewMode = 'garden' | 'list' | 'focus'
 
 interface GardenViewProps {
-  plantTypes: PlantType[]
   weather?: WeatherType | null
-  profile?: Profile | null
 }
 
-export function GardenView({ plantTypes, weather, profile }: GardenViewProps) {
+export function GardenView({ weather }: GardenViewProps) {
   // Get plants from context with optimistic updates
   const { plants } = usePlants()
   const { mood } = useMood()
+  // Get plantTypes and profile from DashboardDataContext
+  const plantTypes = usePlantTypes()
+  const { profile } = useProfile()
 
   // Dev overrides for testing
   const effectiveLevel = useDevOverride('level', profile?.level ?? 1)

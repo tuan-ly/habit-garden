@@ -5,6 +5,8 @@ import { OnboardingModal } from '@/components/onboarding'
 import { GameNav } from '@/components/game-ui'
 import { DashboardProviders } from './providers'
 import { getTodayMood } from '@/lib/actions/mood'
+import { getProfile } from '@/lib/actions/profile'
+import { getPlantTypes } from '@/lib/actions/plants'
 import { MoodProactivePrompt } from '@/components/mood'
 import { TimezoneSync } from '@/components/timezone-sync'
 
@@ -21,16 +23,21 @@ export default async function DashboardLayout({
     redirect('/login')
   }
 
-  // Fetch mood and profile in parallel (both depend on auth, not each other)
-  const [initialMood, { data: profile }] = await Promise.all([
+  // Fetch mood, profile, and plant types in parallel
+  const [initialMood, profile, plantTypes] = await Promise.all([
     getTodayMood(),
-    supabase.from('profiles').select('timezone, subscription_tier').eq('id', user.id).single()
+    getProfile(),
+    getPlantTypes(),
   ])
   const userTimezone = profile?.timezone ?? null
-  const initialTier = (profile?.subscription_tier as 'free' | 'pro' | 'premium') ?? 'free'
 
   return (
-    <DashboardProviders initialMood={initialMood} initialTier={initialTier}>
+    <DashboardProviders
+      initialMood={initialMood}
+      user={user}
+      profile={profile}
+      plantTypes={plantTypes}
+    >
       <div className="min-h-screen relative ">
         {/* Static gradient background - single layer, no animations for better performance */}
         <div className="fixed inset-0 bg-gradient-to-br from-sky-200 via-emerald-100 to-green-200 dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950 pointer-events-none" />

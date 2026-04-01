@@ -1,11 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth-cached'
 import { Droplets, Flame, Calendar, TrendingUp, Sparkles } from 'lucide-react'
 
 async function getWateringStats() {
-  const supabase = await createClient()
-
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return null
+
+  const supabase = await createClient()
 
   // Get last 7 days of waterings
   const sevenDaysAgo = new Date()

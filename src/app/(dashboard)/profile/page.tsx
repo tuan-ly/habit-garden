@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth-cached'
 import { getProfile, getUserStats, getAchievementsData } from '@/lib/actions/profile'
 import { getLevelInfo } from '@/lib/xp-system'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -13,10 +13,8 @@ import {
 } from 'lucide-react'
 
 export default async function ProfilePage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  const [profile, stats, achievementsData] = await Promise.all([
+  const [user, profile, stats, achievementsData] = await Promise.all([
+    getAuthUser(),
     getProfile(),
     getUserStats(),
     getAchievementsData(),

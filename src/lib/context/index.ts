@@ -13,4 +13,11 @@ export {
   useSubscriptionOptional,
   useFeatureGate,
 } from './subscription-context'
+export {
+  DashboardDataProvider,
+  useDashboardData,
+  useUser,
+  useProfile,
+  usePlantTypes,
+} from './dashboard-data-context'
 

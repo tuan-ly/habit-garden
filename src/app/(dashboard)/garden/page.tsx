@@ -1,26 +1,17 @@
-import { getPlants, getPlantTypes } from '@/lib/actions/plants'
-import { getProfile } from '@/lib/actions/profile'
+import { getPlants } from '@/lib/actions/plants'
 import { GardenView } from '@/components/garden/garden-view'
 import { getTodayWeather } from '@/lib/weather-system'
 import { PlantsProvider } from '@/lib/context'
 
 export default async function GardenPage() {
-  const [plants, plantTypes, profile] = await Promise.all([
-    getPlants(),
-    getPlantTypes(),
-    getProfile(),
-  ])
-
+  // Only fetch plants here - plantTypes and profile come from DashboardDataContext
+  const plants = await getPlants()
   const weather = getTodayWeather()
 
   return (
     <PlantsProvider initialPlants={plants}>
       <div className="h-full">
-        <GardenView
-          plantTypes={plantTypes}
-          weather={weather.type}
-          profile={profile}
-        />
+        <GardenView weather={weather.type} />
       </div>
     </PlantsProvider>
   )

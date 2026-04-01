@@ -1,18 +1,13 @@
-import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth-cached'
+import { getProfile } from '@/lib/actions/profile'
 import { PerformanceSettings } from '@/components/settings/performance-settings'
 import { SubscriptionSection } from '@/components/settings/subscription-section'
 import { AccountSettings } from '@/components/settings/account-settings'
 import { NotificationSettings, AppearanceSettings, SecuritySettings } from '@/components/settings/general-settings'
 
 export default async function SettingsPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('display_name')
-    .eq('id', user?.id ?? '')
-    .single()
+  const user = await getAuthUser()
+  const profile = await getProfile()
 
   return (
     <div className="h-full overflow-y-auto pt-4 px-4 pb-36 space-y-6 max-w-2xl mx-auto">
