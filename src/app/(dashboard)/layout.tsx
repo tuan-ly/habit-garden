@@ -1,4 +1,3 @@
-import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Toaster } from '@/components/ui/sonner'
 import { OnboardingModal } from '@/components/onboarding'
@@ -7,6 +6,7 @@ import { DashboardProviders } from './providers'
 import { getTodayMood } from '@/lib/actions/mood'
 import { getProfile } from '@/lib/actions/profile'
 import { getPlantTypes } from '@/lib/actions/plants'
+import { getAuthUser } from '@/lib/auth-cached'
 import { MoodProactivePrompt } from '@/components/mood'
 import { TimezoneSync } from '@/components/timezone-sync'
 
@@ -15,15 +15,15 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const supabase = await createClient()
+  // Use cached getAuthUser — shared with all server actions in this request
+  const user = await getAuthUser()
 
-  const { data: { user }, error } = await supabase.auth.getUser()
-
-  if (error || !user) {
+  if (!user) {
     redirect('/login')
   }
 
   // Fetch mood, profile, and plant types in parallel
+  // All three internally call getAuthUser() which is deduped by React cache()
   const [initialMood, profile, plantTypes] = await Promise.all([
     getTodayMood(),
     getProfile(),
@@ -53,8 +53,8 @@ export default async function DashboardLayout({
           {children}
         </main>
 
-        {/* Game-style bottom navigation */}
-        <GameNav user={user} />
+        {/* Game-style bottom navigation - uses DashboardDataContext for user */}
+        <GameNav />
 
         <Toaster />
         <OnboardingModal />

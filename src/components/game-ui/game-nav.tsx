@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { signOut } from '@/app/(auth)/actions'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import type { User } from '@supabase/supabase-js'
+import { useUser } from '@/lib/context'
 import type { LucideIcon } from 'lucide-react'
 
 interface NavItem {
@@ -55,11 +55,8 @@ const navItems: NavItem[] = [
   },
 ]
 
-interface GameNavProps {
-  user: User | null
-}
-
-export function GameNav({ user }: GameNavProps) {
+export function GameNav() {
+  const user = useUser()
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
 

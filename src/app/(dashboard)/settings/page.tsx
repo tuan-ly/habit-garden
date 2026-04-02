@@ -1,13 +1,14 @@
-import { getAuthUser } from '@/lib/auth-cached'
-import { getProfile } from '@/lib/actions/profile'
+'use client'
+
+import { useUser, useProfile } from '@/lib/context'
 import { PerformanceSettings } from '@/components/settings/performance-settings'
 import { SubscriptionSection } from '@/components/settings/subscription-section'
 import { AccountSettings } from '@/components/settings/account-settings'
 import { NotificationSettings, AppearanceSettings, SecuritySettings } from '@/components/settings/general-settings'
 
-export default async function SettingsPage() {
-  const user = await getAuthUser()
-  const profile = await getProfile()
+export default function SettingsPage() {
+  const user = useUser()
+  const { profile } = useProfile()
 
   return (
     <div className="h-full overflow-y-auto pt-4 px-4 pb-36 space-y-6 max-w-2xl mx-auto">

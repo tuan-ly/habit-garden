@@ -81,12 +81,18 @@ export async function getProfile(): Promise<Profile | null> {
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('*')
+    .select(`
+      id, username, display_name, avatar_url, xp, level,
+      coins, timezone,
+      max_plants, unlocked_tiers, phase, longest_streak, total_mature_plants,
+      subscription_tier, subscription_status,
+      created_at, updated_at
+    `)
     .eq('id', user.id)
     .single()
 
   if (error) {
-    console.error('Error fetching profile:', error)
+    console.error('Error fetching profile:', error.message, error.details, error.hint, error.code)
     return null
   }
 
