@@ -1,0 +1,5 @@
+# Souliti local files — do not commit
+db/
+*.env
+.sync-state.json
+credentials/
