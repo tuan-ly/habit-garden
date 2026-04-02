@@ -64,8 +64,8 @@ function IsometricPlantComponent({
         className
       )}
       style={{
-        // Scale the whole container from bottom center, shift up 5px
-        transform: `scale(${finalScale}) translateY(-5px)`,
+        // Scale the whole container from bottom center
+        transform: `scale(${finalScale}) translateY(-1px)`,
         transformOrigin: 'bottom center',
       }}
     >

@@ -172,7 +172,7 @@ export const PlantVisual = memo(function PlantVisual({
 
   return (
     <div className={cn(
-      'relative inline-flex justify-center',
+      'relative flex justify-center leading-none',
       alignBottom ? 'items-end' : 'items-center',
       'plant-container',
       className
@@ -191,7 +191,7 @@ export const PlantVisual = memo(function PlantVisual({
       {/* Main plant image with animations */}
       <div
         className={cn(
-          'plant-visual inline-flex justify-center transition-transform duration-300 relative z-10',
+          'plant-visual flex justify-center leading-none transition-transform duration-300 relative z-10',
           alignBottom ? 'items-end' : 'items-center',
           getSizeClasses(size, alignBottom),
           specialEffectClass,

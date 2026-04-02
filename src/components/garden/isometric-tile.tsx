@@ -213,7 +213,7 @@ function IsometricTileComponent({
           )}
           style={{
             left: tileSize / 2,
-            top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight) - 2,
+            top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight) ,
             transform: 'translate(-50%, -100%)',
             transformOrigin: 'bottom center',
           }}
@@ -228,7 +228,7 @@ function IsometricTileComponent({
           className="absolute pointer-events-none flex flex-col items-center opacity-50"
           style={{
             left: tileSize / 2,
-            top: tileHitHeight / 2 + getMergedAreaCenterOffset(previewPlant.grid_size || 1, tileHitHeight) - 2,
+            top: tileHitHeight / 2 + getMergedAreaCenterOffset(previewPlant.grid_size || 1, tileHitHeight),
             transform: 'translate(-50%, -100%)',
             transformOrigin: 'bottom center',
           }}
