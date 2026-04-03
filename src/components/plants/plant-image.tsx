@@ -65,6 +65,15 @@ function getPlantFolder(plantTypeName: string): string {
     return PLANT_TYPE_FOLDERS[normalizedName] || 'generic'
 }
 
+// Map clean stage names to numbered file prefixes
+const STAGE_FILE_PREFIX: Record<GrowthStage, string> = {
+    seed: '01-seed',
+    sprout: '02-sprout',
+    growing: '03-growing',
+    blooming: '04-blooming',
+    mature: '05-mature',
+}
+
 function getPlantImagePath(plantTypeName: string, stage: GrowthStage, isDead: boolean): string {
     const folder = getPlantFolder(plantTypeName)
 
@@ -72,7 +81,7 @@ function getPlantImagePath(plantTypeName: string, stage: GrowthStage, isDead: bo
         return `/plants/${folder}/dead.png`
     }
 
-    return `/plants/${folder}/${stage}.png`
+    return `/plants/${folder}/${STAGE_FILE_PREFIX[stage]}.png`
 }
 
 export function PlantImage({
