@@ -74,7 +74,8 @@ function CraftTabContent() {
     if (!inventory.recipesLoaded) {
       inventory.loadRecipes()
     }
-  }, [inventory])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inventory.recipesLoaded])
 
   const handleCraft = async (recipeId: string) => {
     setCraftingRecipeId(recipeId)
