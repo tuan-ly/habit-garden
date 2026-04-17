@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Droplets, Target, Plus } from 'lucide-react'
+import { Droplets, Target, Plus, Check } from 'lucide-react'
 import type { PlantWithType, WeatherType } from '@/types/database'
 import { MoistureBar } from './moisture-bar'
 import { GrowthProgress } from './growth-progress'
@@ -13,33 +13,30 @@ import { cn } from '@/lib/utils'
 import { getGoalForPlant, type GoalWithStats } from '@/lib/actions/goals'
 import { GoalProgressRing, GoalModeBadge } from '@/components/goals'
 
-// Plant type gradient backgrounds
-const PLANT_GRADIENTS: Record<string, string> = {
-  bamboo: 'from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30',
-  sunflower: 'from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/30',
-  'cherry blossom': 'from-pink-50 to-rose-50 dark:from-pink-950/30 dark:to-rose-950/30',
-  cactus: 'from-lime-50 to-green-50 dark:from-lime-950/30 dark:to-green-950/30',
-  lotus: 'from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30',
-  rose: 'from-rose-50 to-red-50 dark:from-rose-950/30 dark:to-red-950/30',
-  bonsai: 'from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30',
-  'money tree': 'from-yellow-50 to-green-50 dark:from-yellow-950/30 dark:to-green-950/30',
+// Plant type accent — a single hue for top border, not full gradient
+const PLANT_ACCENTS: Record<string, string> = {
+  bamboo: 'bg-moss',
+  sunflower: 'bg-bloom',
+  'cherry blossom': 'bg-[#E8A4B5]',
+  cactus: 'bg-growth',
+  lotus: 'bg-[#B794D1]',
+  rose: 'bg-[#D97A8E]',
+  bonsai: 'bg-leaf',
+  'money tree': 'bg-[#C4B268]',
 }
 
-function getPlantGradient(typeName: string): string {
-  const normalizedName = typeName.toLowerCase()
-  return PLANT_GRADIENTS[normalizedName] || 'from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30'
+function getPlantAccent(typeName: string): string {
+  return PLANT_ACCENTS[typeName.toLowerCase()] || 'bg-moss'
 }
 
 interface PlantCardProps {
   plant: PlantWithType
   onClick?: () => void
   weather?: WeatherType | null
-  /** Pre-fetched goal stats (from batch fetch) */
   goalStats?: GoalWithStats | null
 }
 
 export const PlantCard = memo(function PlantCard({ plant: initialPlant, onClick, weather, goalStats }: PlantCardProps) {
-  // Get the latest plant data from context (with optimistic updates)
   const { plants, waterPlant } = usePlants()
   const plant = plants.find(p => p.id === initialPlant.id) || initialPlant
 
@@ -47,13 +44,11 @@ export const PlantCard = memo(function PlantCard({ plant: initialPlant, onClick,
   const [showXp, setShowXp] = useState(false)
   const [earnedXp, setEarnedXp] = useState(0)
 
-  // Use pre-fetched goal stats (batch fetched by parent), fall back to lazy fetch
   const [lazyGoal, setLazyGoal] = useState<GoalWithStats | null>(null)
   const goal = goalStats ?? lazyGoal
 
   const hasGoal = !!plant.goal_mode
 
-  // Only fetch lazily if goalStats prop was not provided
   useEffect(() => {
     if (hasGoal && goalStats === undefined) {
       getGoalForPlant(plant.id).then(setLazyGoal)
@@ -69,53 +64,45 @@ export const PlantCard = memo(function PlantCard({ plant: initialPlant, onClick,
 
   const handleWater = async (e: React.MouseEvent) => {
     e.stopPropagation()
-
     if (isWateredToday || isDead) return
 
-    // If plant has a goal, clicking should open the detail sheet instead
     if (hasGoal) {
       onClick?.()
       return
     }
 
     setIsWatering(true)
-
-    // Use optimistic update from context
     const result = await waterPlant(plant.id)
-
     if (result.success) {
-      // Show XP popup animation
       setEarnedXp(result.xpEarned || 0)
       setShowXp(true)
       setTimeout(() => setShowXp(false), 1500)
     }
-
-    // Keep watering animation for a moment
     setTimeout(() => setIsWatering(false), 800)
   }
 
   return (
     <Card
       className={cn(
-        'group cursor-pointer transition-all duration-300',
-        'hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1.5',
-        'relative overflow-hidden border-2',
-        'bg-gradient-to-br',
-        getPlantGradient(plant.plant_type.name),
+        'group cursor-pointer relative overflow-hidden',
+        'bg-white/90 dark:bg-card border-0 rounded-[20px]',
+        'shadow-dappled hover:shadow-dappled-lg',
+        'transition-[transform,box-shadow] duration-300',
+        'hover:-translate-y-0.5',
         isDead && 'opacity-60 grayscale',
-        isMature && 'border-green-400 dark:border-green-600 ring-2 ring-green-500/20',
-        hasGoal && !goal?.isOnTrack && 'border-amber-400 dark:border-amber-600 ring-2 ring-amber-500/20',
-        !isDead && !isMature && 'border-transparent hover:border-primary/20'
+        isMature && 'ring-1 ring-leaf/30',
+        hasGoal && goal && !goal.isOnTrack && 'ring-1 ring-bloom/40'
       )}
       onClick={onClick}
     >
-      {/* Decorative corner gradient */}
-      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-white/40 to-transparent dark:from-white/5 pointer-events-none" />
+      {/* Plant-type accent strip */}
+      <div className={cn('absolute top-0 left-0 right-0 h-1', getPlantAccent(plant.plant_type.name))} />
 
-      <CardContent className="p-4 relative">
+      <CardContent className="p-4 pt-5 relative">
+        {/* Header row */}
         <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="relative p-1 bg-white/50 dark:bg-black/20 rounded-xl shadow-inner">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="relative flex-shrink-0 w-14 h-14 rounded-2xl bg-mist/80 dark:bg-muted flex items-center justify-center shadow-dappled">
               <PlantVisual
                 plant={plant}
                 size="md"
@@ -125,59 +112,63 @@ export const PlantCard = memo(function PlantCard({ plant: initialPlant, onClick,
               <XpPopup amount={earnedXp} show={showXp} />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-base truncate">{plant.name}</h3>
-              <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
-                <span className="opacity-70">{plant.plant_type.icon}</span>
+              <h3 className="font-display text-[17px] font-semibold text-canopy dark:text-foreground truncate leading-tight">
+                {plant.name}
+              </h3>
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
                 <span>{plant.plant_type.name}</span>
-                {hasGoal && <Target className="h-3 w-3 text-primary" />}
+                {hasGoal && (
+                  <>
+                    <span className="w-1 h-1 rounded-full bg-muted-foreground/40" />
+                    <span className="inline-flex items-center gap-0.5 text-leaf">
+                      <Target className="h-3 w-3" />
+                      Goal
+                    </span>
+                  </>
+                )}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             {goal && <GoalProgressRing goal={goal} size="sm" showPeriod={true} />}
             <StreakFire streak={plant.current_streak} show={plant.current_streak > 0 && !hasGoal} />
           </div>
         </div>
 
-        {/* Show goal info or regular progress */}
+        {/* Metrics block */}
         {hasGoal && goal ? (
-          <div className="space-y-3 mb-4 p-3 bg-white/60 dark:bg-black/20 rounded-xl backdrop-blur-sm">
+          <div className="space-y-3 mb-4 p-3.5 rounded-2xl bg-mist/60 dark:bg-muted/50">
             <MoistureBar value={plant.current_moisture} />
             <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground font-medium">{goal.periodLabel}</span>
               <span className={cn(
-                'font-bold',
-                goal.periodProgress >= goal.currentPeriodTarget
-                  ? 'text-emerald-600 dark:text-emerald-400'
-                  : !goal.isOnTrack
-                  ? 'text-amber-600 dark:text-amber-400'
-                  : 'text-primary'
+                'font-display font-semibold tabular-nums',
+                goal.periodProgress >= goal.currentPeriodTarget ? 'text-leaf'
+                  : !goal.isOnTrack ? 'text-bloom'
+                  : 'text-canopy dark:text-foreground'
               )}>
                 {Math.round(goal.periodProgress * 10) / 10} / {Math.round(goal.currentPeriodTarget * 10) / 10} {goal.unit}
               </span>
             </div>
-            {/* Progress bar for goal (period-based) */}
-            <div className="h-2 w-full rounded-full bg-muted/50 overflow-hidden shadow-inner">
+            <div className="h-1.5 w-full rounded-full bg-white/70 dark:bg-black/30 overflow-hidden">
               <div
                 className={cn(
-                  'h-full rounded-full transition-all duration-500',
-                  goal.periodProgress >= goal.currentPeriodTarget
-                    ? 'bg-gradient-to-r from-green-400 to-emerald-500'
-                    : goal.isOnTrack
-                    ? 'bg-gradient-to-r from-primary/80 to-primary'
-                    : 'bg-gradient-to-r from-amber-400 to-orange-500'
+                  'h-full rounded-full transition-[width] duration-500 ease-out',
+                  goal.periodProgress >= goal.currentPeriodTarget ? 'bg-leaf'
+                    : goal.isOnTrack ? 'bg-moss'
+                    : 'bg-bloom'
                 )}
                 style={{ width: `${Math.min(100, goal.currentPeriodTarget > 0 ? (goal.periodProgress / goal.currentPeriodTarget) * 100 : 0)}%` }}
               />
             </div>
             {goal.periodProgress < goal.currentPeriodTarget && (
-              <p className="text-[10px] text-amber-600 dark:text-amber-400">
+              <p className="text-[10px] text-bloom/90 font-medium">
                 {Math.round((goal.currentPeriodTarget - goal.periodProgress) * 10) / 10} {goal.unit} to go
               </p>
             )}
           </div>
         ) : (
-          <div className="space-y-3 mb-4 p-3 bg-white/60 dark:bg-black/20 rounded-xl backdrop-blur-sm">
+          <div className="space-y-3 mb-4 p-3.5 rounded-2xl bg-mist/60 dark:bg-muted/50">
             <MoistureBar value={plant.current_moisture} />
             <GrowthProgress
               value={plant.growth_percentage}
@@ -187,37 +178,49 @@ export const PlantCard = memo(function PlantCard({ plant: initialPlant, onClick,
           </div>
         )}
 
-        {/* Button changes based on goal status */}
+        {/* CTA */}
         {hasGoal ? (
           <Button
-            variant={isWateredToday ? 'secondary' : 'default'}
             size="sm"
             className={cn(
-              'w-full font-semibold shadow-md transition-all',
-              !isWateredToday && !isDead && 'bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70',
-              isWateredToday && 'opacity-75'
+              'w-full h-10 rounded-full font-semibold cursor-pointer transition-colors',
+              isWateredToday || isDead
+                ? 'bg-mist hover:bg-mist text-muted-foreground shadow-none dark:bg-muted'
+                : 'bg-leaf hover:bg-canopy text-white shadow-leaf'
             )}
             onClick={handleWater}
             disabled={isWateredToday || isDead}
           >
-            <Plus className="h-4 w-4 mr-2" />
-            {isDead ? 'Dead' : isWateredToday ? '✓ Logged Today' : 'Log Progress'}
+            {isWateredToday ? (
+              <><Check className="h-4 w-4 mr-2" />Logged today</>
+            ) : isDead ? (
+              'Dead'
+            ) : (
+              <><Plus className="h-4 w-4 mr-2" />Log Progress</>
+            )}
           </Button>
         ) : (
           <Button
-            variant={isWateredToday ? 'secondary' : 'default'}
             size="sm"
             className={cn(
-              'w-full font-semibold shadow-md transition-all',
+              'w-full h-10 rounded-full font-semibold cursor-pointer transition-colors',
               isWatering && 'animate-pulse',
-              !isWateredToday && !isDead && 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white border-0',
-              isWateredToday && 'opacity-75'
+              isWateredToday || isDead
+                ? 'bg-mist hover:bg-mist text-muted-foreground shadow-none dark:bg-muted'
+                : 'bg-leaf hover:bg-canopy text-white shadow-leaf'
             )}
             onClick={handleWater}
             disabled={isWatering || isWateredToday || isDead}
           >
-            <Droplets className={cn('h-4 w-4 mr-2', isWatering && 'text-blue-200 animate-bounce')} />
-            {isDead ? 'Dead' : isWateredToday ? '✓ Watered Today' : isWatering ? 'Watering...' : 'Water Plant'}
+            {isWateredToday ? (
+              <><Check className="h-4 w-4 mr-2" />Watered today</>
+            ) : isDead ? (
+              'Dead'
+            ) : isWatering ? (
+              <><Droplets className="h-4 w-4 mr-2 animate-bounce-subtle" />Watering…</>
+            ) : (
+              <><Droplets className="h-4 w-4 mr-2" />Water Plant</>
+            )}
           </Button>
         )}
       </CardContent>

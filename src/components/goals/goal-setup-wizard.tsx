@@ -26,6 +26,7 @@ import {
   Flower2,
   Edit3,
   Info,
+  Clock,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { GoalMode, ProgressionType, GoalFrequency } from '@/types/database'
@@ -42,29 +43,25 @@ interface GoalSetupWizardProps {
 
 type WizardStep = 'mode' | 'frequency' | 'target' | 'preview'
 
-// Goal mode options
+// Goal mode options — Living Garden palette
 const GOAL_MODES = [
   {
     id: 'build_capacity' as GoalMode,
     title: 'Build Capacity',
-    icon: '📈',
+    icon: TrendingUp,
     description: 'Improve each period',
     example: 'Week 1: 20 pages → Week 12: 50 pages',
-    color: 'from-emerald-500/20 to-green-500/20',
-    borderColor: 'border-emerald-500/50',
-    textColor: 'text-emerald-600 dark:text-emerald-400',
+    accent: 'leaf',
   },
   {
     id: 'total_progress' as GoalMode,
     title: 'Total Progress',
-    icon: '🎯',
+    icon: Target,
     description: 'Accumulate to a total',
     example: 'Save $10,000 over 6 months',
-    color: 'from-blue-500/20 to-cyan-500/20',
-    borderColor: 'border-blue-500/50',
-    textColor: 'text-blue-600 dark:text-blue-400',
+    accent: 'moisture',
   },
-]
+] as const
 
 // Frequency options with clearer descriptions
 const FREQUENCY_OPTIONS = [
@@ -320,9 +317,9 @@ export function GoalSetupWizard({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto surface-paper border-0 shadow-dappled-lg rounded-[24px] p-6">
         {/* Step indicator */}
-        <div className="flex items-center justify-center gap-1 mb-4">
+        <div className="flex items-center justify-center gap-1 mb-5">
           {steps.map((s, i) => {
             const Icon = stepIcons[i]
             const isActive = step === s
@@ -334,10 +331,10 @@ export function GoalSetupWizard({
                   className={cn(
                     'w-8 h-8 rounded-full flex items-center justify-center transition-all',
                     isActive
-                      ? 'bg-primary text-primary-foreground scale-110'
+                      ? 'bg-leaf text-white scale-110 shadow-leaf'
                       : isPast
-                      ? 'bg-primary/20 text-primary'
-                      : 'bg-muted text-muted-foreground'
+                      ? 'bg-moss/20 text-leaf'
+                      : 'bg-mist dark:bg-muted text-muted-foreground'
                   )}
                 >
                   <Icon className="h-4 w-4" />
@@ -345,8 +342,8 @@ export function GoalSetupWizard({
                 {i < steps.length - 1 && (
                   <div
                     className={cn(
-                      'w-8 h-0.5 mx-1',
-                      isPast ? 'bg-primary' : 'bg-muted'
+                      'w-8 h-0.5 mx-1 transition-colors',
+                      isPast ? 'bg-leaf' : 'bg-mist dark:bg-muted'
                     )}
                   />
                 )}
@@ -359,52 +356,57 @@ export function GoalSetupWizard({
         {step === 'mode' && (
           <>
             <DialogHeader className="text-center">
-              <DialogTitle className="flex items-center justify-center gap-2">
-                <TrendingUp className="h-5 w-5 text-green-500" />
-                Choose Goal Type
+              <DialogTitle asChild>
+                <h2 className="font-display text-2xl font-semibold text-canopy dark:text-foreground flex items-center justify-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-leaf" />
+                  Choose Goal Type
+                </h2>
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-muted-foreground">
                 How do you want to track progress for {plantName}?
               </DialogDescription>
             </DialogHeader>
 
-            <div className="grid gap-4 py-4">
-              {GOAL_MODES.map((mode) => (
-                <button
-                  key={mode.id}
-                  onClick={() => setGoalMode(mode.id)}
-                  className={cn(
-                    'relative p-4 rounded-xl border-2 text-left transition-all overflow-hidden',
-                    goalMode === mode.id
-                      ? `${mode.borderColor} ring-2 ring-offset-2 ring-primary`
-                      : 'border-border hover:border-primary/50'
-                  )}
-                >
-                  <div
+            <div className="grid gap-3 py-4">
+              {GOAL_MODES.map((mode) => {
+                const Icon = mode.icon
+                const accentColor = mode.accent === 'leaf' ? 'text-leaf' : 'text-moisture'
+                const accentBg = mode.accent === 'leaf' ? 'bg-leaf/10' : 'bg-moisture/10'
+                const isSelected = goalMode === mode.id
+                return (
+                  <button
+                    key={mode.id}
+                    onClick={() => setGoalMode(mode.id)}
                     className={cn(
-                      'absolute inset-0 bg-gradient-to-br opacity-50',
-                      mode.color
+                      'relative p-4 rounded-2xl text-left transition-all overflow-hidden cursor-pointer',
+                      'bg-white/80 dark:bg-card ring-1',
+                      isSelected
+                        ? 'ring-2 ring-leaf shadow-dappled-lg'
+                        : 'ring-border hover:ring-moss/40 shadow-dappled'
                     )}
-                  />
-                  <div className="relative flex items-start gap-4">
-                    <span className="text-3xl">{mode.icon}</span>
-                    <div className="flex-1">
-                      <h3 className={cn('font-semibold', mode.textColor)}>
-                        {mode.title}
-                      </h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {mode.description}
-                      </p>
-                      <p className="text-xs font-mono bg-background/50 px-2 py-1 rounded mt-2 inline-block">
-                        {mode.example}
-                      </p>
+                  >
+                    <div className="relative flex items-start gap-4">
+                      <div className={cn('p-2.5 rounded-xl flex-shrink-0', accentBg)}>
+                        <Icon className={cn('h-5 w-5', accentColor)} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className={cn('font-display text-lg font-semibold', accentColor)}>
+                          {mode.title}
+                        </h3>
+                        <p className="text-sm text-muted-foreground mt-0.5">
+                          {mode.description}
+                        </p>
+                        <p className="text-xs bg-mist dark:bg-muted text-canopy/80 dark:text-foreground/80 px-2 py-1 rounded-lg mt-2 inline-block tabular-nums">
+                          {mode.example}
+                        </p>
+                      </div>
+                      {isSelected && (
+                        <Check className="h-5 w-5 text-leaf flex-shrink-0" />
+                      )}
                     </div>
-                    {goalMode === mode.id && (
-                      <Check className="h-5 w-5 text-primary" />
-                    )}
-                  </div>
-                </button>
-              ))}
+                  </button>
+                )
+              })}
             </div>
           </>
         )}
@@ -674,29 +676,28 @@ export function GoalSetupWizard({
             <div className="space-y-4 py-4">
               {/* Summary badges */}
               <div className="flex flex-wrap gap-2 justify-center">
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 text-sm">
-                  {goalMode === 'build_capacity' ? '📈 Build Capacity' : '🎯 Total Progress'}
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-leaf/15 text-leaf text-sm font-medium">
+                  {goalMode === 'build_capacity' ? <TrendingUp className="h-3.5 w-3.5" /> : <Target className="h-3.5 w-3.5" />}
+                  {goalMode === 'build_capacity' ? 'Build Capacity' : 'Total Progress'}
                 </span>
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 text-sm">
-                  📅 {frequency === 'daily' ? 'Daily' : frequency === 'weekly' ? 'Weekly' : 'Monthly'}
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-moisture/15 text-moisture text-sm font-medium">
+                  <Calendar className="h-3.5 w-3.5" />
+                  {frequency === 'daily' ? 'Daily' : frequency === 'weekly' ? 'Weekly' : 'Monthly'}
                 </span>
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 text-sm">
-                  ⏱️ {durationWeeks} weeks
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-bloom/15 text-bloom text-sm font-medium">
+                  <Clock className="h-3.5 w-3.5" />
+                  {durationWeeks} weeks
                 </span>
               </div>
 
               {/* Target summary */}
-              <div className="text-center p-4 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border border-green-200/50 dark:border-green-800/50">
-                <div className="text-sm text-muted-foreground">Your Goal</div>
-                <div className="text-2xl font-bold text-green-700 dark:text-green-300 mt-1">
+              <div className="text-center p-5 rounded-2xl bg-white/80 dark:bg-card ring-1 ring-border shadow-dappled">
+                <div className="text-xs text-muted-foreground uppercase tracking-wider">Your Goal</div>
+                <div className="font-display text-2xl font-semibold text-canopy dark:text-foreground mt-1">
                   {goalMode === 'build_capacity' ? (
-                    <>
-                      {startingTarget} → {finalTarget} {unit}/{frequencyOption.periodLabel}
-                    </>
+                    <>{startingTarget} → {finalTarget} {unit}/{frequencyOption.periodLabel}</>
                   ) : (
-                    <>
-                      {totalTarget} {unit} total
-                    </>
+                    <>{totalTarget} {unit} total</>
                   )}
                 </div>
               </div>
@@ -792,9 +793,9 @@ export function GoalSetupWizard({
             <Button
               onClick={handleSubmit}
               disabled={isPending}
-              className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+              className="bg-leaf hover:bg-canopy text-white rounded-full shadow-leaf cursor-pointer"
             >
-              {isPending ? 'Creating...' : '🌱 Start Goal'}
+              {isPending ? 'Creating…' : (<><Sprout className="h-4 w-4 mr-2" />Start Goal</>)}
               {!isPending && <Check className="h-4 w-4 ml-2" />}
             </Button>
           )}

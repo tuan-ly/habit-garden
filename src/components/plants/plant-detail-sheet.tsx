@@ -1,12 +1,13 @@
 'use client'
 
 /**
- * Plant Detail Sheet - Redesigned with tabs for reflective experience
+ * Plant Detail Sheet — Living Garden redesign
  *
- * Tabs:
- * - Overview: Quick view with motivation, rhythm, and action
- * - Journal: Notes timeline + milestones (lazy loaded)
- * - Stats: Detailed statistics (lazy loaded)
+ * Concept: Organic Biophilic + Calm Tech
+ * - Sage palette via --garden-* tokens
+ * - Fraunces display for plant name, Nunito body
+ * - Dappled-light shadows, no harsh gradients
+ * - Tabs: Overview | Journal | Stats
  */
 
 import { useState, useEffect, useTransition, useMemo } from 'react'
@@ -36,6 +37,7 @@ import {
   BookOpen,
   ChevronRight,
   Lock,
+  Leaf,
 } from 'lucide-react'
 import type { PlantWithType, WeatherType, MilestoneType } from '@/types/database'
 import { PlantVisual, XpPopup } from './plant-visual'
@@ -81,7 +83,6 @@ export function PlantDetailSheet({
   onOpenChange,
   weather,
 }: PlantDetailSheetProps) {
-  // Get the latest plant data from context (with optimistic updates)
   const { plants, waterPlant, updatePlant } = usePlants()
   const { hasGoals, showUpgradeModal } = useSubscription()
   const plant = initialPlant ? (plants.find(p => p.id === initialPlant.id) || initialPlant) : null
@@ -91,7 +92,6 @@ export function PlantDetailSheet({
   const [earnedXp, setEarnedXp] = useState(0)
   const [activeTab, setActiveTab] = useState<TabValue>('overview')
 
-  // Goal state
   const [goal, setGoal] = useState<GoalWithStats | null>(null)
   const [goalStats, setGoalStats] = useState<GoalStatistics | null>(null)
   const [showGoalWizard, setShowGoalWizard] = useState(false)
@@ -99,39 +99,30 @@ export function PlantDetailSheet({
   const [showGoalStats, setShowGoalStats] = useState(false)
   const [isLoadingGoal, setIsLoadingGoal] = useState(false)
 
-  // Adaptive state
   const [adaptiveAnalysis, setAdaptiveAnalysis] = useState<AdaptiveAnalysisResult | null>(null)
   const [showAdaptiveSuggestion, setShowAdaptiveSuggestion] = useState(false)
 
-  // Activity/Rhythm state - Quick view (7 days for overview)
   const [quickRhythm, setQuickRhythm] = useState<ActivityHistory | null>(null)
 
-  // Journal tab state (lazy loaded)
   const [journalData, setJournalData] = useState<JournalData | null>(null)
   const [journalLoading, setJournalLoading] = useState(false)
 
-  // Stats tab state (lazy loaded)
   const [fullActivityHistory, setFullActivityHistory] = useState<ActivityHistory | null>(null)
   const [statsLoading, setStatsLoading] = useState(false)
 
-  // Reflection modal state
   const [reflectionMilestone, setReflectionMilestone] = useState<MilestoneData | null>(null)
   const [showReflectionModal, setShowReflectionModal] = useState(false)
 
   const [isPending, startTransition] = useTransition()
 
-  // Load essential data when sheet opens (Overview tab) - parallel requests
-  // Uses plant.goal_mode as instant signal to avoid stale goal flicker
   useEffect(() => {
     if (plant && open) {
-      // Immediately clear stale goal to prevent showing old plant's goal
       setGoal(null)
       setQuickRhythm(null)
 
       const hasGoalMode = !!plant.goal_mode
 
       if (hasGoalMode) {
-        // Plant has a goal - fetch goal data + rhythm in parallel
         setIsLoadingGoal(true)
         let cancelled = false
         Promise.all([
@@ -146,14 +137,12 @@ export function PlantDetailSheet({
         })
         return () => { cancelled = true }
       } else {
-        // No goal - just fetch rhythm, skip goal query entirely
         setIsLoadingGoal(false)
         getPlantActivityHistory(plant.id, 7).then(setQuickRhythm)
       }
     }
   }, [plant?.id, open])
 
-  // Reset tab when sheet closes or plant changes
   useEffect(() => {
     if (!open) {
       setActiveTab('overview')
@@ -162,7 +151,6 @@ export function PlantDetailSheet({
     setFullActivityHistory(null)
   }, [open, plant?.id])
 
-  // Lazy load Journal tab data
   useEffect(() => {
     if (plant && activeTab === 'journal' && !journalData && !journalLoading) {
       setJournalLoading(true)
@@ -174,7 +162,6 @@ export function PlantDetailSheet({
     }
   }, [activeTab, plant?.id, journalData, journalLoading])
 
-  // Lazy load Stats tab data
   useEffect(() => {
     if (plant && activeTab === 'stats' && !fullActivityHistory && !statsLoading) {
       setStatsLoading(true)
@@ -186,7 +173,6 @@ export function PlantDetailSheet({
     }
   }, [activeTab, plant?.id, fullActivityHistory, statsLoading])
 
-  // Load full stats and adaptive analysis when viewing goal stats - parallel requests
   useEffect(() => {
     if (goal && showGoalStats) {
       Promise.all([
@@ -202,7 +188,6 @@ export function PlantDetailSheet({
     }
   }, [goal?.id, showGoalStats])
 
-  // Days remaining in current period
   const periodDaysLeft = useMemo(() => {
     if (!goal) return 0
     try {
@@ -218,7 +203,6 @@ export function PlantDetailSheet({
   if (!plant) return null
 
   const isWateredToday = isToday(plant.last_watered_at)
-
   const isSleeping = plant.status === 'dead' || plant.status === 'sleeping'
   const isResting = plant.status === 'resting' || plant.status === 'dormant'
   const hasGoal = !!plant.goal_mode
@@ -262,10 +246,8 @@ export function PlantDetailSheet({
         },
       })
     }
-    // Invalidate cached activity data so Stats/Overview re-fetch fresh data
     setQuickRhythm(null)
     setFullActivityHistory(null)
-    // Refresh journal data if on journal tab
     if (activeTab === 'journal') {
       const data = await getPlantJournalData(plant.id)
       setJournalData(data)
@@ -286,7 +268,6 @@ export function PlantDetailSheet({
   }
 
   const handleReflectionComplete = async () => {
-    // Refresh journal data
     if (plant) {
       const data = await getPlantJournalData(plant.id)
       setJournalData(data)
@@ -296,8 +277,8 @@ export function PlantDetailSheet({
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent className="overflow-y-auto p-0 w-full sm:max-w-md">
-          {/* Hero Header - Always visible */}
+        <SheetContent className="overflow-y-auto p-0 w-full sm:max-w-md border-l-0 surface-paper">
+          {/* ═══ Hero Header ═══ */}
           <HeroHeader
             plant={plant}
             goal={goal}
@@ -310,65 +291,65 @@ export function PlantDetailSheet({
             hasGoal={hasGoal}
           />
 
-          {/* Main Tabs */}
-          <div className="px-5 pb-8">
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)} className="mt-4">
-              <TabsList className="grid w-full grid-cols-3 mb-4">
-                <TabsTrigger value="overview" className="text-xs">
+          <div className="px-5 pb-10 pt-4">
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)}>
+              <TabsList className="grid w-full grid-cols-3 mb-5 h-10 bg-mist/70 dark:bg-secondary rounded-full p-1">
+                <TabsTrigger
+                  value="overview"
+                  className="text-xs rounded-full data-[state=active]:bg-white data-[state=active]:text-canopy data-[state=active]:shadow-sm dark:data-[state=active]:bg-accent cursor-pointer"
+                >
                   <Heart className="h-3.5 w-3.5 mr-1.5" />
                   Overview
                 </TabsTrigger>
-                <TabsTrigger value="journal" className="text-xs">
+                <TabsTrigger
+                  value="journal"
+                  className="text-xs rounded-full data-[state=active]:bg-white data-[state=active]:text-canopy data-[state=active]:shadow-sm dark:data-[state=active]:bg-accent cursor-pointer"
+                >
                   <BookOpen className="h-3.5 w-3.5 mr-1.5" />
                   Journal
                 </TabsTrigger>
-                <TabsTrigger value="stats" className="text-xs">
+                <TabsTrigger
+                  value="stats"
+                  className="text-xs rounded-full data-[state=active]:bg-white data-[state=active]:text-canopy data-[state=active]:shadow-sm dark:data-[state=active]:bg-accent cursor-pointer"
+                >
                   <BarChart3 className="h-3.5 w-3.5 mr-1.5" />
                   Stats
                 </TabsTrigger>
               </TabsList>
 
-              {/* Overview Tab */}
+              {/* ═══ Overview Tab ═══ */}
               <TabsContent value="overview" className="mt-0 space-y-5">
-                {/* Sleeping plant message */}
+                {/* Sleeping notice */}
                 {isSleeping && (
-                  <div className={cn(
-                    'p-4 rounded-xl',
-                    'bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/40 dark:to-purple-950/40',
-                    'ring-1 ring-indigo-200/50 dark:ring-indigo-800/30'
-                  )}>
+                  <div className="p-4 rounded-2xl bg-sky-garden/40 dark:bg-accent ring-1 ring-moss/20">
                     <div className="flex items-start gap-3">
-                      <div className="p-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg">
-                        <Moon className="h-4 w-4 text-indigo-500" />
+                      <div className="p-2 rounded-xl bg-white/80 dark:bg-muted shadow-sm">
+                        <Moon className="h-4 w-4 text-leaf" />
                       </div>
                       <div>
-                        <h5 className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+                        <h5 className="text-sm font-semibold text-canopy dark:text-foreground">
                           Sleeping peacefully
                         </h5>
-                        <p className="text-xs text-indigo-600/80 dark:text-indigo-400/80 mt-1">
-                          Wake it anytime by watering - your journey continues where you left off.
+                        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                          Wake it anytime by watering — your journey continues where you left off.
                         </p>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Why I Started */}
+                {/* Why I started */}
                 {plant.why_i_started && (
-                  <div className={cn(
-                    'p-4 rounded-xl',
-                    'bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/40 dark:to-indigo-950/40',
-                    'ring-1 ring-purple-200/50 dark:ring-purple-800/30'
-                  )}>
+                  <div className="p-4 rounded-2xl bg-bloom/10 dark:bg-accent/60 ring-1 ring-bloom/25">
                     <div className="flex items-start gap-3">
-                      <div className="p-2 bg-purple-100 dark:bg-purple-900/50 rounded-lg">
-                        <Lightbulb className="h-4 w-4 text-purple-500" />
+                      <div className="p-2 rounded-xl bg-white/80 dark:bg-muted shadow-sm">
+                        <Lightbulb className="h-4 w-4 text-bloom" />
                       </div>
-                      <div>
-                        <h5 className="text-xs font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wide mb-1">
+                      <div className="min-w-0 flex-1">
+                        <h5 className="text-[10px] font-bold text-canopy/70 dark:text-muted-foreground uppercase tracking-[0.12em] mb-1.5">
                           Why I Started
                         </h5>
-                        <p className="text-sm text-purple-600 dark:text-purple-400 italic leading-relaxed">
+                        <p className="font-display text-[15px] text-canopy dark:text-foreground italic leading-snug">
                           &ldquo;{plant.why_i_started}&rdquo;
                         </p>
                       </div>
@@ -376,25 +357,25 @@ export function PlantDetailSheet({
                   </div>
                 )}
 
-                {/* Quick Rhythm View (7 days) */}
+                {/* This Week — Rhythm */}
                 {quickRhythm && (
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-emerald-500" />
+                      <h4 className="text-sm font-semibold text-canopy dark:text-foreground flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-leaf" />
                         This Week
                       </h4>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 text-xs text-slate-500 hover:text-slate-700"
+                        className="h-7 text-xs text-muted-foreground hover:text-canopy hover:bg-mist cursor-pointer"
                         onClick={() => setActiveTab('journal')}
                       >
                         See journal
                         <ChevronRight className="h-3.5 w-3.5 ml-0.5" />
                       </Button>
                     </div>
-                    <div className="rounded-xl bg-slate-900/80 p-3">
+                    <div className="rounded-2xl bg-white/70 dark:bg-card p-4 ring-1 ring-border shadow-dappled">
                       <RhythmView
                         activityDates={quickRhythm.activities.map(a => a.logged_date)}
                         days={7}
@@ -404,39 +385,41 @@ export function PlantDetailSheet({
                   </div>
                 )}
 
-                {/* Goal Progress (compact) */}
+                {/* Goal Progress — Hero number style */}
                 {isLoadingGoal && hasGoal && (
-                  <div className="rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/30 p-4 space-y-3 ring-1 ring-indigo-100 dark:ring-indigo-900/50 animate-pulse">
+                  <div className="rounded-2xl bg-white/70 dark:bg-card p-5 space-y-3 ring-1 ring-border shadow-dappled animate-pulse">
                     <div className="flex items-center gap-2">
-                      <div className="p-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-900/50">
-                        <Target className="h-4 w-4 text-indigo-500/40" />
+                      <div className="p-1.5 rounded-lg bg-mist dark:bg-muted">
+                        <Target className="h-4 w-4 text-leaf/40" />
                       </div>
-                      <div className="h-4 w-24 bg-indigo-200/60 dark:bg-indigo-800/40 rounded" />
+                      <div className="h-4 w-24 bg-mist dark:bg-muted rounded" />
                     </div>
-                    <div className="h-3 w-full bg-indigo-200/40 dark:bg-indigo-800/30 rounded-full" />
-                    <div className="h-3 w-2/3 bg-indigo-200/30 dark:bg-indigo-800/20 rounded mx-auto" />
+                    <div className="h-10 w-32 bg-mist dark:bg-muted rounded" />
+                    <div className="h-2 w-full bg-mist dark:bg-muted rounded-full" />
                   </div>
                 )}
                 {!isLoadingGoal && goal && (
-                  <div className="rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/30 p-4 space-y-3 ring-1 ring-indigo-100 dark:ring-indigo-900/50">
+                  <div className="rounded-2xl bg-white/80 dark:bg-card p-5 space-y-4 ring-1 ring-border shadow-dappled">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="p-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-900/50">
-                          <Target className="h-4 w-4 text-indigo-500" />
+                        <div className="p-1.5 rounded-lg bg-leaf/10 dark:bg-accent">
+                          <Target className="h-4 w-4 text-leaf" />
                         </div>
-                        <span className="text-sm font-semibold text-indigo-800 dark:text-indigo-200">Goal Progress</span>
+                        <span className="text-sm font-semibold text-canopy dark:text-foreground">Goal Progress</span>
                       </div>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-100 dark:text-indigo-300 dark:hover:bg-indigo-900/50"
+                        className="h-8 text-xs text-leaf hover:text-canopy hover:bg-mist cursor-pointer"
                         onClick={() => setShowGoalStats(true)}
                       >
                         <BarChart3 className="h-3.5 w-3.5 mr-1" />
                         Details
                       </Button>
                     </div>
+
                     <PeriodTargetDisplay goal={goal} variant="full" />
+
                     {periodDaysLeft > 0 && (
                       <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
                         <Clock className="h-3 w-3" />
@@ -447,37 +430,35 @@ export function PlantDetailSheet({
                   </div>
                 )}
 
-                {/* Primary Action Button */}
-                <div className="space-y-2.5">
+                {/* Primary CTAs */}
+                <div className="space-y-2.5 pt-1">
                   {hasGoal && (isLoadingGoal || goal) ? (
                     <Button
                       className={cn(
-                        'w-full h-12 text-base font-semibold rounded-xl shadow-lg transition-all',
+                        'w-full h-12 text-base font-semibold rounded-full transition-all cursor-pointer',
+                        'bg-leaf hover:bg-canopy text-white shadow-leaf',
                         isWatering && 'animate-pulse',
-                        !isWateredToday && 'bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 shadow-indigo-500/25'
+                        isWateredToday && 'bg-mist text-muted-foreground hover:bg-mist shadow-none dark:bg-muted'
                       )}
-                      size="lg"
-                      variant={isWateredToday ? 'secondary' : 'default'}
                       onClick={() => setShowGoalLog(true)}
                       disabled={isWateredToday || isLoadingGoal}
                     >
                       <Plus className="h-5 w-5 mr-2" />
-                      {isLoadingGoal ? 'Loading...' : isWateredToday ? 'Logged for today' : isSleeping ? 'Wake & Log Progress' : 'Log Progress'}
+                      {isLoadingGoal ? 'Loading…' : isWateredToday ? 'Logged for today' : isSleeping ? 'Wake & Log Progress' : 'Log Progress'}
                     </Button>
                   ) : (
                     <Button
                       className={cn(
-                        'w-full h-12 text-base font-semibold rounded-xl shadow-lg transition-all',
+                        'w-full h-12 text-base font-semibold rounded-full transition-all cursor-pointer',
+                        'bg-leaf hover:bg-canopy text-white shadow-leaf',
                         isWatering && 'animate-pulse',
-                        !isWateredToday && 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-blue-500/25'
+                        isWateredToday && 'bg-mist text-muted-foreground hover:bg-mist shadow-none dark:bg-muted'
                       )}
-                      size="lg"
-                      variant={isWateredToday ? 'secondary' : 'default'}
                       onClick={handleWater}
                       disabled={isWatering || isWateredToday}
                     >
-                      <Droplets className={cn('h-5 w-5 mr-2', isWatering && 'text-blue-200')} />
-                      {isWateredToday ? 'Watered today' : isWatering ? 'Watering...' : isSleeping ? 'Wake Plant' : 'Water Plant'}
+                      <Droplets className={cn('h-5 w-5 mr-2', isWatering && 'animate-bounce-subtle')} />
+                      {isWateredToday ? 'Watered today' : isWatering ? 'Watering…' : isSleeping ? 'Wake Plant' : 'Water Plant'}
                     </Button>
                   )}
 
@@ -485,22 +466,22 @@ export function PlantDetailSheet({
                     hasGoals ? (
                       <Button
                         variant="outline"
-                        className="w-full h-11 rounded-xl font-medium border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                        className="w-full h-11 rounded-full font-medium border-border bg-white/60 hover:bg-white text-canopy cursor-pointer dark:bg-card dark:hover:bg-accent"
                         onClick={() => setShowGoalWizard(true)}
                       >
-                        <Target className="h-4 w-4 mr-2" />
+                        <Target className="h-4 w-4 mr-2 text-leaf" />
                         Add Goal Tracking
                       </Button>
                     ) : (
                       <Button
                         variant="outline"
-                        className="w-full h-11 rounded-xl font-medium border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 opacity-80"
+                        className="w-full h-11 rounded-full font-medium border-border bg-white/60 hover:bg-white text-canopy cursor-pointer dark:bg-card dark:hover:bg-accent"
                         onClick={() => showUpgradeModal('level_6_goals')}
                       >
-                        <Lock className="h-4 w-4 mr-2 text-amber-500" />
+                        <Lock className="h-4 w-4 mr-2 text-bloom" />
                         <span className="flex items-center gap-1.5">
                           Goal Tracking
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 font-semibold">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-bloom/20 text-bloom font-bold tracking-wide">
                             PRO
                           </span>
                         </span>
@@ -509,44 +490,40 @@ export function PlantDetailSheet({
                   )}
                 </div>
 
-                {/* Quick Stats Preview */}
-                <div className="flex items-center justify-center gap-6 py-3">
-                  <div className="text-center">
-                    <div className="flex items-center justify-center gap-1 text-orange-500">
-                      <Flame className="h-4 w-4" />
-                      <span className="text-lg font-bold">{plant.current_streak}</span>
-                    </div>
-                    <p className="text-[10px] text-slate-400 uppercase">Streak</p>
-                  </div>
-                  <div className="h-8 w-px bg-slate-200 dark:bg-slate-700" />
-                  <div className="text-center">
-                    <div className="flex items-center justify-center gap-1 text-emerald-500">
-                      <TrendingUp className="h-4 w-4" />
-                      <span className="text-lg font-bold">{Math.round(plant.growth_percentage)}%</span>
-                    </div>
-                    <p className="text-[10px] text-slate-400 uppercase">Growth</p>
-                  </div>
-                  <div className="h-8 w-px bg-slate-200 dark:bg-slate-700" />
-                  <div className="text-center">
-                    <div className="flex items-center justify-center gap-1 text-blue-500">
-                      <Droplets className="h-4 w-4" />
-                      <span className="text-lg font-bold">{plant.total_waterings}</span>
-                    </div>
-                    <p className="text-[10px] text-slate-400 uppercase">Waters</p>
-                  </div>
+                {/* Quick stats row */}
+                <div className="flex items-center justify-around py-3">
+                  <QuickStat
+                    icon={<Flame className="h-4 w-4" />}
+                    value={plant.current_streak}
+                    label="Streak"
+                    tone="bloom"
+                  />
+                  <div className="h-8 w-px bg-border" />
+                  <QuickStat
+                    icon={<TrendingUp className="h-4 w-4" />}
+                    value={`${Math.round(plant.growth_percentage)}%`}
+                    label="Growth"
+                    tone="leaf"
+                  />
+                  <div className="h-8 w-px bg-border" />
+                  <QuickStat
+                    icon={<Droplets className="h-4 w-4" />}
+                    value={plant.total_waterings}
+                    label="Waters"
+                    tone="moisture"
+                  />
                 </div>
               </TabsContent>
 
-              {/* Journal Tab */}
+              {/* ═══ Journal Tab ═══ */}
               <TabsContent value="journal" className="mt-0 space-y-6">
                 {journalLoading ? (
                   <PlantDetailSkeleton tab="journal" />
                 ) : journalData ? (
                   <>
-                    {/* Milestones Section */}
                     <div className="space-y-3">
-                      <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                        <Sparkles className="h-4 w-4 text-amber-500" />
+                      <h4 className="text-sm font-semibold text-canopy dark:text-foreground flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-bloom" />
                         Journey Milestones
                       </h4>
                       <MilestoneTimeline
@@ -555,10 +532,9 @@ export function PlantDetailSheet({
                       />
                     </div>
 
-                    {/* Journal Timeline */}
                     <div className="space-y-3">
-                      <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                        <BookOpen className="h-4 w-4 text-purple-500" />
+                      <h4 className="text-sm font-semibold text-canopy dark:text-foreground flex items-center gap-2">
+                        <BookOpen className="h-4 w-4 text-leaf" />
                         Activity Timeline
                       </h4>
                       <JournalTimeline entries={journalData.entries} />
@@ -569,143 +545,81 @@ export function PlantDetailSheet({
                 )}
               </TabsContent>
 
-              {/* Stats Tab */}
+              {/* ═══ Stats Tab ═══ */}
               <TabsContent value="stats" className="mt-0 space-y-5">
                 {statsLoading ? (
                   <PlantDetailSkeleton tab="stats" />
                 ) : (
                   <>
-                    {/* Moisture & Growth */}
-                    <div className="rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 p-4 space-y-4">
-                      {/* Moisture */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className={cn(
-                              'p-1.5 rounded-lg',
-                              plant.current_moisture >= 70 ? 'bg-blue-100 dark:bg-blue-900/50' :
-                                plant.current_moisture >= 40 ? 'bg-amber-100 dark:bg-amber-900/50' :
-                                  'bg-red-100 dark:bg-red-900/50'
-                            )}>
-                              <Droplets className={cn(
-                                'h-4 w-4',
-                                plant.current_moisture >= 70 ? 'text-blue-500' :
-                                  plant.current_moisture >= 40 ? 'text-amber-500' :
-                                    'text-red-500'
-                              )} />
-                            </div>
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Moisture</span>
-                          </div>
-                          <span className={cn(
-                            'text-sm font-bold',
-                            plant.current_moisture >= 70 ? 'text-blue-600 dark:text-blue-400' :
-                              plant.current_moisture >= 40 ? 'text-amber-600 dark:text-amber-400' :
-                                'text-red-600 dark:text-red-400'
-                          )}>
-                            {Math.round(plant.current_moisture)}%
-                          </span>
-                        </div>
-                        <div className="h-2.5 rounded-full bg-slate-200/70 dark:bg-slate-700/50 overflow-hidden">
-                          <div
-                            className={cn(
-                              'h-full rounded-full transition-all duration-700',
-                              plant.current_moisture >= 70 ? 'bg-gradient-to-r from-blue-400 to-cyan-400' :
-                                plant.current_moisture >= 40 ? 'bg-gradient-to-r from-amber-400 to-yellow-400' :
-                                  'bg-gradient-to-r from-red-400 to-orange-400'
-                            )}
-                            style={{ width: `${Math.max(0, Math.min(100, plant.current_moisture))}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Growth */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/50">
-                              <TrendingUp className="h-4 w-4 text-emerald-500" />
-                            </div>
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Growth</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-slate-400">
-                              {plant.status === 'mature' ? 'Complete!' : `~${Math.ceil(plant.plant_type.maturity_days * (100 - plant.growth_percentage) / 100)}d left`}
-                            </span>
-                            <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-                              {Math.round(plant.growth_percentage)}%
-                            </span>
-                          </div>
-                        </div>
-                        <div className="h-2.5 rounded-full bg-slate-200/70 dark:bg-slate-700/50 overflow-hidden relative">
-                          <div
-                            className={cn(
-                              'h-full rounded-full transition-all duration-700',
-                              plant.status === 'dead' ? 'bg-slate-400' :
-                                plant.status === 'mature' ? 'bg-gradient-to-r from-emerald-400 via-green-400 to-teal-400' :
-                                  'bg-gradient-to-r from-lime-400 to-emerald-500'
-                            )}
-                            style={{ width: `${Math.max(0, Math.min(100, plant.growth_percentage))}%` }}
-                          />
-                          <div className="absolute inset-0 flex pointer-events-none">
-                            {[25, 50, 75].map((mark) => (
-                              <div
-                                key={mark}
-                                className="absolute top-0 bottom-0 w-px bg-white/30 dark:bg-black/20"
-                                style={{ left: `${mark}%` }}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      </div>
+                    {/* Moisture & Growth — unified card */}
+                    <div className="rounded-2xl bg-white/80 dark:bg-card p-5 space-y-4 ring-1 ring-border shadow-dappled">
+                      <MeterRow
+                        icon={<Droplets className="h-4 w-4" />}
+                        label="Moisture"
+                        value={plant.current_moisture}
+                        tone={
+                          plant.current_moisture >= 70 ? 'moisture'
+                            : plant.current_moisture >= 40 ? 'bloom'
+                              : 'danger'
+                        }
+                      />
+                      <div className="h-px bg-border" />
+                      <MeterRow
+                        icon={<Leaf className="h-4 w-4" />}
+                        label="Growth"
+                        value={plant.growth_percentage}
+                        tone={plant.status === 'dead' ? 'ash' : 'leaf'}
+                        suffix={
+                          plant.status === 'mature'
+                            ? 'Complete'
+                            : `~${Math.ceil(plant.plant_type.maturity_days * (100 - plant.growth_percentage) / 100)}d left`
+                        }
+                      />
                     </div>
 
-                    {/* Streak Stats */}
+                    {/* Stats grid */}
                     <div className="space-y-3">
-                      <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                        <Zap className="h-4 w-4 text-amber-500" />
+                      <h4 className="text-sm font-semibold text-canopy dark:text-foreground flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-bloom" />
                         Statistics
                       </h4>
-                      <div className="grid grid-cols-4 gap-2">
-                        <div className={cn(
-                          'col-span-2 p-3 rounded-xl text-center',
-                          'bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/40 dark:to-amber-950/40',
-                          'ring-1 ring-orange-200/50 dark:ring-orange-800/30'
-                        )}>
+                      <div className="grid grid-cols-4 gap-2.5">
+                        <div className="col-span-2 p-4 rounded-2xl text-center bg-bloom/10 dark:bg-accent/60 ring-1 ring-bloom/20">
                           <div className="flex items-center justify-center gap-1.5 mb-1">
-                            <Flame className="h-4 w-4 text-orange-500" />
-                            <span className="text-[10px] uppercase tracking-wide font-medium text-orange-600/80 dark:text-orange-400/80">Streak</span>
+                            <Flame className="h-4 w-4 text-bloom" />
+                            <span className="text-[10px] uppercase tracking-[0.12em] font-bold text-canopy/70 dark:text-muted-foreground">Streak</span>
                           </div>
-                          <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{plant.current_streak}</p>
-                          <p className="text-[10px] text-orange-500/70 dark:text-orange-400/60">days</p>
+                          <p className="font-display text-3xl font-semibold text-canopy dark:text-foreground leading-none">{plant.current_streak}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">days</p>
                         </div>
-                        <div className="p-2.5 rounded-xl text-center bg-slate-100/80 dark:bg-slate-800/60">
-                          <Trophy className="h-3.5 w-3.5 text-yellow-500 mx-auto mb-0.5" />
-                          <p className="text-lg font-bold text-slate-700 dark:text-slate-300">{plant.longest_streak}</p>
-                          <p className="text-[9px] text-slate-400 uppercase">Best</p>
+                        <div className="p-3 rounded-2xl text-center bg-mist/70 dark:bg-muted">
+                          <Trophy className="h-3.5 w-3.5 text-bloom mx-auto mb-1" />
+                          <p className="font-display text-xl font-semibold text-canopy dark:text-foreground leading-none">{plant.longest_streak}</p>
+                          <p className="text-[9px] text-muted-foreground uppercase mt-0.5 tracking-wider">Best</p>
                         </div>
-                        <div className="p-2.5 rounded-xl text-center bg-slate-100/80 dark:bg-slate-800/60">
-                          <Droplets className="h-3.5 w-3.5 text-blue-500 mx-auto mb-0.5" />
-                          <p className="text-lg font-bold text-slate-700 dark:text-slate-300">{plant.total_waterings}</p>
-                          <p className="text-[9px] text-slate-400 uppercase">Waters</p>
+                        <div className="p-3 rounded-2xl text-center bg-mist/70 dark:bg-muted">
+                          <Droplets className="h-3.5 w-3.5 text-moisture mx-auto mb-1" />
+                          <p className="font-display text-xl font-semibold text-canopy dark:text-foreground leading-none">{plant.total_waterings}</p>
+                          <p className="text-[9px] text-muted-foreground uppercase mt-0.5 tracking-wider">Waters</p>
                         </div>
                       </div>
                     </div>
 
-                    {/* Full Activity Rhythm */}
+                    {/* Activity rhythm */}
                     {fullActivityHistory && (
                       <div className="space-y-3">
-                        <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-emerald-500" />
+                        <h4 className="text-sm font-semibold text-canopy dark:text-foreground flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-leaf" />
                           Activity Rhythm
                         </h4>
-                        <div className="rounded-2xl bg-slate-900/80 p-4 space-y-4">
+                        <div className="rounded-2xl bg-white/80 dark:bg-card p-4 space-y-4 ring-1 ring-border shadow-dappled">
                           <RhythmView
                             activityDates={fullActivityHistory.activities.map(a => a.logged_date)}
                             days={14}
                             size="md"
                             showLegend
                           />
-                          <div className="pt-2 border-t border-slate-700/50">
+                          <div className="pt-3 border-t border-border">
                             <RhythmStats
                               daysThisWeek={fullActivityHistory.rhythm.daysThisWeek}
                               daysThisMonth={fullActivityHistory.rhythm.daysThisMonth}
@@ -719,41 +633,25 @@ export function PlantDetailSheet({
 
                     {/* Details */}
                     <div className="space-y-3">
-                      <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Details</h4>
-                      <div className="rounded-xl bg-slate-50/80 dark:bg-slate-800/40 divide-y divide-slate-200/50 dark:divide-slate-700/50">
+                      <h4 className="text-sm font-semibold text-canopy dark:text-foreground">Details</h4>
+                      <div className="rounded-2xl bg-white/70 dark:bg-card ring-1 ring-border divide-y divide-border overflow-hidden shadow-dappled">
                         {plant.habit_description && !plant.why_i_started && (
-                          <div className="p-3">
-                            <p className="text-sm text-slate-600 dark:text-slate-400 italic leading-relaxed">
+                          <div className="p-4">
+                            <p className="font-display text-[15px] text-canopy dark:text-foreground italic leading-snug">
                               &ldquo;{plant.habit_description}&rdquo;
                             </p>
                           </div>
                         )}
-                        <div className="flex items-center gap-3 p-3">
-                          <Calendar className="h-4 w-4 text-slate-400 flex-shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs text-slate-400">Started</p>
-                            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{startedDate}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 p-3">
-                          <Clock className="h-4 w-4 text-slate-400 flex-shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs text-slate-400">Maturity</p>
-                            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{plant.plant_type.maturity_days} days</p>
-                          </div>
-                        </div>
+                        <DetailRow icon={<Calendar className="h-4 w-4" />} label="Started" value={startedDate} />
+                        <DetailRow icon={<Clock className="h-4 w-4" />} label="Maturity" value={`${plant.plant_type.maturity_days} days`} />
                       </div>
                       {plant.plant_type.special_effect && (
-                        <div className={cn(
-                          'p-3.5 rounded-xl',
-                          'bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/40 dark:to-purple-950/40',
-                          'ring-1 ring-purple-200/50 dark:ring-purple-800/30'
-                        )}>
+                        <div className="p-4 rounded-2xl bg-moss/10 dark:bg-accent/60 ring-1 ring-moss/25">
                           <div className="flex items-center gap-2 mb-1">
-                            <Sparkles className="h-4 w-4 text-purple-500" />
-                            <span className="text-sm font-semibold text-purple-700 dark:text-purple-300">Special Ability</span>
+                            <Sparkles className="h-4 w-4 text-leaf" />
+                            <span className="text-sm font-semibold text-canopy dark:text-foreground">Special Ability</span>
                           </div>
-                          <p className="text-sm text-purple-600 dark:text-purple-400 capitalize">
+                          <p className="text-sm text-muted-foreground capitalize">
                             {plant.plant_type.special_effect.type.replace(/_/g, ' ')}
                           </p>
                         </div>
@@ -787,28 +685,38 @@ export function PlantDetailSheet({
 
       {goal && (
         <Sheet open={showGoalStats} onOpenChange={setShowGoalStats}>
-          <SheetContent className="overflow-y-auto sm:max-w-lg">
-            <SheetHeader>
-              <SheetTitle>Goal Statistics</SheetTitle>
-              <SheetDescription>{plant.name}</SheetDescription>
+          <SheetContent className="overflow-y-auto sm:max-w-lg surface-paper border-l-0">
+            <SheetHeader className="px-1">
+              <SheetTitle className="font-display text-2xl font-semibold text-canopy dark:text-foreground">
+                Goal Statistics
+              </SheetTitle>
+              <SheetDescription className="text-muted-foreground">
+                {plant.name}
+              </SheetDescription>
             </SheetHeader>
-            <div className="mt-4">
+            <div className="mt-5 px-1">
               <Tabs defaultValue="progress" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="progress">Progress</TabsTrigger>
-                  <TabsTrigger value="performance">Performance</TabsTrigger>
-                  <TabsTrigger value="settings">Settings</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-3 bg-mist/70 dark:bg-secondary rounded-full h-10 p-1">
+                  <TabsTrigger value="progress" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-canopy data-[state=active]:shadow-sm dark:data-[state=active]:bg-accent cursor-pointer">
+                    Progress
+                  </TabsTrigger>
+                  <TabsTrigger value="performance" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-canopy data-[state=active]:shadow-sm dark:data-[state=active]:bg-accent cursor-pointer">
+                    Performance
+                  </TabsTrigger>
+                  <TabsTrigger value="settings" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-canopy data-[state=active]:shadow-sm dark:data-[state=active]:bg-accent cursor-pointer">
+                    Settings
+                  </TabsTrigger>
                 </TabsList>
-                <TabsContent value="progress" className="mt-4">
+                <TabsContent value="progress" className="mt-5">
                   {goalStats ? (
                     <GoalStats stats={goalStats} />
                   ) : (
                     <div className="text-center py-8 text-muted-foreground">
-                      Loading statistics...
+                      Loading statistics…
                     </div>
                   )}
                 </TabsContent>
-                <TabsContent value="performance" className="mt-4 space-y-4">
+                <TabsContent value="performance" className="mt-5 space-y-4">
                   {adaptiveAnalysis ? (
                     <>
                       <PerformanceOverview analysis={adaptiveAnalysis.analysis} />
@@ -816,11 +724,11 @@ export function PlantDetailSheet({
                     </>
                   ) : (
                     <div className="text-center py-8 text-muted-foreground">
-                      Loading performance data...
+                      Loading performance data…
                     </div>
                   )}
                 </TabsContent>
-                <TabsContent value="settings" className="mt-4">
+                <TabsContent value="settings" className="mt-5">
                   <AdaptiveSettings goal={goal} onUpdate={handleAdaptiveComplete} />
                 </TabsContent>
               </Tabs>
@@ -854,7 +762,7 @@ export function PlantDetailSheet({
 }
 
 // =====================================================
-// Hero Header Component (extracted for cleaner code)
+// Hero Header — Living Garden
 // =====================================================
 
 interface HeroHeaderProps {
@@ -881,29 +789,12 @@ function HeroHeader({
   hasGoal,
 }: HeroHeaderProps) {
   return (
-    <div className="relative">
-      <div className={cn(
-        'absolute inset-0 bg-gradient-to-b',
-        isSleeping
-          ? 'from-indigo-100 to-slate-100 dark:from-indigo-950/40 dark:to-slate-900'
-          : isResting
-            ? 'from-blue-100 to-slate-100 dark:from-blue-950/40 dark:to-slate-900'
-            : plant.status === 'mature'
-              ? 'from-emerald-100 via-green-50 to-white dark:from-emerald-900/40 dark:via-green-950/30 dark:to-slate-900'
-              : plant.status === 'thriving'
-                ? 'from-emerald-100 via-teal-50 to-white dark:from-emerald-900/40 dark:via-teal-950/30 dark:to-slate-900'
-                : 'from-sky-100 via-emerald-50 to-white dark:from-sky-900/30 dark:via-emerald-950/20 dark:to-slate-900'
-      )} />
-
-      <div className="relative pt-8 pb-6 px-6">
-        <SheetHeader className="text-center space-y-4">
+    <div className="relative surface-garden">
+      <div className="relative pt-10 pb-8 px-6">
+        <div className="text-center space-y-4">
+          {/* Plant visual in floating card */}
           <div className="relative mx-auto">
-            <div className={cn(
-              'relative w-28 h-28 mx-auto rounded-3xl flex items-center justify-center',
-              'bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm',
-              'shadow-xl shadow-black/5 dark:shadow-black/20',
-              'ring-1 ring-white/50 dark:ring-white/10'
-            )}>
+            <div className="relative w-32 h-32 mx-auto rounded-[28px] flex items-center justify-center bg-white/90 dark:bg-card backdrop-blur-sm shadow-dappled-lg ring-1 ring-white/60 dark:ring-white/5">
               <PlantVisual
                 plant={plant}
                 size="xl"
@@ -913,45 +804,164 @@ function HeroHeader({
               <XpPopup amount={earnedXp} show={showXp} />
             </div>
 
-            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
-              <span
-                className={cn(
-                  'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold',
-                  'shadow-lg shadow-black/10',
-                  plant.status === 'thriving' && 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white',
-                  plant.status === 'growing' && 'bg-emerald-500 text-white',
-                  plant.status === 'mature' && 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white',
-                  isResting && 'bg-blue-500 text-white',
-                  plant.status === 'waiting' && 'bg-amber-500 text-white',
-                  isSleeping && 'bg-indigo-500 text-white'
-                )}
-              >
-                {plant.status === 'thriving' && <Sparkles className="h-3 w-3" />}
-                {plant.status === 'growing' && <Sparkles className="h-3 w-3" />}
-                {plant.status === 'mature' && <Trophy className="h-3 w-3" />}
-                {isResting && <Moon className="h-3 w-3" />}
-                {plant.status === 'waiting' && <Heart className="h-3 w-3" />}
-                {isSleeping && <Moon className="h-3 w-3" />}
-                {plant.status === 'thriving' && 'Thriving'}
-                {plant.status === 'growing' && 'Growing'}
-                {plant.status === 'mature' && 'Mature'}
-                {isResting && 'Resting'}
-                {plant.status === 'waiting' && 'Waiting'}
-                {isSleeping && 'Sleeping'}
-              </span>
+            {/* Status pill — floating at bottom */}
+            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2">
+              <StatusPill
+                status={plant.status}
+                isResting={isResting}
+                isSleeping={isSleeping}
+              />
             </div>
           </div>
 
-          <div className="pt-2">
-            <SheetTitle className="text-2xl font-bold text-slate-800 dark:text-slate-100">
-              {plant.name}
+          {/* Plant name — Fraunces */}
+          <div className="pt-3">
+            <SheetTitle asChild>
+              <h2 className="font-display text-[28px] font-semibold leading-tight text-canopy dark:text-foreground tracking-tight">
+                {plant.name}
+              </h2>
             </SheetTitle>
-            <SheetDescription className="flex items-center justify-center gap-2 mt-1">
-              <span className="text-slate-500 dark:text-slate-400">{plant.plant_type.name}</span>
-              {hasGoal && (goal ? <GoalModeBadge mode={goal.goal_mode} /> : <GoalModeBadge mode={plant.goal_mode!} />)}
+            <SheetDescription asChild>
+              <div className="flex items-center justify-center gap-2 mt-1.5">
+                <span className="text-sm text-muted-foreground">{plant.plant_type.name}</span>
+                {hasGoal && (goal ? <GoalModeBadge mode={goal.goal_mode} /> : <GoalModeBadge mode={plant.goal_mode!} />)}
+              </div>
             </SheetDescription>
           </div>
-        </SheetHeader>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// =====================================================
+// Small components
+// =====================================================
+
+function StatusPill({
+  status,
+  isResting,
+  isSleeping,
+}: {
+  status: PlantWithType['status']
+  isResting: boolean
+  isSleeping: boolean
+}) {
+  const config = isSleeping
+    ? { icon: <Moon className="h-3 w-3" />, label: 'Sleeping', className: 'bg-accent text-canopy dark:text-foreground' }
+    : isResting
+      ? { icon: <Moon className="h-3 w-3" />, label: 'Resting', className: 'bg-sky-garden text-canopy' }
+      : status === 'mature'
+        ? { icon: <Trophy className="h-3 w-3" />, label: 'Mature', className: 'bg-bloom text-canopy' }
+        : status === 'thriving'
+          ? { icon: <Sparkles className="h-3 w-3" />, label: 'Thriving', className: 'bg-leaf text-white' }
+          : status === 'waiting'
+            ? { icon: <Heart className="h-3 w-3" />, label: 'Waiting', className: 'bg-bloom/80 text-canopy' }
+            : { icon: <Leaf className="h-3 w-3" />, label: 'Growing', className: 'bg-moss text-white' }
+
+  return (
+    <span className={cn(
+      'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold shadow-dappled',
+      config.className
+    )}>
+      {config.icon}
+      {config.label}
+    </span>
+  )
+}
+
+function QuickStat({
+  icon,
+  value,
+  label,
+  tone,
+}: {
+  icon: React.ReactNode
+  value: React.ReactNode
+  label: string
+  tone: 'leaf' | 'bloom' | 'moisture'
+}) {
+  const toneColor = {
+    leaf: 'text-leaf',
+    bloom: 'text-bloom',
+    moisture: 'text-moisture',
+  }[tone]
+
+  return (
+    <div className="text-center">
+      <div className={cn('flex items-center justify-center gap-1', toneColor)}>
+        {icon}
+        <span className="font-display text-lg font-semibold tabular-nums">{value}</span>
+      </div>
+      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{label}</p>
+    </div>
+  )
+}
+
+function MeterRow({
+  icon,
+  label,
+  value,
+  tone,
+  suffix,
+}: {
+  icon: React.ReactNode
+  label: string
+  value: number
+  tone: 'moisture' | 'leaf' | 'bloom' | 'danger' | 'ash'
+  suffix?: string
+}) {
+  const toneCfg = {
+    moisture: { color: 'text-moisture', bg: 'bg-moisture' },
+    leaf: { color: 'text-leaf', bg: 'bg-leaf' },
+    bloom: { color: 'text-bloom', bg: 'bg-bloom' },
+    danger: { color: 'text-moisture-low', bg: 'bg-moisture-low' },
+    ash: { color: 'text-ash', bg: 'bg-ash' },
+  }[tone]
+
+  const pct = Math.max(0, Math.min(100, value))
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className={cn('inline-flex p-1.5 rounded-lg bg-mist dark:bg-muted', toneCfg.color)}>
+            {icon}
+          </span>
+          <span className="text-sm font-medium text-canopy dark:text-foreground">{label}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {suffix && <span className="text-[11px] text-muted-foreground">{suffix}</span>}
+          <span className={cn('font-display text-sm font-semibold tabular-nums', toneCfg.color)}>
+            {Math.round(pct)}%
+          </span>
+        </div>
+      </div>
+      <div className="h-2 rounded-full bg-mist dark:bg-muted overflow-hidden">
+        <div
+          className={cn('h-full rounded-full transition-[width] duration-700 ease-out', toneCfg.bg)}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  )
+}
+
+function DetailRow({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode
+  label: string
+  value: string
+}) {
+  return (
+    <div className="flex items-center gap-3 p-4">
+      <span className="text-muted-foreground flex-shrink-0">{icon}</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-[11px] text-muted-foreground uppercase tracking-wider">{label}</p>
+        <p className="text-sm font-medium text-canopy dark:text-foreground">{value}</p>
       </div>
     </div>
   )

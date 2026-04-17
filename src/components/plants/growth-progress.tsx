@@ -22,41 +22,32 @@ export function GrowthProgress({
   const getStatusIcon = () => {
     switch (status) {
       case 'dead':
-        return <Skull className="h-3.5 w-3.5 text-gray-400" />
+        return <Skull className="h-3.5 w-3.5 text-ash" />
       case 'mature':
-        return <TreeDeciduous className="h-3.5 w-3.5 text-green-500" />
+        return <TreeDeciduous className="h-3.5 w-3.5 text-leaf" />
       default:
-        if (value >= 75) return <Sparkles className="h-3.5 w-3.5 text-yellow-500" />
-        if (value >= 25) return <Leaf className="h-3.5 w-3.5 text-emerald-500" />
-        return <Sprout className="h-3.5 w-3.5 text-lime-500" />
+        if (value >= 75) return <Sparkles className="h-3.5 w-3.5 text-bloom" />
+        if (value >= 25) return <Leaf className="h-3.5 w-3.5 text-leaf" />
+        return <Sprout className="h-3.5 w-3.5 text-moss" />
     }
   }
 
-  const getProgressGradient = () => {
-    if (status === 'dead') return 'bg-gradient-to-r from-gray-300 to-gray-400'
-    if (status === 'mature') return 'bg-gradient-to-r from-green-400 via-emerald-500 to-teal-500'
-    if (value >= 75) return 'bg-gradient-to-r from-yellow-400 via-green-400 to-emerald-500'
-    if (value >= 50) return 'bg-gradient-to-r from-lime-400 to-green-500'
-    if (value >= 25) return 'bg-gradient-to-r from-lime-300 to-lime-500'
-    return 'bg-gradient-to-r from-lime-200 to-lime-400'
+  const getToneColor = () => {
+    if (status === 'dead') return { bar: 'bg-ash', text: 'text-ash' }
+    if (status === 'mature') return { bar: 'bg-leaf', text: 'text-leaf' }
+    if (value >= 75) return { bar: 'bg-growth', text: 'text-leaf' }
+    return { bar: 'bg-moss', text: 'text-leaf' }
   }
 
   const getStatusText = () => {
-    if (status === 'dead') return 'Plant has died 🥺'
-    if (status === 'mature') return '🎉 Fully grown!'
+    if (status === 'dead') return 'Plant has died'
+    if (status === 'mature') return 'Fully grown'
     const daysLeft = Math.ceil(maturityDays * (100 - value) / 100)
-    if (daysLeft <= 1) return 'Almost there! ✨'
+    if (daysLeft <= 1) return 'Almost there'
     return `~${daysLeft} days to mature`
   }
 
-  const getGrowthEmoji = () => {
-    if (status === 'dead') return '💀'
-    if (status === 'mature') return '🌳'
-    if (value >= 75) return '🌸'
-    if (value >= 50) return '🌱'
-    if (value >= 25) return '🌿'
-    return '🪴'
-  }
+  const tone = getToneColor()
 
   return (
     <div className="space-y-1.5">
@@ -66,47 +57,38 @@ export function GrowthProgress({
             {getStatusIcon()}
             Growth
           </span>
-          <span className={cn(
-            'font-bold flex items-center gap-1',
-            status === 'dead' && 'text-gray-500',
-            status === 'mature' && 'text-green-600 dark:text-green-400',
-            status === 'growing' && 'text-emerald-600 dark:text-emerald-400'
-          )}>
-            <span className="text-xs">{getGrowthEmoji()}</span>
+          <span className={cn('font-display font-semibold tabular-nums', tone.text)}>
             {Math.round(value)}%
           </span>
         </div>
       )}
       <div className={cn(
-        'w-full rounded-full bg-muted/50 overflow-hidden shadow-inner relative',
-        size === 'sm' ? 'h-2.5' : 'h-3.5'
+        'w-full rounded-full bg-mist dark:bg-muted overflow-hidden relative',
+        size === 'sm' ? 'h-2' : 'h-3'
       )}>
         <div
           className={cn(
-            'h-full rounded-full transition-all duration-700 ease-out shadow-sm',
-            getProgressGradient(),
+            'h-full rounded-full transition-[width] duration-700 ease-out',
+            tone.bar,
             status === 'mature' && 'animate-shimmer'
           )}
           style={{ width: `${Math.max(0, Math.min(100, value))}%` }}
         />
         {/* Milestone markers */}
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-1/4 border-r border-white/20 dark:border-black/20" />
-          <div className="w-1/4 border-r border-white/20 dark:border-black/20" />
-          <div className="w-1/4 border-r border-white/20 dark:border-black/20" />
-          <div className="w-1/4" />
+        <div className="absolute inset-0 flex items-center pointer-events-none">
+          {[25, 50, 75].map(mark => (
+            <div
+              key={mark}
+              className="absolute top-0 bottom-0 w-px bg-white/40 dark:bg-black/20"
+              style={{ left: `${mark}%` }}
+            />
+          ))}
         </div>
       </div>
       {showLabel && (
-        <p className={cn(
-          'text-[10px] text-right font-medium',
-          status === 'dead' && 'text-gray-400',
-          status === 'mature' && 'text-green-500',
-          status === 'growing' && 'text-muted-foreground'
-        )}>
+        <p className={cn('text-[10px] text-right', tone.text, 'opacity-80')}>
           {getStatusText()}
         </p>
-        
       )}
     </div>
   )

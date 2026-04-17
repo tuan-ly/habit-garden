@@ -1,17 +1,11 @@
 'use client'
 
 /**
- * Gentle Watering Modal - 2-Action Flow
+ * Gentle Watering Modal — Living Garden theme
  *
- * Philosophy:
- * - 🌟 "I did it!" = Log progress + water (primary action)
- * - 🌙 "Not today" = Showing up but resting from the habit; still waters the plant
- *
- * "Not today" UX:
- * - Low friction path for rest
- * - Empathetic messaging ("Resting is part of growing")
- * - Still earns XP for checking in
- * - Same watering action — no separate rest day tracking
+ * Flow:
+ * - "I did it!" → log progress + water (primary)
+ * - "Not today" → show up, rest; still waters plant (secondary)
  */
 
 import { useState, useEffect, useRef, useMemo } from 'react'
@@ -40,6 +34,9 @@ import {
   Info,
   Moon,
   Check,
+  Flame,
+  Leaf,
+  ArrowLeft,
 } from 'lucide-react'
 import { resolveGrowthConflict } from '@/lib/actions/plants'
 import { waterPlantSimple, logProgress } from '@/lib/actions/activity'
@@ -52,11 +49,8 @@ interface GentleWateringModalProps {
   plant: PlantWithType | null
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** Called for "Just checking in" water action. Receives notes and estimated XP from modal */
   onWater?: (notes: string | undefined, estimatedXp: number) => Promise<void>
-  /** Called for "I did it" log action. Receives value, notes and estimated XP from modal */
   onLogAndWater?: (value: number | undefined, notes: string | undefined, estimatedXp: number) => Promise<void>
-  /** Called when user clicks "View Details" link */
   onDetails?: () => void
   estimatedXp?: number
   journalStreak?: number
@@ -70,7 +64,6 @@ interface GentleWateringModalProps {
   daysLeftInPeriod?: number
 }
 
-// Calculate note bonus based on note length
 function calculateNoteBonus(noteLength: number, journalStreak: number): number {
   if (noteLength === 0) return 0
   let bonus = XP_VALUES.NOTE_ANY
@@ -90,7 +83,6 @@ export function GentleWateringModal({
   onWater,
   onLogAndWater,
   onDetails,
-  estimatedXp = 8, // Deprecated prop, using constants now
   journalStreak = 0,
   hasGoal = false,
   goalUnit = '',
@@ -108,33 +100,21 @@ export function GentleWateringModal({
   const [isResolving, setIsResolving] = useState(false)
   const notesRef = useRef<HTMLTextAreaElement>(null)
 
-  // Calculate note bonus XP
   const noteBonus = useMemo(() => {
     return calculateNoteBonus(notes.trim().length, journalStreak)
   }, [notes, journalStreak])
 
-  // XP Calculation using Shared Constants
   const isMorning = isMorningTime()
-
-  // Check if first activity today (any activity, not just watering)
-  // isWateredToday is passed from parent - means ANY activity exists today
   const isFirstActivityToday = !isWateredToday
 
-  // 1. Watering XP (Just checking in / "Not today")
-  // No base XP — only note bonus. Base XP is reserved for actual habit completion.
   const wateringBaseXp = 0
   const totalXp = noteBonus
 
-  // 2. Log Progress XP (I did it) - includes watering XP if first activity today
-  // Watering Base + Morning + Note + (PR bonus calculated on server)
   const logBaseXp = isFirstActivityToday
     ? (XP_VALUES.WATERING_BASE + (isMorning ? XP_VALUES.MORNING_BONUS : 0))
     : 0
-
-  // Note: Personal record bonus is calculated on server, optimistic UI assumes standard log
   const logXp = logBaseXp + noteBonus
 
-  // Reset state when modal opens
   useEffect(() => {
     if (open) {
       setMode('choose')
@@ -144,7 +124,6 @@ export function GentleWateringModal({
     }
   }, [open])
 
-  // Focus textarea when entering water mode
   useEffect(() => {
     if (mode === 'water' && window.matchMedia('(min-width: 640px)').matches) {
       setTimeout(() => notesRef.current?.focus(), 100)
@@ -155,25 +134,17 @@ export function GentleWateringModal({
     if (isLoading || !plant) return
     setIsLoading(true)
 
-    // If external onWater callback is provided, fire-and-forget then close modal
-    // Parent handles optimistic updates + server sync independently
     if (onWater) {
-      // Fire the handler (non-blocking) - sets celebration + optimistic state in parent
       onWater(notes.trim() || undefined, totalXp)
-      // Reset loading immediately - parent owns the async flow
       setIsLoading(false)
-      // Small delay to ensure celebration renders before modal starts closing
       setTimeout(() => onOpenChange(false), 100)
       return
     }
 
-    // Fallback: handle internally if no onWater callback
     try {
       const result = await waterPlantSimple(plant.id, notes.trim() || undefined)
       if (result.success) {
-        toast.success(result.message || 'Plant watered!', {
-          description: `+${result.xpEarned} XP`,
-        })
+        toast.success(result.message || 'Plant watered!', { description: `+${result.xpEarned} XP` })
       } else {
         toast.error('Could not water plant', { description: result.error })
       }
@@ -191,21 +162,14 @@ export function GentleWateringModal({
 
     const value = logValue.trim() ? parseFloat(logValue) : undefined
 
-    // If external callback is provided, fire-and-forget then close modal
-    // Parent handles optimistic updates + server sync independently
     if (onLogAndWater) {
-      // Fire the handler (non-blocking) - sets celebration + optimistic state in parent
       onLogAndWater(value, notes.trim() || undefined, logXp)
-      // Reset loading immediately - parent owns the async flow
       setIsLoading(false)
-      // Small delay to ensure celebration renders before modal starts closing
       setTimeout(() => onOpenChange(false), 100)
       return
     }
 
-    // Fallback: handle internally if no onLogAndWater callback
     try {
-      // First log progress if has goal
       if (hasGoal && value !== undefined) {
         const logResult = await logProgress({
           plant_id: plant.id,
@@ -215,18 +179,15 @@ export function GentleWateringModal({
         })
         if (logResult.success) {
           toast.success(logResult.message || 'Progress logged!', {
-            description: `+${logResult.xpEarned} XP${logResult.isPersonalRecord ? ' 🏆 New Record!' : ''}`,
+            description: `+${logResult.xpEarned} XP${logResult.isPersonalRecord ? ' — New Record!' : ''}`,
           })
         } else {
           toast.error('Could not log progress', { description: logResult.error })
         }
       } else {
-        // Just water with notes
         const result = await waterPlantSimple(plant.id, notes.trim() || undefined)
         if (result.success) {
-          toast.success('Great job! 🎉', {
-            description: `+${result.xpEarned} XP`,
-          })
+          toast.success('Great job!', { description: `+${result.xpEarned} XP` })
         } else {
           toast.error('Could not water plant', { description: result.error })
         }
@@ -250,9 +211,7 @@ export function GentleWateringModal({
         })
         onOpenChange(false)
       } else {
-        toast.error('Could not expand', {
-          description: result.error || 'Failed to rearrange garden.',
-        })
+        toast.error('Could not expand', { description: result.error || 'Failed to rearrange garden.' })
       }
     } catch {
       toast.error('Something went wrong')
@@ -268,101 +227,64 @@ export function GentleWateringModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-slate-900 border-slate-700 text-white">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-md surface-paper border-0 shadow-dappled-lg p-6 gap-0">
+        <DialogHeader className="text-left">
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="absolute inset-0 bg-green-500/20 blur-xl rounded-full" />
-              <span className="relative text-3xl">{plant.plant_type.icon}</span>
+            <div className="relative w-14 h-14 rounded-2xl bg-white/90 dark:bg-card flex items-center justify-center shadow-dappled">
+              <span className="text-3xl">{plant.plant_type.icon}</span>
             </div>
-            <div>
-              <DialogTitle className="text-white flex items-center gap-2">
-                {plant.name}
+            <div className="flex-1">
+              <DialogTitle asChild>
+                <h2 className="font-display text-xl font-semibold text-canopy dark:text-foreground">
+                  {plant.name}
+                </h2>
               </DialogTitle>
-              <div className="flex items-center gap-2 text-xs text-slate-400 mt-1">
-                <span>Streak: {plant.current_streak} days</span>
-                {plant.current_streak > 3 && <span>🔥</span>}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                {plant.current_streak > 0 && (
+                  <span className="inline-flex items-center gap-1 text-bloom">
+                    <Flame className="h-3 w-3" />
+                    {plant.current_streak} day{plant.current_streak !== 1 ? 's' : ''}
+                  </span>
+                )}
               </div>
             </div>
           </div>
         </DialogHeader>
 
-        {/* Plant Stats (merged from FloatingCard) */}
+        {/* Plant stats strip */}
         {mode === 'choose' && (
-          <div className="flex items-center gap-4 px-1 py-3 border-b border-slate-700/50">
-            {/* Moisture */}
-            <div className="flex-1">
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="text-sm">💧</span>
-                <span
-                  className={cn(
-                    'text-sm font-bold tabular-nums',
-                    plant.current_moisture >= 70
-                      ? 'text-emerald-400'
-                      : plant.current_moisture >= 40
-                        ? 'text-amber-400'
-                        : plant.current_moisture >= 20
-                          ? 'text-orange-400'
-                          : 'text-red-400'
-                  )}
-                >
-                  {plant.current_moisture}%
-                </span>
-              </div>
-              <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                <div
-                  className={cn(
-                    'h-full rounded-full transition-all',
-                    plant.current_moisture >= 70
-                      ? 'bg-emerald-500'
-                      : plant.current_moisture >= 40
-                        ? 'bg-amber-500'
-                        : plant.current_moisture >= 20
-                          ? 'bg-orange-500'
-                          : 'bg-red-500'
-                  )}
-                  style={{ width: `${plant.current_moisture}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Growth */}
-            <div className="flex-1">
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="text-sm">🌱</span>
-                <span className="text-sm font-bold tabular-nums text-green-400">
-                  {Math.round(plant.growth_percentage)}%
-                </span>
-              </div>
-              <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full transition-all"
-                  style={{ width: `${plant.growth_percentage}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Streak badge */}
-            {plant.current_streak > 0 && (
-              <div className="flex items-center gap-1 px-2 py-1 bg-orange-900/50 rounded-lg border border-orange-500/30">
-                <span className="text-sm">🔥</span>
-                <span className="font-bold text-orange-400 text-sm">{plant.current_streak}</span>
-              </div>
-            )}
+          <div className="flex items-center gap-4 py-4 mt-4 border-y border-border">
+            <MiniMeter
+              icon={<Droplets className="h-3.5 w-3.5" />}
+              value={plant.current_moisture}
+              label="Moisture"
+              tone={
+                plant.current_moisture >= 70 ? 'moisture'
+                  : plant.current_moisture >= 40 ? 'bloom'
+                    : 'danger'
+              }
+            />
+            <div className="w-px h-10 bg-border" />
+            <MiniMeter
+              icon={<Leaf className="h-3.5 w-3.5" />}
+              value={plant.growth_percentage}
+              label="Growth"
+              tone="leaf"
+            />
           </div>
         )}
 
-        <div className="space-y-4 py-2">
-          {/* Growth Conflict Resolution */}
+        <div className="space-y-4 pt-4">
+          {/* Growth conflict */}
           {plant.growth_blocked && (
-            <div className="p-4 rounded-lg bg-amber-900/20 border border-amber-500/20 space-y-3">
+            <div className="p-4 rounded-2xl bg-bloom/10 ring-1 ring-bloom/25 space-y-3">
               <div className="flex items-start gap-3">
-                <div className="p-2 bg-amber-500/10 rounded-full">
-                  <Move className="w-5 h-5 text-amber-500" />
+                <div className="p-2 rounded-xl bg-white/80 dark:bg-muted shadow-sm">
+                  <Move className="w-4 h-4 text-bloom" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-semibold text-amber-200">Needs Space to Grow!</h4>
-                  <p className="text-xs text-amber-200/70 mt-1">
+                  <h4 className="text-sm font-semibold text-canopy dark:text-foreground">Needs space to grow</h4>
+                  <p className="text-xs text-muted-foreground mt-1">
                     This plant is ready to expand but is blocked by neighbors.
                   </p>
                 </div>
@@ -370,75 +292,71 @@ export function GentleWateringModal({
               <Button
                 onClick={handleResolveConflict}
                 disabled={isResolving}
-                className="w-full bg-amber-600 hover:bg-amber-700 text-white border-amber-500"
+                className="w-full h-10 rounded-full bg-bloom hover:bg-bloom/90 text-canopy shadow-bloom cursor-pointer"
                 size="sm"
               >
                 {isResolving ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Rearranging...
-                  </>
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Rearranging…</>
                 ) : (
-                  <>
-                    <ArrowUpRight className="w-4 h-4 mr-2" />
-                    Expand & Auto-Arrange
-                  </>
+                  <><ArrowUpRight className="w-4 h-4 mr-2" />Expand & Auto-Arrange</>
                 )}
               </Button>
             </div>
           )}
 
-          {/* Why I Started - Motivation reminder */}
+          {/* Why I started */}
           {plant.why_i_started && mode === 'choose' && (
-            <div className="p-3 rounded-lg bg-purple-900/10 border border-purple-500/20">
-              <div className="flex items-start gap-2">
-                <Lightbulb className="w-4 h-4 text-purple-400 flex-shrink-0 mt-0.5" />
+            <div className="p-3.5 rounded-2xl bg-bloom/10 ring-1 ring-bloom/20">
+              <div className="flex items-start gap-2.5">
+                <Lightbulb className="w-4 h-4 text-bloom flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-xs text-purple-300/70 mb-1">Why I started:</p>
-                  <p className="text-sm text-purple-200 italic">&ldquo;{plant.why_i_started}&rdquo;</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-canopy/70 dark:text-muted-foreground mb-1">
+                    Why I started
+                  </p>
+                  <p className="font-display text-sm text-canopy dark:text-foreground italic leading-snug">
+                    &ldquo;{plant.why_i_started}&rdquo;
+                  </p>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Goal Context Strip */}
+          {/* Goal context strip */}
           {hasGoal && currentPeriodTarget !== undefined && currentPeriodTarget > 0 && mode === 'choose' && (
             <div className={cn(
-              'rounded-lg p-3 space-y-2',
+              'rounded-2xl p-3.5 space-y-2 ring-1',
               (periodProgress ?? 0) >= currentPeriodTarget
-                ? 'bg-emerald-900/20 border border-emerald-500/20'
-                : 'bg-indigo-900/20 border border-indigo-500/20'
+                ? 'bg-leaf/10 ring-leaf/25'
+                : 'bg-white/70 dark:bg-card ring-border shadow-dappled'
             )}>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-400 font-medium flex items-center gap-1.5">
+                <span className="text-muted-foreground font-medium flex items-center gap-1.5">
                   <BarChart3 className="w-3.5 h-3.5" />
                   {periodLabel ?? 'This Week'}
                 </span>
                 {(periodProgress ?? 0) >= currentPeriodTarget ? (
-                  <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                    <Check className="w-3 h-3" /> Done!
+                  <span className="text-leaf font-semibold flex items-center gap-1">
+                    <Check className="w-3 h-3" /> Done
                   </span>
                 ) : (
-                  <span className="text-amber-400 font-semibold">
+                  <span className="text-bloom font-semibold">
                     {Math.round((currentPeriodTarget - (periodProgress ?? 0)) * 10) / 10} {goalUnit} to go
                   </span>
                 )}
               </div>
-              <div className="h-1.5 w-full bg-slate-700 rounded-full overflow-hidden">
+              <div className="h-1.5 w-full bg-mist dark:bg-muted rounded-full overflow-hidden">
                 <div
                   className={cn(
-                    'h-full rounded-full transition-all duration-500',
-                    (periodProgress ?? 0) >= currentPeriodTarget
-                      ? 'bg-gradient-to-r from-emerald-500 to-green-400'
-                      : 'bg-gradient-to-r from-indigo-500 to-blue-400'
+                    'h-full rounded-full transition-[width] duration-500 ease-out',
+                    (periodProgress ?? 0) >= currentPeriodTarget ? 'bg-leaf' : 'bg-moss'
                   )}
                   style={{
-                    width: `${Math.min(100, currentPeriodTarget > 0 ? ((periodProgress ?? 0) / currentPeriodTarget) * 100 : 0)}%`
+                    width: `${Math.min(100, currentPeriodTarget > 0 ? ((periodProgress ?? 0) / currentPeriodTarget) * 100 : 0)}%`,
                   }}
                 />
               </div>
-              <div className="flex justify-between text-[10px] text-slate-500">
-                <span>{periodProgress ?? 0} / {currentPeriodTarget} {goalUnit}</span>
+              <div className="flex justify-between text-[10px] text-muted-foreground">
+                <span className="tabular-nums">{periodProgress ?? 0} / {currentPeriodTarget} {goalUnit}</span>
                 {daysLeftInPeriod !== undefined && (
                   <span>{daysLeftInPeriod} day{daysLeftInPeriod !== 1 ? 's' : ''} left</span>
                 )}
@@ -446,71 +364,64 @@ export function GentleWateringModal({
             </div>
           )}
 
-          {/* MODE: Choose Action */}
+          {/* MODE: Choose */}
           {mode === 'choose' && (
-            <div className="space-y-3">
-              {/* Tiny Seed Reminder - only if easy mode is on and has tiny_seed text */}
+            <div className="space-y-2.5">
               {plant.easy_mode && plant.tiny_seed && (
-                <div className="flex items-start gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/50 px-3 py-2">
-                  <span className="text-base mt-0.5">🌱</span>
+                <div className="flex items-start gap-2.5 rounded-2xl bg-moss/10 ring-1 ring-moss/20 px-3.5 py-2.5">
+                  <Sprout className="h-4 w-4 text-leaf mt-0.5 flex-shrink-0" />
                   <div>
-                    <div className="text-xs font-medium text-emerald-700 dark:text-emerald-400">Easy Mode reminder</div>
-                    <div className="text-xs text-emerald-600 dark:text-emerald-500">&ldquo;{plant.tiny_seed}&rdquo;</div>
+                    <div className="text-xs font-semibold text-canopy dark:text-foreground">Easy Mode reminder</div>
+                    <div className="text-xs text-muted-foreground italic mt-0.5">&ldquo;{plant.tiny_seed}&rdquo;</div>
                   </div>
                 </div>
               )}
 
-              {/* I Did It  - Primary */}
+              {/* Primary: I did it */}
               <Button
                 onClick={() => setMode('log')}
                 className={cn(
-                  'w-full h-14 justify-start px-4',
-                  'bg-gradient-to-r from-emerald-600 to-green-600',
-                  'hover:from-emerald-500 hover:to-green-500',
-                  'text-white font-medium text-base',
-                  'shadow-lg shadow-emerald-500/20',
+                  'w-full h-16 justify-start px-4 rounded-2xl cursor-pointer',
+                  'bg-leaf hover:bg-canopy text-white shadow-leaf'
                 )}
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white/10 rounded-lg">
+                  <div className="p-2 bg-white/15 rounded-xl">
                     <Sparkles className="w-5 h-5" />
                   </div>
                   <div className="text-left">
-                    <div>I did it!</div>
-                    <div className="text-xs opacity-70">Record your progress</div>
+                    <div className="font-display text-base font-semibold">I did it!</div>
+                    <div className="text-xs opacity-80 font-normal">Record your progress</div>
                   </div>
                 </div>
               </Button>
 
-              {/* Rest Day - Secondary - Only show if NOT watered today */}
+              {/* Secondary: Not today */}
               {!isWateredToday && (
                 <Button
                   onClick={() => setMode('water')}
                   variant="outline"
                   className={cn(
-                    'w-full h-14 justify-start px-4',
-                    'border-slate-600 bg-slate-800/50',
-                    'hover:bg-slate-700/50 hover:border-indigo-500/50',
-                    'text-slate-200 hover:text-slate-100 font-medium text-base',
+                    'w-full h-16 justify-start px-4 rounded-2xl cursor-pointer',
+                    'bg-white/70 dark:bg-card border-border hover:bg-white hover:border-moss/40 text-canopy dark:text-foreground'
                   )}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-indigo-500/10 rounded-lg">
-                      <Moon className="w-5 h-5 text-indigo-400" />
+                    <div className="p-2 bg-sky-garden dark:bg-accent rounded-xl">
+                      <Moon className="w-5 h-5 text-leaf" />
                     </div>
                     <div className="text-left">
-                      <div>Not today</div>
-                      <div className="text-xs text-slate-400">Resting is part of growing 🌙</div>
+                      <div className="font-display text-base font-semibold">Not today</div>
+                      <div className="text-xs text-muted-foreground font-normal">Resting is part of growing</div>
                     </div>
                   </div>
                 </Button>
               )}
 
-              {/* Details link - smaller tertiary option */}
               {onDetails && (
                 <button
                   onClick={onDetails}
-                  className="w-full text-sm text-slate-400 hover:text-slate-300 flex items-center gap-1.5 justify-center mt-2 py-2"
+                  className="w-full text-sm text-muted-foreground hover:text-canopy dark:hover:text-foreground flex items-center gap-1.5 justify-center mt-2 py-2 cursor-pointer transition-colors"
                 >
                   <Info className="w-4 h-4" />
                   View plant details
@@ -519,145 +430,68 @@ export function GentleWateringModal({
             </div>
           )}
 
-          {/* MODE: Not Today (Water only — showing up, resting from habit) */}
+          {/* MODE: Not today */}
           {mode === 'water' && (
             <div className="space-y-4">
-              <button
-                onClick={() => setMode('choose')}
-                className="text-xs text-slate-400 hover:text-slate-300 flex items-center gap-1"
-              >
-                ← Back to options
-              </button>
+              <BackButton onClick={() => setMode('choose')} />
 
-              {/* Encouraging rest message */}
-              <div className="p-3 rounded-lg bg-indigo-900/20 border border-indigo-500/20">
+              <div className="p-3.5 rounded-2xl bg-sky-garden/50 dark:bg-accent ring-1 ring-moss/20">
                 <div className="flex items-start gap-3">
-                  <Moon className="w-5 h-5 text-indigo-400 flex-shrink-0 mt-0.5" />
+                  <Moon className="w-5 h-5 text-leaf flex-shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="text-sm font-semibold text-indigo-200">Showing up matters 💜</h4>
-                    <p className="text-xs text-indigo-200/70 mt-1">
+                    <h4 className="text-sm font-semibold text-canopy dark:text-foreground">Showing up matters</h4>
+                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
                       Resting is part of growing. You&apos;re still here — that counts for everything.
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Notes with XP Bonus */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-medium text-slate-400 flex items-center gap-1.5">
-                    <PenLine className="w-3.5 h-3.5" />
-                    How are you feeling? (optional)
-                  </label>
-                  {noteBonus > 0 && (
-                    <span className={cn(
-                      'text-xs font-medium px-2 py-0.5 rounded-full flex items-center gap-1',
-                      noteTier === 'detailed'
-                        ? 'bg-purple-500/20 text-purple-300 ring-1 ring-purple-500/30'
-                        : noteTier === 'thoughtful'
-                          ? 'bg-blue-500/20 text-blue-300'
-                          : 'bg-indigo-500/20 text-indigo-300'
-                    )}>
-                      <Sparkles className="w-3 h-3" />
-                      +{noteBonus} XP
-                    </span>
-                  )}
-                </div>
-                <Textarea
-                  ref={notesRef}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Tired? Busy? Just need a break? It's all okay..."
-                  maxLength={500}
-                  className={cn(
-                    'bg-slate-800 border-slate-600 text-white placeholder:text-slate-500',
-                    'focus:border-indigo-500 focus:ring-indigo-500/20',
-                    'resize-none h-24',
-                    noteBonus > 0 && 'border-indigo-500/50'
-                  )}
-                />
+              <NotesField
+                value={notes}
+                onChange={setNotes}
+                bonus={noteBonus}
+                tier={noteTier}
+                placeholder="Tired? Busy? Just need a break? It's all okay…"
+                textareaRef={notesRef}
+                label="How are you feeling? (optional)"
+              />
 
-                {/* Note bonus tiers */}
-                <div className="mt-2 flex items-center gap-2 text-[10px] text-slate-500">
-                  <span className={cn(
-                    'px-1.5 py-0.5 rounded',
-                    noteLength > 0 ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800'
-                  )}>
-                    Any note +3
-                  </span>
-                  <span className={cn(
-                    'px-1.5 py-0.5 rounded',
-                    noteLength > 50 ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-800'
-                  )}>
-                    50+ chars +2
-                  </span>
-                  <span className={cn(
-                    'px-1.5 py-0.5 rounded',
-                    noteLength > 100 ? 'bg-purple-500/20 text-purple-400' : 'bg-slate-800'
-                  )}>
-                    100+ chars +2
-                  </span>
-                </div>
-              </div>
-
-              {/* Water button */}
               <Button
                 onClick={handleWater}
                 disabled={isLoading}
-                className={cn(
-                  'w-full h-12',
-                  'bg-gradient-to-r from-indigo-500 to-purple-600',
-                  'hover:from-indigo-400 hover:to-purple-500',
-                  'text-white font-semibold text-base',
-                  'shadow-lg shadow-indigo-500/30',
-                )}
+                className="w-full h-12 rounded-full bg-leaf hover:bg-canopy text-white shadow-leaf font-semibold cursor-pointer"
               >
                 {isLoading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Watering...
-                  </>
+                  <><Loader2 className="w-5 h-5 mr-2 animate-spin" />Watering…</>
                 ) : (
-                  <>
-                    <Moon className="w-5 h-5 mr-2" />
-                    Water plant (+{totalXp} XP)
-                  </>
+                  <><Moon className="w-5 h-5 mr-2" />Water plant (+{totalXp} XP)</>
                 )}
               </Button>
             </div>
           )}
 
-          {/* MODE: Log Progress (I did it today!) */}
+          {/* MODE: Log progress */}
           {mode === 'log' && (
             <div className="space-y-4">
-              <button
-                onClick={() => setMode('choose')}
-                className="text-xs text-slate-400 hover:text-slate-300 flex items-center gap-1"
-              >
-                ← Back to options
-              </button>
+              <BackButton onClick={() => setMode('choose')} />
 
-              {/* Encouraging message */}
-              <div className="p-3 rounded-lg bg-emerald-900/20 border border-emerald-500/20">
+              <div className="p-3.5 rounded-2xl bg-leaf/10 ring-1 ring-leaf/20">
                 <div className="flex items-start gap-3">
-                  <Sparkles className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <Sparkles className="w-5 h-5 text-leaf flex-shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="text-sm font-semibold text-emerald-200">Great job! 🎉</h4>
-                    <p className="text-xs text-emerald-200/70 mt-1">
+                    <h4 className="text-sm font-semibold text-canopy dark:text-foreground">Great job!</h4>
+                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
                       Every small step counts toward your goals.
                     </p>
                   </div>
                 </div>
               </div>
 
-
-
-              {/* Number input for goals - FIRST */}
               {hasGoal && (
                 <>
-                  {/* Value Input with +/- buttons */}
                   <div>
-                    <label className="text-sm font-medium text-slate-300 mb-2 block">
+                    <label className="text-sm font-medium text-canopy dark:text-foreground mb-2 block">
                       How much?
                     </label>
                     <div className="flex items-center gap-3">
@@ -666,7 +500,7 @@ export function GentleWateringModal({
                         size="icon"
                         onClick={() => setLogValue(v => String(Math.max(0, (parseInt(v) || 0) - 1)))}
                         disabled={!logValue || parseInt(logValue) <= 0}
-                        className="h-12 w-12 border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white shrink-0"
+                        className="h-12 w-12 rounded-xl border-border bg-white/70 dark:bg-card text-canopy dark:text-foreground hover:bg-white shrink-0 cursor-pointer"
                       >
                         <Minus className="w-5 h-5" />
                       </Button>
@@ -677,15 +511,15 @@ export function GentleWateringModal({
                           value={logValue}
                           onChange={(e) => setLogValue(e.target.value)}
                           className={cn(
-                            'w-full h-12 text-center text-2xl font-bold',
-                            'bg-slate-800 border border-slate-600 rounded-xl',
-                            'focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20',
-                            'outline-none transition-all',
-                            'text-white'
+                            'w-full h-12 text-center font-display text-2xl font-semibold',
+                            'bg-white/70 dark:bg-card border border-border rounded-xl',
+                            'focus:border-leaf focus:ring-2 focus:ring-leaf/20',
+                            'outline-none transition-all tabular-nums',
+                            'text-canopy dark:text-foreground'
                           )}
                         />
                         {goalUnit && (
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
                             {goalUnit}
                           </span>
                         )}
@@ -695,16 +529,15 @@ export function GentleWateringModal({
                         variant="outline"
                         size="icon"
                         onClick={() => setLogValue(v => String((parseInt(v) || 0) + 1))}
-                        className="h-12 w-12 border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white shrink-0"
+                        className="h-12 w-12 rounded-xl border-border bg-white/70 dark:bg-card text-canopy dark:text-foreground hover:bg-white shrink-0 cursor-pointer"
                       >
                         <Plus className="w-5 h-5" />
                       </Button>
                     </div>
                   </div>
 
-                  {/* Quick Picks */}
                   <div>
-                    <label className="text-xs font-medium text-slate-400 mb-2 block">
+                    <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-2 block">
                       Quick picks
                     </label>
                     <div className="flex gap-2">
@@ -718,10 +551,10 @@ export function GentleWateringModal({
                           key={v}
                           onClick={() => setLogValue(String(v))}
                           className={cn(
-                            'flex-1 py-2 rounded-lg text-sm font-medium transition-all',
+                            'flex-1 py-2 rounded-full text-sm font-medium transition-colors cursor-pointer',
                             parseInt(logValue) === v
-                              ? 'bg-emerald-500 text-white'
-                              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                              ? 'bg-leaf text-white shadow-leaf'
+                              : 'bg-white/70 dark:bg-card text-canopy dark:text-foreground hover:bg-mist'
                           )}
                         >
                           {v}
@@ -732,115 +565,169 @@ export function GentleWateringModal({
                 </>
               )}
 
-              {/* Notes with XP Bonus */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-medium text-slate-400 flex items-center gap-1.5">
-                    <PenLine className="w-3.5 h-3.5" />
-                    Note (optional)
-                  </label>
-                  {noteBonus > 0 && (
-                    <span className={cn(
-                      'text-xs font-medium px-2 py-0.5 rounded-full flex items-center gap-1',
-                      noteTier === 'detailed'
-                        ? 'bg-purple-500/20 text-purple-300 ring-1 ring-purple-500/30'
-                        : noteTier === 'thoughtful'
-                          ? 'bg-blue-500/20 text-blue-300'
-                          : 'bg-emerald-500/20 text-emerald-300'
-                    )}>
-                      <Sparkles className="w-3 h-3" />
-                      +{noteBonus} XP
-                    </span>
-                  )}
-                </div>
-                <Textarea
-                  ref={notesRef}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="What did you accomplish? How did it feel?"
-                  maxLength={500}
-                  className={cn(
-                    'bg-slate-800 border-slate-600 text-white placeholder:text-slate-500',
-                    'focus:border-emerald-500 focus:ring-emerald-500/20',
-                    'resize-none h-20',
-                    noteBonus > 0 && 'border-emerald-500/50'
-                  )}
-                />
-                {/* Note bonus tiers hint */}
-                <div className="mt-2 flex items-center gap-2 text-[10px] text-slate-500">
-                  <span className={cn(
-                    "px-1.5 py-0.5 rounded",
-                    notes.trim().length > 0 ? "bg-emerald-500/20 text-emerald-400" : "bg-slate-800"
-                  )}>
-                    Any note +3
-                  </span>
-                  <span className={cn(
-                    "px-1.5 py-0.5 rounded",
-                    notes.trim().length > 50 ? "bg-blue-500/20 text-blue-400" : "bg-slate-800"
-                  )}>
-                    50+ chars +2
-                  </span>
-                  <span className={cn(
-                    "px-1.5 py-0.5 rounded",
-                    notes.trim().length > 100 ? "bg-purple-500/20 text-purple-400" : "bg-slate-800"
-                  )}>
-                    100+ chars +2
-                  </span>
-                </div>
-              </div>
+              <NotesField
+                value={notes}
+                onChange={setNotes}
+                bonus={noteBonus}
+                tier={noteTier}
+                placeholder="What did you accomplish? How did it feel?"
+                textareaRef={notesRef}
+                label="Note (optional)"
+              />
 
-              {/* Motivation tip when no note on subsequent logs */}
               {!isFirstActivityToday && noteLength === 0 && (
-                <div className="p-3 rounded-lg bg-amber-900/20 border border-amber-500/20 text-xs text-amber-200/80">
+                <div className="p-3 rounded-2xl bg-bloom/10 ring-1 ring-bloom/20 text-xs text-canopy/80 dark:text-foreground/80">
                   <p className="flex items-start gap-2">
-                    <span className="text-base">💡</span>
+                    <Lightbulb className="w-4 h-4 text-bloom flex-shrink-0 mt-0.5" />
                     <span>
-                      <strong>Tip:</strong> Adding a note earns bonus XP! Reflect on what you accomplished.
+                      <strong>Tip:</strong> Adding a note earns bonus XP. Reflect on what you accomplished.
                     </span>
                   </p>
                 </div>
               )}
 
-              {/* Submit Button */}
               <Button
                 onClick={handleLogAndWater}
                 disabled={isLoading || (hasGoal && (!logValue || parseInt(logValue) <= 0))}
-                className={cn(
-                  'w-full h-12',
-                  'bg-gradient-to-r from-emerald-500 to-green-600',
-                  'hover:from-emerald-400 hover:to-green-500',
-                  'text-white font-semibold text-base',
-                  'shadow-lg shadow-emerald-500/30',
-                  'disabled:opacity-50',
-                )}
+                className="w-full h-12 rounded-full bg-leaf hover:bg-canopy text-white shadow-leaf font-semibold cursor-pointer disabled:opacity-50"
               >
                 {isLoading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Logging...
-                  </>
+                  <><Loader2 className="w-5 h-5 mr-2 animate-spin" />Logging…</>
                 ) : (
-                  <>
-                    <Droplets className="w-5 h-5 mr-2" />
-                    Log (+{logXp} XP)
-                  </>
+                  <><Droplets className="w-5 h-5 mr-2" />Log (+{logXp} XP)</>
                 )}
               </Button>
             </div>
           )}
 
-          {/* Status footer */}
-          <div className="flex justify-between text-xs text-slate-500 px-1">
+          {/* Footer */}
+          <div className="flex justify-between text-[11px] text-muted-foreground px-1 pt-2">
             <span className="flex items-center gap-1">
               <Sprout className="w-3 h-3" />
               Growth: {Math.round(plant.growth_percentage)}%
             </span>
-            <span>
-              Total Waterings: {plant.total_waterings}
-            </span>
+            <span>Total Waterings: {plant.total_waterings}</span>
           </div>
         </div>
       </DialogContent>
     </Dialog>
+  )
+}
+
+// ─── helpers ───
+
+function BackButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="text-xs text-muted-foreground hover:text-canopy dark:hover:text-foreground flex items-center gap-1 cursor-pointer transition-colors"
+    >
+      <ArrowLeft className="w-3 h-3" />
+      Back to options
+    </button>
+  )
+}
+
+function MiniMeter({
+  icon,
+  value,
+  label,
+  tone,
+}: {
+  icon: React.ReactNode
+  value: number
+  label: string
+  tone: 'leaf' | 'moisture' | 'bloom' | 'danger'
+}) {
+  const toneCfg = {
+    leaf: { color: 'text-leaf', bg: 'bg-leaf' },
+    moisture: { color: 'text-moisture', bg: 'bg-moisture' },
+    bloom: { color: 'text-bloom', bg: 'bg-bloom' },
+    danger: { color: 'text-moisture-low', bg: 'bg-moisture-low' },
+  }[tone]
+
+  return (
+    <div className="flex-1">
+      <div className="flex items-center gap-1.5 mb-1">
+        <span className={toneCfg.color}>{icon}</span>
+        <span className={cn('font-display text-sm font-semibold tabular-nums', toneCfg.color)}>
+          {Math.round(value)}%
+        </span>
+        <span className="text-[10px] text-muted-foreground uppercase tracking-wider ml-auto">{label}</span>
+      </div>
+      <div className="w-full h-1.5 bg-mist dark:bg-muted rounded-full overflow-hidden">
+        <div
+          className={cn('h-full rounded-full transition-[width]', toneCfg.bg)}
+          style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
+        />
+      </div>
+    </div>
+  )
+}
+
+function NotesField({
+  value,
+  onChange,
+  bonus,
+  tier,
+  placeholder,
+  textareaRef,
+  label,
+}: {
+  value: string
+  onChange: (v: string) => void
+  bonus: number
+  tier: string
+  placeholder: string
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>
+  label: string
+}) {
+  const noteLength = value.trim().length
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+          <PenLine className="w-3.5 h-3.5" />
+          {label}
+        </label>
+        {bonus > 0 && (
+          <span className={cn(
+            'text-xs font-semibold px-2 py-0.5 rounded-full flex items-center gap-1',
+            tier === 'detailed' ? 'bg-leaf/15 text-leaf ring-1 ring-leaf/30'
+              : tier === 'thoughtful' ? 'bg-moss/15 text-leaf'
+                : 'bg-bloom/15 text-bloom'
+          )}>
+            <Sparkles className="w-3 h-3" />
+            +{bonus} XP
+          </span>
+        )}
+      </div>
+      <Textarea
+        ref={textareaRef}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        maxLength={500}
+        className={cn(
+          'bg-white/70 dark:bg-card border-border text-canopy dark:text-foreground placeholder:text-muted-foreground/70',
+          'focus-visible:border-leaf focus-visible:ring-leaf/20',
+          'resize-none h-24 rounded-2xl'
+        )}
+      />
+      <div className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground">
+        <span className={cn('px-2 py-0.5 rounded-full',
+          noteLength > 0 ? 'bg-bloom/15 text-bloom font-semibold' : 'bg-mist dark:bg-muted')}>
+          Any +3
+        </span>
+        <span className={cn('px-2 py-0.5 rounded-full',
+          noteLength > 50 ? 'bg-moss/20 text-leaf font-semibold' : 'bg-mist dark:bg-muted')}>
+          50+ chars +2
+        </span>
+        <span className={cn('px-2 py-0.5 rounded-full',
+          noteLength > 100 ? 'bg-leaf/15 text-leaf font-semibold' : 'bg-mist dark:bg-muted')}>
+          100+ chars +2
+        </span>
+      </div>
+    </div>
   )
 }
