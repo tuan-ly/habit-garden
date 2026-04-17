@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbo",
+    "dev": "next dev --webpack",
     "build": "next build --webpack",
     "build:mobile": "next build --webpack && npx cap sync",
     "start": "next start",
