@@ -22,7 +22,8 @@ export async function getCoinBalance(): Promise<{ coins: number } | { error: str
 }
 
 /**
- * Award coins to user (internal use - called from other actions)
+ * Award coins to user — atomic via PostgreSQL RPC
+ * Single transaction: UPDATE coins + INSERT transaction log
  */
 export async function awardCoins(
   amount: number,
@@ -36,47 +37,21 @@ export async function awardCoins(
 
   const supabase = await createClient()
 
-  // Get current balance
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('coins')
-    .eq('id', user.id)
-    .single()
+  const { data, error } = await supabase.rpc('award_coins', {
+    p_user_id: user.id,
+    p_amount: amount,
+    p_reason: reason,
+    p_reference_id: referenceId ?? null,
+  })
 
-  if (profileError) return { error: profileError.message }
-
-  const currentBalance = profile.coins ?? 0
-  const newBalance = currentBalance + amount
-
-  // Update balance
-  const { error: updateError } = await supabase
-    .from('profiles')
-    .update({ coins: newBalance })
-    .eq('id', user.id)
-
-  if (updateError) return { error: updateError.message }
-
-  // Log transaction
-  const { error: txError } = await supabase
-    .from('coin_transactions')
-    .insert({
-      user_id: user.id,
-      amount,
-      reason,
-      reference_id: referenceId ?? null,
-      balance_after: newBalance,
-    })
-
-  if (txError) {
-    console.error('Failed to log coin transaction:', txError)
-    // Don't fail the operation just because logging failed
-  }
-
-  return { newBalance }
+  if (error) return { error: error.message }
+  return { newBalance: data as number }
 }
 
 /**
- * Spend coins (internal use - validates balance before spending)
+ * Spend coins — atomic via PostgreSQL RPC
+ * Single transaction: check balance + UPDATE coins + INSERT transaction log
+ * Fails atomically if insufficient balance (no partial state)
  */
 export async function spendCoins(
   amount: number,
@@ -90,46 +65,22 @@ export async function spendCoins(
 
   const supabase = await createClient()
 
-  // Get current balance
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('coins')
-    .eq('id', user.id)
-    .single()
+  const { data, error } = await supabase.rpc('spend_coins', {
+    p_user_id: user.id,
+    p_amount: amount,
+    p_reason: reason,
+    p_reference_id: referenceId ?? null,
+  })
 
-  if (profileError) return { error: profileError.message }
-
-  const currentBalance = profile.coins ?? 0
-  if (currentBalance < amount) {
-    return { error: `Not enough coins. Have ${currentBalance}, need ${amount}` }
+  if (error) {
+    // Map PostgreSQL exception to user-friendly message
+    if (error.message.includes('Insufficient coins')) {
+      return { error: 'Not enough coins' }
+    }
+    return { error: error.message }
   }
 
-  const newBalance = currentBalance - amount
-
-  // Update balance
-  const { error: updateError } = await supabase
-    .from('profiles')
-    .update({ coins: newBalance })
-    .eq('id', user.id)
-
-  if (updateError) return { error: updateError.message }
-
-  // Log transaction (negative amount)
-  const { error: txError } = await supabase
-    .from('coin_transactions')
-    .insert({
-      user_id: user.id,
-      amount: -amount,
-      reason,
-      reference_id: referenceId ?? null,
-      balance_after: newBalance,
-    })
-
-  if (txError) {
-    console.error('Failed to log coin transaction:', txError)
-  }
-
-  return { newBalance }
+  return { newBalance: data as number }
 }
 
 /**

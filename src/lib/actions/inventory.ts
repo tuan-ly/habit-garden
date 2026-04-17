@@ -95,42 +95,24 @@ export async function harvestMaterial(
 }
 
 /**
- * Helper: Add or increment material in inventory
+ * Helper: Add or increment material in inventory — atomic via RPC
  */
 async function upsertInventoryMaterial(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
   materialId: string
 ): Promise<void> {
-  // Check if user already has this material in inventory
-  const { data: existing } = await supabase
-    .from('user_inventory')
-    .select('id, quantity')
-    .eq('user_id', userId)
-    .eq('item_type', 'material')
-    .eq('material_id', materialId)
-    .single()
+  const { error } = await supabase.rpc('atomic_inventory_increment', {
+    p_user_id: userId,
+    p_item_type: 'material',
+    p_material_id: materialId,
+    p_decoration_type_id: null,
+    p_amount: 1,
+    p_acquired_via: 'harvest',
+  })
 
-  if (existing) {
-    // Increment quantity
-    await supabase
-      .from('user_inventory')
-      .update({
-        quantity: existing.quantity + 1,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', existing.id)
-  } else {
-    // Insert new entry
-    await supabase
-      .from('user_inventory')
-      .insert({
-        user_id: userId,
-        item_type: 'material',
-        material_id: materialId,
-        quantity: 1,
-        acquired_via: 'harvest',
-      })
+  if (error) {
+    console.error('Failed to upsert inventory material:', error)
   }
 }
 

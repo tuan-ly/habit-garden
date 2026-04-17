@@ -64,6 +64,9 @@ interface InventoryContextType {
   coins: number
   recipes: RecipeWithDetails[]
   isLoading: boolean
+  isCrafting: boolean
+  isPurchasing: boolean
+  isPlacing: boolean
   recipesLoaded: boolean
 
   // Actions
@@ -131,14 +134,31 @@ export function InventoryProvider({
   )
   const [coins, setCoins] = useState(initialCoins)
   const [recipes, setRecipes] = useState<RecipeWithDetails[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [loadingOps, setLoadingOps] = useState<Set<string>>(new Set())
   const [recipesLoaded, setRecipesLoaded] = useState(false)
+
+  // Per-operation loading helpers
+  const startOp = useCallback((op: string) => {
+    setLoadingOps((prev) => new Set(prev).add(op))
+  }, [])
+  const endOp = useCallback((op: string) => {
+    setLoadingOps((prev) => {
+      const next = new Set(prev)
+      next.delete(op)
+      return next
+    })
+  }, [])
+
+  const isLoading = loadingOps.size > 0
+  const isCrafting = loadingOps.has('craft')
+  const isPurchasing = loadingOps.has('purchase')
+  const isPlacing = loadingOps.has('place')
 
   // -----------------------------------------------
   // refreshInventory — refetch all inventory data
   // -----------------------------------------------
   const refreshInventory = useCallback(async () => {
-    setIsLoading(true)
+    startOp('refresh')
     try {
       const [invResult, coinsResult] = await Promise.all([
         getUserInventory(),
@@ -154,9 +174,9 @@ export function InventoryProvider({
         setCoins(coinsResult.coins)
       }
     } finally {
-      setIsLoading(false)
+      endOp('refresh')
     }
-  }, [])
+  }, [startOp, endOp])
 
   // -----------------------------------------------
   // loadRecipes — fetch recipes once, skip if already loaded
@@ -164,7 +184,7 @@ export function InventoryProvider({
   const loadRecipes = useCallback(async () => {
     if (recipesLoaded) return
 
-    setIsLoading(true)
+    startOp('recipes')
     try {
       const result = await getRecipes()
       if ('recipes' in result) {
@@ -172,16 +192,16 @@ export function InventoryProvider({
         setRecipesLoaded(true)
       }
     } finally {
-      setIsLoading(false)
+      endOp('recipes')
     }
-  }, [recipesLoaded])
+  }, [recipesLoaded, startOp, endOp])
 
   // -----------------------------------------------
   // craftDecoration — consume materials, add to inventory
   // -----------------------------------------------
   const craftDecoration = useCallback(
     async (recipeId: string): Promise<CraftResult> => {
-      setIsLoading(true)
+      startOp('craft')
       try {
         const result = await craftDecorationAction(recipeId)
 
@@ -200,10 +220,10 @@ export function InventoryProvider({
       } catch {
         return { success: false, error: 'Network error' }
       } finally {
-        setIsLoading(false)
+        endOp('craft')
       }
     },
-    []
+    [startOp, endOp]
   )
 
   // -----------------------------------------------
@@ -211,7 +231,7 @@ export function InventoryProvider({
   // -----------------------------------------------
   const purchaseDecoration = useCallback(
     async (decoTypeId: string): Promise<PurchaseResult> => {
-      setIsLoading(true)
+      startOp('purchase')
       try {
         const result = await purchaseDecorationAction(decoTypeId)
 
@@ -236,10 +256,10 @@ export function InventoryProvider({
       } catch {
         return { success: false, error: 'Network error' }
       } finally {
-        setIsLoading(false)
+        endOp('purchase')
       }
     },
-    []
+    [startOp, endOp]
   )
 
   // -----------------------------------------------
@@ -252,7 +272,7 @@ export function InventoryProvider({
       col: number,
       rotation?: DecorationRotation
     ): Promise<PlaceResult> => {
-      setIsLoading(true)
+      startOp('place')
       try {
         const result = await placeDecorationAction({
           inventory_item_id: inventoryItemId,
@@ -284,10 +304,10 @@ export function InventoryProvider({
       } catch {
         return { success: false, error: 'Network error' }
       } finally {
-        setIsLoading(false)
+        endOp('place')
       }
     },
-    []
+    [startOp, endOp]
   )
 
   // -----------------------------------------------
@@ -295,7 +315,7 @@ export function InventoryProvider({
   // -----------------------------------------------
   const pickUpDecoration = useCallback(
     async (placedDecoId: string): Promise<ActionResult> => {
-      setIsLoading(true)
+      startOp('pickup')
       try {
         const result = await pickUpDecorationAction({
           placed_decoration_id: placedDecoId,
@@ -317,10 +337,10 @@ export function InventoryProvider({
       } catch {
         return { success: false, error: 'Network error' }
       } finally {
-        setIsLoading(false)
+        endOp('pickup')
       }
     },
-    []
+    [startOp, endOp]
   )
 
   // -----------------------------------------------
@@ -433,6 +453,9 @@ export function InventoryProvider({
       coins,
       recipes,
       isLoading,
+      isCrafting,
+      isPurchasing,
+      isPlacing,
       recipesLoaded,
       refreshInventory,
       loadRecipes,
@@ -452,6 +475,9 @@ export function InventoryProvider({
       coins,
       recipes,
       isLoading,
+      isCrafting,
+      isPurchasing,
+      isPlacing,
       recipesLoaded,
       refreshInventory,
       loadRecipes,

@@ -40,7 +40,7 @@ export function DashboardProviders({
         <SubscriptionProvider initialTier={initialTier}>
           <MoodProvider initialMood={initialMood}>
             <GardenSettingsProvider>
-              <InventoryProvider>
+              <InventoryProvider initialCoins={profile?.coins ?? 0}>
                 {children}
                 {/* Dev Debug Panel - only renders in development */}
                 <DevDebugPanel />

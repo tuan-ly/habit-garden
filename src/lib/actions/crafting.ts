@@ -2,7 +2,7 @@
 
 import { getAuthUser } from '@/lib/auth-cached'
 import { createClient } from '@/lib/supabase/server'
-import type { RecipeWithDetails, InventoryItemWithDetails } from '@/types/database'
+import type { RecipeWithDetails } from '@/types/database'
 
 /**
  * Get all recipes with their ingredients and decoration type info
@@ -42,7 +42,9 @@ export async function getRecipes(): Promise<
 
 /**
  * Craft a decoration from a recipe
- * Consumes materials from inventory, creates decoration in inventory
+ * Uses atomic inventory operations to prevent race conditions:
+ * - Decrements each material atomically (fails if insufficient)
+ * - Increments decoration atomically via upsert
  */
 export async function craftDecoration(
   recipeId: string
@@ -83,79 +85,84 @@ export async function craftDecoration(
     return { error: `Need level ${recipe.unlock_level} to craft this` }
   }
 
-  // 3. Check user has all required materials
+  // 3. Atomically deduct each material
+  // If any fails (insufficient quantity), the individual RPC raises an exception
+  // We track consumed materials to roll back on partial failure
   const ingredients = recipe.ingredients as Array<{ material_id: string; quantity: number }>
+  const consumedMaterials: Array<{ materialId: string; quantity: number }> = []
+
   for (const ingredient of ingredients) {
+    // First get the inventory item ID for this material
     const { data: inv } = await supabase
       .from('user_inventory')
-      .select('id, quantity')
+      .select('id')
       .eq('user_id', user.id)
       .eq('item_type', 'material')
       .eq('material_id', ingredient.material_id)
       .single()
 
-    if (!inv || inv.quantity < ingredient.quantity) {
+    if (!inv) {
+      // Roll back consumed materials
+      await rollbackConsumedMaterials(supabase, user.id, consumedMaterials)
       return { error: 'Not enough materials' }
     }
-  }
 
-  // 4. Consume materials (deduct from inventory)
-  for (const ingredient of ingredients) {
-    const { data: inv } = await supabase
-      .from('user_inventory')
-      .select('id, quantity')
-      .eq('user_id', user.id)
-      .eq('item_type', 'material')
-      .eq('material_id', ingredient.material_id)
-      .single()
+    const { error: deductError } = await supabase.rpc('atomic_inventory_decrement', {
+      p_inventory_id: inv.id,
+      p_user_id: user.id,
+      p_amount: ingredient.quantity,
+    })
 
-    if (!inv) continue
-
-    const newQty = inv.quantity - ingredient.quantity
-    if (newQty <= 0) {
-      // Remove entry entirely
-      await supabase
-        .from('user_inventory')
-        .delete()
-        .eq('id', inv.id)
-    } else {
-      // Decrease quantity
-      await supabase
-        .from('user_inventory')
-        .update({ quantity: newQty, updated_at: new Date().toISOString() })
-        .eq('id', inv.id)
+    if (deductError) {
+      // Roll back consumed materials
+      await rollbackConsumedMaterials(supabase, user.id, consumedMaterials)
+      return { error: 'Not enough materials' }
     }
+
+    consumedMaterials.push({ materialId: ingredient.material_id, quantity: ingredient.quantity })
   }
 
-  // 5. Add crafted decoration to inventory
+  // 4. Add crafted decoration to inventory atomically
   const decorationType = recipe.decoration_type as unknown as { id: string; name: string }
-  const { data: existingDeco } = await supabase
-    .from('user_inventory')
-    .select('id, quantity')
-    .eq('user_id', user.id)
-    .eq('item_type', 'decoration')
-    .eq('decoration_type_id', decorationType.id)
-    .single()
 
-  if (existingDeco) {
-    await supabase
-      .from('user_inventory')
-      .update({
-        quantity: existingDeco.quantity + 1,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', existingDeco.id)
-  } else {
-    await supabase
-      .from('user_inventory')
-      .insert({
-        user_id: user.id,
-        item_type: 'decoration',
-        decoration_type_id: decorationType.id,
-        quantity: 1,
-        acquired_via: 'craft',
-      })
+  const { error: addError } = await supabase.rpc('atomic_inventory_increment', {
+    p_user_id: user.id,
+    p_item_type: 'decoration',
+    p_material_id: null,
+    p_decoration_type_id: decorationType.id,
+    p_amount: 1,
+    p_acquired_via: 'craft',
+  })
+
+  if (addError) {
+    // Roll back consumed materials
+    await rollbackConsumedMaterials(supabase, user.id, consumedMaterials)
+    return { error: 'Failed to add decoration to inventory' }
   }
 
   return { success: true, decorationName: decorationType.name }
+}
+
+/**
+ * Roll back consumed materials on partial craft failure
+ */
+async function rollbackConsumedMaterials(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  consumed: Array<{ materialId: string; quantity: number }>
+): Promise<void> {
+  for (const item of consumed) {
+    const { error: rollbackError } = await supabase.rpc('atomic_inventory_increment', {
+      p_user_id: userId,
+      p_item_type: 'material',
+      p_material_id: item.materialId,
+      p_decoration_type_id: null,
+      p_amount: item.quantity,
+      p_acquired_via: 'harvest',
+    })
+
+    if (rollbackError) {
+      console.error('Failed to rollback material:', rollbackError)
+    }
+  }
 }

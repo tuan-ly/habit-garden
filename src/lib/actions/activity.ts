@@ -96,8 +96,14 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
   const { data: plant, error: plantError } = await supabase
     .from('plants')
     .select(`
-      *,
-      plant_type:plant_types(*),
+      id, user_id, plant_type_id, name, habit_description, started_at,
+      current_moisture, growth_percentage, total_waterings,
+      current_streak, longest_streak, last_watered_at, status, matured_at,
+      goal_mode, easy_mode, created_at, updated_at,
+      plant_type:plant_types(
+        id, name, icon, maturity_days, moisture_decay_rate, moisture_boost,
+        frequency_type, frequency_target, difficulty, tier
+      ),
       goals(id, season_status, goal_mode, current_value, days_active, started_at, target_value, weekly_targets)
     `)
     .eq('id', dto.plant_id)
@@ -278,7 +284,8 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
   // Update Plant Status
   // =====================================================
 
-  const plantType = plant.plant_type
+  // Supabase returns plant_type as array for joined relations, extract first element
+  const plantType = Array.isArray(plant.plant_type) ? plant.plant_type[0] : plant.plant_type
   let plantUpdate: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
   }
@@ -340,12 +347,13 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
   let coinsEarned = 0
   let harvestedMaterial: { name: string; icon: string } | undefined
 
-  if (dto.activity_type === 'completed' || dto.activity_type === 'progress' || dto.activity_type === 'watering') {
-    // Award coins for watering
+  if (dto.activity_type === 'completed' || dto.activity_type === 'progress') {
+    // Award coins only for actual completion/progress — NOT for 'watering' ("Not today" / rest)
+    // newStreak is calculated above only for completed/progress types
     const coinReward = calculateWateringReward(isFirstActivityToday, newStreak)
     if (coinReward.total > 0) {
       coinsEarned += coinReward.total
-      await awardCoins(coinReward.total, 'watering', dto.plant_id)
+      await awardCoins(coinReward.total, 'activity', dto.plant_id)
     }
 
     // Award coins + harvest material when plant matures

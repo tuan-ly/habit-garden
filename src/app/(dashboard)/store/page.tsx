@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
@@ -17,6 +17,14 @@ import type { DecorationType, RecipeWithDetails, InventoryItemWithDetails } from
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function StorePage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>}>
+      <StorePageContent />
+    </Suspense>
+  )
+}
+
+function StorePageContent() {
   const searchParams = useSearchParams()
   const defaultTab = searchParams.get('tab') === 'shop' ? 'shop' : 'craft'
 
