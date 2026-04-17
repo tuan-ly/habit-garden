@@ -4,8 +4,8 @@
 /* ========================================
    Living Garden — Brand Typography
    Fraunces (display serif) + Nunito (body sans)
+   Loaded via next/font/google with Vietnamese subset in src/app/layout.tsx
    ======================================== */
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Nunito:wght@400;500;600;700;800&display=swap');
 
 @custom-variant dark (&:is(.dark *));
 
@@ -87,9 +87,9 @@
   --growth-active: #8DB982;
   --dead-ash:      #A39B8A;
 
-  /* Font stacks */
-  --font-display: 'Fraunces', ui-serif, Georgia, serif;
-  --font-body:    'Nunito', var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  /* Font stacks (CSS variables provided by next/font/google in layout.tsx) */
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-body:    var(--font-nunito), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 
   /* Shadcn tokens — remapped to Sage palette */
   --background: #FEFCF7;
