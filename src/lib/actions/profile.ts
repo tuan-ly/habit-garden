@@ -86,6 +86,7 @@ export async function getProfile(): Promise<Profile | null> {
       coins, timezone,
       max_plants, unlocked_tiers, phase, longest_streak, total_mature_plants,
       subscription_tier, subscription_status,
+      theme, daily_reminder_enabled, achievement_notifications,
       created_at, updated_at
     `)
     .eq('id', user.id)
@@ -320,4 +321,101 @@ export async function getAchievementsData(): Promise<{
   })
 
   return { progress, unlockedIds }
+}
+
+// Update user's theme preference
+export async function updateTheme(
+  theme: 'light' | 'dark' | 'system'
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient()
+
+  const user = await getAuthUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
+
+  if (!['light', 'dark', 'system'].includes(theme)) {
+    return { success: false, error: 'Invalid theme' }
+  }
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      theme,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', user.id)
+
+  if (error) {
+    console.error('Error updating theme:', error)
+    return { success: false, error: error.message }
+  }
+
+  return { success: true }
+}
+
+// Update user's notification preferences (either or both)
+export async function updateNotificationPrefs(prefs: {
+  daily_reminder_enabled?: boolean
+  achievement_notifications?: boolean
+}): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient()
+
+  const user = await getAuthUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
+
+  const update: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  }
+  if (typeof prefs.daily_reminder_enabled === 'boolean') {
+    update.daily_reminder_enabled = prefs.daily_reminder_enabled
+  }
+  if (typeof prefs.achievement_notifications === 'boolean') {
+    update.achievement_notifications = prefs.achievement_notifications
+  }
+
+  const { error } = await supabase
+    .from('profiles')
+    .update(update)
+    .eq('id', user.id)
+
+  if (error) {
+    console.error('Error updating notification prefs:', error)
+    return { success: false, error: error.message }
+  }
+
+  return { success: true }
+}
+
+// Change the authenticated user's password.
+// Verifies current password first via signInWithPassword to provide good UX.
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient()
+
+  const user = await getAuthUser()
+  if (!user || !user.email) return { success: false, error: 'Not authenticated' }
+
+  if (!newPassword || newPassword.length < 8) {
+    return { success: false, error: 'New password must be at least 8 characters' }
+  }
+
+  // Verify current password
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword,
+  })
+  if (signInError) {
+    return { success: false, error: 'Current password is incorrect' }
+  }
+
+  const { error: updateError } = await supabase.auth.updateUser({
+    password: newPassword,
+  })
+  if (updateError) {
+    console.error('Error updating password:', updateError)
+    return { success: false, error: updateError.message }
+  }
+
+  return { success: true }
 }

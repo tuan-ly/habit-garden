@@ -29,10 +29,13 @@ export default function SettingsPage() {
       <SubscriptionSection />
 
       {/* Notification Settings */}
-      <NotificationSettings />
+      <NotificationSettings
+        defaultDailyReminder={profile?.daily_reminder_enabled ?? true}
+        defaultAchievementNotifications={profile?.achievement_notifications ?? true}
+      />
 
       {/* Appearance */}
-      <AppearanceSettings />
+      <AppearanceSettings defaultTheme={profile?.theme ?? 'system'} />
 
       {/* Performance */}
       <PerformanceSettings />

@@ -87,6 +87,10 @@ export interface Profile {
   // Subscription (Habien 2.0 Phase 3)
   subscription_tier: SubscriptionTier
   subscription_status: SubscriptionStatus
+  // Preferences
+  theme: 'light' | 'dark' | 'system' | null
+  daily_reminder_enabled: boolean
+  achievement_notifications: boolean
   created_at: string
   updated_at: string
 }
