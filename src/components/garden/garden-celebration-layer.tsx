@@ -1,11 +1,14 @@
 'use client'
 
 import { memo } from 'react'
+import dynamic from 'next/dynamic'
 import { WateringCelebration } from './watering-celebration'
-import { LevelUpModal } from '@/components/game-ui/level-up-modal'
-import { AchievementQueue } from '@/components/gamification/achievement-popup'
 import type { AchievementDefinition } from '@/lib/achievements'
 import type { CelebrationState } from './use-garden-interactions'
+
+// Dynamic imports — these are shown rarely (level up, achievement unlock)
+const LevelUpModal = dynamic(() => import('@/components/game-ui/level-up-modal').then(m => ({ default: m.LevelUpModal })), { ssr: false })
+const AchievementQueue = dynamic(() => import('@/components/gamification/achievement-popup').then(m => ({ default: m.AchievementQueue })), { ssr: false })
 
 interface GardenCelebrationLayerProps {
   celebration: CelebrationState | null

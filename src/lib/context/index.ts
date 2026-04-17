@@ -12,6 +12,7 @@ export {
   useSubscription,
   useSubscriptionOptional,
   useFeatureGate,
+  useUpgradeModalState,
 } from './subscription-context'
 export {
   DashboardDataProvider,

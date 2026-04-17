@@ -1,10 +1,13 @@
 'use client'
 
 import { memo, useCallback } from 'react'
-import { AddPlantDialog } from '@/components/plants/add-plant-dialog'
-import { PlantDetailSheet } from '@/components/plants/plant-detail-sheet'
-import { GentleWateringModal } from '@/components/plants/gentle-watering-modal'
+import dynamic from 'next/dynamic'
 import type { PlantWithType, PlantType } from '@/types/database'
+
+// Dynamic imports — these heavy modal components are only loaded when needed
+const AddPlantDialog = dynamic(() => import('@/components/plants/add-plant-dialog').then(m => ({ default: m.AddPlantDialog })), { ssr: false })
+const PlantDetailSheet = dynamic(() => import('@/components/plants/plant-detail-sheet').then(m => ({ default: m.PlantDetailSheet })), { ssr: false })
+const GentleWateringModal = dynamic(() => import('@/components/plants/gentle-watering-modal').then(m => ({ default: m.GentleWateringModal })), { ssr: false })
 
 interface GardenModalsProps {
   // Watering modal

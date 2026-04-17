@@ -53,16 +53,21 @@ interface SubscriptionContextType {
   // Tier limits
   limits: ReturnType<typeof getTierLimits>
 
-  // Upgrade modal
+  // Upgrade modal — use useUpgradeModalState() hook to read open state (separate context)
   showUpgradeModal: (trigger: UpgradeTrigger, context?: string) => void
   hideUpgradeModal: () => void
-  upgradeModal: UpgradeModalState
 
   // Refresh tier from server
   refreshTier: () => Promise<void>
 }
 
+// Separate context for upgrade modal state — prevents re-renders when modal opens/closes
+interface UpgradeModalContextType {
+  upgradeModal: UpgradeModalState
+}
+
 const SubscriptionContext = createContext<SubscriptionContextType | null>(null)
+const UpgradeModalContext = createContext<UpgradeModalContextType | null>(null)
 
 interface SubscriptionProviderProps {
   children: ReactNode
@@ -179,7 +184,7 @@ export function SubscriptionProvider({
     setUpgradeModal((prev) => ({ ...prev, open: false }))
   }, [])
 
-  // Memoize context value to prevent unnecessary re-renders
+  // Memoize main context value — excludes upgradeModal so modal toggles don't re-render consumers
   const contextValue = useMemo(
     () => ({
       tier,
@@ -196,17 +201,34 @@ export function SubscriptionProvider({
       limits,
       showUpgradeModal,
       hideUpgradeModal,
-      upgradeModal,
       refreshTier,
     }),
-    [tier, isLoading, hasGoals, hasIdentity, hasMetrics, hasWeeklyReports, canAddPlant, canAddGoal, canUsePlantTier, isWithinLevelCap, checkFeature, limits, showUpgradeModal, hideUpgradeModal, upgradeModal, refreshTier]
+    [tier, isLoading, hasGoals, hasIdentity, hasMetrics, hasWeeklyReports, canAddPlant, canAddGoal, canUsePlantTier, isWithinLevelCap, checkFeature, limits, showUpgradeModal, hideUpgradeModal, refreshTier]
   )
+
+  // Separate context value for modal state (only modal consumers re-render)
+  const modalValue = useMemo(() => ({ upgradeModal }), [upgradeModal])
 
   return (
     <SubscriptionContext.Provider value={contextValue}>
-      {children}
+      <UpgradeModalContext.Provider value={modalValue}>
+        {children}
+      </UpgradeModalContext.Provider>
     </SubscriptionContext.Provider>
   )
+}
+
+/**
+ * Hook to read modal open state — use this only in the modal component itself.
+ * Separate from useSubscription() to avoid re-rendering all feature-gate consumers
+ * every time the upgrade modal opens or closes.
+ */
+export function useUpgradeModalState() {
+  const context = useContext(UpgradeModalContext)
+  if (!context) {
+    throw new Error('useUpgradeModalState must be used within a SubscriptionProvider')
+  }
+  return context.upgradeModal
 }
 
 /**

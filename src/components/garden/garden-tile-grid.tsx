@@ -1,6 +1,6 @@
 'use client'
 
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
 import { IsometricTile } from './isometric-tile'
 import { IsometricPlant, type FocusState } from './isometric-plant'
 import { DecorationImage } from './decoration-image'
@@ -50,11 +50,15 @@ export const GardenTileGrid = memo(function GardenTileGrid({
   onTileLeave,
   onContextMenu,
 }: GardenTileGridProps) {
-  // Build a map from "row-col" -> decoration (anchor only) for O(1) lookup
-  const decorationAnchorMap = new Map<string, PlacedDecorationWithType>()
-  for (const deco of placedDecorations) {
-    decorationAnchorMap.set(`${deco.grid_row}-${deco.grid_col}`, deco)
-  }
+  // Build a map from "row-col" -> decoration (anchor only) for O(1) lookup.
+  // Memoized so we don't rebuild the Map on every render (only when decorations change).
+  const decorationAnchorMap = useMemo(() => {
+    const map = new Map<string, PlacedDecorationWithType>()
+    for (const deco of placedDecorations) {
+      map.set(`${deco.grid_row}-${deco.grid_col}`, deco)
+    }
+    return map
+  }, [placedDecorations])
 
   return (
     <>

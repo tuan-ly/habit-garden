@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { PlantCard } from '@/components/plants/plant-card'
 import { PlantDetailSheet } from '@/components/plants/plant-detail-sheet'
 import { AddPlantDialog } from '@/components/plants/add-plant-dialog'
@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils'
 import { usePlants, useMood, usePlantTypes, useProfile } from '@/lib/context'
 import { useBreathingRhythm } from '@/hooks/use-breathing-rhythm'
 import { useDevOverride } from '@/components/dev/dev-debug-context'
+import { getGoalsForPlants, type GoalWithStats } from '@/lib/actions/goals'
 import type { PlantWithType, WeatherType } from '@/types/database'
 
 const LAST_VISIT_KEY = 'habit-garden-last-visit'
@@ -136,6 +137,20 @@ export function GardenView({ weather }: GardenViewProps) {
   const growingPlants = plants.filter((p) => p.status !== 'mature' && p.status !== 'dead' && p.status !== 'dormant')
   const maturePlants = plants.filter((p) => p.status === 'mature')
   const deadPlants = plants.filter((p) => p.status === 'dead' || p.status === 'dormant')
+
+  // Batch fetch goals for all plants with goal_mode (1 query instead of N)
+  const [goalsMap, setGoalsMap] = useState<Map<string, GoalWithStats>>(new Map())
+  const plantIdsWithGoals = useMemo(
+    () => plants.filter(p => !!p.goal_mode).map(p => p.id),
+    [plants]
+  )
+  useEffect(() => {
+    if (plantIdsWithGoals.length === 0) {
+      setGoalsMap(new Map())
+      return
+    }
+    getGoalsForPlants(plantIdsWithGoals).then(setGoalsMap)
+  }, [plantIdsWithGoals])
 
   // Empty state
   if (plants.length === 0) {
@@ -290,6 +305,7 @@ export function GardenView({ weather }: GardenViewProps) {
                     key={plant.id}
                     plant={plant}
                     onClick={() => handlePlantClick(plant)}
+                    goalStats={goalsMap.get(plant.id) ?? null}
                   />
                 ))}
               </div>
@@ -314,6 +330,7 @@ export function GardenView({ weather }: GardenViewProps) {
                     key={plant.id}
                     plant={plant}
                     onClick={() => handlePlantClick(plant)}
+                    goalStats={goalsMap.get(plant.id) ?? null}
                   />
                 ))}
               </div>
@@ -338,6 +355,7 @@ export function GardenView({ weather }: GardenViewProps) {
                     key={plant.id}
                     plant={plant}
                     onClick={() => handlePlantClick(plant)}
+                    goalStats={goalsMap.get(plant.id) ?? null}
                   />
                 ))}
               </div>

@@ -34,9 +34,11 @@ interface PlantCardProps {
   plant: PlantWithType
   onClick?: () => void
   weather?: WeatherType | null
+  /** Pre-fetched goal stats (from batch fetch) */
+  goalStats?: GoalWithStats | null
 }
 
-export const PlantCard = memo(function PlantCard({ plant: initialPlant, onClick, weather }: PlantCardProps) {
+export const PlantCard = memo(function PlantCard({ plant: initialPlant, onClick, weather, goalStats }: PlantCardProps) {
   // Get the latest plant data from context (with optimistic updates)
   const { plants, waterPlant } = usePlants()
   const plant = plants.find(p => p.id === initialPlant.id) || initialPlant
@@ -44,16 +46,19 @@ export const PlantCard = memo(function PlantCard({ plant: initialPlant, onClick,
   const [isWatering, setIsWatering] = useState(false)
   const [showXp, setShowXp] = useState(false)
   const [earnedXp, setEarnedXp] = useState(0)
-  const [goal, setGoal] = useState<GoalWithStats | null>(null)
+
+  // Use pre-fetched goal stats (batch fetched by parent), fall back to lazy fetch
+  const [lazyGoal, setLazyGoal] = useState<GoalWithStats | null>(null)
+  const goal = goalStats ?? lazyGoal
 
   const hasGoal = !!plant.goal_mode
 
-  // Load goal data if plant has a goal
+  // Only fetch lazily if goalStats prop was not provided
   useEffect(() => {
-    if (hasGoal) {
-      getGoalForPlant(plant.id).then(setGoal)
+    if (hasGoal && goalStats === undefined) {
+      getGoalForPlant(plant.id).then(setLazyGoal)
     }
-  }, [plant.id, hasGoal])
+  }, [plant.id, hasGoal, goalStats])
 
   const isWateredToday = plant.last_watered_at
     ? new Date(plant.last_watered_at).toDateString() === new Date().toDateString()

@@ -1,17 +1,23 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { MoodProvider } from '@/lib/context/mood-context'
 import { GardenSettingsProvider } from '@/lib/context/garden-settings-context'
 import { SubscriptionProvider } from '@/lib/context/subscription-context'
 import { DashboardDataProvider } from '@/lib/context/dashboard-data-context'
 import { InventoryProvider } from '@/lib/context'
 import { DevDebugProvider, DevDebugPanel } from '@/components/dev'
-import { UpgradeModalContainer } from '@/components/game-ui/upgrade-modal-container'
 import type { MoodLevel } from '@/lib/mood-system'
 import type { SubscriptionTier } from '@/lib/subscription-limits'
 import type { Profile, PlantType } from '@/types/database'
 import type { User } from '@supabase/supabase-js'
 import type { ReactNode } from 'react'
+
+// Dynamic import — UpgradeModalContainer includes Paddle SDK and is rarely shown
+const UpgradeModalContainer = dynamic(
+  () => import('@/components/game-ui/upgrade-modal-container').then(m => ({ default: m.UpgradeModalContainer })),
+  { ssr: false }
+)
 
 interface DashboardProvidersProps {
   children: ReactNode

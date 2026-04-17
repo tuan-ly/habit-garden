@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSubscription } from '@/lib/context'
+import { useSubscription, useUpgradeModalState } from '@/lib/context'
 import { UpgradeModal } from './upgrade-modal'
 import { updateUpgradePromptAction } from '@/lib/actions/subscription'
 import { openTierCheckout, isPaddleConfigured } from '@/lib/paddle'
@@ -13,7 +13,8 @@ import { createClient } from '@/lib/supabase/client'
  * Integrates with Paddle checkout for payment
  */
 export function UpgradeModalContainer() {
-  const { tier, upgradeModal, hideUpgradeModal, refreshTier } = useSubscription()
+  const { tier, hideUpgradeModal, refreshTier } = useSubscription()
+  const upgradeModal = useUpgradeModalState()
   const [isProcessing, setIsProcessing] = useState(false)
   const [userInfo, setUserInfo] = useState<{ email?: string; id?: string } | null>(null)
 

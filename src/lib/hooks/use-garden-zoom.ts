@@ -93,6 +93,20 @@ export function useGardenZoom(options: UseGardenZoomOptions = {}): UseGardenZoom
   const panStartPos = useRef<{ x: number; y: number } | null>(null)
   const panStartOffset = useRef({ x: 0, y: 0 })
   const panThresholdMet = useRef(false) // Track if we've exceeded threshold
+  // rAF throttle for pan updates — batches move events to ≤1 setState per frame
+  const panRafId = useRef<number | null>(null)
+  const pendingPanOffset = useRef<{ x: number; y: number } | null>(null)
+  const schedulePanUpdate = useCallback((next: { x: number; y: number }) => {
+    pendingPanOffset.current = next
+    if (panRafId.current !== null) return
+    panRafId.current = requestAnimationFrame(() => {
+      panRafId.current = null
+      if (pendingPanOffset.current) {
+        setPanOffset(pendingPanOffset.current)
+        pendingPanOffset.current = null
+      }
+    })
+  }, [])
 
   // Pinch gesture tracking
   const initialDistance = useRef<number | null>(null)
@@ -303,19 +317,28 @@ export function useGardenZoom(options: UseGardenZoomOptions = {}): UseGardenZoom
         }
 
         if (panThresholdMet.current) {
-          setPanOffset({
+          schedulePanUpdate({
             x: panStartOffset.current.x + dx,
             y: panStartOffset.current.y + dy,
           })
         }
       }
     },
-    []
+    [schedulePanUpdate]
   )
 
   const handlePanTouchEnd = useCallback(() => {
     panStartPos.current = null
     panThresholdMet.current = false
+    // Flush any pending pan update before clearing rAF
+    if (panRafId.current !== null) {
+      cancelAnimationFrame(panRafId.current)
+      panRafId.current = null
+      if (pendingPanOffset.current) {
+        setPanOffset(pendingPanOffset.current)
+        pendingPanOffset.current = null
+      }
+    }
     setIsPanning(false)
     // Note: didPan is NOT reset here - it's reset by the consumer after handling click
   }, [])
@@ -350,19 +373,27 @@ export function useGardenZoom(options: UseGardenZoomOptions = {}): UseGardenZoom
         }
 
         if (panThresholdMet.current) {
-          setPanOffset({
+          schedulePanUpdate({
             x: panStartOffset.current.x + dx,
             y: panStartOffset.current.y + dy,
           })
         }
       }
     },
-    []
+    [schedulePanUpdate]
   )
 
   const handlePanMouseUp = useCallback(() => {
     panStartPos.current = null
     panThresholdMet.current = false
+    if (panRafId.current !== null) {
+      cancelAnimationFrame(panRafId.current)
+      panRafId.current = null
+      if (pendingPanOffset.current) {
+        setPanOffset(pendingPanOffset.current)
+        pendingPanOffset.current = null
+      }
+    }
     setIsPanning(false)
     // Note: didPan is NOT reset here - it's reset by the consumer after handling click
   }, [])
@@ -439,6 +470,9 @@ export function useGardenZoom(options: UseGardenZoomOptions = {}): UseGardenZoom
     return () => {
       if (animationFrame.current) {
         cancelAnimationFrame(animationFrame.current)
+      }
+      if (panRafId.current !== null) {
+        cancelAnimationFrame(panRafId.current)
       }
     }
   }, [])

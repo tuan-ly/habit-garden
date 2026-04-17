@@ -625,29 +625,51 @@ function computeGoalStats(goal: Goal, logs: Pick<GoalLog, 'value' | 'is_personal
 
 // Get goal for a plant
 export async function getGoalForPlant(plantId: string): Promise<GoalWithStats | null> {
+  const result = await getGoalsForPlants([plantId])
+  return result.get(plantId) ?? null
+}
+
+// Batch fetch goals for multiple plants — solves N+1 problem
+export async function getGoalsForPlants(plantIds: string[]): Promise<Map<string, GoalWithStats>> {
+  const result = new Map<string, GoalWithStats>()
+  if (plantIds.length === 0) return result
+
   const supabase = await createClient()
 
   const user = await getAuthUser()
-  if (!user) return null
+  if (!user) return result
 
-  const { data: goal, error } = await supabase
+  const { data: goals, error } = await supabase
     .from('goals')
     .select('*')
-    .eq('plant_id', plantId)
-    .single()
+    .in('plant_id', plantIds)
 
-  if (error || !goal) return null
+  if (error || !goals || goals.length === 0) return result
 
-  // Fetch all logs needed for period + week calculations.
-  // 30 days covers daily, weekly, and monthly period windows.
+  // Fetch all logs for all goals in one query
+  const goalIds = goals.map(g => g.id)
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-  const { data: logs } = await supabase
+  const { data: allLogs } = await supabase
     .from('goal_logs')
-    .select('value, is_personal_record, logged_at')
-    .eq('goal_id', goal.id)
+    .select('goal_id, value, is_personal_record, logged_at')
+    .in('goal_id', goalIds)
     .gte('logged_at', thirtyDaysAgo)
 
-  return computeGoalStats(goal as Goal, logs || [])
+  // Group logs by goal_id
+  const logsByGoal = new Map<string, Pick<GoalLog, 'value' | 'is_personal_record' | 'logged_at'>[]>()
+  for (const log of (allLogs || [])) {
+    const arr = logsByGoal.get(log.goal_id) || []
+    arr.push(log)
+    logsByGoal.set(log.goal_id, arr)
+  }
+
+  // Compute stats in-memory
+  for (const goal of goals) {
+    const stats = computeGoalStats(goal as Goal, logsByGoal.get(goal.id) || [])
+    result.set(goal.plant_id, stats)
+  }
+
+  return result
 }
 
 // Get all goals for the user

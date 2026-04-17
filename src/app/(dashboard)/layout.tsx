@@ -1,14 +1,17 @@
 import { redirect } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { Toaster } from '@/components/ui/sonner'
-import { OnboardingModal } from '@/components/onboarding'
 import { GameNav } from '@/components/game-ui'
 import { DashboardProviders } from './providers'
 import { getTodayMood } from '@/lib/actions/mood'
 import { getProfile } from '@/lib/actions/profile'
 import { getPlantTypes } from '@/lib/actions/plants'
 import { getAuthUser } from '@/lib/auth-cached'
-import { MoodProactivePrompt } from '@/components/mood'
 import { TimezoneSync } from '@/components/timezone-sync'
+
+// Dynamic imports for rarely-shown modals — reduces initial JS bundle
+const OnboardingModal = dynamic(() => import('@/components/onboarding').then(m => ({ default: m.OnboardingModal })), { ssr: false })
+const MoodProactivePrompt = dynamic(() => import('@/components/mood').then(m => ({ default: m.MoodProactivePrompt })), { ssr: false })
 
 export default async function DashboardLayout({
   children,

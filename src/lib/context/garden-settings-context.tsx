@@ -55,11 +55,20 @@ const GardenSettingsContext = createContext<GardenSettingsContextType | null>(nu
 
 interface GardenSettingsProviderProps {
   children: ReactNode
+  /**
+   * Optional initial settings (e.g. read from a cookie on the server).
+   * Prevents the mount-time flash of defaults before localStorage loads.
+   */
+  initialSettings?: Partial<GardenEffectSettings>
 }
 
-export function GardenSettingsProvider({ children }: GardenSettingsProviderProps) {
-  const [settings, setSettings] = useState<GardenEffectSettings>(DEFAULT_SETTINGS)
-  const [isLoaded, setIsLoaded] = useState(false)
+export function GardenSettingsProvider({ children, initialSettings }: GardenSettingsProviderProps) {
+  const [settings, setSettings] = useState<GardenEffectSettings>(() => ({
+    ...DEFAULT_SETTINGS,
+    ...(initialSettings ?? {}),
+  }))
+  // If SSR already provided settings, treat as loaded so writes are persisted immediately.
+  const [isLoaded, setIsLoaded] = useState(!!initialSettings)
 
   // Load settings from localStorage on mount
   useEffect(() => {
