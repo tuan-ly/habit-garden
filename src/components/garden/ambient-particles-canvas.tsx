@@ -57,15 +57,15 @@ function generateParticles(
 
     // Sunny day particles
     if (timeOfDay === 'day' && (weather === 'sunny' || weather === 'rainbow' || !weather)) {
-        // Single butterfly
+        // Single butterfly — premium 4-wing model, slightly larger for detail visibility
         particles.push({
             type: 'butterfly',
             x: rand() * width,
             y: height * 0.2 + rand() * height * 0.4,
             vx: 0.3 + rand() * 0.4,
-            vy: 0,
-            size: 14,
-            opacity: 0.85,
+            vy: (rand() - 0.5) * 0.15,
+            size: 18,
+            opacity: 0.9,
             rotation: 0,
             rotationSpeed: 0,
             phase: rand() * Math.PI * 2,
@@ -331,24 +331,109 @@ function AmbientParticlesCanvasComponent({
                     }
 
                     case 'butterfly': {
-                        // Floating motion
+                        // Premium butterfly: 4 wings (upper + lower), symmetric opposite-phase flap,
+                        // gradient coloring, body + antennae, banking tilt with flight direction.
                         const floatY = Math.sin(p.lifespan * 2 + p.phase) * 8
-                        const wingFlap = Math.sin(p.lifespan * 15) * 0.3 + 0.7
+                        // Upper wings flap faster; lowers lag slightly for realistic motion
+                        const flapUpper = Math.sin(p.lifespan * 12 + p.phase)       // -1..1
+                        const flapLower = Math.sin(p.lifespan * 12 + p.phase - 0.4) // -1..1
+                        // Map flap (-1..1) → wing x-scale (0.25..1.0) — wings "close" when flapping
+                        const upperScale = 0.25 + (flapUpper * 0.5 + 0.5) * 0.75
+                        const lowerScale = 0.25 + (flapLower * 0.5 + 0.5) * 0.75
 
                         ctx.translate(0, floatY)
+                        // Bank toward flight direction (vx is the horizontal velocity)
+                        ctx.rotate(Math.atan2(p.vy, p.vx) * 0.15)
                         ctx.globalAlpha = p.opacity
 
-                        // Wings
-                        ctx.fillStyle = p.color
+                        const S = p.size // shorthand
+                        // Derive lighter highlight color from base color for gradient
+                        const baseColor = p.color
+                        // Helper: draw a teardrop wing shape centered at origin, pointing outward along +x
+                        // Caller applies scale/mirror via ctx transforms.
+                        const drawWing = (
+                            cx: number,
+                            cy: number,
+                            widthScale: number,
+                            mirrorX: boolean,
+                            wingW: number,
+                            wingH: number,
+                            highlight: string
+                        ) => {
+                            ctx.save()
+                            ctx.translate(cx, cy)
+                            ctx.scale(mirrorX ? -widthScale : widthScale, 1)
+                            // Gradient: darker at body attachment → lighter at wingtip
+                            const grad = ctx.createLinearGradient(0, 0, wingW, 0)
+                            grad.addColorStop(0, baseColor)
+                            grad.addColorStop(1, highlight)
+                            ctx.fillStyle = grad
+                            // Teardrop path: starts at body (origin), curves out to tip and back
+                            ctx.beginPath()
+                            ctx.moveTo(0, 0)
+                            ctx.bezierCurveTo(
+                                wingW * 0.2, -wingH,
+                                wingW * 0.95, -wingH * 0.6,
+                                wingW, 0
+                            )
+                            ctx.bezierCurveTo(
+                                wingW * 0.95, wingH * 0.6,
+                                wingW * 0.2, wingH,
+                                0, 0
+                            )
+                            ctx.closePath()
+                            ctx.fill()
+                            // Dark wing outline for definition
+                            ctx.strokeStyle = 'rgba(0,0,0,0.25)'
+                            ctx.lineWidth = 0.6
+                            ctx.stroke()
+                            // Wing spot (monarch-style dot near tip)
+                            ctx.fillStyle = 'rgba(0,0,0,0.35)'
+                            ctx.beginPath()
+                            ctx.arc(wingW * 0.65, 0, wingH * 0.18, 0, Math.PI * 2)
+                            ctx.fill()
+                            ctx.restore()
+                        }
+
+                        // Upper wings: bigger, attached slightly above body center
+                        const upperW = S * 1.0
+                        const upperH = S * 0.7
+                        const highlightUpper = '#ffffff'
+                        drawWing(0, -S * 0.1, upperScale, false, upperW, upperH, highlightUpper) // right upper
+                        drawWing(0, -S * 0.1, upperScale, true, upperW, upperH, highlightUpper)  // left upper
+
+                        // Lower wings: smaller, attached below body center, lag phase
+                        const lowerW = S * 0.7
+                        const lowerH = S * 0.55
+                        drawWing(0, S * 0.15, lowerScale, false, lowerW, lowerH, highlightUpper) // right lower
+                        drawWing(0, S * 0.15, lowerScale, true, lowerW, lowerH, highlightUpper)  // left lower
+
+                        // Body (dark, segmented ellipse)
+                        ctx.fillStyle = '#2d2d2d'
                         ctx.beginPath()
-                        ctx.ellipse(-p.size * 0.5, 0, p.size * 0.5 * wingFlap, p.size * 0.4, 0, 0, Math.PI * 2)
-                        ctx.ellipse(p.size * 0.5, 0, p.size * 0.5 * wingFlap, p.size * 0.4, 0, 0, Math.PI * 2)
+                        ctx.ellipse(0, 0, S * 0.1, S * 0.42, 0, 0, Math.PI * 2)
+                        ctx.fill()
+                        // Body highlight for a touch of depth
+                        ctx.fillStyle = 'rgba(255,255,255,0.25)'
+                        ctx.beginPath()
+                        ctx.ellipse(-S * 0.03, -S * 0.05, S * 0.04, S * 0.3, 0, 0, Math.PI * 2)
                         ctx.fill()
 
-                        // Body
-                        ctx.fillStyle = '#333'
+                        // Antennae: two thin curves from the head
+                        ctx.strokeStyle = '#2d2d2d'
+                        ctx.lineWidth = 0.8
+                        ctx.lineCap = 'round'
                         ctx.beginPath()
-                        ctx.ellipse(0, 0, p.size * 0.1, p.size * 0.3, 0, 0, Math.PI * 2)
+                        ctx.moveTo(-S * 0.02, -S * 0.4)
+                        ctx.quadraticCurveTo(-S * 0.15, -S * 0.6, -S * 0.22, -S * 0.7)
+                        ctx.moveTo(S * 0.02, -S * 0.4)
+                        ctx.quadraticCurveTo(S * 0.15, -S * 0.6, S * 0.22, -S * 0.7)
+                        ctx.stroke()
+                        // Antennae tips (small dots)
+                        ctx.fillStyle = '#2d2d2d'
+                        ctx.beginPath()
+                        ctx.arc(-S * 0.22, -S * 0.7, S * 0.05, 0, Math.PI * 2)
+                        ctx.arc(S * 0.22, -S * 0.7, S * 0.05, 0, Math.PI * 2)
                         ctx.fill()
                         break
                     }

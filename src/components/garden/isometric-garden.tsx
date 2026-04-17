@@ -138,6 +138,7 @@ export function IsometricGarden({
   )
   const gridSize = useMemo(() => calculateRequiredGridSize(allGridItems, minimumGridSize), [allGridItems, minimumGridSize])
   const occupiedCells = useMemo(() => buildOccupiedCellsMap(livingPlants), [livingPlants])
+  const occupiedCellsSet = useMemo(() => new Set(occupiedCells.keys()), [occupiedCells])
 
   const multiCellAreas: MultiCellArea[] = useMemo(() => {
     return livingPlants
@@ -299,6 +300,7 @@ export function IsometricGarden({
                 tileSize={tileSize}
                 timeOfDay={currentTimeOfDay}
                 unlockedTypes={unlockedDecorations}
+                occupiedCells={occupiedCellsSet}
               />
             )}
 

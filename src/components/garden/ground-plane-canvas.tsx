@@ -312,6 +312,84 @@ function GroundPlaneCanvasComponent({
         ctx.stroke()
         ctx.globalAlpha = 1
 
+        // PREMIUM: Large diamond-shaped vignette (center bright, edges darker)
+        // This creates depth on the overall surface
+        const vignetteGrad = ctx.createRadialGradient(
+            svgWidth / 2, diamondHeight / 2, 0,
+            svgWidth / 2, diamondHeight / 2, diamondWidth * 0.55
+        )
+        vignetteGrad.addColorStop(0, 'rgba(255,255,255,0.08)')
+        vignetteGrad.addColorStop(0.55, 'rgba(255,255,255,0)')
+        vignetteGrad.addColorStop(1, 'rgba(0,0,0,0.18)')
+        ctx.save()
+        ctx.beginPath()
+        ctx.moveTo(topX, topY)
+        ctx.lineTo(rightX, rightY)
+        ctx.lineTo(bottomX, bottomY)
+        ctx.lineTo(leftX, leftY)
+        ctx.closePath()
+        ctx.clip()
+        ctx.fillStyle = vignetteGrad
+        ctx.fillRect(0, 0, svgWidth, diamondHeight)
+        ctx.restore()
+
+        // PREMIUM: Subtle noise texture overlay for organic grass feel
+        // Generated once with deterministic seed to avoid SSR/client mismatch
+        ctx.save()
+        ctx.beginPath()
+        ctx.moveTo(topX, topY)
+        ctx.lineTo(rightX, rightY)
+        ctx.lineTo(bottomX, bottomY)
+        ctx.lineTo(leftX, leftY)
+        ctx.closePath()
+        ctx.clip()
+        const noiseSeed = 0xC0FFEE
+        let noiseState = noiseSeed
+        const noiseRand = () => {
+            noiseState = (noiseState * 9301 + 49297) % 233280
+            return noiseState / 233280
+        }
+        const noiseCount = Math.floor(diamondWidth * diamondHeight / 180)
+        for (let i = 0; i < noiseCount; i++) {
+            const nx = noiseRand() * diamondWidth
+            const ny = noiseRand() * diamondHeight
+            const shade = noiseRand()
+            ctx.fillStyle = shade < 0.5
+                ? `rgba(255,255,255,${0.04 + shade * 0.05})`
+                : `rgba(0,0,0,${0.04 + (shade - 0.5) * 0.06})`
+            ctx.fillRect(nx, ny, 1.2, 1.2)
+        }
+        ctx.restore()
+
+        // PREMIUM: Beveled top edges - bright highlight on top-left, subtle shadow bottom-right
+        ctx.save()
+        ctx.lineWidth = 1.5
+        // Top-left bevel (top → left edge): bright highlight
+        ctx.strokeStyle = 'rgba(255,255,255,0.22)'
+        ctx.beginPath()
+        ctx.moveTo(topX, topY + 0.5)
+        ctx.lineTo(leftX + 0.5, leftY)
+        ctx.stroke()
+        // Top-right bevel (top → right edge): lighter highlight
+        ctx.strokeStyle = 'rgba(255,255,255,0.14)'
+        ctx.beginPath()
+        ctx.moveTo(topX, topY + 0.5)
+        ctx.lineTo(rightX - 0.5, rightY)
+        ctx.stroke()
+        // Bottom-right bevel: subtle shadow
+        ctx.strokeStyle = 'rgba(0,0,0,0.12)'
+        ctx.beginPath()
+        ctx.moveTo(rightX - 0.5, rightY)
+        ctx.lineTo(bottomX, bottomY - 0.5)
+        ctx.stroke()
+        // Bottom-left bevel: subtle shadow
+        ctx.strokeStyle = 'rgba(0,0,0,0.08)'
+        ctx.beginPath()
+        ctx.moveTo(leftX + 0.5, leftY)
+        ctx.lineTo(bottomX, bottomY - 0.5)
+        ctx.stroke()
+        ctx.restore()
+
         // Draw grass details
         for (const detail of grassDetails) {
             if (detail.type === 'grass') {
@@ -419,10 +497,10 @@ function GroundPlaneCanvasComponent({
         // Draw cached static content
         ctx.drawImage(offscreenCanvasRef.current, 0, 0)
 
-        // Draw grid lines
-        ctx.strokeStyle = 'rgba(255,255,255,0.15)'
+        // Draw grid lines (softened for premium look)
+        ctx.strokeStyle = 'rgba(255,255,255,0.08)'
         ctx.lineWidth = 1
-        ctx.setLineDash([4, 8])
+        ctx.setLineDash([3, 10])
         for (const line of gridLines) {
             ctx.beginPath()
             ctx.moveTo(line.x1, line.y1)

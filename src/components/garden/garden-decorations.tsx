@@ -10,6 +10,8 @@ interface GardenDecorationsProps {
   timeOfDay?: TimeOfDay
   /** Decoration types unlocked at user's current level */
   unlockedTypes?: DecorationType[]
+  /** Set of "row-col" strings for cells already occupied by plants. Decorations will avoid these. */
+  occupiedCells?: Set<string>
 }
 
 // Decorative element types - extended with new decorations
@@ -27,11 +29,72 @@ interface DecoElement {
 // Default unlocked types (level 1)
 const DEFAULT_UNLOCKED: DecoType[] = ['bush', 'rock']
 
+// Inverse isometric projection: given pixel (x, y), return which grid cell (row, col) contains it.
+// Matches the forward projection used in isometric-tile.tsx / ground-plane-canvas.tsx.
+// centerX is diamondWidth/2 (= svgWidth/2). The diamond's top corner is at (centerX, 0).
+function pixelToGridCell(
+  x: number,
+  y: number,
+  tileSize: number,
+  centerX: number
+): { row: number; col: number } {
+  // Forward: x = centerX + (col - row) * tileSize/2;  y = (col + row) * tileSize/4  (top corner of tile)
+  // Inverse:
+  const a = (x - centerX) / (tileSize / 2) // col - row
+  const b = y / (tileSize / 4)             // col + row
+  const col = Math.floor((a + b) / 2)
+  const row = Math.floor((b - a) / 2)
+  return { row, col }
+}
+
+// Given a tile (row, col), return its diamond-center pixel position.
+function gridCellCenter(
+  row: number,
+  col: number,
+  tileSize: number,
+  centerX: number
+): { x: number; y: number } {
+  return {
+    x: centerX + (col - row) * (tileSize / 2),
+    // top corner Y = (col + row) * tileSize/4; center is tileSize/4 below that
+    y: (col + row) * (tileSize / 4) + tileSize / 4,
+  }
+}
+
+// Push a point away from the tile center toward the tile edge, so decorations
+// never sit exactly at the visual center of a tile. Returns adjusted {x, y}.
+function offsetFromTileCenter(
+  x: number,
+  y: number,
+  tileSize: number,
+  centerX: number,
+  rand: number,        // 0..1 — direction choice
+  radiusFrac: number   // 0..1 — fraction of tileSize/2 to push
+): { x: number; y: number } {
+  const cell = pixelToGridCell(x, y, tileSize, centerX)
+  const center = gridCellCenter(cell.row, cell.col, tileSize, centerX)
+  const dx = x - center.x
+  const dy = y - center.y
+  const distSq = dx * dx + dy * dy
+  // Only push if we're close to center (within 25% of tileSize)
+  const threshold = tileSize * 0.25
+  if (distSq > threshold * threshold) return { x, y }
+  // Pick a directional push: 4 diagonal quadrants within the diamond
+  const angle = rand * Math.PI * 2
+  const push = tileSize * 0.35 * (0.6 + radiusFrac * 0.4)
+  // Project onto isometric space (diamond is 2:1 w:h)
+  return {
+    x: center.x + Math.cos(angle) * push,
+    y: center.y + Math.sin(angle) * push * 0.5,
+  }
+}
+
 // Generate deterministic random decorations around the garden
 function generateDecorations(
   gridSize: number,
   tileSize: number,
   unlockedTypes: DecoType[] = DEFAULT_UNLOCKED,
+  occupiedCells: Set<string> = new Set(),
   seed: number = 777
 ): DecoElement[] {
   const decos: DecoElement[] = []
@@ -48,24 +111,48 @@ function generateDecorations(
   const diamondHeight = gridSize * (tileSize / 2)
   const centerX = diamondWidth / 2
 
+  // Guard: returns adjusted position if placement is valid (not on a plant tile).
+  // Returns null if placement falls on a plant cell (caller should skip).
+  const tryPlace = (
+    rawX: number,
+    rawY: number,
+    offsetRand: number,
+    radiusFrac: number
+  ): { x: number; y: number } | null => {
+    // First, offset away from center so decoration lands on tile edge
+    const { x, y } = offsetFromTileCenter(rawX, rawY, tileSize, centerX, offsetRand, radiusFrac)
+    // Check which tile this lands in
+    const { row, col } = pixelToGridCell(x, y, tileSize, centerX)
+    if (row < 0 || col < 0 || row >= gridSize || col >= gridSize) {
+      // Outside the grid — that's fine, decoration is in the border area
+      return { x, y }
+    }
+    // Inside the grid: reject if this cell has a plant
+    if (occupiedCells.has(`${row}-${col}`)) return null
+    return { x, y }
+  }
+
   // Add bushes (level 1)
   if (isUnlocked('bush')) {
     const bushCount = Math.floor(gridSize * 1.2)
     for (let i = 0; i < bushCount; i++) {
       const angle = (i / bushCount) * Math.PI * 2 + 0.3
       const distance = diamondWidth * 0.45 + random(i + 100) * diamondWidth * 0.12
-      const x = centerX + Math.cos(angle) * distance * 0.5
-      const y = diamondHeight * 0.5 + Math.sin(angle) * distance * 0.25
+      const rawX = centerX + Math.cos(angle) * distance * 0.5
+      const rawY = diamondHeight * 0.5 + Math.sin(angle) * distance * 0.25
 
-      if (y > diamondHeight * 0.85) continue
+      if (rawY > diamondHeight * 0.85) continue
+
+      const placed = tryPlace(rawX, rawY, random(i + 103), random(i + 104))
+      if (!placed) continue
 
       decos.push({
         type: 'bush',
-        x: Math.round(x * 10000) / 10000,
-        y: Math.round(y * 10000) / 10000,
+        x: Math.round(placed.x * 10000) / 10000,
+        y: Math.round(placed.y * 10000) / 10000,
         scale: Math.round((0.5 + random(i + 101) * 0.3) * 10000) / 10000,
         flip: random(i + 102) > 0.5,
-        zIndex: Math.floor(y),
+        zIndex: Math.floor(placed.y),
       })
     }
   }
@@ -76,18 +163,21 @@ function generateDecorations(
     for (let i = 0; i < rockCount; i++) {
       const angle = (i / rockCount) * Math.PI * 2 + 0.7
       const distance = diamondWidth * 0.42 + random(i + 200) * diamondWidth * 0.1
-      const x = centerX + Math.cos(angle) * distance * 0.5
-      const y = diamondHeight * 0.5 + Math.sin(angle) * distance * 0.25
+      const rawX = centerX + Math.cos(angle) * distance * 0.5
+      const rawY = diamondHeight * 0.5 + Math.sin(angle) * distance * 0.25
 
-      if (y > diamondHeight * 0.8) continue
+      if (rawY > diamondHeight * 0.8) continue
+
+      const placed = tryPlace(rawX, rawY, random(i + 203), random(i + 204))
+      if (!placed) continue
 
       decos.push({
         type: 'rock',
-        x: Math.round(x * 10000) / 10000,
-        y: Math.round(y * 10000) / 10000,
+        x: Math.round(placed.x * 10000) / 10000,
+        y: Math.round(placed.y * 10000) / 10000,
         scale: Math.round((0.4 + random(i + 201) * 0.4) * 10000) / 10000,
         flip: random(i + 202) > 0.5,
-        zIndex: Math.floor(y),
+        zIndex: Math.floor(placed.y),
       })
     }
   }
@@ -98,18 +188,21 @@ function generateDecorations(
     for (let i = 0; i < mushroomCount; i++) {
       const angle = (i / mushroomCount) * Math.PI * 2 + 1.2
       const distance = diamondWidth * 0.4 + random(i + 300) * diamondWidth * 0.08
-      const x = centerX + Math.cos(angle) * distance * 0.5
-      const y = diamondHeight * 0.5 + Math.sin(angle) * distance * 0.25
+      const rawX = centerX + Math.cos(angle) * distance * 0.5
+      const rawY = diamondHeight * 0.5 + Math.sin(angle) * distance * 0.25
 
-      if (y > diamondHeight * 0.75) continue
+      if (rawY > diamondHeight * 0.75) continue
+
+      const placed = tryPlace(rawX, rawY, random(i + 303), random(i + 304))
+      if (!placed) continue
 
       decos.push({
         type: 'mushroom',
-        x: Math.round(x * 10000) / 10000,
-        y: Math.round(y * 10000) / 10000,
+        x: Math.round(placed.x * 10000) / 10000,
+        y: Math.round(placed.y * 10000) / 10000,
         scale: Math.round((0.3 + random(i + 301) * 0.25) * 10000) / 10000,
         flip: random(i + 302) > 0.5,
-        zIndex: Math.floor(y),
+        zIndex: Math.floor(placed.y),
       })
     }
   }
@@ -120,18 +213,21 @@ function generateDecorations(
     for (let i = 0; i < flowerCount; i++) {
       const angle = (i / flowerCount) * Math.PI * 2 + 0.5
       const distance = diamondWidth * 0.38 + random(i + 400) * diamondWidth * 0.1
-      const x = centerX + Math.cos(angle) * distance * 0.5
-      const y = diamondHeight * 0.5 + Math.sin(angle) * distance * 0.25
+      const rawX = centerX + Math.cos(angle) * distance * 0.5
+      const rawY = diamondHeight * 0.5 + Math.sin(angle) * distance * 0.25
 
-      if (y > diamondHeight * 0.75) continue
+      if (rawY > diamondHeight * 0.75) continue
+
+      const placed = tryPlace(rawX, rawY, random(i + 403), random(i + 404))
+      if (!placed) continue
 
       decos.push({
         type: 'flower-patch',
-        x: Math.round(x * 10000) / 10000,
-        y: Math.round(y * 10000) / 10000,
+        x: Math.round(placed.x * 10000) / 10000,
+        y: Math.round(placed.y * 10000) / 10000,
         scale: Math.round((0.35 + random(i + 401) * 0.2) * 10000) / 10000,
         flip: random(i + 402) > 0.5,
-        zIndex: Math.floor(y),
+        zIndex: Math.floor(placed.y),
       })
     }
   }
@@ -142,18 +238,21 @@ function generateDecorations(
     for (let i = 0; i < lanternCount; i++) {
       const angle = (i / lanternCount) * Math.PI * 2 + 0.9
       const distance = diamondWidth * 0.48 + random(i + 500) * diamondWidth * 0.05
-      const x = centerX + Math.cos(angle) * distance * 0.5
-      const y = diamondHeight * 0.5 + Math.sin(angle) * distance * 0.25
+      const rawX = centerX + Math.cos(angle) * distance * 0.5
+      const rawY = diamondHeight * 0.5 + Math.sin(angle) * distance * 0.25
 
-      if (y > diamondHeight * 0.8) continue
+      if (rawY > diamondHeight * 0.8) continue
+
+      const placed = tryPlace(rawX, rawY, random(i + 503), random(i + 504))
+      if (!placed) continue
 
       decos.push({
         type: 'lantern',
-        x: Math.round(x * 10000) / 10000,
-        y: Math.round(y * 10000) / 10000,
+        x: Math.round(placed.x * 10000) / 10000,
+        y: Math.round(placed.y * 10000) / 10000,
         scale: Math.round((0.5 + random(i + 501) * 0.2) * 10000) / 10000,
         flip: random(i + 502) > 0.5,
-        zIndex: Math.floor(y),
+        zIndex: Math.floor(placed.y),
       })
     }
   }
@@ -471,11 +570,12 @@ export function GardenDecorations({
   gridSize,
   tileSize,
   timeOfDay = 'day',
-  unlockedTypes = DEFAULT_UNLOCKED
+  unlockedTypes = DEFAULT_UNLOCKED,
+  occupiedCells,
 }: GardenDecorationsProps) {
   const decorations = useMemo(
-    () => generateDecorations(gridSize, tileSize, unlockedTypes as DecoType[]),
-    [gridSize, tileSize, unlockedTypes]
+    () => generateDecorations(gridSize, tileSize, unlockedTypes as DecoType[], occupiedCells),
+    [gridSize, tileSize, unlockedTypes, occupiedCells]
   )
 
   const diamondWidth = gridSize * tileSize
