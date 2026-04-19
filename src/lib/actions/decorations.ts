@@ -10,7 +10,6 @@ import type {
   DecorationRotation,
   DecorationType,
 } from '@/types/database'
-import { spendCoins } from './coins'
 
 /**
  * Get all placed decorations for user's garden
@@ -202,9 +201,7 @@ export async function moveDecoration(
 }
 
 /**
- * Pick up a placed decoration (return to inventory)
- * Order: DELETE from placed first, THEN increment inventory
- * This prevents the duplication bug where inventory is incremented but delete fails
+ * Pick up a placed decoration (return to inventory) — atomic DB function.
  */
 export async function pickUpDecoration(
   dto: PickUpDecorationDto
@@ -214,64 +211,24 @@ export async function pickUpDecoration(
 
   const supabase = await createClient()
 
-  // Verify ownership and get decoration_type_id
-  const { data: deco, error: decoError } = await supabase
-    .from('placed_decorations')
-    .select('id, user_id, decoration_type_id')
-    .eq('id', dto.placed_decoration_id)
-    .single()
-
-  if (decoError || !deco) return { error: 'Decoration not found' }
-  if (deco.user_id !== user.id) return { error: 'Not your decoration' }
-
-  // DELETE from placed decorations FIRST
-  const { error: deleteError } = await supabase
-    .from('placed_decorations')
-    .delete()
-    .eq('id', dto.placed_decoration_id)
-
-  if (deleteError) return { error: deleteError.message }
-
-  // THEN atomically increment inventory
-  const { error: incrError } = await supabase.rpc('atomic_inventory_increment', {
+  const { error } = await supabase.rpc('pickup_decoration', {
     p_user_id: user.id,
-    p_item_type: 'decoration',
-    p_decoration_type_id: deco.decoration_type_id,
-    p_amount: 1,
-    p_acquired_via: 'pickup',
+    p_placed_decoration_id: dto.placed_decoration_id,
   })
 
-  if (incrError) {
-    // Critical: decoration was removed but inventory not updated
-    // Re-place it to avoid data loss
-    console.error('Failed to increment inventory after pickup, re-placing decoration:', incrError)
-    await supabase.from('placed_decorations').insert({
-      id: dto.placed_decoration_id,
-      user_id: user.id,
-      decoration_type_id: deco.decoration_type_id,
-      grid_row: 0,
-      grid_col: 0,
-      grid_size: 1,
-      rotation: 0,
-    })
-    return { error: 'Failed to return decoration to inventory' }
+  if (error) {
+    const msg = error.message.toLowerCase()
+    if (msg.includes('decoration_not_found')) return { error: 'Decoration not found' }
+    if (msg.includes('not_owner')) return { error: 'Not your decoration' }
+    if (msg.includes('unauthorized')) return { error: 'Unauthorized' }
+    return { error: error.message }
   }
-
   return { success: true }
 }
 
 /**
- * Subscription tier hierarchy for validation
- */
-const TIER_LEVELS: Record<string, number> = {
-  free: 0,
-  pro: 1,
-  premium: 2,
-}
-
-/**
- * Purchase a decoration with coins
- * Validates subscription tier requirement before purchase
+ * Purchase a decoration with coins — atomic DB function.
+ * Spends coins + adds inventory in single transaction.
  */
 export async function purchaseDecoration(
   decorationTypeId: string
@@ -281,62 +238,24 @@ export async function purchaseDecoration(
 
   const supabase = await createClient()
 
-  // Get decoration type to check price and tier
-  const { data: decoType, error: decoError } = await supabase
-    .from('decoration_types')
-    .select('id, name, coin_price, unlock_level, subscription_tier')
-    .eq('id', decorationTypeId)
-    .single()
-
-  if (decoError || !decoType) return { error: 'Decoration not found' }
-  if (!decoType.coin_price) return { error: 'This decoration cannot be purchased with coins' }
-
-  // Check level and subscription tier
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('level, subscription_tier')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile) return { error: 'Profile not found' }
-  if (profile.level < decoType.unlock_level) {
-    return { error: `Need level ${decoType.unlock_level} to purchase this` }
-  }
-
-  // Validate subscription tier
-  const userTierLevel = TIER_LEVELS[profile.subscription_tier ?? 'free'] ?? 0
-  const requiredTierLevel = TIER_LEVELS[decoType.subscription_tier] ?? 0
-  if (userTierLevel < requiredTierLevel) {
-    return { error: `Requires ${decoType.subscription_tier} subscription` }
-  }
-
-  // Spend coins atomically
-  const spendResult = await spendCoins(
-    decoType.coin_price,
-    'purchase_decoration',
-    decoType.id
-  )
-  if ('error' in spendResult) return { error: String(spendResult.error) }
-
-  // Add to inventory atomically
-  const { error: addError } = await supabase.rpc('atomic_inventory_increment', {
+  const { data, error } = await supabase.rpc('purchase_decoration', {
     p_user_id: user.id,
-    p_item_type: 'decoration',
-    p_decoration_type_id: decoType.id,
-    p_amount: 1,
-    p_acquired_via: 'purchase',
+    p_decoration_type_id: decorationTypeId,
   })
 
-  if (addError) {
-    // Coins spent but inventory failed — critical error, log it
-    console.error('CRITICAL: Coins spent but decoration not added to inventory:', addError)
-    // Attempt to refund coins
-    const { awardCoins } = await import('./coins')
-    await awardCoins(decoType.coin_price, 'refund_failed_purchase', decoType.id)
-    return { error: 'Purchase failed — coins have been refunded' }
+  if (error) {
+    const msg = error.message.toLowerCase()
+    if (msg.includes('decoration_not_found')) return { error: 'Decoration not found' }
+    if (msg.includes('not_for_sale')) return { error: 'This decoration cannot be purchased with coins' }
+    if (msg.includes('level_too_low')) return { error: 'Level too low to purchase this' }
+    if (msg.includes('tier_required')) return { error: 'Higher subscription tier required' }
+    if (msg.includes('insufficient_coins')) return { error: 'Not enough coins' }
+    if (msg.includes('unauthorized')) return { error: 'Unauthorized' }
+    return { error: error.message }
   }
 
-  return { success: true, itemName: decoType.name }
+  const result = data as { success: boolean; item_name: string }
+  return { success: true, itemName: result.item_name }
 }
 
 /**

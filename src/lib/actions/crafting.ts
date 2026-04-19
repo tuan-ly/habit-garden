@@ -27,7 +27,6 @@ export async function getRecipes(): Promise<
 
   if (error) return { error: error.message }
 
-  // Transform the data - Supabase returns decoration_type as object (single), ingredients as array
   const recipes = (data ?? []).map((r: Record<string, unknown>) => ({
     ...r,
     decoration_type: r.decoration_type as RecipeWithDetails['decoration_type'],
@@ -41,10 +40,8 @@ export async function getRecipes(): Promise<
 }
 
 /**
- * Craft a decoration from a recipe
- * Uses atomic inventory operations to prevent race conditions:
- * - Decrements each material atomically (fails if insufficient)
- * - Increments decoration atomically via upsert
+ * Craft a decoration from a recipe — atomic DB function.
+ * Deducts materials + awards decoration in single transaction.
  */
 export async function craftDecoration(
   recipeId: string
@@ -57,112 +54,39 @@ export async function craftDecoration(
 
   const supabase = await createClient()
 
-  // 1. Get recipe with ingredients
+  // Pre-check: level gate (fast fail, better UX than DB-level failure)
   const { data: recipe, error: recipeError } = await supabase
     .from('recipes')
-    .select(`
-      id, decoration_type_id, name, unlock_level, is_active,
-      decoration_type:decoration_types(id, slug, name, rarity, subscription_tier),
-      ingredients:recipe_ingredients(
-        id, recipe_id, material_id, quantity
-      )
-    `)
+    .select('id, unlock_level, is_active')
     .eq('id', recipeId)
     .single()
 
   if (recipeError || !recipe) return { error: 'Recipe not found' }
   if (!recipe.is_active) return { error: 'Recipe is not available' }
 
-  // 2. Get user's level to check unlock requirement
-  const { data: profile, error: profileError } = await supabase
+  const { data: profile } = await supabase
     .from('profiles')
-    .select('level, subscription_tier')
+    .select('level')
     .eq('id', user.id)
     .single()
-
-  if (profileError || !profile) return { error: 'Profile not found' }
-  if (profile.level < recipe.unlock_level) {
+  if (profile && profile.level < recipe.unlock_level) {
     return { error: `Need level ${recipe.unlock_level} to craft this` }
   }
 
-  // 3. Atomically deduct each material
-  // If any fails (insufficient quantity), the individual RPC raises an exception
-  // We track consumed materials to roll back on partial failure
-  const ingredients = recipe.ingredients as Array<{ material_id: string; quantity: number }>
-  const consumedMaterials: Array<{ materialId: string; quantity: number }> = []
-
-  for (const ingredient of ingredients) {
-    // First get the inventory item ID for this material
-    const { data: inv } = await supabase
-      .from('user_inventory')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('item_type', 'material')
-      .eq('material_id', ingredient.material_id)
-      .single()
-
-    if (!inv) {
-      // Roll back consumed materials
-      await rollbackConsumedMaterials(supabase, user.id, consumedMaterials)
-      return { error: 'Not enough materials' }
-    }
-
-    const { error: deductError } = await supabase.rpc('atomic_inventory_decrement', {
-      p_inventory_id: inv.id,
-      p_user_id: user.id,
-      p_amount: ingredient.quantity,
-    })
-
-    if (deductError) {
-      // Roll back consumed materials
-      await rollbackConsumedMaterials(supabase, user.id, consumedMaterials)
-      return { error: 'Not enough materials' }
-    }
-
-    consumedMaterials.push({ materialId: ingredient.material_id, quantity: ingredient.quantity })
-  }
-
-  // 4. Add crafted decoration to inventory atomically
-  const decorationType = recipe.decoration_type as unknown as { id: string; name: string }
-
-  const { error: addError } = await supabase.rpc('atomic_inventory_increment', {
+  const { data, error } = await supabase.rpc('craft_decoration', {
     p_user_id: user.id,
-    p_item_type: 'decoration',
-    p_material_id: null,
-    p_decoration_type_id: decorationType.id,
-    p_amount: 1,
-    p_acquired_via: 'craft',
+    p_recipe_id: recipeId,
   })
 
-  if (addError) {
-    // Roll back consumed materials
-    await rollbackConsumedMaterials(supabase, user.id, consumedMaterials)
-    return { error: 'Failed to add decoration to inventory' }
+  if (error) {
+    const msg = error.message.toLowerCase()
+    if (msg.includes('insufficient_materials')) return { error: 'Not enough materials' }
+    if (msg.includes('recipe_not_found')) return { error: 'Recipe not found' }
+    if (msg.includes('recipe_inactive')) return { error: 'Recipe is not available' }
+    if (msg.includes('unauthorized')) return { error: 'Unauthorized' }
+    return { error: error.message }
   }
 
-  return { success: true, decorationName: decorationType.name }
-}
-
-/**
- * Roll back consumed materials on partial craft failure
- */
-async function rollbackConsumedMaterials(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  userId: string,
-  consumed: Array<{ materialId: string; quantity: number }>
-): Promise<void> {
-  for (const item of consumed) {
-    const { error: rollbackError } = await supabase.rpc('atomic_inventory_increment', {
-      p_user_id: userId,
-      p_item_type: 'material',
-      p_material_id: item.materialId,
-      p_decoration_type_id: null,
-      p_amount: item.quantity,
-      p_acquired_via: 'harvest',
-    })
-
-    if (rollbackError) {
-      console.error('Failed to rollback material:', rollbackError)
-    }
-  }
+  const result = data as { success: boolean; decoration_name: string }
+  return { success: true, decorationName: result.decoration_name }
 }

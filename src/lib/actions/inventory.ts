@@ -86,16 +86,25 @@ export async function harvestMaterial(
 
     if (fallbackError || !fallback) return { error: 'No material available' }
 
-    await upsertInventoryMaterial(supabase, user.id, fallback.id)
+    try {
+      await upsertInventoryMaterial(supabase, user.id, fallback.id)
+    } catch (e) {
+      return { error: (e as Error).message }
+    }
     return { material: fallback as Material, quantity: 1 }
   }
 
-  await upsertInventoryMaterial(supabase, user.id, material.id)
+  try {
+    await upsertInventoryMaterial(supabase, user.id, material.id)
+  } catch (e) {
+    return { error: (e as Error).message }
+  }
   return { material: material as Material, quantity: 1 }
 }
 
 /**
- * Helper: Add or increment material in inventory — atomic via RPC
+ * Helper: Add or increment material in inventory — atomic via RPC.
+ * Throws on error so callers surface failure (no silent swallow).
  */
 async function upsertInventoryMaterial(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -113,6 +122,7 @@ async function upsertInventoryMaterial(
 
   if (error) {
     console.error('Failed to upsert inventory material:', error)
+    throw new Error(`inventory_upsert_failed: ${error.message}`)
   }
 }
 
