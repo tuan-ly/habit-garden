@@ -128,7 +128,7 @@ export function useGardenZoom(options: UseGardenZoomOptions = {}): UseGardenZoom
         }
       }
     }
-  }, [persist, minZoom, maxZoom])
+  }, [persist, minZoom, maxZoom, storageKey])
 
   // Clamp zoom value between min and max
   const clampZoom = useCallback(
@@ -170,7 +170,7 @@ export function useGardenZoom(options: UseGardenZoomOptions = {}): UseGardenZoom
       }
       animationFrame.current = requestAnimationFrame(animate)
     },
-    [persist]
+    [persist, storageKey]
   )
 
   // Set zoom with optional animation

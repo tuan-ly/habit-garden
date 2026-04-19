@@ -75,13 +75,17 @@ export function GardenSettingsProvider({ children, initialSettings }: GardenSett
     if (typeof window === 'undefined') return
 
     try {
-      const saved = localStorage.getItem(GARDEN_SETTINGS_KEY)
-      if (saved) {
-        const parsed = JSON.parse(saved) as Partial<GardenEffectSettings>
-        setSettings((prev) => ({ ...prev, ...parsed }))
+      // If SSR provided initialSettings, do NOT overwrite from localStorage
+      // (server is authoritative for those keys; would cause flash/flicker).
+      if (!initialSettings) {
+        const saved = localStorage.getItem(GARDEN_SETTINGS_KEY)
+        if (saved) {
+          const parsed = JSON.parse(saved) as Partial<GardenEffectSettings>
+          setSettings((prev) => ({ ...prev, ...parsed }))
+        }
       }
 
-      // Also check for system reduced motion preference
+      // Always check for system reduced motion preference (overrides default)
       const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
       if (prefersReducedMotion) {
         setSettings((prev) => ({ ...prev, reducedMotion: true }))
@@ -91,7 +95,7 @@ export function GardenSettingsProvider({ children, initialSettings }: GardenSett
     }
 
     setIsLoaded(true)
-  }, [])
+  }, [initialSettings])
 
   // Persist settings to localStorage (debounced to avoid rapid writes)
   useEffect(() => {

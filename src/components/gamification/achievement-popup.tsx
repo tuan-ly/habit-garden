@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils'
 import type { AchievementDefinition } from '@/lib/achievements'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface AchievementPopupProps {
   achievement: AchievementDefinition | null
@@ -12,6 +12,11 @@ interface AchievementPopupProps {
 
 export function AchievementPopup({ achievement, show, onClose }: AchievementPopupProps) {
   const [isVisible, setIsVisible] = useState(false)
+  // Always call latest onClose — prevents stale-callback bug if parent re-renders mid-timeout
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
 
   useEffect(() => {
     if (show && achievement) {
@@ -19,11 +24,11 @@ export function AchievementPopup({ achievement, show, onClose }: AchievementPopu
       // Auto-close after 5 seconds
       const timer = setTimeout(() => {
         setIsVisible(false)
-        setTimeout(onClose, 500)
+        setTimeout(() => onCloseRef.current(), 500)
       }, 5000)
       return () => clearTimeout(timer)
     }
-  }, [show, achievement, onClose])
+  }, [show, achievement])
 
   if (!isVisible || !achievement) return null
 

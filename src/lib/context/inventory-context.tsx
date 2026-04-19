@@ -6,6 +6,7 @@ import {
   useState,
   useCallback,
   useMemo,
+  useRef,
   type ReactNode,
 } from 'react'
 import type {
@@ -136,6 +137,8 @@ export function InventoryProvider({
   const [recipes, setRecipes] = useState<RecipeWithDetails[]>([])
   const [loadingOps, setLoadingOps] = useState<Set<string>>(new Set())
   const [recipesLoaded, setRecipesLoaded] = useState(false)
+  // De-dupe concurrent loadRecipes calls — single in-flight promise wins
+  const recipesInFlight = useRef<Promise<void> | null>(null)
 
   // Per-operation loading helpers
   const startOp = useCallback((op: string) => {
@@ -183,17 +186,23 @@ export function InventoryProvider({
   // -----------------------------------------------
   const loadRecipes = useCallback(async () => {
     if (recipesLoaded) return
+    if (recipesInFlight.current) return recipesInFlight.current
 
     startOp('recipes')
-    try {
-      const result = await getRecipes()
-      if ('recipes' in result) {
-        setRecipes(result.recipes)
-        setRecipesLoaded(true)
+    const p = (async () => {
+      try {
+        const result = await getRecipes()
+        if ('recipes' in result) {
+          setRecipes(result.recipes)
+          setRecipesLoaded(true)
+        }
+      } finally {
+        endOp('recipes')
+        recipesInFlight.current = null
       }
-    } finally {
-      endOp('recipes')
-    }
+    })()
+    recipesInFlight.current = p
+    return p
   }, [recipesLoaded, startOp, endOp])
 
   // -----------------------------------------------
