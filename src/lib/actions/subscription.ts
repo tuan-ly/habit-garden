@@ -40,7 +40,7 @@ export async function getSubscriptionTiers() {
 
   const { data, error } = await supabase
     .from('subscription_tiers')
-    .select('*')
+    .select('id, name, description, price_monthly, price_yearly, features, is_active, sort_order, created_at')
     .eq('is_active', true)
     .order('sort_order', { ascending: true })
 
