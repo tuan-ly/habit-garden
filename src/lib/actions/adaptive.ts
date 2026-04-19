@@ -323,9 +323,18 @@ export async function getAdjustmentHistory(goalId: string): Promise<GoalAdjustme
   const user = await getAuthUser()
   if (!user) return []
 
+  // Ownership check — prevent IDOR. Return [] (not error) to avoid leaking existence.
+  const { data: goal } = await supabase
+    .from('goals')
+    .select('id, plant:plants!inner(user_id)')
+    .eq('id', goalId)
+    .single()
+
+  if (!goal || (goal.plant as any).user_id !== user.id) return []
+
   const { data: adjustments } = await supabase
     .from('goal_adjustments')
-    .select('*')
+    .select('id, goal_id, adjustment_type, old_value, new_value, trigger_reason, performance_data, auto_applied, suggested_at, responded_at, response')
     .eq('goal_id', goalId)
     .order('suggested_at', { ascending: false })
 

@@ -229,7 +229,7 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
     const exceededTarget = dto.value >= weeklyTarget
 
     // Update goal
-    await supabase
+    const { error: goalUpdateError } = await supabase
       .from('goals')
       .update({
         current_value: newGoalValue,
@@ -237,9 +237,13 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
         updated_at: new Date().toISOString(),
       })
       .eq('id', activeGoal.id)
+    if (goalUpdateError) {
+      console.error('Error updating goal:', goalUpdateError)
+      return { success: false, error: goalUpdateError.message }
+    }
 
     // Also insert into goal_logs so periodProgress is tracked correctly
-    await supabase
+    const { error: goalLogError } = await supabase
       .from('goal_logs')
       .insert({
         goal_id: activeGoal.id,
@@ -253,6 +257,10 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
         is_personal_record: isPersonalRecord,
         exceeded_target: exceededTarget,
       })
+    if (goalLogError) {
+      console.error('Error inserting goal log:', goalLogError)
+      return { success: false, error: goalLogError.message }
+    }
   }
 
   // =====================================================
@@ -335,10 +343,14 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
     }
   }
 
-  await supabase
+  const { error: plantUpdateError } = await supabase
     .from('plants')
     .update(plantUpdate)
     .eq('id', dto.plant_id)
+  if (plantUpdateError) {
+    console.error('Error updating plant:', plantUpdateError)
+    return { success: false, error: plantUpdateError.message }
+  }
 
   // =====================================================
   // Coin Rewards
@@ -533,20 +545,14 @@ export async function getPlantActivityHistory(
 async function updateUserXp(userId: string, xp: number): Promise<void> {
   const supabase = await createClient()
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('xp')
-    .eq('id', userId)
-    .single()
+  // Atomic increment via SECURITY DEFINER function — eliminates TOCTOU race
+  const { error } = await supabase.rpc('increment_user_xp', {
+    p_user_id: userId,
+    p_delta: xp,
+  })
 
-  if (profile) {
-    await supabase
-      .from('profiles')
-      .update({
-        xp: profile.xp + xp,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', userId)
+  if (error) {
+    console.error('Error incrementing user XP:', error)
   }
 }
 
