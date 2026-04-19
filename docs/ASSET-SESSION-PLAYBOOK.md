@@ -61,6 +61,13 @@ Accent pink (deep): #E88FA8
 - ❌ "not painted style"
 - ✅ "flat vector, smooth bezier shapes, no painted brush strokes" (negative reframe OK khi liệt kê style exclusions cuối prompt)
 
+### Shape Disambiguation Rules (cho plant/tree prompts có flower + foliage)
+> Tránh **Shape Semantic Collision** — lesson 2026-04-19 sapling v2.
+- Gọi foliage là: "smooth cloud-like puff", "rounded cotton mass", "dome canopy" (KHÔNG "blob cluster" vì dễ bị scallop)
+- Gọi blossom là: "TINY dots embedded IN foliage", size ≤ 3% of puff area
+- Explicit role label: "FOLIAGE MASSES, not blossoms" / "blossoms sitting on leaves, not flower centers"
+- Negative list: "no flower-shaped clusters, no petal silhouettes, no scalloped edges"
+
 ---
 
 ## 📋 Template § A — New Subject Generation
@@ -134,7 +141,7 @@ Sau đó cho Claude biết 4 stage variations:
 
 | # | Subject | Anchor file | Status | Notes |
 |---|---------|-------------|--------|-------|
-| 1 | Cherry blossom | `public/plants/cherry-blossom/mature-anchor-v5.png` | **ANCHOR ✅** (mature only — sapling/seedling/bloom TODO) | accent pink, prompt v5, isometric no-tile, light upper-right |
+| 1 | Cherry blossom | `public/plants/cherry-blossom/mature-anchor-v5.png` | **COMPLETE ✅** (seedling ✅, sapling v3 ✅, mature ✅, bloom ✅) | accent pink, prompt v5, isometric no-tile, light upper-right |
 | 2 | Sunflower | — | TODO | accent yellow #F5C842 |
 | 3 | Cactus | — | TODO | accent green only, no flower |
 | 4 | Succulent | — | TODO | rosette form, accent muted |
@@ -187,6 +194,30 @@ Sau đó cho Claude biết 4 stage variations:
 - **Watermark cleanup**: `magick anchor.png -gravity SouthEast -chop 60x60 cleaned.png`
 - **Next**: Derive sapling/seedling/bloom stages qua `/banana edit` from this anchor (NOT batch generation — anchor-driven strategy per Lessons 2026-04-19 v2 of session 1)
 
+### 2026-04-19 | Cherry blossom seedling+bloom (edit from anchor) | PASS first try
+- **Seedling**: tiny sprout 10% canvas, 2 leaves + 1 pink bud, light/shadow consistent với anchor → ✅ lock
+- **Bloom**: same silhouette + 3-4 floating petals + extra deep-pink dots → ✅ lock
+- **Pattern reinforced**: `/banana edit` rất ổn cho **additive deltas** (thêm chi tiết, intensify) và **complete replacements** (seedling = brand new tiny subject)
+
+### 2026-04-19 | Cherry blossom sapling | Anchor Gravity drift → Reframe as new subject
+- **Issue**: Prompt v1 mô tả "younger sapling version" → Gemini giữ canopy size + density gần như mature anchor, chỉ giảm nhẹ. User không phân biệt được sapling vs mature
+- **Root cause**: **Anchor Gravity problem** — `/banana edit` resist khi delta là "giảm/shrink/sparse". Strong với "add/intensify", weak với "remove/reduce"
+- **Fix v2**: 3 đòn cùng lúc:
+  1. **Reframe**: "COMPLETELY REPLACE with brand new subject, NOT modifying existing tree"
+  2. **Quantify aggressive**: pin đúng % canvas, đếm cluster (3), đếm dots (2)
+  3. **Negative space anchor**: "upper 65% must be empty cream space" — buộc model leave whitespace
+- **Pattern learned**: **Subtractive Edit Problem** — khi delta là giảm size/density, phải treat như fresh generation chứ không phải edit. Hoặc switch sang `/banana generate` template § A với cùng style anchors
+
+### 2026-04-19 | Cherry blossom sapling v2 | Shape Semantic Collision → Disambiguate shape vs decoration
+- **Issue v2**: Prompt v2 dùng "blob cluster" + "deep-pink accent dot" → model render 3 bông HOA ĐƠN LẺ (scallop edges = petals, center dot = nhụy). Mất feel "tán lá có blossom rải".
+- **Root cause**: **Shape Semantic Collision** — khi "scalloped shape + centered dot" xuất hiện gần nhau trong prompt, Gemini default interpret = flower (trained bias). Shape vocabulary overloaded.
+- **Fix v3** (3 đòn):
+  1. **Metaphor swap**: "blob cluster" → "smooth cloud-like foliage puff" / "rounded cotton ball / small cloud" — ép continuous smooth shape, cấm scallop
+  2. **Role separation**: explicit "FOLIAGE MASSES, not blossoms" + "blossom dots are TINY embedded IN foliage, NOT centers of flowers"
+  3. **Size ratio lock**: "each dot max 3% of puff area" — quantify để dot không upscale thành nhụy
+  4. **Negative list mở rộng**: "no flower-shaped clusters, no petal silhouettes, no scalloped edges"
+- **Pattern learned**: **Shape Semantic Collision problem** — Khi 2+ visual element cùng shape (ví dụ: lá + cánh hoa đều "soft curved"), prompt phải force-disambiguate bằng: (a) contrasting metaphor, (b) explicit role label ("foliage mass" vs "blossom"), (c) size ratio hard-cap, (d) negative list specific to confused shape.
+
 ### [Template cho entry mới]
 ```
 ### YYYY-MM-DD | [Subject] | [Issue] → [Fix]
@@ -202,6 +233,8 @@ Sau đó cho Claude biết 4 stage variations:
 | Date | Subject | Stages | Images | Est. cost |
 |------|---------|--------|--------|-----------|
 | 2026-04-19 | Cherry blossom (anchor R&D) | mature only | 5 (v1→v5) | ~$0.67 |
+| 2026-04-19 | Cherry blossom (3 stages from anchor) | seedling, sapling-v1, bloom | 3 | ~$0.40 |
+| 2026-04-19 | Cherry blossom sapling iteration | sapling v2 (fail), v3 (pass) | 2 | ~$0.27 |
 
 **Pricing reference**: NB2 @ 2K = ~$0.134/image. 11 plants × 4 stages = 44 images ≈ **$5.90**
 
