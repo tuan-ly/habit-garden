@@ -46,9 +46,11 @@ Accent pink (deep): #E88FA8
 ### Composition Defaults
 - Aspect ratio: `1:1`
 - imageSize: `2K`
-- Camera: "side-view elevation, camera-eye-level orthographic framing"
-- Subject placement: "rooted at center frame on ground strip, perfectly symmetrical staging"
-- Lighting: "soft diffuse ambient light from upper-left"
+- Camera: **"3/4 isometric projection at 30-degree camera tilt"** (CHANGED 2026-04-19, was side-view orthographic — incompatible with `IsometricGarden` tile system)
+- Subject placement: **"floats centered on empty cream background, NO ground tile"** (CHANGED 2026-04-19 — tile composited at runtime in React layer, not baked into asset)
+- Lighting: **"soft diffuse ambient light from upper-RIGHT"** (CHANGED 2026-04-19, was upper-left — golden-hour mood preferred)
+- Shadow: faint ambient occlusion ellipse in cream tone (~#D4C9B0, 20% opacity), offset lower-left, NEVER solid disc/plate
+- Reference games for isometric: Monument Valley, Alto's Adventure (in addition to Forest, Plant Nanny for style)
 
 ### Banned Words (Gemini-banned, KHÔNG dùng)
 ~~8K, 4K, masterpiece, ultra-realistic, hyperrealistic, photorealistic, highly detailed, best quality, trending on artstation, award winning~~
@@ -132,7 +134,7 @@ Sau đó cho Claude biết 4 stage variations:
 
 | # | Subject | Anchor file | Status | Notes |
 |---|---------|-------------|--------|-------|
-| 1 | Cherry blossom | — | TODO | accent pink |
+| 1 | Cherry blossom | `public/plants/cherry-blossom/mature-anchor-v5.png` | **ANCHOR ✅** (mature only — sapling/seedling/bloom TODO) | accent pink, prompt v5, isometric no-tile, light upper-right |
 | 2 | Sunflower | — | TODO | accent yellow #F5C842 |
 | 3 | Cactus | — | TODO | accent green only, no flower |
 | 4 | Succulent | — | TODO | rosette form, accent muted |
@@ -163,6 +165,28 @@ Sau đó cho Claude biết 4 stage variations:
 - **Issue**: `/banana batch 3` cho ra 1 ảnh đúng, 2 ảnh drift style
 - **Fix**: Pick best image làm anchor → dùng `/banana edit` với "keep everything else identical" để gen các variation
 
+### 2026-04-19 | Cherry blossom v2 isometric-with-tile | Gemini render tile as 3D extruded slab → Remove ground tile entirely
+- **Issue**: Prompt v2 "rhombus-shaped isometric ground tile" → model interpret literally, render 3D slab có depth/thickness, clash flat vector DNA
+- **Fix**: Bỏ tile geometry hoàn toàn. Asset chỉ có tree + faint shadow. Tile là runtime concern của `IsometricGarden` component, không bake vào sprite
+- **Pattern learned**: **Separation of Concerns** — asset render object only, environment (tile/ground) composite ở React layer
+
+### 2026-04-19 | Cherry blossom v3 → v4 | Lighting direction change (upper-left → upper-right)
+- **Issue**: Light upper-left cho feel "morning fresh" — user prefer "golden hour cozy" cho app mood
+- **Fix**: Flip light direction, cập nhật Locked Style DNA. Dùng **Triple Anchoring** technique — nhắc lại direction 3 lần (trunk block + canopy block + style block với meta-rule "every shape's light face must be on its right")
+- **Pattern learned**: **Lighting Consistency problem** — Gemini drift ánh sáng khi prompt dài, mỗi shape tự suy diễn → conflicting shadows. Fix: reinforce direction ở nhiều context
+
+### 2026-04-19 | Cherry blossom v4 | Drop shadow rendered as solid brown disc → Reframe as ambient occlusion
+- **Issue**: "elliptical drop shadow ... dark-brown" → model render opaque brown ellipse như 1 đĩa đất, regression của v2 tile problem
+- **Fix**: Rephrase shadow thành "faint ambient occlusion hint in darker cream tone #D4C9B0 at 20% opacity", thêm aggressive negatives: "NOT a solid shape, NOT a disc, NOT a plate, NOT a pool of paint"
+- **Pattern learned**: **Intent vs Element confusion** — từ "shadow" + "dark color" dễ bị hiểu thành illustrated element thay vì rendering effect. Cần đặc tả như art-direction note chứ không phải object description
+- **Prompt diff**: v4→v5 = replace shadow block + expand negative list với 3 shadow-specific negatives
+
+### 2026-04-19 | Cherry blossom v5 | LOCKED ANCHOR ✅
+- **Result**: Perfect flat vector, isometric 3/4, light upper-right consistent across trunk+canopy+shadow, faint cream shadow offset lower-left
+- **Key techniques** hợp lại: Intent Priming ("composited onto separate tile later") + Triple Anchoring (lighting) + Ambient Occlusion reframe (shadow) + Aggressive Negatives (disc/plate/pool/tile)
+- **Watermark cleanup**: `magick anchor.png -gravity SouthEast -chop 60x60 cleaned.png`
+- **Next**: Derive sapling/seedling/bloom stages qua `/banana edit` from this anchor (NOT batch generation — anchor-driven strategy per Lessons 2026-04-19 v2 of session 1)
+
 ### [Template cho entry mới]
 ```
 ### YYYY-MM-DD | [Subject] | [Issue] → [Fix]
@@ -177,7 +201,7 @@ Sau đó cho Claude biết 4 stage variations:
 
 | Date | Subject | Stages | Images | Est. cost |
 |------|---------|--------|--------|-----------|
-| — | — | — | — | — |
+| 2026-04-19 | Cherry blossom (anchor R&D) | mature only | 5 (v1→v5) | ~$0.67 |
 
 **Pricing reference**: NB2 @ 2K = ~$0.134/image. 11 plants × 4 stages = 44 images ≈ **$5.90**
 
