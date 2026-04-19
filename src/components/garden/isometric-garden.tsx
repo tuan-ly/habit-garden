@@ -266,6 +266,8 @@ export function IsometricGarden({
       <div
         ref={scrollContainerRef}
         className="flex-1 w-full overflow-hidden"
+        role="application"
+        aria-label="Isometric garden view. Use mouse or touch to pan, scroll to zoom."
         style={{
           touchAction: 'manipulation',
           cursor: isPanning ? 'grabbing' : mode === 'arrange' ? (interactions.moveState.selectedPlant ? 'crosshair' : 'grab') : 'default',
@@ -385,6 +387,15 @@ export function IsometricGarden({
 
       {/* Info bar */}
       {!isTouchDevice && <PlantInfoBar plant={hoveredPlant} />}
+
+      {/* Screen-reader plant list (a11y for non-visual users) */}
+      <ul className="sr-only" aria-label="Plants in your garden">
+        {livingPlants.map((p) => (
+          <li key={p.id}>
+            {p.name} — {p.status}, growth {Math.round(p.growth_percentage)}%
+          </li>
+        ))}
+      </ul>
 
       {/* Modals */}
       <GardenModals
