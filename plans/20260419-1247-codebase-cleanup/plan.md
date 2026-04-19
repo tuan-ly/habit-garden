@@ -10,15 +10,15 @@
 
 | # | Name | Risk | Status | File |
 |---|------|------|--------|------|
-| 01 | DB Emergency | 🔴 | ⬜ | [phase-01-db-emergency.md](phase-01-db-emergency.md) |
-| 02 | Security Hardening | 🔴 | ⬜ | [phase-02-security-hardening.md](phase-02-security-hardening.md) |
-| 03 | Status System Correctness | 🔴 | ⬜ | [phase-03-status-system.md](phase-03-status-system.md) |
-| 04 | Economy Atomicity | 🟠 | ⬜ | [phase-04-economy-atomicity.md](phase-04-economy-atomicity.md) |
-| 05 | RLS Performance | 🟠 | ⬜ | [phase-05-rls-performance.md](phase-05-rls-performance.md) |
-| 06 | Component Performance | 🟠 | ⬜ | [phase-06-component-perf.md](phase-06-component-perf.md) |
-| 07 | Hook/Context Correctness | 🟠 | ⬜ | [phase-07-hook-context.md](phase-07-hook-context.md) |
-| 08 | DRY + Cleanup | 🟡 | ⬜ | [phase-08-dry-cleanup.md](phase-08-dry-cleanup.md) |
-| 09 | Polish & A11y | 🔵 | ⬜ | [phase-09-polish-a11y.md](phase-09-polish-a11y.md) |
+| 01 | DB Emergency | 🔴 | ✅ | [phase-01-db-emergency.md](phase-01-db-emergency.md) |
+| 02 | Security Hardening | 🔴 | ✅ | [phase-02-security-hardening.md](phase-02-security-hardening.md) |
+| 03 | Status System Correctness | 🔴 | ✅ | [phase-03-status-system.md](phase-03-status-system.md) |
+| 04 | Economy Atomicity | 🟠 | ✅ | [phase-04-economy-atomicity.md](phase-04-economy-atomicity.md) |
+| 05 | RLS Performance | 🟠 | ✅ | [phase-05-rls-performance.md](phase-05-rls-performance.md) |
+| 06 | Component Performance | 🟠 | 🟡 | [phase-06-component-perf.md](phase-06-component-perf.md) |
+| 07 | Hook/Context Correctness | 🟠 | ✅ | [phase-07-hook-context.md](phase-07-hook-context.md) |
+| 08 | DRY + Cleanup | 🟡 | 🟡 | [phase-08-dry-cleanup.md](phase-08-dry-cleanup.md) |
+| 09 | Polish & A11y | 🔵 | 🟡 | [phase-09-polish-a11y.md](phase-09-polish-a11y.md) |
 
 ---
 
