@@ -99,7 +99,10 @@ function plantsReducer(
           longest_streak: Math.max(plant.longest_streak, newStreak),
           total_waterings: plant.total_waterings + 1,
           last_watered_at: new Date().toISOString(),
-          status: newGrowth >= 100 ? 'mature' : plant.status,
+          status:
+            newGrowth >= 100 && plant.status !== 'dead' && plant.status !== 'dormant'
+              ? 'mature'
+              : plant.status,
         } as PlantWithType
       })
     }
@@ -149,7 +152,12 @@ function plantsReducer(
           longest_streak: Math.max(plant.longest_streak, newStreak),
           total_waterings: plant.total_waterings + 1,
           last_watered_at: new Date().toISOString(),
-          status: newGrowth >= 100 ? 'mature' : plant.status,
+          status:
+            plant.status === 'dead' || plant.status === 'dormant'
+              ? plant.status
+              : newGrowth >= 100
+                ? 'mature'
+                : 'thriving',
         } as PlantWithType
       })
     }
@@ -250,11 +258,16 @@ export function PlantsProvider({
                 longest_streak: Math.max(p.longest_streak, newStreak),
                 total_waterings: p.total_waterings + 1,
                 last_watered_at: new Date().toISOString(),
-                status: newGrowth >= 100 ? 'mature' : p.status,
+                status:
+                  p.status === 'dead' || p.status === 'dormant'
+                    ? p.status
+                    : newGrowth >= 100
+                      ? 'mature'
+                      : p.status,
               } as PlantWithType
             })
           )
-          
+
           // Show XP earned
           toast.success(`+${result.xpEarned} XP earned!`, {
             description: result.newAchievements?.length 
@@ -356,7 +369,12 @@ export function PlantsProvider({
                 longest_streak: Math.max(p.longest_streak, newStreak),
                 total_waterings: p.total_waterings + 1,
                 last_watered_at: new Date().toISOString(),
-                status: newGrowth >= 100 ? 'mature' : p.status,
+                status:
+                  p.status === 'dead' || p.status === 'dormant'
+                    ? p.status
+                    : newGrowth >= 100
+                      ? 'mature'
+                      : 'thriving',
               } as PlantWithType
             })
           )

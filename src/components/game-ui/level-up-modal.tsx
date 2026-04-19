@@ -62,6 +62,9 @@ export function LevelUpModal({
 }: LevelUpModalProps) {
   const [showConfetti, setShowConfetti] = useState(false)
   const [showContent, setShowContent] = useState(false)
+  const [confettiParticles, setConfettiParticles] = useState<
+    { left: number; duration: number }[]
+  >([])
   const { tier, showUpgradeModal } = useSubscription()
 
   const unlocks = getLevelUnlocks(newLevel)
@@ -81,6 +84,13 @@ export function LevelUpModal({
   // Animation sequence
   useEffect(() => {
     if (open) {
+      // Generate confetti particle positions client-side only (avoid SSR mismatch)
+      setConfettiParticles(
+        Array.from({ length: 20 }, () => ({
+          left: Math.random() * 100,
+          duration: 2 + Math.random(),
+        }))
+      )
       // Start confetti immediately
       setShowConfetti(true)
 
@@ -93,6 +103,7 @@ export function LevelUpModal({
     } else {
       setShowConfetti(false)
       setShowContent(false)
+      setConfettiParticles([])
     }
   }, [open])
 
@@ -111,20 +122,20 @@ export function LevelUpModal({
         </VisuallyHidden>
 
         {/* Confetti effect (CSS-based) */}
-        {showConfetti && (
+        {showConfetti && confettiParticles.length > 0 && (
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            {Array.from({ length: 20 }).map((_, i) => (
+            {confettiParticles.map((p, i) => (
               <div
                 key={i}
                 className="absolute w-2 h-2 rounded-full animate-confetti"
                 style={{
-                  left: `${Math.random() * 100}%`,
+                  left: `${p.left}%`,
                   top: '-10px',
                   backgroundColor: ['#fbbf24', '#f97316', '#22c55e', '#3b82f6', '#a855f7'][
                     i % 5
                   ],
                   animationDelay: `${i * 0.1}s`,
-                  animationDuration: `${2 + Math.random()}s`,
+                  animationDuration: `${p.duration}s`,
                 }}
               />
             ))}
