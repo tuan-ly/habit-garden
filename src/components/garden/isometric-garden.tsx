@@ -411,7 +411,7 @@ export function IsometricGarden({
         <EditModeOverlay
           isActive={mode === 'arrange'}
           gridSize={gridSize}
-          occupiedCells={new Set(occupiedCells.keys())}
+          occupiedCells={occupiedCellsSet}
           onDone={() => setModeWithReset('interact')}
         />
       )}
