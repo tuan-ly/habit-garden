@@ -1,352 +1,263 @@
 # AI Asset Workflow — Habit Garden
 
-> Concrete, step-by-step pipeline to produce plant and decoration assets using AI generation + minimal retouch.
+> Step-by-step pipeline to produce plant and decoration assets using AI generation.
 > Read this AFTER `06 - ART-BIBLE.md`. This doc tells you *how*; art-bible tells you *what*.
+> For session-level checklists and templates, see `ASSET-SESSION-PLAYBOOK.md`.
 
-**Version**: 1.0
-**Last updated**: 2026-04-17
-**Pairs with**: `06 - ART-BIBLE.md` v1.1+
+**Version**: 2.0
+**Last updated**: 2026-04-20
+**Pairs with**: `06 - ART-BIBLE.md` v2.0+
 
 ---
 
 ## 0. TL;DR Pipeline
 
 ```
- Locked Golden Reference (bamboo stage 4)
+ Pick subject from Subject Library (ASSET-SESSION-PLAYBOOK.md §Subject Library)
         │
         ▼
- Style Reference Image  ◄── used in EVERY subsequent prompt
+ Generate MATURE ANCHOR first (Template § A — new subject)
         │
         ▼
- Batch Generation (by stage, all 8 plants)
+ Evaluate → iterate prompt until anchor LOCKED ✅
         │
         ▼
- Cull → pick best 1 of 4 variants
+ Derive 3 stages from anchor:
+   • Bloom  → /banana edit (additive: add petals/fruit)  ← usually PASS first try
+   • Seedling → /banana edit (complete replacement: tiny sprout) ← usually PASS first try
+   • Sapling → /banana generate fresh OR /banana edit with aggressive reframe ← hardest stage
         │
         ▼
- Retouch in Photoshop / Figma (bg removal, re-palette, anchor)
+ Post-process: watermark chop → bg remove → resize → optimize
         │
         ▼
- QA in-app (zoom 50/100/200%, light+dark)
-        │
-        ▼
- Optimize (oxipng)  →  commit to public/plants/<type>/
+ Save to public/plants/<type>/<stage>.png
 ```
 
-**Target cadence**: 1 stage × 8 plants per 2-hour session. Full garden (40 assets) = 5 sessions ≈ 10–12 h total.
+**Target**: ~$0.55–$1.00 per plant (4 stages × ~$0.134/image + iteration). 11 plants ≈ **$6–11 total**.
 
 ---
 
-## 1. Tool Stack (pick one generator + one editor)
+## 1. Tool Stack
 
-### Generator — pick ONE and stick with it
-| Tool | Pros | Cons | Verdict |
-|---|---|---|---|
-| **Midjourney v7** (`--sref`, `--cref`) | Best style consistency via sref, excellent for "paper-cut" vibe | Paid, Discord-based, no local control | **Recommended** for this project |
-| **Stable Diffusion XL** (ComfyUI + IP-Adapter) | Free, full control, batch scripting, LoRA training possible | Setup time, needs GPU | Best if producing 100+ assets or training LoRA |
-| DALL·E 3 | Easy, follows prompts literally | Weaker style consistency, no sref | Skip for this project |
-| Leonardo.ai (style preset + Image Guidance) | Cheap, style presets good | Less control than MJ sref | Fallback |
-
-### Editor — for retouch + export
-- **Photoshop** (preferred) — precise re-palette via Gradient Map adjustment layer
-- **Figma** — OK for bg removal + anchor, weaker for color ops
-- **Affinity Photo** — one-time purchase alternative to Photoshop
-
-### CLI utilities
-```bash
-# Install once
-npm i -g @squoosh/cli         # PNG compression
-npm i -g sharp-cli            # resize / format convert
-pip install rembg             # ML background remover fallback
-```
-
----
-
-## 2. Phase A — Establish the Golden Reference (ONE TIME)
-
-Everything downstream depends on this. Do not skip.
-
-### A.1 Draft text description
-Write ONE paragraph describing bamboo stage 4 (mature) using art-bible vocabulary:
-
-> *"An isometric 2:1 mature bamboo plant, 4 segmented stalks of varying heights, arching narrow leaves at the top in cel-shaded sage green. Paper-cut biophilic style with soft 1px dark green outline at 60% opacity. Three-tone flat cel shading, no gradients. Sage palette: #3B7A57 base, #6BA57A mid, #8DB982 highlight, #F7F4EC paper highlight. Light from top-right, shadow bottom-left, single elliptical ground shadow #1F3A2E 20% blur 4. Transparent background, centered on 256×256 canvas, plant anchored at bottom-center."*
-
-### A.2 Generate 12–16 variants
-Use the prompt above in Midjourney. Generate at least 3–4 rounds (12–16 images). Judge against art-bible §5 (shape language) and §8 (silhouette test).
-
-### A.3 Pick and LOCK
-Pick the single best result. This becomes:
-- `art/golden-reference/bamboo-04-mature.png` (source PSD)
-- `art/golden-reference/bamboo-04-mature.url` (Midjourney job URL — needed for `--sref`)
-- The `--sref` seed code from Midjourney (copy from `/describe` or job info)
-
-**Store the sref code** (e.g. `--sref 1234567890`) in `art/golden-reference/STYLE_REF.md`. Every future generation uses this code.
-
-### A.4 Complete bamboo (5 stages) manually guided
-Generate bamboo stage 1→5 with `--sref <code>`. Retouch, anchor, export. You now have:
-```
-public/plants/bamboo/01-seed.png
-public/plants/bamboo/02-sprout.png
-public/plants/bamboo/03-juvenile.png
-public/plants/bamboo/04-mature.png
-public/plants/bamboo/05-bloom.png
-```
-Plus @2x versions. This is the benchmark — 7 plants must match this style.
-
----
-
-## 3. Phase B — Prompt Library (fill in BEFORE generating)
-
-Build a spreadsheet (Notion table / CSV / Google Sheet) with 40 rows:
-
-| type | stage | species features | bloom element | accent hex | final prompt |
-|---|---|---|---|---|---|
-| bamboo | 01-seed | — | — | — | [template] |
-| bamboo | 02-sprout | pale curled leaf | — | — | [template] |
-| bamboo | 03-juvenile | first visible node | — | — | [template] |
-| bamboo | 04-mature | 4 segmented stalks, narrow arching leaves | — | — | [template] |
-| bamboo | 05-bloom | rare small grass flower | small cream cluster | `#F7F4EC` | [template] |
-| sunflower | 01-seed | — | — | — | [template] |
-| … | … | … | … | … | … |
-
-### Prompt template (parameterized)
-```
-isometric 2:1 projection, <species features> — growth stage: <stage narrative>,
-paper-cut biophilic style, three-tone cel shading,
-light source from top-right, shadow falling bottom-left, single elliptical ground shadow,
-soft 1px dark green outline #1F3A2E at 60% opacity,
-sage palette #3B7A57 #6BA57A #8DB982 #E8B96A #F7F4EC<, accent <accent hex>>,
-flat shapes, rounded leaf tips, no gradient, no photorealism, no neon, no background,
-centered on white background, 1:1 aspect
---sref <LOCKED_CODE> --ar 1:1 --stylize 150 --s 150
-```
-
-**Stage narrative snippets** (reuse across species):
-- `01-seed` → "just-planted soil mound with a single tiny green sprout dot"
-- `02-sprout` → "two cotyledon leaves emerging above soil, visible slender stem"
-- `03-juvenile` → "young plant with first species-identifying feature visible"
-- `04-mature` → "fully grown silhouette, pre-flowering, strong form"
-- `05-bloom` → "reward moment with <bloom element> blooming prominently"
-
-### Why a table first
-- Prevents ad-hoc prompting → style drift
-- Lets you QA the *prompts* before spending gen credits
-- Makes regeneration reproducible (if you lose an asset, prompt is in the sheet)
-
----
-
-## 4. Phase C — Batch Generation (by STAGE, not by plant)
-
-> Art-bible §9 rule. Generate all 8 plants × stage N before moving to stage N+1.
-
-### Session structure (2 h session, ~1 stage)
-| Min | Activity |
+### Generator
+| Tool | Role |
 |---|---|
-| 0–15 | Review last session's output, fix any drift |
-| 15–75 | Submit 8 prompts (stage N for all plants), 4 variants each = 32 images |
-| 75–105 | Cull: pick best 1 variant per plant. Regenerate rejects with nudged prompt. |
-| 105–120 | Move winners into `art/raw/<plant>/<stage>.png` |
+| **banana-claude** skill | Primary — Gemini Nano Banana 2 (`gemini-3.1-flash-image-preview`) |
+| Model settings | 1:1 ratio, 2K imageSize |
+| Env requirement | `GEMINI_API_KEY` set (get from https://aistudio.google.com/apikey) |
 
-Retouch phase is separate (see §5).
-
-### Cull criteria (deterministic — follow in order)
-1. **Silhouette match** at 32 px (§8 of art-bible)
-2. **Palette match** — no stray hex outside allowed list
-3. **Outline consistency** — all other plants have matching outline weight/opacity
-4. **Light direction correct** — highlight top-right
-5. **Species feature present** — per prompt spec
-6. **Composition** — anchor position roughly at bottom-center
-
-If no variant passes all 6, nudge prompt (see §7) and regenerate — don't settle.
-
----
-
-## 5. Phase D — Retouch (Photoshop recipe)
-
-Every AI output needs this pass. Script it as a Photoshop Action.
-
-### Action steps
-1. **Open** `art/raw/<plant>/<stage>.png`
-2. **Remove background** → use `Select Subject` → refine with `Select and Mask` → add layer mask
-   - Fallback: `rembg i input.png output.png` CLI
-3. **Re-palette** (CRITICAL) — ensures 100% sage palette:
-   - `Layer → New Adjustment Layer → Selective Color` OR
-   - `Layer → New Adjustment Layer → Gradient Map` with locked sage ramp
-   - Eyedrop any non-palette color → replace
-4. **Anchor check** — canvas size 256×256, plant base at pixel (128, 256)
-   - `Image → Canvas Size` if needed, anchor to bottom-center
-5. **Shadow layer** — bottom-most layer, elliptical shape
-   - Fill `#1F3A2E` at 20%, Gaussian Blur 4 px
-6. **Outline cleanup** — if AI outline is broken or missing, add:
-   - Duplicate plant layer → `Layer Style → Stroke` 1 px `#1F3A2E` at 60% opacity, Outside, rounded
-7. **Silhouette test** — temporarily fill black, export 32×32, eyeball vs other plants
-8. **Export** via `File → Export → Quick Export as PNG`
-9. **Export @2x** — same layers, canvas 512×512, anchor (256, 512)
-
-### Photoshop Action script (manual setup once)
-- Record above steps in `Window → Actions`
-- Save as `habit-garden-asset.atn`
-- Apply to batch via `File → Automate → Batch`
-
----
-
-## 6. Phase E — QA in-app
-
-Copy exports into `public/plants/<type>/`. Run:
-```bash
-npm run dev
-```
-
-Open the garden page. For each new asset:
-
-### QA matrix (check all cells)
-| Zoom | Light mode | Dark mode |
+### Post-processing
+| Tool | Command | Purpose |
 |---|---|---|
-| 50% (overview) | readable? silhouette clear? | outline visible on #0F1A14? |
-| 100% (garden default) | cohesive with neighbors? | — |
-| 200% (zoomed in) | anti-aliasing clean? no JPG artifacts? | — |
+| ImageMagick | `magick input.png -gravity SouthEast -chop 60x60 cleaned.png` | Watermark removal |
+| ImageMagick | `magick cleaned.png -fuzz 8% -transparent "#FBF5E6" transparent.png` | Background removal |
+| ImageMagick | `magick transparent.png -resize 512x512 final.png` | Resize for game |
+| pngquant | `pngquant --quality=80-95 final.png --output optimized.png` | File size optimization |
 
-### Additional checks
-- Open in **notification preview** (~32 px thumbnail) — silhouette test in the wild
-- Open in **plant detail sheet** (large render) — ensure no low-res blur
-- Compare side-by-side with bamboo (golden reference) — style drift check
-
-If any fail → back to Phase D retouch OR Phase C regenerate.
+### Fallback
+If banana-claude unavailable: `python scripts/generate.py --prompt "..." --aspect-ratio "1:1"`
 
 ---
 
-## 7. Troubleshooting — When AI Outputs Drift
+## 2. Strategy: Anchor-Driven Consistency
 
-| Symptom | Root cause | Fix in prompt |
-|---|---|---|
-| Too photorealistic | `--stylize` too low | Raise `--s 200–300`, add "flat shapes, no texture" |
-| Color off (too saturated) | No palette anchor | Repeat exact hex codes, add "muted earthy palette" |
-| Outline inconsistent | `--sref` weight low | Add `--sw 100` (style weight max) |
-| Light from wrong side | Ambiguous phrasing | "light source from TOP-RIGHT, shadow BOTTOM-LEFT" in caps |
-| 3D / glossy | Tool default | Add "--no 3d, gloss, bevel, gradient, blur" |
-| Plant off-center | Composition | "centered composition, plant anchored bottom-center of frame" |
-| Silhouette too similar to another plant | Species feature missing | Name the feature explicitly ("with distinctive heart-shaped leaves") |
+> **Core insight** (proven 2026-04-19): Batch generation (`/banana batch`) produces inconsistent results (1/3 match style). Instead, use **anchor-driven pipeline**:
 
-### Global nudges (add to EVERY prompt)
-```
---no realistic, photograph, 3d render, gradient, neon, glow, blur, text, watermark
---stylize 150
---sw 100       (style weight, Midjourney)
-```
+### Why anchor-first
+1. Generate ONE perfect mature image = the **anchor**
+2. All other stages derive FROM this anchor
+3. Consistency guaranteed because every stage references same visual DNA
 
----
-
-## 8. Phase F — Optimize & Commit
-
-### Optimize
-```bash
-# From repo root
-npx @squoosh/cli \
-  --oxipng '{"level":6,"interlace":false}' \
-  -d public/plants \
-  public/plants/**/*.png
-```
-
-### Budget audit
-```bash
-find public/plants -name "*.png" -exec ls -la {} \; | awk '{ total += $5; print $5, $9 } END { print "TOTAL:", total }'
-```
-- 1× files target: < 30 KB each
-- @2x files target: < 80 KB each
-- Full garden target: < 2 MB total
-
-### Commit convention (one commit per plant type, 5 stages together)
-```
-feat(assets): add bamboo plant art (5 stages)
-
-- 01-seed through 05-bloom at 1× and @2x
-- sage palette, paper-cut biophilic style per art-bible v1.1
-- total size 168 KB (10 files)
-```
-
----
-
-## 9. Decoration & Tile Assets (same pipeline, different spec)
-
-After 40 plant assets done, use SAME pipeline for:
-
-| Batch | Count | Canvas | Notes |
+### Which stages work with `/banana edit`
+| Stage | Delta type | Works with edit? | Notes |
 |---|---|---|---|
-| Ground tiles | 5 (grass/dirt/water/stone/path) | 128×64 diamond | Must tile seamlessly — test in `art/tile-tester.html` |
-| Rocks | 4 size variants | 128×128 | One style, different scales |
-| Logs / fallen branches | 2 | 192×96 | Horizontal orientation |
-| Pond | 1 | 256×128 | Includes water ripple highlight |
-| Fence | 3 (straight / corner-L / corner-R) | 128×96 | Must connect correctly |
-| Weather particles | 4 (sun-ray, rain-drop, snow-flake, fog-wisp) | 32×32 | Single frame, UI layer animates them |
-| Mood emotes | 6 | 64×64 | Floating above plant, brief fade |
-| Achievement badges | ~20 | 128×128 | Bloom accent, single-state |
+| Bloom (from mature) | Additive (add petals/fruit) | ✅ YES | Usually PASS first try |
+| Seedling (from mature) | Complete replacement (tiny sprout) | ✅ YES | Reframe as entirely new tiny subject |
+| Sapling (from mature) | **Subtractive** (shrink, sparse) | ⚠️ RISKY | Anchor Gravity resists reduction |
 
-Each new batch: extend the prompt-library spreadsheet, follow the same Phase A→F loop.
+### Sapling strategy (the hard one)
+Sapling is always the hardest stage because it requires **subtractive delta** from mature anchor.
+
+**Option A — Aggressive edit reframe**:
+1. "COMPLETELY REPLACE with brand new subject, NOT modifying existing tree"
+2. Pin exact canvas %: "fills 35% of canvas height"
+3. Pin exact counts: "exactly 3 foliage puffs, 2 accent dots"
+4. Negative space anchor: "upper 65% must be empty cream space"
+
+**Option B — Fresh generation** (Template § A with same style DNA):
+Use `/banana generate` instead of `/banana edit`. Paste all Locked Style DNA from playbook. More reliable but may drift slightly from anchor's specific look.
 
 ---
 
-## 10. Version Control & Storage
+## 3. Prompt Architecture
+
+### Prompt structure (5 blocks)
+Every generation prompt follows this structure:
+
+```
+Block 1: SUBJECT DESCRIPTION
+  → What is the object? Life stage? Physical description?
+  → Include trunk/stem + foliage/canopy + accent elements
+  → Use hex codes inline for colors
+
+Block 2: COMPOSITION
+  → "floats centered on empty cream background #FBF5E6"
+  → "NO ground tile" (tile is runtime)
+  → Canvas height percentage
+  → "3/4 isometric projection at 30-degree camera tilt"
+
+Block 3: LIGHTING (Triple Anchoring)
+  → Trunk: "light face on RIGHT side (#8B5A3C), shadow face on LEFT (#6B4423)"
+  → Foliage: "light face on RIGHT side (#6B9B4F), shadow face on LEFT (#4A7C3A)"
+  → Meta-rule: "every shape's light face must be on its right"
+
+Block 4: SHADOW
+  → "faint ambient occlusion hint in darker cream #D4C9B0 at 20% opacity"
+  → "offset lower-left"
+  → "NOT a solid shape, NOT a disc, NOT a plate, NOT a pool of paint"
+
+Block 5: STYLE ANCHORS + NEGATIVES
+  → "flat vector illustration in the style of Forest by Seekrtech and Plant Nanny"
+  → "smooth bezier shapes, soft two-tone gradient shading"
+  → "absolutely no outlines, no line art"
+  → Negative list: "no painted brush strokes, no watercolor, no 3D, no anime, no Ghibli"
+```
+
+### Shape Disambiguation (when subject has flower + foliage)
+Add between Block 1 and Block 2:
+```
+FOLIAGE is "smooth cloud-like puff" / "rounded cotton mass" / "dome canopy"
+  → NOT "blob cluster" (triggers scalloped petal interpretation)
+BLOSSOM is "TINY dots embedded IN foliage, max 3% of puff area"
+  → "FOLIAGE MASSES, not blossoms"
+NEGATIVES: "no flower-shaped clusters, no petal silhouettes, no scalloped edges"
+```
+
+---
+
+## 4. Session Workflow
+
+### Per-subject session (~30-60 min)
+
+| Step | Time | Action |
+|---|---|---|
+| 1 | 5 min | Read playbook checklist, review Locked Style DNA + Lessons Learned |
+| 2 | 10 min | Draft mature anchor prompt using Template § A |
+| 3 | 5 min | Generate + evaluate. If FAIL → iterate prompt (usually 1-5 tries for anchor) |
+| 4 | 5 min | Lock anchor. Generate bloom via `/banana edit` (additive) |
+| 5 | 5 min | Generate seedling via `/banana edit` (complete replacement) |
+| 6 | 10 min | Generate sapling (hardest — may need 2-3 tries) |
+| 7 | 5 min | Post-process all 4 images (watermark, bg remove, resize) |
+| 8 | 5 min | Save to `public/plants/<type>/`, update playbook Subject Library |
+
+### Recommended subject order (by difficulty)
+1. ✅ Cherry blossom (DONE — anchor for learning)
+2. Sunflower (distinct shape, yellow accent)
+3. Cactus (simple, no flower confusion)
+4. Bonsai (classic tree shape)
+5. Fern (green only, frond shapes)
+6. Succulent (rosette form)
+7. Rose bush (red accent, flower+foliage disambiguation needed)
+8. Lavender (purple accent, thin stems)
+9. Mushroom (unique shape — cap + stem)
+10. Tomato plant (fruit accent)
+11. Lemon tree (fruit accent)
+
+---
+
+## 5. Evaluation Criteria
+
+When evaluating a generated image, check in order:
+
+| # | Check | PASS | FAIL action |
+|---|---|---|---|
+| 1 | Style | Flat vector, Forest/Plant Nanny feel | Add more style anchors + negative styles |
+| 2 | Palette | Matches hex codes from art bible §3 | Repeat hex codes in ALL CAPS, 2 places in prompt |
+| 3 | Light direction | Light face RIGHT, shadow face LEFT | Add Triple Anchoring (3× light direction) |
+| 4 | Shadow | Faint cream ellipse, NOT solid disc | Reframe as ambient occlusion + add disc/plate negatives |
+| 5 | Composition | Centered, correct canvas %, no ground tile | Add "NO ground tile" + pin canvas % |
+| 6 | No outlines | Smooth bezier edges only | Add "absolutely no outlines, no line art, no stroke" |
+| 7 | Shape clarity | Foliage looks like canopy, not flowers | Apply Shape Disambiguation Rules |
+| 8 | Subject identity | Recognizable as the intended plant species | Strengthen species-specific descriptors |
+
+---
+
+## 6. Known Failure Modes & Fixes
+
+| Symptom | Problem name | Fix |
+|---|---|---|
+| Painted/watercolor look | **Style Drift** | Add "Forest by Seekrtech" reference + aggressive style negatives |
+| 1/3 batch images match | **Batch Inconsistency** | STOP batch. Pick anchor → derive via `/banana edit` |
+| Ground rendered as 3D slab | **Literal Tile Interpretation** | Remove tile entirely. Asset = object only |
+| Shadow = solid brown disc | **Intent vs Element Confusion** | Reframe shadow as "ambient occlusion hint" + negatives |
+| Light direction inconsistent | **Lighting Consistency Problem** | Triple Anchoring (3× direction in prompt) |
+| Edit won't reduce size/density | **Anchor Gravity Problem** | Reframe as "COMPLETELY REPLACE" or use fresh generate |
+| Foliage rendered as flowers | **Shape Semantic Collision** | Metaphor swap + role separation + size ratio cap + negatives |
+| Colors don't match hex | **Palette Drift** | Repeat hex codes 2× in prompt, use ALL CAPS "MUST use exactly" |
+
+---
+
+## 7. Cost Model
+
+| Item | Cost |
+|---|---|
+| Single image (Gemini NB2 @ 2K) | ~$0.134 |
+| Mature anchor (avg 3-5 tries) | ~$0.40–$0.67 |
+| 3 derived stages (avg 1-2 tries each) | ~$0.40–$0.80 |
+| **Per plant total** | **~$0.80–$1.50** |
+| **11 plants total** | **~$9–$16** |
+
+### Completed
+| Date | Subject | Images | Cost |
+|---|---|---|---|
+| 2026-04-19 | Cherry blossom (anchor R&D) | 5 | ~$0.67 |
+| 2026-04-19 | Cherry blossom (3 stages) | 5 | ~$0.67 |
+| **Total so far** | | **10** | **~$1.34** |
+
+---
+
+## 8. File Structure
 
 ### In-repo (committed)
 ```
-public/plants/<type>/<stage>.png
-public/plants/<type>/<stage>@2x.png
-public/tiles/<name>.png
-public/decorations/<name>.png
+public/plants/
+├── cherry-blossom/
+│   ├── seedling.png
+│   ├── sapling.png
+│   ├── mature.png      ← also serves as anchor reference
+│   └── bloom.png
+├── sunflower/
+│   ├── seedling.png
+│   ├── sapling.png
+│   ├── mature.png
+│   └── bloom.png
+└── ... (11 plant types total)
 ```
 
-### Out-of-repo (Google Drive / Dropbox, `.gitignore`d)
-```
-art/
-├── source/              # .psd / .fig source files (large)
-├── raw/                 # AI generator outputs pre-retouch
-├── golden-reference/    # STYLE_REF.md, sref codes, lock files
-├── prompts.csv          # full prompt library
-└── actions/
-    └── habit-garden-asset.atn   # Photoshop action
-```
-
-Why split: source files are 10–50 MB each, bloat repo. PNGs in `public/` are the only artifacts the app needs.
+### Working files (session-local, not committed)
+- Anchor PNGs kept during iteration → cleaned up after stage completion
+- Raw Gemini outputs → post-processed → final PNG committed
 
 ---
 
-## 11. First Session Checklist — Start Here
+## 9. Document Hierarchy
 
-Before running any generation:
+```
+06 - ART-BIBLE.md          ← WHAT: Visual style rules (this doc's pair)
+07 - AI-ASSET-WORKFLOW.md   ← HOW: Pipeline, strategy, tooling (this doc)
+ASSET-SESSION-PLAYBOOK.md   ← RUN: Session templates, prompts, lessons learned
+```
 
-- [ ] Read art-bible §1–§8
-- [ ] Midjourney subscription active (or SDXL ComfyUI workflow ready)
-- [ ] Photoshop (or Figma) installed with action template
-- [ ] Create `art/` directory (git-ignored) with subfolders per §10
-- [ ] Copy sage hex codes into a clipboard snippet
-- [ ] Create `art/prompts.csv` with 40 rows (8 plants × 5 stages) ready
-
-Then:
-1. **Session 1**: Phase A — bamboo golden reference (2–3 h)
-2. **Session 2**: Phase C — stage 01-seed for all 8 plants
-3. **Session 3**: Phase C — stage 02-sprout for all 8 plants
-4. **Session 4**: Phase C — stage 03-juvenile for all 8 plants
-5. **Session 5**: Phase C — stage 04-mature for all 8 plants
-6. **Session 6**: Phase C — stage 05-bloom for all 8 plants
-7. **Session 7**: Phase D/E — retouch + QA marathon, commit
-
-Total: **~14–16 h across 7 sessions** for full plant set.
+- Art Bible = style rules (read once, reference as needed)
+- This doc = workflow strategy (read once per project phase)
+- Playbook = working doc opened every session (templates, subject library, lessons)
 
 ---
 
-## 12. Failure Modes — Don't Waste Credits On These
-
-- ❌ Generating all 5 stages of plant A before plant B — style drifts between plant A stage 5 and plant B stage 1
-- ❌ Skipping the golden reference — every batch will drift differently
-- ❌ Not saving `--sref` code — next session won't match
-- ❌ Retouching one asset in isolation — always retouch in batch so you compare side-by-side
-- ❌ Accepting "good enough" on outline — inconsistent outlines break the paper-cut illusion
-- ❌ Shipping without the 32 px silhouette test — users WILL see tiny icons
-
----
-
-## 13. Change Log
+## 10. Change Log
 
 | Date | Change | By |
 |---|---|---|
-| 2026-04-17 | v1.0 — initial AI asset workflow | — |
+| 2026-04-17 | v1.0 — initial workflow (Midjourney-based, speculative) | — |
+| 2026-04-20 | **v2.0** — COMPLETE REWRITE based on proven cherry blossom workflow. Replaced Midjourney with banana-claude/Gemini. Replaced batch-by-stage with anchor-driven pipeline. Added prompt architecture (5-block structure). Added evaluation criteria and failure mode table. Updated cost model with real data. Changed from 5 stages to 4. Integrated all learned patterns (Triple Anchoring, Shape Semantic Collision, Anchor Gravity, Intent vs Element). | — |
