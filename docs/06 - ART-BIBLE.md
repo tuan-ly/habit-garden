@@ -122,24 +122,26 @@ This is a **soft gradient split**, NOT cel-shading with hard edges, and NOT flat
 
 ---
 
-## 6. Growth Stages — Canonical 4
+## 6. Growth Stages — Canonical 5
 
-Every plant type exports exactly **4 stages** at identical canvas size.
+Every plant type exports exactly **5 stages** at identical canvas size.
 
 | # | Filename | % range | Narrative | Size (% of canvas height) |
 |---|---|---|---|---|
-| 1 | `seedling.png` | 0–20 | "Just sprouted" | ~10% — tiny sprout, 1-2 leaves, maybe 1 bud |
-| 2 | `sapling.png` | 20–50 | "Taking shape" | ~35% — sparse foliage, species feature visible |
-| 3 | `mature.png` | 50–90 | "Fully grown" | ~65% — full silhouette, dense foliage |
-| 4 | `bloom.png` | 90–100 | "Reward!" | ~75% — same silhouette + extra accent (petals, fruit, flowers) |
+| 1 | `seedling.png` | 0–15 | "Just sprouted" | ~10% — tiny sprout, 1-2 leaves, maybe 1 bud |
+| 2 | `sapling.png` | 15–35 | "Taking root" | ~25% — sparse foliage, species hint visible |
+| 3 | `juvenile.png` | 35–60 | "Growing strong" | ~45% — mid-size, species feature clear, half-developed |
+| 4 | `mature.png` | 60–90 | "Fully grown" | ~65% — full silhouette, dense foliage |
+| 5 | `bloom.png` | 90–100 | "Reward!" | ~75% — same silhouette + extra accent (petals, fruit, flowers) |
 
 **Stage 4 is the payoff.** Design it to be visibly more rewarding than stage 3 — add bloom color, floating petals, extra accent dots.
 
 ### Stage generation strategy
-- **Mature (stage 3) is always generated FIRST** as the anchor
+- **Mature (stage 4) is always generated FIRST** as the anchor
 - Other stages derived from anchor via `/banana edit` or fresh generation with same style DNA
 - **Additive deltas** (seedling→sapling, mature→bloom): `/banana edit` works well
-- **Subtractive deltas** (mature→sapling): reframe as fresh generation, NOT edit (see Anchor Gravity Problem)
+- **Subtractive deltas** (mature→sapling, mature→juvenile): reframe as fresh generation, NOT edit (see Anchor Gravity Problem)
+- **Anchor-Dependent Species** (non-green foliage like cherry blossom pink, lavender purple): MUST use edit-from-anchor to preserve palette. Green-foliage plants can use fresh generate.
 
 ---
 
@@ -155,6 +157,7 @@ Every plant type exports exactly **4 stages** at identical canvas size.
 ```
 public/plants/<type>/seedling.png
 public/plants/<type>/sapling.png
+public/plants/<type>/juvenile.png
 public/plants/<type>/mature.png
 public/plants/<type>/bloom.png
 ```
@@ -284,7 +287,7 @@ Shading:     Two-tone gradient per shape (light face / shadow face)
 Outline:     NONE — smooth bezier shapes only
 Shadow:      Ambient occlusion ellipse, #D4C9B0 @ 20%, offset lower-left
 Canvas:      1:1, 2K, cream #FBF5E6 background (removed in post)
-Stages:      seedling · sapling · mature · bloom (4 stages)
+Stages:      seedling · sapling · juvenile · mature · bloom (5 stages)
 Palette:     Warm limited — cream, brown, green + 1 accent family
 Tool:        banana-claude skill → Gemini (gemini-3.1-flash-image-preview)
 Pipeline:    Mature anchor first → derive stages via edit/generate

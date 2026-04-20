@@ -129,11 +129,12 @@ same background color, same ground strip, same lighting direction."]
 /banana batch [SUBJECT mô tả ngắn] 4
 ```
 
-Sau đó cho Claude biết 4 stage variations:
-- Stage 1 — Seedling: ~10% canvas, no foliage, just sprout
-- Stage 2 — Sapling: ~35% canvas, sparse foliage, 2-3 accent dots
-- Stage 3 — Mature: ~65% canvas, full foliage Y-split branches
-- Stage 4 — Bloom: ~75% canvas, dense foliage + extra accent dots
+Sau đó cho Claude biết 5 stage variations:
+- Stage 1 — Seedling: ~10% canvas, tiny sprout, 1-2 leaves + bud
+- Stage 2 — Sapling: ~25% canvas, sparse foliage, 2-3 accent dots
+- Stage 3 — Juvenile: ~45% canvas, mid-size, species feature clear, half-developed
+- Stage 4 — Mature: ~65% canvas, full foliage Y-split branches
+- Stage 5 — Bloom: ~75% canvas, dense foliage + extra accent dots + floating petals/fruit
 
 ---
 
@@ -141,8 +142,8 @@ Sau đó cho Claude biết 4 stage variations:
 
 | # | Subject | Anchor file | Status | Notes |
 |---|---------|-------------|--------|-------|
-| 1 | Cherry blossom | `public/plants/cherry-blossom/mature-anchor-v5.png` | **COMPLETE ✅** (seedling ✅, sapling v3 ✅, mature ✅, bloom ✅) | accent pink, prompt v5, isometric no-tile, light upper-right |
-| 2 | Sunflower | — | TODO | accent yellow #F5C842 |
+| 1 | Cherry blossom | `public/plants/cherry-blossom/mature.png` | **4/5 ✅** (seedling ✅, sapling ✅, mature ✅, bloom ✅, juvenile ✅) | accent pink, prompt v5, isometric no-tile, light upper-right |
+| 2 | Sunflower | `public/plants/sunflower/mature.png` | **COMPLETE ✅** (seedling ✅, sapling ✅, juvenile ✅, mature ✅, bloom ✅) | accent yellow #F5C842, first-try anchor |
 | 3 | Cactus | — | TODO | accent green only, no flower |
 | 4 | Succulent | — | TODO | rosette form, accent muted |
 | 5 | Bonsai | — | TODO | accent green dark #2D5016 |
@@ -218,6 +219,26 @@ Sau đó cho Claude biết 4 stage variations:
   4. **Negative list mở rộng**: "no flower-shaped clusters, no petal silhouettes, no scalloped edges"
 - **Pattern learned**: **Shape Semantic Collision problem** — Khi 2+ visual element cùng shape (ví dụ: lá + cánh hoa đều "soft curved"), prompt phải force-disambiguate bằng: (a) contrasting metaphor, (b) explicit role label ("foliage mass" vs "blossom"), (c) size ratio hard-cap, (d) negative list specific to confused shape.
 
+### 2026-04-20 | Sunflower | First-try anchor + all 5 stages PASS
+- **Result**: Mature anchor PASS first try. Seedling, sapling, bloom all PASS first try. Juvenile PASS first try.
+- **Pattern**: Sunflower's distinct shape (tall stem + round flower head) avoids Shape Semantic Collision — no ambiguity between flower and foliage.
+- **Cost**: ~5 images × $0.134 = ~$0.67
+
+### 2026-04-20 | 5-stage system | Added Juvenile stage between sapling and mature
+- **Change**: Expanded from 4 stages (seedling→sapling→mature→bloom) to 5 stages (seedling→sapling→juvenile→mature→bloom)
+- **Juvenile**: ~45% canvas, species feature clearly visible, half-developed form
+- **Rationale**: Better growth progression — user sees more gradual development
+
+### 2026-04-20 | Cherry blossom juvenile v1 | Style mismatch → Use edit from anchor
+- **Issue**: `/banana generate` fresh cho cherry blossom juvenile → ra cây xanh generic, mất tông pink cherry blossom DNA
+- **Root cause**: **Cross-Subject Style Drift** — fresh generation without anchor reference loses species-specific palette. Sunflower ok vì distinct shape, cherry blossom cần pink foliage tông which only anchor preserves.
+- **Fix v2**: Switch to `/banana edit` from mature anchor. Explicitly reference "same pink foliage tone (#F5B8C8 light, #E88FA8 shadow)" in prompt.
+- **Pattern learned**: **Anchor-Dependent Species** — plants with non-standard foliage color (pink cherry, purple lavender) MUST use edit-from-anchor for all stages to preserve palette. Green-foliage plants (sunflower, cactus) can use fresh generate safely.
+
+### 2026-04-20 | Cherry blossom juvenile v2 | Anchor Gravity (again) → needs v3
+- **Issue**: Edit from anchor produced correct pink tone but size ~65% (same as mature) — Anchor Gravity resists size reduction
+- **Fix v3**: More aggressive "COMPLETELY REPLACE", "significantly smaller", "half the size of current canopy", reinforced empty space requirement
+
 ### [Template cho entry mới]
 ```
 ### YYYY-MM-DD | [Subject] | [Issue] → [Fix]
@@ -235,14 +256,16 @@ Sau đó cho Claude biết 4 stage variations:
 | 2026-04-19 | Cherry blossom (anchor R&D) | mature only | 5 (v1→v5) | ~$0.67 |
 | 2026-04-19 | Cherry blossom (3 stages from anchor) | seedling, sapling-v1, bloom | 3 | ~$0.40 |
 | 2026-04-19 | Cherry blossom sapling iteration | sapling v2 (fail), v3 (pass) | 2 | ~$0.27 |
+| 2026-04-20 | Sunflower (all 5 stages) | seedling, sapling, juvenile, mature, bloom | 5 | ~$0.67 |
+| 2026-04-20 | Cherry blossom juvenile | v1 (fail), v2 (Anchor Gravity), v3 | 3 | ~$0.40 |
 
-**Pricing reference**: NB2 @ 2K = ~$0.134/image. 11 plants × 4 stages = 44 images ≈ **$5.90**
+**Pricing reference**: NB2 @ 2K = ~$0.134/image. 11 plants × 5 stages = 55 images ≈ **$7.37**
 
 ---
 
 ## 🔧 Post-Processing Pipeline (sau khi gen xong)
 
-Khi 1 subject đã có 4 stage anchor đạt chuẩn:
+Khi 1 subject đã có 5 stage đạt chuẩn:
 
 ```bash
 # 1. Background remove (nếu cần transparent PNG cho game engine)

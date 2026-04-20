@@ -22,9 +22,10 @@
  Evaluate → iterate prompt until anchor LOCKED ✅
         │
         ▼
- Derive 3 stages from anchor:
+ Derive 4 stages from anchor:
    • Bloom  → /banana edit (additive: add petals/fruit)  ← usually PASS first try
    • Seedling → /banana edit (complete replacement: tiny sprout) ← usually PASS first try
+   • Juvenile → /banana edit or generate (mid-size, half-developed) ← moderate difficulty
    • Sapling → /banana generate fresh OR /banana edit with aggressive reframe ← hardest stage
         │
         ▼
@@ -34,7 +35,7 @@
  Save to public/plants/<type>/<stage>.png
 ```
 
-**Target**: ~$0.55–$1.00 per plant (4 stages × ~$0.134/image + iteration). 11 plants ≈ **$6–11 total**.
+**Target**: ~$0.70–$1.50 per plant (5 stages × ~$0.134/image + iteration). 11 plants ≈ **$8–$17 total**.
 
 ---
 
@@ -74,7 +75,11 @@ If banana-claude unavailable: `python scripts/generate.py --prompt "..." --aspec
 |---|---|---|---|
 | Bloom (from mature) | Additive (add petals/fruit) | ✅ YES | Usually PASS first try |
 | Seedling (from mature) | Complete replacement (tiny sprout) | ✅ YES | Reframe as entirely new tiny subject |
-| Sapling (from mature) | **Subtractive** (shrink, sparse) | ⚠️ RISKY | Anchor Gravity resists reduction |
+| Juvenile (from mature) | Subtractive (mid-size) | ⚠️ MODERATE | Anchor Gravity may resist; use aggressive reframe |
+| Sapling (from mature) | **Subtractive** (shrink, sparse) | ⚠️ RISKY | Anchor Gravity resists reduction most |
+
+### Anchor-Dependent Species
+Plants with non-standard foliage color (cherry blossom pink, lavender purple) **MUST** use edit-from-anchor for all stages — fresh generation loses species palette. Green-foliage plants (sunflower, cactus, fern) can safely use fresh generate.
 
 ### Sapling strategy (the hard one)
 Sapling is always the hardest stage because it requires **subtractive delta** from mature anchor.
@@ -213,7 +218,9 @@ When evaluating a generated image, check in order:
 |---|---|---|---|
 | 2026-04-19 | Cherry blossom (anchor R&D) | 5 | ~$0.67 |
 | 2026-04-19 | Cherry blossom (3 stages) | 5 | ~$0.67 |
-| **Total so far** | | **10** | **~$1.34** |
+| 2026-04-20 | Sunflower (5 stages) | 5 | ~$0.67 |
+| 2026-04-20 | Cherry blossom juvenile | 3 | ~$0.40 |
+| **Total so far** | | **18** | **~$2.41** |
 
 ---
 
@@ -225,11 +232,13 @@ public/plants/
 ├── cherry-blossom/
 │   ├── seedling.png
 │   ├── sapling.png
+│   ├── juvenile.png
 │   ├── mature.png      ← also serves as anchor reference
 │   └── bloom.png
 ├── sunflower/
 │   ├── seedling.png
 │   ├── sapling.png
+│   ├── juvenile.png
 │   ├── mature.png
 │   └── bloom.png
 └── ... (11 plant types total)
