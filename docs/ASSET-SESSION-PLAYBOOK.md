@@ -144,7 +144,7 @@ Sau đó cho Claude biết 5 stage variations:
 |---|---------|-------------|--------|-------|
 | 1 | Cherry blossom | `public/plants/cherry-blossom/mature.png` | **4/5 ✅** (seedling ✅, sapling ✅, mature ✅, bloom ✅, juvenile ✅) | accent pink, prompt v5, isometric no-tile, light upper-right |
 | 2 | Sunflower | `public/plants/sunflower/mature.png` | **COMPLETE ✅** (seedling ✅, sapling ✅, juvenile ✅, mature ✅, bloom ✅) | accent yellow #F5C842, first-try anchor |
-| 3 | Cactus | — | TODO | accent green only, no flower |
+| 3 | Cactus | `public/plants/cactus/04-blooming.png` | **COMPLETE ✅** (seedling ✅, sapling ✅, juvenile ✅, mature ✅, bloom ✅) | accent green only, pink flowers on bloom stage, first-try all 5 stages |
 | 4 | Succulent | — | TODO | rosette form, accent muted |
 | 5 | Bonsai | — | TODO | accent green dark #2D5016 |
 | 6 | Rose bush | — | TODO | accent red #C84A4A |
@@ -239,6 +239,13 @@ Sau đó cho Claude biết 5 stage variations:
 - **Issue**: Edit from anchor produced correct pink tone but size ~65% (same as mature) — Anchor Gravity resists size reduction
 - **Fix v3**: More aggressive "COMPLETELY REPLACE", "significantly smaller", "half the size of current canopy", reinforced empty space requirement
 
+### 2026-04-21 | Cactus | All 5 stages PASS first try
+- **Result**: All 5 stages generated successfully on first attempt. Mature anchor + bloom (edit from anchor) + seedling/sapling/juvenile (fresh generate).
+- **Pattern**: Saguaro cactus has distinct silhouette (cylinder + arms) — no Shape Semantic Collision. Green-foliage = safe for fresh generate (no anchor-dependent palette issue).
+- **Issue**: Stages 1-3 output ~16:9 ratio despite 1:1 setting — Gemini sometimes ignores ratio when subject is small relative to canvas. Need to crop to square in post-processing.
+- **Lesson**: For future subjects, add explicit "SQUARE 1:1 canvas, equal width and height" in prompt text to reinforce the API ratio setting.
+- **Cost**: ~5 images × $0.134 = ~$0.67
+
 ### [Template cho entry mới]
 ```
 ### YYYY-MM-DD | [Subject] | [Issue] → [Fix]
@@ -258,6 +265,7 @@ Sau đó cho Claude biết 5 stage variations:
 | 2026-04-19 | Cherry blossom sapling iteration | sapling v2 (fail), v3 (pass) | 2 | ~$0.27 |
 | 2026-04-20 | Sunflower (all 5 stages) | seedling, sapling, juvenile, mature, bloom | 5 | ~$0.67 |
 | 2026-04-20 | Cherry blossom juvenile | v1 (fail), v2 (Anchor Gravity), v3 | 3 | ~$0.40 |
+| 2026-04-21 | Cactus (all 5 stages) | seedling, sapling, juvenile, mature, bloom | 5 | ~$0.67 |
 
 **Pricing reference**: NB2 @ 2K = ~$0.134/image. 11 plants × 5 stages = 55 images ≈ **$7.37**
 
