@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { PlantCard } from '../plant-card'
 import type { PlantWithType, WeatherType } from '@/types/database'
-import { PlantsProvider } from '@/lib/context'
+import { PlantsProvider } from '@/lib/context/plants-context'
 
 // Mock plant data factory
 const createMockPlant = (overrides: Partial<PlantWithType> = {}): PlantWithType => ({

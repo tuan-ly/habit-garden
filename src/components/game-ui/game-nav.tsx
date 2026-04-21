@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { signOut } from '@/app/(auth)/actions'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { useUser } from '@/lib/context'
+import { useUser } from '@/lib/context/dashboard-data-context'
 import type { LucideIcon } from 'lucide-react'
 
 interface NavItem {

@@ -12,7 +12,7 @@ import {
   type LevelUnlock,
 } from '@/lib/progression-system'
 import { Sparkles, Trophy, ChevronRight, Crown, Target, User } from 'lucide-react'
-import { useSubscription } from '@/lib/context'
+import { useSubscription } from '@/lib/context/subscription-context'
 import type { UpgradeTrigger } from '@/lib/subscription-limits'
 
 interface LevelUpModalProps {

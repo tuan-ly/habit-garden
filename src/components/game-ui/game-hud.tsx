@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 import { getLevelInfo } from '@/lib/xp-system'
 import type { Profile } from '@/types/database'
 import { MoodSelector } from '@/components/mood'
-import { useSubscription } from '@/lib/context'
+import { useSubscription } from '@/lib/context/subscription-context'
 import { useDevOverride } from '@/components/dev/dev-debug-context'
 import { CoinDisplay } from '@/components/shop/coin-display'
 

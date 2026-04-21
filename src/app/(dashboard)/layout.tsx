@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { Toaster } from '@/components/ui/sonner'
-import { GameNav } from '@/components/game-ui'
+import { GameNav } from '@/components/game-ui/game-nav'
 import { DashboardProviders } from './providers'
 import { getTodayMood } from '@/lib/actions/mood'
 import { getProfile } from '@/lib/actions/profile'

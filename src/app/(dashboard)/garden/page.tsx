@@ -1,7 +1,7 @@
 import { getPlants } from '@/lib/actions/plants'
 import { GardenView } from '@/components/garden/garden-view'
 import { getTodayWeather } from '@/lib/weather-system'
-import { PlantsProvider } from '@/lib/context'
+import { PlantsProvider } from '@/lib/context/plants-context'
 
 export default async function GardenPage() {
   // Only fetch plants here - plantTypes and profile come from DashboardDataContext

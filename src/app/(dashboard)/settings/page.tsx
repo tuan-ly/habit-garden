@@ -1,6 +1,6 @@
 'use client'
 
-import { useUser, useProfile } from '@/lib/context'
+import { useUser, useProfile } from '@/lib/context/dashboard-data-context'
 import { PerformanceSettings } from '@/components/settings/performance-settings'
 import { SubscriptionSection } from '@/components/settings/subscription-section'
 import { AccountSettings } from '@/components/settings/account-settings'

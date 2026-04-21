@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   })
@@ -29,15 +29,9 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // IMPORTANT: Do not run code between createServerClient and
-  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
-  // issues with users being randomly logged out.
+  const { pathname } = request.nextUrl
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  // Protected routes - redirect to login if not authenticated
+  // Protected routes that require auth verification
   const protectedPaths = [
     '/garden',
     '/overview',
@@ -48,17 +42,36 @@ export async function middleware(request: NextRequest) {
     '/identity',
   ]
 
-  const { pathname } = request.nextUrl
-
-  // Check if the current path starts with any protected path
   const isProtectedRoute = protectedPaths.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`)
   )
 
-  if (isProtectedRoute && !user) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
+  // IMPORTANT: Do not run code between createServerClient and
+  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
+  // issues with users being randomly logged out.
+
+  // Only call getUser() when we need auth verification (protected routes).
+  // For public routes, just refresh the session cookies without the network call.
+  if (isProtectedRoute) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
+    }
+  } else {
+    // For public routes, still refresh tokens via getUser() but only if
+    // there's an existing session cookie (avoids unnecessary API calls
+    // for unauthenticated visitors)
+    const hasSessionCookie = request.cookies.getAll().some(
+      (c) => c.name.startsWith('sb-') && c.name.endsWith('-auth-token')
+    )
+    if (hasSessionCookie) {
+      await supabase.auth.getUser()
+    }
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is.
@@ -85,7 +98,6 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder files (images, etc.)
-     * Feel free to modify this pattern to include more paths.
      */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
   ],

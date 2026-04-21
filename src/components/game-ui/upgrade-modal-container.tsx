@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSubscription, useUpgradeModalState } from '@/lib/context'
+import { useSubscription, useUpgradeModalState } from '@/lib/context/subscription-context'
 import { UpgradeModal } from './upgrade-modal'
 import { updateUpgradePromptAction } from '@/lib/actions/subscription'
 import { openTierCheckout, isPaddleConfigured } from '@/lib/paddle'

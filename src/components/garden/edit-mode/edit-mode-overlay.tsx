@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useInventory } from '@/lib/context'
+import { useInventory } from '@/lib/context/inventory-context'
 import { useEditMode } from './use-edit-mode'
 import { EditModeToolbar } from './edit-mode-toolbar'
 import { InventoryPanel } from '@/components/inventory/inventory-panel'

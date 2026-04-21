@@ -1,6 +1,6 @@
 'use client'
 
-import { useGardenSettings } from '@/lib/context'
+import { useGardenSettings } from '@/lib/context/garden-settings-context'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'

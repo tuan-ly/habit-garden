@@ -24,7 +24,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
-import { useSubscription } from '@/lib/context'
+import { useSubscription } from '@/lib/context/subscription-context'
 import { TIER_INFO } from '@/lib/subscription-limits'
 import {
   getSubscriptionDetails,

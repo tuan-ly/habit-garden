@@ -2,7 +2,7 @@
 
 import { Coins } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useInventoryOptional } from '@/lib/context'
+import { useInventoryOptional } from '@/lib/context/inventory-context'
 
 interface CoinDisplayProps {
   className?: string

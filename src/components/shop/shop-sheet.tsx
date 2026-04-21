@@ -5,7 +5,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { useInventory } from '@/lib/context'
+import { useInventory } from '@/lib/context/inventory-context'
 import { ShoppingBag, Coins, Loader2, Check, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { DecorationType } from '@/types/database'
