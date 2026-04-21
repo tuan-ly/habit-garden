@@ -122,25 +122,6 @@ export function PerformanceSettings() {
 
         <Separator />
 
-        {/* Canvas renderer */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Zap className="h-5 w-5 text-amber-500" />
-            <div>
-              <p className="font-medium">Canvas Renderer</p>
-              <p className="text-sm text-muted-foreground">
-                Use Canvas instead of SVG (faster)
-              </p>
-            </div>
-          </div>
-          <Switch
-            checked={settings.useCanvasRenderer}
-            onCheckedChange={(checked) => updateSetting('useCanvasRenderer', checked)}
-          />
-        </div>
-
-        <Separator />
-
         {/* Reduced motion */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">

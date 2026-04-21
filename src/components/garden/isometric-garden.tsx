@@ -3,10 +3,8 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { type FocusState } from './isometric-plant'
 import { PlantInfoBar } from './plant-tooltip'
-import { GroundPlane, type MultiCellArea } from './ground-plane'
-import { GroundPlaneCanvas } from './ground-plane-canvas'
+import { GroundPlaneCanvas, type MultiCellArea } from './ground-plane-canvas'
 import { GardenDecorations } from './garden-decorations'
-import { AmbientParticles } from './ambient-particles'
 import { AmbientParticlesCanvas } from './ambient-particles-canvas'
 import { ZoomControls } from './zoom-controls'
 import { ModeToolbar, type GardenMode } from './mode-toolbar'
@@ -306,48 +304,27 @@ export function IsometricGarden({
               />
             )}
 
-            {/* Ground plane */}
-            {gardenSettings.useCanvasRenderer ? (
-              <GroundPlaneCanvas
-                gridSize={gridSize}
-                tileSize={tileSize}
-                grassColor={defaultTheme.ground.primary}
-                grassDarkColor={defaultTheme.ground.secondary}
-                multiCellAreas={multiCellAreas}
-                hoveredMultiCellArea={hoveredMultiCellArea}
-                dragTargetCell={interactions.moveState.selectedPlant ? interactions.moveState.previewCell : null}
-                dragPlantSize={interactions.moveState.selectedPlant?.grid_size || 1}
-                isDragTargetValid={interactions.moveState.isValidPreview}
-              />
-            ) : (
-              <GroundPlane
-                gridSize={gridSize}
-                tileSize={tileSize}
-                grassColor={defaultTheme.ground.primary}
-                grassDarkColor={defaultTheme.ground.secondary}
-                multiCellAreas={multiCellAreas}
-                hoveredMultiCellArea={hoveredMultiCellArea}
-                dragTargetCell={interactions.moveState.selectedPlant ? interactions.moveState.previewCell : null}
-                dragPlantSize={interactions.moveState.selectedPlant?.grid_size || 1}
-                isDragTargetValid={interactions.moveState.isValidPreview}
-              />
-            )}
+            {/* Ground plane (canvas renderer) */}
+            <GroundPlaneCanvas
+              gridSize={gridSize}
+              tileSize={tileSize}
+              grassColor={defaultTheme.ground.primary}
+              grassDarkColor={defaultTheme.ground.secondary}
+              multiCellAreas={multiCellAreas}
+              hoveredMultiCellArea={hoveredMultiCellArea}
+              dragTargetCell={interactions.moveState.selectedPlant ? interactions.moveState.previewCell : null}
+              dragPlantSize={interactions.moveState.selectedPlant?.grid_size || 1}
+              isDragTargetValid={interactions.moveState.isValidPreview}
+            />
 
-            {/* Ambient particles */}
+            {/* Ambient particles (canvas renderer) */}
             {gardenSettings.showParticles && (
-              gardenSettings.useCanvasRenderer ? (
-                <AmbientParticlesCanvas
-                  weather={gardenSettings.showWeatherEffects ? weather : null}
-                  timeOfDay={currentTimeOfDay}
-                  width={containerWidth}
-                  height={containerHeight}
-                />
-              ) : (
-                <AmbientParticles
-                  weather={gardenSettings.showWeatherEffects ? weather : null}
-                  timeOfDay={currentTimeOfDay}
-                />
-              )
+              <AmbientParticlesCanvas
+                weather={gardenSettings.showWeatherEffects ? weather : null}
+                timeOfDay={currentTimeOfDay}
+                width={containerWidth}
+                height={containerHeight}
+              />
             )}
 
             {/* Tile grid */}

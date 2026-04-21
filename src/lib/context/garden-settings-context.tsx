@@ -20,7 +20,6 @@ const DEFAULT_SETTINGS: GardenEffectSettings = {
   showCelebrations: true,
   showWeatherEffects: true,
   reducedMotion: false,
-  useCanvasRenderer: true, // Canvas for better performance on weak devices
 }
 
 export interface GardenEffectSettings {
@@ -34,8 +33,6 @@ export interface GardenEffectSettings {
   showWeatherEffects: boolean
   /** Reduced motion mode - disables most animations */
   reducedMotion: boolean
-  /** Use Canvas renderer instead of SVG for better performance */
-  useCanvasRenderer: boolean
 }
 
 interface GardenSettingsContextType {
@@ -133,7 +130,6 @@ export function GardenSettingsProvider({ children, initialSettings }: GardenSett
       showCelebrations: true,
       showWeatherEffects: true,
       reducedMotion: false,
-      useCanvasRenderer: true,
     })
   }, [])
 
@@ -144,7 +140,6 @@ export function GardenSettingsProvider({ children, initialSettings }: GardenSett
       showCelebrations: false,
       showWeatherEffects: false,
       reducedMotion: true,
-      useCanvasRenderer: true, // Keep canvas for performance
     })
   }, [])
 

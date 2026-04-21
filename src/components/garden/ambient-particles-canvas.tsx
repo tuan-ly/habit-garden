@@ -31,6 +31,8 @@ interface Particle {
     color: string
     lifespan: number
     maxLife: number
+    // Butterfly-specific: heading angle for sinusoidal steering
+    angle?: number
 }
 
 // Seeded random for deterministic generation
@@ -57,13 +59,13 @@ function generateParticles(
 
     // Sunny day particles
     if (timeOfDay === 'day' && (weather === 'sunny' || weather === 'rainbow' || !weather)) {
-        // Single butterfly — premium 4-wing model, slightly larger for detail visibility
+        // Single butterfly — premium 4-wing model with organic wandering
         particles.push({
             type: 'butterfly',
-            x: rand() * width,
-            y: height * 0.2 + rand() * height * 0.4,
-            vx: 0.3 + rand() * 0.4,
-            vy: (rand() - 0.5) * 0.15,
+            x: width * 0.3 + rand() * width * 0.4,
+            y: height * 0.3 + rand() * height * 0.3,
+            vx: 0,
+            vy: 0,
             size: 18,
             opacity: 0.9,
             rotation: 0,
@@ -72,6 +74,7 @@ function generateParticles(
             color: butterflyColors[Math.floor(rand() * butterflyColors.length)],
             lifespan: 0,
             maxLife: Infinity,
+            angle: rand() * Math.PI * 2,
         })
 
         // Pollen (reduced from 5 to 4 particles)
@@ -269,16 +272,61 @@ function AmbientParticlesCanvasComponent({
             for (const p of particlesRef.current) {
                 p.lifespan += delta * 0.016
 
-                // Update position
-                p.x += p.vx * delta
-                p.y += p.vy * delta
-                p.rotation += p.rotationSpeed * delta
+                if (p.type === 'butterfly') {
+                    // Sinusoidal wandering — multiple sine waves steer the heading
+                    const t = p.lifespan
+                    const ph = p.phase
 
-                // Wrap around edges
-                if (p.x < -50) p.x = width + 50
-                if (p.x > width + 50) p.x = -50
-                if (p.y < -50) p.y = height + 50
-                if (p.y > height + 50) p.y = -50
+                    // Steer angle with 3 incommensurate frequencies for non-repeating path
+                    const steer =
+                        Math.sin(t * 0.7 + ph) * 0.025 +
+                        Math.sin(t * 1.3 + ph * 2.1) * 0.018 +
+                        Math.sin(t * 0.3 + ph * 0.7) * 0.012
+                    p.angle = (p.angle ?? 0) + steer * delta
+
+                    // Vary speed with another sine (occasional slow-downs)
+                    const speed = 0.35 + Math.sin(t * 0.5 + ph * 1.5) * 0.15
+
+                    p.vx = Math.cos(p.angle) * speed
+                    p.vy = Math.sin(p.angle) * speed
+
+                    // Soft boundary repulsion — nudge angle toward center when near edges
+                    const margin = 60
+                    const cx = width / 2
+                    const cy = height / 2
+                    let repelX = 0
+                    let repelY = 0
+                    if (p.x < margin) repelX = (margin - p.x) / margin
+                    else if (p.x > width - margin) repelX = -(p.x - (width - margin)) / margin
+                    if (p.y < margin) repelY = (margin - p.y) / margin
+                    else if (p.y > height - margin) repelY = -(p.y - (height - margin)) / margin
+
+                    if (repelX !== 0 || repelY !== 0) {
+                        const targetAngle = Math.atan2(cy - p.y + repelY * 100, cx - p.x + repelX * 100)
+                        let angleDiff = targetAngle - p.angle
+                        // Normalize to [-PI, PI]
+                        while (angleDiff > Math.PI) angleDiff -= Math.PI * 2
+                        while (angleDiff < -Math.PI) angleDiff += Math.PI * 2
+                        p.angle += angleDiff * 0.03 * delta * Math.max(Math.abs(repelX), Math.abs(repelY))
+                    }
+
+                    p.x += p.vx * delta
+                    p.y += p.vy * delta
+
+                    // Hard clamp as safety net
+                    p.x = Math.max(10, Math.min(width - 10, p.x))
+                    p.y = Math.max(10, Math.min(height - 10, p.y))
+                } else {
+                    // Non-butterfly particles: simple linear motion + edge wrap
+                    p.x += p.vx * delta
+                    p.y += p.vy * delta
+                    p.rotation += p.rotationSpeed * delta
+
+                    if (p.x < -50) p.x = width + 50
+                    if (p.x > width + 50) p.x = -50
+                    if (p.y < -50) p.y = height + 50
+                    if (p.y > height + 50) p.y = -50
+                }
 
                 // Draw based on type
                 ctx.save()
