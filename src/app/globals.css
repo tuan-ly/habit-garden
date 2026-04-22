@@ -1118,11 +1118,11 @@
 /* Plant container hover effect */
 .plant-container {
   transition: transform 0.3s ease;
+  transform-origin: bottom center;
 }
 
-.plant-container:hover {
-  transform: scale(1.05);
-}
+/* Hover scale handled at component level (IsometricTile / plant-card)
+   to avoid stacking with plant-sway animations and inline transforms. */
 
 /* Enhanced sparkle with stagger */
 .sparkle.delay-150 {
@@ -1138,11 +1138,7 @@
   animation-delay: 200ms;
 }
 
-/* Card gradient hover effect */
-.group:hover .plant-visual {
-  transform: scale(1.08);
-  transition: transform 0.3s ease;
-}
+/* Card gradient hover effect — handled at component level */
 
 /* Bounce animation for icons */
 @keyframes bounce-subtle {

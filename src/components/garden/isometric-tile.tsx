@@ -207,14 +207,13 @@ function IsometricTileComponent({
       {children && (
         <div
           className={cn(
-            "absolute pointer-events-none flex flex-col items-center transition-all duration-200",
-            isHovered && !isSelectedForMove && "scale-105",
+            "absolute pointer-events-none flex flex-col items-center transition-transform duration-200",
             isSelectedForMove && "scale-90 -translate-y-2"
           )}
           style={{
             left: tileSize / 2,
             top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight) ,
-            transform: 'translate(-50%, -100%)',
+            transform: `translate(-50%, -100%) scale(${isHovered && !isSelectedForMove ? 1.20 : 1})`,
             transformOrigin: 'bottom center',
           }}
         >
