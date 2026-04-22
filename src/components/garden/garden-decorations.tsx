@@ -378,12 +378,12 @@ function OakTree({ scale, flip }: { scale: number; flip: boolean }) {
 function Bush({ scale, flip }: { scale: number; flip: boolean }) {
   return (
     <g transform={`scale(${flip ? -scale : scale}, ${scale})`}>
-      <ellipse cx="-8" cy="-5" rx="10" ry="8" fill="#558b2f" />
-      <ellipse cx="8" cy="-6" rx="9" ry="7" fill="#689f38" />
-      <ellipse cx="0" cy="-10" rx="12" ry="9" fill="#7cb342" />
-      {/* Berries */}
-      <circle cx="-4" cy="-8" r="2" fill="#f44336" opacity="0.8" />
-      <circle cx="5" cy="-10" r="1.5" fill="#f44336" opacity="0.8" />
+      <ellipse cx="-8" cy="-5" rx="10" ry="8" fill="#6B8C5E" />
+      <ellipse cx="8" cy="-6" rx="9" ry="7" fill="#7FA076" />
+      <ellipse cx="0" cy="-10" rx="12" ry="9" fill="#8FAE82" />
+      {/* Berries — muted warm rose */}
+      <circle cx="-4" cy="-8" r="2" fill="#D4A0A0" opacity="0.75" />
+      <circle cx="5" cy="-10" r="1.5" fill="#D4A0A0" opacity="0.75" />
     </g>
   )
 }
@@ -391,11 +391,11 @@ function Bush({ scale, flip }: { scale: number; flip: boolean }) {
 function Rock({ scale, flip }: { scale: number; flip: boolean }) {
   return (
     <g transform={`scale(${flip ? -scale : scale}, ${scale})`}>
-      <ellipse cx="0" cy="-5" rx="15" ry="10" fill="#78909c" />
-      <ellipse cx="-5" cy="-8" rx="8" ry="6" fill="#90a4ae" />
-      <ellipse cx="6" cy="-4" rx="6" ry="4" fill="#607d8b" />
-      {/* Moss */}
-      <ellipse cx="-8" cy="-6" rx="4" ry="2" fill="#8bc34a" opacity="0.6" />
+      <ellipse cx="0" cy="-5" rx="15" ry="10" fill="#A08060" />
+      <ellipse cx="-5" cy="-8" rx="8" ry="6" fill="#BFA080" />
+      <ellipse cx="6" cy="-4" rx="6" ry="4" fill="#7C5E48" />
+      {/* Moss — muted sage */}
+      <ellipse cx="-8" cy="-6" rx="4" ry="2" fill="#8FAE82" opacity="0.5" />
     </g>
   )
 }
@@ -403,14 +403,14 @@ function Rock({ scale, flip }: { scale: number; flip: boolean }) {
 function Mushroom({ scale, flip }: { scale: number; flip: boolean }) {
   return (
     <g transform={`scale(${flip ? -scale : scale}, ${scale})`}>
-      {/* Stem */}
-      <rect x="-3" y="-5" width="6" height="10" fill="#f5f5f5" rx="2" />
-      {/* Cap */}
-      <ellipse cx="0" cy="-8" rx="10" ry="6" fill="#e53935" />
+      {/* Stem — warm cream */}
+      <rect x="-3" y="-5" width="6" height="10" fill="#F0E6D4" rx="2" />
+      {/* Cap — warm russet, not fire-engine red */}
+      <ellipse cx="0" cy="-8" rx="10" ry="6" fill="#C47A5A" />
       {/* Spots */}
-      <circle cx="-4" cy="-10" r="2" fill="#fff" opacity="0.9" />
-      <circle cx="4" cy="-7" r="1.5" fill="#fff" opacity="0.9" />
-      <circle cx="0" cy="-11" r="1.2" fill="#fff" opacity="0.9" />
+      <circle cx="-4" cy="-10" r="2" fill="#FBF5E6" opacity="0.85" />
+      <circle cx="4" cy="-7" r="1.5" fill="#FBF5E6" opacity="0.85" />
+      <circle cx="0" cy="-11" r="1.2" fill="#FBF5E6" opacity="0.85" />
     </g>
   )
 }
@@ -418,19 +418,19 @@ function Mushroom({ scale, flip }: { scale: number; flip: boolean }) {
 function FlowerPatch({ scale, flip }: { scale: number; flip: boolean }) {
   return (
     <g transform={`scale(${flip ? -scale : scale}, ${scale})`}>
-      {/* Grass base */}
-      <path d="M-10,0 Q-8,-8 -6,0" stroke="#7cb342" fill="none" strokeWidth="2" />
-      <path d="M-5,0 Q-3,-10 -1,0" stroke="#8bc34a" fill="none" strokeWidth="2" />
-      <path d="M0,0 Q2,-9 4,0" stroke="#7cb342" fill="none" strokeWidth="2" />
-      <path d="M5,0 Q7,-8 9,0" stroke="#689f38" fill="none" strokeWidth="2" />
-      {/* Flowers */}
-      <circle cx="-6" cy="-10" r="4" fill="#fff176" />
-      <circle cx="3" cy="-12" r="3.5" fill="#f8bbd9" />
-      <circle cx="-2" cy="-8" r="3" fill="#81d4fa" />
-      {/* Centers */}
-      <circle cx="-6" cy="-10" r="1.5" fill="#ff9800" />
-      <circle cx="3" cy="-12" r="1.2" fill="#e91e63" />
-      <circle cx="-2" cy="-8" r="1" fill="#2196f3" />
+      {/* Grass base — warm sage */}
+      <path d="M-10,0 Q-8,-8 -6,0" stroke="#7FA076" fill="none" strokeWidth="2" />
+      <path d="M-5,0 Q-3,-10 -1,0" stroke="#8FAE82" fill="none" strokeWidth="2" />
+      <path d="M0,0 Q2,-9 4,0" stroke="#7FA076" fill="none" strokeWidth="2" />
+      <path d="M5,0 Q7,-8 9,0" stroke="#6B8C5E" fill="none" strokeWidth="2" />
+      {/* Flowers — Art Bible muted tones */}
+      <circle cx="-6" cy="-10" r="4" fill="#E8C547" opacity="0.8" />
+      <circle cx="3" cy="-12" r="3.5" fill="#D4A0A0" opacity="0.8" />
+      <circle cx="-2" cy="-8" r="3" fill="#B8C8A0" opacity="0.8" />
+      {/* Centers — warm earth */}
+      <circle cx="-6" cy="-10" r="1.5" fill="#D4A870" />
+      <circle cx="3" cy="-12" r="1.2" fill="#C47A5A" />
+      <circle cx="-2" cy="-8" r="1" fill="#8FAE82" />
     </g>
   )
 }
@@ -438,16 +438,16 @@ function FlowerPatch({ scale, flip }: { scale: number; flip: boolean }) {
 function Lantern({ scale, flip, isNight }: { scale: number; flip: boolean; isNight: boolean }) {
   return (
     <g transform={`scale(${flip ? -scale : scale}, ${scale})`}>
-      {/* Post */}
-      <rect x="-2" y="0" width="4" height="25" fill="#5d4037" rx="1" />
-      {/* Lantern body */}
-      <rect x="-6" y="-15" width="12" height="15" fill="#37474f" rx="2" />
-      <rect x="-4" y="-13" width="8" height="11" fill={isNight ? '#ffc107' : '#fff8e1'} opacity={isNight ? 0.9 : 0.5} rx="1" />
-      {/* Top cap */}
-      <polygon points="0,-18 -8,-15 8,-15" fill="#455a64" />
-      {/* Glow effect for night */}
+      {/* Post — warm wood */}
+      <rect x="-2" y="0" width="4" height="25" fill="#7C5E48" rx="1" />
+      {/* Lantern body — dark warm earth */}
+      <rect x="-6" y="-15" width="12" height="15" fill="#5A4A3A" rx="2" />
+      <rect x="-4" y="-13" width="8" height="11" fill={isNight ? '#E8C547' : '#FBF5E6'} opacity={isNight ? 0.85 : 0.4} rx="1" />
+      {/* Top cap — warm dark */}
+      <polygon points="0,-18 -8,-15 8,-15" fill="#6B5A48" />
+      {/* Glow effect for night — warm golden */}
       {isNight && (
-        <circle cx="0" cy="-8" r="18" fill="#ffc107" opacity="0.15" className="animate-pulse" />
+        <circle cx="0" cy="-8" r="18" fill="#E8C547" opacity="0.12" className="animate-pulse" />
       )}
     </g>
   )
@@ -457,13 +457,13 @@ function Lantern({ scale, flip, isNight }: { scale: number; flip: boolean; isNig
 function FencePost({ scale }: { scale: number; flip: boolean }) {
   return (
     <g transform={`scale(${scale})`}>
-      {/* Main post */}
-      <rect x="-3" y="-25" width="6" height="30" fill="#8d6e63" rx="1" />
+      {/* Main post — warm wood */}
+      <rect x="-3" y="-25" width="6" height="30" fill="#A08060" rx="1" />
       {/* Post cap */}
-      <polygon points="0,-28 -5,-25 5,-25" fill="#6d4c41" />
+      <polygon points="0,-28 -5,-25 5,-25" fill="#7C5E48" />
       {/* Wood grain */}
-      <line x1="-1" y1="-20" x2="-1" y2="0" stroke="#5d4037" strokeWidth="0.5" opacity="0.5" />
-      <line x1="1" y1="-15" x2="1" y2="2" stroke="#5d4037" strokeWidth="0.5" opacity="0.5" />
+      <line x1="-1" y1="-20" x2="-1" y2="0" stroke="#6B5040" strokeWidth="0.5" opacity="0.4" />
+      <line x1="1" y1="-15" x2="1" y2="2" stroke="#6B5040" strokeWidth="0.5" opacity="0.4" />
     </g>
   )
 }
@@ -472,70 +472,70 @@ function FencePost({ scale }: { scale: number; flip: boolean }) {
 function FenceCorner({ scale, flip }: { scale: number; flip: boolean }) {
   return (
     <g transform={`scale(${flip ? -scale : scale}, ${scale})`}>
-      {/* Main corner post */}
-      <rect x="-4" y="-30" width="8" height="35" fill="#8d6e63" rx="1" />
+      {/* Main corner post — warm wood */}
+      <rect x="-4" y="-30" width="8" height="35" fill="#A08060" rx="1" />
       {/* Post cap */}
-      <polygon points="0,-33 -6,-30 6,-30" fill="#6d4c41" />
-      {/* Horizontal beam left */}
-      <rect x="-25" y="-20" width="22" height="4" fill="#a1887f" rx="1" />
-      <rect x="-25" y="-10" width="22" height="4" fill="#a1887f" rx="1" />
+      <polygon points="0,-33 -6,-30 6,-30" fill="#7C5E48" />
+      {/* Horizontal beam left — lighter warm wood */}
+      <rect x="-25" y="-20" width="22" height="4" fill="#BFA080" rx="1" />
+      <rect x="-25" y="-10" width="22" height="4" fill="#BFA080" rx="1" />
       {/* Horizontal beam right */}
-      <rect x="3" y="-20" width="22" height="4" fill="#a1887f" rx="1" />
-      <rect x="3" y="-10" width="22" height="4" fill="#a1887f" rx="1" />
+      <rect x="3" y="-20" width="22" height="4" fill="#BFA080" rx="1" />
+      <rect x="3" y="-10" width="22" height="4" fill="#BFA080" rx="1" />
     </g>
   )
 }
 
-// Pond - water feature with lily pads (level 12)
+// Pond - water feature with lily pads (level 12) — Art Bible warm palette
 function Pond({ scale }: { scale: number; flip: boolean }) {
   return (
     <g transform={`scale(${scale})`}>
-      {/* Pond base - oval shape */}
-      <ellipse cx="0" cy="0" rx="40" ry="25" fill="#1565c0" opacity="0.6" />
-      <ellipse cx="0" cy="0" rx="35" ry="20" fill="#42a5f5" opacity="0.7" />
-      {/* Water shimmer */}
-      <ellipse cx="-10" cy="-5" rx="8" ry="4" fill="#90caf9" opacity="0.5" />
-      <ellipse cx="15" cy="5" rx="6" ry="3" fill="#90caf9" opacity="0.4" />
-      {/* Lily pads */}
-      <ellipse cx="-15" cy="8" rx="8" ry="5" fill="#4caf50" />
-      <ellipse cx="-17" cy="7" rx="2" ry="1.5" fill="#2e7d32" /> {/* Leaf notch illusion */}
-      <ellipse cx="20" cy="-3" rx="6" ry="4" fill="#66bb6a" />
-      <ellipse cx="22" cy="-4" rx="1.5" ry="1" fill="#388e3c" />
-      {/* Lily flower */}
-      <circle cx="-12" cy="6" r="3" fill="#fff" opacity="0.9" />
-      <circle cx="-12" cy="6" r="1" fill="#ffeb3b" />
-      {/* Rocks around edge */}
-      <ellipse cx="-35" cy="5" rx="6" ry="4" fill="#78909c" />
-      <ellipse cx="32" cy="-8" rx="5" ry="3" fill="#90a4ae" />
-      <ellipse cx="-25" cy="-15" rx="4" ry="3" fill="#607d8b" />
+      {/* Pond base — muted teal, not saturated blue */}
+      <ellipse cx="0" cy="0" rx="40" ry="25" fill="#5A8A8A" opacity="0.5" />
+      <ellipse cx="0" cy="0" rx="35" ry="20" fill="#7AABA8" opacity="0.55" />
+      {/* Water shimmer — cream-tinted highlights */}
+      <ellipse cx="-10" cy="-5" rx="8" ry="4" fill="#B8D4D8" opacity="0.4" />
+      <ellipse cx="15" cy="5" rx="6" ry="3" fill="#B8D4D8" opacity="0.3" />
+      {/* Lily pads — warm sage */}
+      <ellipse cx="-15" cy="8" rx="8" ry="5" fill="#7FA076" />
+      <ellipse cx="-17" cy="7" rx="2" ry="1.5" fill="#5A7A50" />
+      <ellipse cx="20" cy="-3" rx="6" ry="4" fill="#8FAE82" />
+      <ellipse cx="22" cy="-4" rx="1.5" ry="1" fill="#6B8C5E" />
+      {/* Lily flower — cream with warm center */}
+      <circle cx="-12" cy="6" r="3" fill="#FBF5E6" opacity="0.85" />
+      <circle cx="-12" cy="6" r="1" fill="#E8C547" />
+      {/* Rocks around edge — warm earth */}
+      <ellipse cx="-35" cy="5" rx="6" ry="4" fill="#A08060" />
+      <ellipse cx="32" cy="-8" rx="5" ry="3" fill="#BFA080" />
+      <ellipse cx="-25" cy="-15" rx="4" ry="3" fill="#7C5E48" />
     </g>
   )
 }
 
-// Fountain - stone fountain with water spray (level 12)
+// Fountain - stone fountain with water spray (level 12) — Art Bible warm palette
 function Fountain({ scale, isNight }: { scale: number; flip: boolean; isNight: boolean }) {
   return (
     <g transform={`scale(${scale})`}>
-      {/* Base pool */}
-      <ellipse cx="0" cy="5" rx="30" ry="15" fill="#78909c" />
-      <ellipse cx="0" cy="3" rx="25" ry="12" fill="#42a5f5" opacity="0.7" />
-      {/* Middle tier */}
-      <ellipse cx="0" cy="-5" rx="18" ry="10" fill="#90a4ae" />
-      <ellipse cx="0" cy="-7" rx="14" ry="7" fill="#64b5f6" opacity="0.6" />
+      {/* Base pool — warm stone */}
+      <ellipse cx="0" cy="5" rx="30" ry="15" fill="#A08060" />
+      <ellipse cx="0" cy="3" rx="25" ry="12" fill="#7AABA8" opacity="0.55" />
+      {/* Middle tier — warm earth stone */}
+      <ellipse cx="0" cy="-5" rx="18" ry="10" fill="#BFA080" />
+      <ellipse cx="0" cy="-7" rx="14" ry="7" fill="#8ABAB5" opacity="0.45" />
       {/* Top tier */}
-      <ellipse cx="0" cy="-15" rx="10" ry="6" fill="#b0bec5" />
-      <ellipse cx="0" cy="-17" rx="6" ry="3" fill="#90caf9" opacity="0.5" />
-      {/* Center spout */}
-      <rect x="-3" y="-30" width="6" height="15" fill="#cfd8dc" rx="2" />
-      {/* Water spray particles */}
-      <circle cx="-5" cy="-35" r="2" fill="#e3f2fd" opacity="0.8" />
-      <circle cx="4" cy="-38" r="1.5" fill="#bbdefb" opacity="0.7" />
-      <circle cx="0" cy="-40" r="2.5" fill="#e3f2fd" opacity="0.9" />
-      <circle cx="-8" cy="-32" r="1" fill="#bbdefb" opacity="0.6" />
-      <circle cx="7" cy="-33" r="1.5" fill="#e3f2fd" opacity="0.7" />
+      <ellipse cx="0" cy="-15" rx="10" ry="6" fill="#D4C9B0" />
+      <ellipse cx="0" cy="-17" rx="6" ry="3" fill="#B8D4D8" opacity="0.4" />
+      {/* Center spout — cream stone */}
+      <rect x="-3" y="-30" width="6" height="15" fill="#D4C9B0" rx="2" />
+      {/* Water spray particles — cream-tinted */}
+      <circle cx="-5" cy="-35" r="2" fill="#E8E0D0" opacity="0.7" />
+      <circle cx="4" cy="-38" r="1.5" fill="#D4C9B0" opacity="0.6" />
+      <circle cx="0" cy="-40" r="2.5" fill="#E8E0D0" opacity="0.8" />
+      <circle cx="-8" cy="-32" r="1" fill="#D4C9B0" opacity="0.5" />
+      <circle cx="7" cy="-33" r="1.5" fill="#E8E0D0" opacity="0.6" />
       {/* Night glow from water */}
       {isNight && (
-        <ellipse cx="0" cy="-5" rx="20" ry="10" fill="#90caf9" opacity="0.1" className="animate-pulse" />
+        <ellipse cx="0" cy="-5" rx="20" ry="10" fill="#B8D4D8" opacity="0.1" className="animate-pulse" />
       )}
     </g>
   )

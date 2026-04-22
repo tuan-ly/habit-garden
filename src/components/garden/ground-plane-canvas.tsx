@@ -42,8 +42,8 @@ function generateGrassDetails(gridSize: number, tileSize: number, seed: number =
     const diamondHeight = gridSize * (tileSize / 2)
     const centerX = diamondWidth / 2
 
-    // Reduced detail count for performance (50% less than original)
-    const detailCount = Math.floor(gridSize * gridSize * 0.75)
+    // Detail count — denser for lusher ground feel
+    const detailCount = Math.floor(gridSize * gridSize * 1.8)
 
     const flowerColors = ['#E8C547', '#D4A0A0', '#B8C8A0', '#C4A8D0']
 
@@ -361,6 +361,39 @@ function GroundPlaneCanvasComponent({
         }
         ctx.restore()
 
+        // PREMIUM: Grass patch variation — organic lighter/darker zones for depth
+        ctx.save()
+        ctx.beginPath()
+        ctx.moveTo(topX, topY)
+        ctx.lineTo(rightX, rightY)
+        ctx.lineTo(bottomX, bottomY)
+        ctx.lineTo(leftX, leftY)
+        ctx.closePath()
+        ctx.clip()
+        let patchState = 0xBEEF
+        const patchRand = () => {
+            patchState = (patchState * 9301 + 49297) % 233280
+            return patchState / 233280
+        }
+        const patchCount = Math.floor(gridSize * gridSize * 0.4)
+        for (let i = 0; i < patchCount; i++) {
+            const px = patchRand() * diamondWidth
+            const py = patchRand() * diamondHeight
+            const dx = Math.abs(px - svgWidth / 2) / (diamondWidth / 2)
+            const dy = Math.abs(py - diamondHeight / 2) / (diamondHeight / 2)
+            if (dx + dy > 0.85) continue
+            const rx = 15 + patchRand() * 35
+            const ry = 8 + patchRand() * 18
+            const tone = patchRand()
+            ctx.fillStyle = tone < 0.5
+                ? `rgba(180,210,165,${0.08 + tone * 0.06})`
+                : `rgba(110,140,95,${0.06 + (tone - 0.5) * 0.05})`
+            ctx.beginPath()
+            ctx.ellipse(px, py, rx, ry, patchRand() * Math.PI, 0, Math.PI * 2)
+            ctx.fill()
+        }
+        ctx.restore()
+
         // PREMIUM: Beveled top edges - softened to 15% (Art Bible: gentle, not pronounced)
         ctx.save()
         ctx.lineWidth = 1.5
@@ -497,10 +530,10 @@ function GroundPlaneCanvasComponent({
         // Draw cached static content
         ctx.drawImage(offscreenCanvasRef.current, 0, 0)
 
-        // Draw grid lines (softened for premium look)
-        ctx.strokeStyle = 'rgba(255,255,255,0.08)'
-        ctx.lineWidth = 1
-        ctx.setLineDash([3, 10])
+        // Draw grid lines (barely visible — immersion-first)
+        ctx.strokeStyle = 'rgba(255,255,255,0.035)'
+        ctx.lineWidth = 0.5
+        ctx.setLineDash([2, 14])
         for (const line of gridLines) {
             ctx.beginPath()
             ctx.moveTo(line.x1, line.y1)
