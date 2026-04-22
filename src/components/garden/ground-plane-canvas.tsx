@@ -288,8 +288,9 @@ function GroundPlaneCanvasComponent({
         ctx.fill()
         ctx.restore()
 
-        // Draw grass surface with warm sage gradient — lighter center, darker edges for depth
-        const gradient = ctx.createLinearGradient(svgWidth * 0.15, 0, svgWidth * 0.85, diamondHeight)
+        // Draw grass surface with warm sage gradient — sun from UPPER-RIGHT
+        // Light hits the right/top side, shadow falls toward lower-left
+        const gradient = ctx.createLinearGradient(svgWidth * 0.85, 0, svgWidth * 0.15, diamondHeight)
         gradient.addColorStop(0, '#B8D2A8')
         gradient.addColorStop(0.2, grassColor)
         gradient.addColorStop(0.45, '#B0C8A0')
@@ -305,16 +306,16 @@ function GroundPlaneCanvasComponent({
         ctx.closePath()
         ctx.fill()
 
-        // Grass edge (warm sage outline, softer)
+        // Grass edge — nearly invisible, just enough to define shape
         ctx.strokeStyle = '#7FA076'
-        ctx.lineWidth = 2
-        ctx.globalAlpha = 0.3
+        ctx.lineWidth = 1
+        ctx.globalAlpha = 0.12
         ctx.stroke()
         ctx.globalAlpha = 1
 
-        // PREMIUM: Diamond vignette — bright cream center, warm darken at edges for depth
+        // PREMIUM: Diamond vignette — bright spot offset toward upper-right (sun direction)
         const vignetteGrad = ctx.createRadialGradient(
-            svgWidth / 2, diamondHeight / 2, 0,
+            svgWidth * 0.58, diamondHeight * 0.38, 0,
             svgWidth / 2, diamondHeight / 2, diamondWidth * 0.52
         )
         vignetteGrad.addColorStop(0, 'rgba(251,245,230,0.18)')
@@ -394,31 +395,31 @@ function GroundPlaneCanvasComponent({
         }
         ctx.restore()
 
-        // PREMIUM: Beveled top edges - softened to 15% (Art Bible: gentle, not pronounced)
+        // PREMIUM: Beveled edges — sun from upper-right
         ctx.save()
         ctx.lineWidth = 1.5
-        // Top-left bevel (top → left edge): cream highlight
+        // Top-right bevel (top → right edge): cream highlight (sun-facing)
         ctx.strokeStyle = 'rgba(251,245,230,0.15)'
-        ctx.beginPath()
-        ctx.moveTo(topX, topY + 0.5)
-        ctx.lineTo(leftX + 0.5, leftY)
-        ctx.stroke()
-        // Top-right bevel (top → right edge): subtler cream highlight
-        ctx.strokeStyle = 'rgba(251,245,230,0.10)'
         ctx.beginPath()
         ctx.moveTo(topX, topY + 0.5)
         ctx.lineTo(rightX - 0.5, rightY)
         ctx.stroke()
-        // Bottom-right bevel: warm shadow
-        ctx.strokeStyle = 'rgba(124,94,72,0.10)'
+        // Top-left bevel (top → left edge): subtler highlight
+        ctx.strokeStyle = 'rgba(251,245,230,0.06)'
         ctx.beginPath()
-        ctx.moveTo(rightX - 0.5, rightY)
-        ctx.lineTo(bottomX, bottomY - 0.5)
+        ctx.moveTo(topX, topY + 0.5)
+        ctx.lineTo(leftX + 0.5, leftY)
         ctx.stroke()
-        // Bottom-left bevel: warm shadow
-        ctx.strokeStyle = 'rgba(124,94,72,0.06)'
+        // Bottom-left bevel: warm shadow (away from sun)
+        ctx.strokeStyle = 'rgba(124,94,72,0.12)'
         ctx.beginPath()
         ctx.moveTo(leftX + 0.5, leftY)
+        ctx.lineTo(bottomX, bottomY - 0.5)
+        ctx.stroke()
+        // Bottom-right bevel: lighter shadow (partially sun-lit)
+        ctx.strokeStyle = 'rgba(124,94,72,0.06)'
+        ctx.beginPath()
+        ctx.moveTo(rightX - 0.5, rightY)
         ctx.lineTo(bottomX, bottomY - 0.5)
         ctx.stroke()
         ctx.restore()
@@ -444,9 +445,9 @@ function GroundPlaneCanvasComponent({
         ctx.closePath()
         ctx.fill()
 
-        // Left face highlight (warm earth)
+        // Left face highlight — shadow side, very subtle
         ctx.fillStyle = '#8B6B52'
-        ctx.globalAlpha = 0.3
+        ctx.globalAlpha = 0.1
         ctx.beginPath()
         ctx.moveTo(leftX, leftY)
         ctx.lineTo(bottomX, bottomY)
@@ -466,9 +467,9 @@ function GroundPlaneCanvasComponent({
         ctx.closePath()
         ctx.fill()
 
-        // Right face highlight (warm cream-earth)
-        ctx.fillStyle = '#BFA080'
-        ctx.globalAlpha = 0.3
+        // Right face highlight — sun-facing, stronger warm cream
+        ctx.fillStyle = '#D4C9B0'
+        ctx.globalAlpha = 0.35
         ctx.beginPath()
         ctx.moveTo(bottomX, bottomY)
         ctx.lineTo(rightX, rightY)
