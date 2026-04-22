@@ -29,6 +29,7 @@ interface GardenTileGridProps {
   focusStates?: Map<string, FocusState>
   weather?: WeatherType | null
   timeOfDay?: TimeOfDay
+  focalPlantId?: string | null
   placedDecorations?: PlacedDecorationWithType[]
   onTileClick: (row: number, col: number, plant?: PlantWithType, event?: React.MouseEvent | React.TouchEvent) => void
   onTileHover: (row: number, col: number) => void
@@ -47,6 +48,7 @@ export const GardenTileGrid = memo(function GardenTileGrid({
   focusStates,
   weather,
   timeOfDay = 'day',
+  focalPlantId = null,
   placedDecorations = [],
   onTileClick,
   onTileHover,
@@ -110,6 +112,7 @@ export const GardenTileGrid = memo(function GardenTileGrid({
                   weather={weather}
                   focusState={focusStates?.get(plant.id)}
                   timeOfDay={timeOfDay}
+                  isFocal={plant.id === focalPlantId}
                 />
               </div>
             )}

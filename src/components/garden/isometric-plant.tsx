@@ -26,6 +26,8 @@ interface IsometricPlantProps {
   focusState?: FocusState
   /** Time of day (for premium lighting). Defaults to 'day'. */
   timeOfDay?: TimeOfDay
+  /** Whether this plant is the garden's focal hero. */
+  isFocal?: boolean
 }
 
 // Map growth percentage to a visual scale (base scale)
@@ -46,6 +48,7 @@ function IsometricPlantComponent({
   className,
   focusState,
   timeOfDay = 'day',
+  isFocal = false,
 }: IsometricPlantProps) {
   // Base scale from growth stage
   const growthScale = getGrowthScale(plant.growth_percentage)
@@ -95,7 +98,9 @@ function IsometricPlantComponent({
     // Dim: reduced opacity and grayscale
     focusState === 'dim' && 'opacity-40 grayscale',
     // Urgent: red ring + bounce
-    focusState === 'urgent' && 'animate-bounce-subtle'
+    focusState === 'urgent' && 'animate-bounce-subtle',
+    // Focal plant emphasis (Phase 6)
+    isFocal && PREMIUM_GARDEN_ENABLED && 'focal-plant-emphasis'
   )
 
   return (

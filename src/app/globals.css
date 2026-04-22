@@ -2226,3 +2226,32 @@
     animation: none;
   }
 }
+
+/* ========================================
+   Premium Garden — Focal Plant Emphasis (Phase 6)
+   Subtle ring + breathing glow on the "hero" plant.
+   ======================================== */
+.focal-plant-emphasis {
+  position: relative;
+}
+.focal-plant-emphasis::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(251, 191, 36, 0.18) 0%,
+    transparent 65%
+  );
+  pointer-events: none;
+  animation: focal-breath 4s ease-in-out infinite;
+  z-index: -1;
+}
+@keyframes focal-breath {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.08); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .focal-plant-emphasis::after { animation: none; }
+}
