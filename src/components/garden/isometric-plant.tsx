@@ -11,7 +11,6 @@ import {
   getPlantDropShadow,
   getContactShadow,
 } from './lighting'
-import { computePlantVisualState } from '@/lib/plant-visual-state'
 import type { TimeOfDay } from './themes'
 
 export type FocusState = 'normal' | 'highlight' | 'dim' | 'urgent'
@@ -71,23 +70,6 @@ function IsometricPlantComponent({
     [lightProfile, finalScale]
   )
 
-  // Plant semantic visual state — status-driven filter/glow/opacity
-  const visualState = useMemo(
-    () =>
-      PREMIUM_GARDEN_ENABLED
-        ? computePlantVisualState(plant.status, plant.current_moisture, plant.growth_percentage)
-        : null,
-    [plant.status, plant.current_moisture, plant.growth_percentage]
-  )
-
-  // Combine drop-shadow from lighting with status filter
-  const combinedFilter = useMemo(() => {
-    const parts: string[] = []
-    if (dropShadow) parts.push(dropShadow)
-    if (visualState?.filter) parts.push(visualState.filter)
-    return parts.length > 0 ? parts.join(' ') : undefined
-  }, [dropShadow, visualState])
-
   // Focus state visual classes
   const focusClasses = cn(
     // Highlight: pulse glow animation
@@ -109,23 +91,9 @@ function IsometricPlantComponent({
         // Scale the whole container from bottom center
         transform: `scale(${finalScale}) translateY(-1px)`,
         transformOrigin: 'bottom center',
-        ...(combinedFilter ? { filter: combinedFilter } : {}),
-        ...(visualState ? { opacity: visualState.opacity } : {}),
+        ...(dropShadow ? { filter: dropShadow } : {}),
       }}
-      aria-label={visualState?.semantic}
     >
-      {/* Status glow aura */}
-      {visualState?.glowColor && (
-        <div
-          className="absolute inset-0 -m-2 rounded-full pointer-events-none animate-pulse-slow"
-          style={{
-            background: `radial-gradient(circle, ${visualState.glowColor} 0%, transparent 68%)`,
-            zIndex: 1,
-          }}
-          aria-hidden="true"
-        />
-      )}
-
       {/* Premium contact shadow — tight ellipse at plant base */}
       {contactShadow && (
         <svg
