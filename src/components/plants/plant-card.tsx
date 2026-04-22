@@ -88,7 +88,7 @@ export const PlantCard = memo(function PlantCard({ plant: initialPlant, onClick,
         'bg-white/90 dark:bg-card border-0 rounded-[20px]',
         'shadow-dappled hover:shadow-dappled-lg',
         'transition-[transform,box-shadow] duration-300',
-        'hover:-translate-y-0.5',
+        'hover:scale-[1.02]',
         isDead && 'opacity-60 grayscale',
         isMature && 'ring-1 ring-leaf/30',
         hasGoal && goal && !goal.isOnTrack && 'ring-1 ring-bloom/40'
