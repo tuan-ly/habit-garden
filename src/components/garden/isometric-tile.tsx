@@ -223,7 +223,7 @@ function IsometricTileComponent({
       )}
 
       {/* Preview plant - faded ghost showing where plant will be placed */}
-      {previewPlant && !children && (
+      {previewPlant && !plant && !isOccupiedByMultiCell && (
         <div
           className="absolute pointer-events-none flex flex-col items-center opacity-50"
           style={{
