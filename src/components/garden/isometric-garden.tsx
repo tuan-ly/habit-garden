@@ -323,6 +323,8 @@ export function IsometricGarden({
               dragTargetCell={interactions.moveState.selectedPlant ? interactions.moveState.previewCell : null}
               dragPlantSize={interactions.moveState.selectedPlant?.grid_size || 1}
               isDragTargetValid={interactions.moveState.isValidPreview}
+              weather={gardenSettings.showWeatherEffects ? weather : null}
+              timeOfDay={currentTimeOfDay}
             />
 
             {/* Ambient particles (canvas renderer) */}

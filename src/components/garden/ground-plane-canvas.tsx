@@ -1,6 +1,8 @@
 'use client'
 
 import { useRef, useEffect, useMemo, memo } from 'react'
+import type { WeatherType } from '@/types/database'
+import type { TimeOfDay } from './themes'
 
 export interface MultiCellArea {
     row: number
@@ -21,6 +23,64 @@ interface GroundPlaneCanvasProps {
     dragTargetCell?: { row: number; col: number } | null
     dragPlantSize?: number
     isDragTargetValid?: boolean
+    /** Current weather affects lighting intensity */
+    weather?: WeatherType | null
+    /** Time of day affects overall brightness */
+    timeOfDay?: TimeOfDay
+}
+
+/**
+ * Compute lighting mood based on weather + time of day.
+ * Returns alphas for vignette/bevel/dirt highlights and an optional global tint.
+ */
+function getLightingProfile(weather: WeatherType | null | undefined, timeOfDay: TimeOfDay | undefined) {
+    // Default: sunny day — full contrast, warm
+    let vignetteHighlight = 0.18
+    let vignetteShadow = 0.22
+    let bevelHighlight = 0.15
+    let dirtHighlight = 0.35
+    let globalTint: string | null = null
+
+    // Weather modulation
+    if (weather === 'cloudy') {
+        vignetteHighlight = 0.08
+        vignetteShadow = 0.12
+        bevelHighlight = 0.07
+        dirtHighlight = 0.18
+        globalTint = 'rgba(180,195,210,0.10)'
+    } else if (weather === 'rainy') {
+        vignetteHighlight = 0.05
+        vignetteShadow = 0.18
+        bevelHighlight = 0.04
+        dirtHighlight = 0.12
+        globalTint = 'rgba(120,140,160,0.18)'
+    } else if (weather === 'stormy') {
+        vignetteHighlight = 0.03
+        vignetteShadow = 0.25
+        bevelHighlight = 0.02
+        dirtHighlight = 0.08
+        globalTint = 'rgba(70,85,105,0.28)'
+    } else if (weather === 'rainbow') {
+        vignetteHighlight = 0.14
+        bevelHighlight = 0.12
+        dirtHighlight = 0.28
+    }
+
+    // Night modulation (stacks on top of weather)
+    if (timeOfDay === 'night') {
+        vignetteHighlight *= 0.4
+        bevelHighlight *= 0.3
+        dirtHighlight *= 0.4
+        globalTint = globalTint ? 'rgba(30,40,65,0.40)' : 'rgba(30,40,65,0.32)'
+    }
+
+    return {
+        vignetteHighlight,
+        vignetteShadow,
+        bevelHighlight,
+        dirtHighlight,
+        globalTint,
+    }
 }
 
 // Pre-calculate grass details at module level for zero re-computation
@@ -156,6 +216,8 @@ function GroundPlaneCanvasComponent({
     dragTargetCell = null,
     dragPlantSize = 1,
     isDragTargetValid = false,
+    weather = null,
+    timeOfDay = 'day',
 }: GroundPlaneCanvasProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null)
@@ -279,6 +341,9 @@ function GroundPlaneCanvasComponent({
 
         ctx.clearRect(0, 0, svgWidth, svgHeight)
 
+        // Adaptive lighting based on weather + time of day
+        const light = getLightingProfile(weather, timeOfDay)
+
         // Draw shadow ellipse with blur (warm cream tone, Art Bible §2)
         ctx.save()
         ctx.filter = 'blur(24px)'
@@ -318,10 +383,10 @@ function GroundPlaneCanvasComponent({
             svgWidth * 0.58, diamondHeight * 0.38, 0,
             svgWidth / 2, diamondHeight / 2, diamondWidth * 0.52
         )
-        vignetteGrad.addColorStop(0, 'rgba(251,245,230,0.18)')
-        vignetteGrad.addColorStop(0.35, 'rgba(251,245,230,0.06)')
+        vignetteGrad.addColorStop(0, `rgba(251,245,230,${light.vignetteHighlight})`)
+        vignetteGrad.addColorStop(0.35, `rgba(251,245,230,${light.vignetteHighlight * 0.33})`)
         vignetteGrad.addColorStop(0.6, 'rgba(124,94,72,0)')
-        vignetteGrad.addColorStop(1, 'rgba(90,68,48,0.22)')
+        vignetteGrad.addColorStop(1, `rgba(90,68,48,${light.vignetteShadow})`)
         ctx.save()
         ctx.beginPath()
         ctx.moveTo(topX, topY)
@@ -399,13 +464,13 @@ function GroundPlaneCanvasComponent({
         ctx.save()
         ctx.lineWidth = 1.5
         // Top-right bevel (top → right edge): cream highlight (sun-facing)
-        ctx.strokeStyle = 'rgba(251,245,230,0.15)'
+        ctx.strokeStyle = `rgba(251,245,230,${light.bevelHighlight})`
         ctx.beginPath()
         ctx.moveTo(topX, topY + 0.5)
         ctx.lineTo(rightX - 0.5, rightY)
         ctx.stroke()
         // Top-left bevel (top → left edge): subtler highlight
-        ctx.strokeStyle = 'rgba(251,245,230,0.06)'
+        ctx.strokeStyle = `rgba(251,245,230,${light.bevelHighlight * 0.4})`
         ctx.beginPath()
         ctx.moveTo(topX, topY + 0.5)
         ctx.lineTo(leftX + 0.5, leftY)
@@ -469,7 +534,7 @@ function GroundPlaneCanvasComponent({
 
         // Right face highlight — sun-facing, stronger warm cream
         ctx.fillStyle = '#D4C9B0'
-        ctx.globalAlpha = 0.35
+        ctx.globalAlpha = light.dirtHighlight
         ctx.beginPath()
         ctx.moveTo(bottomX, bottomY)
         ctx.lineTo(rightX, rightY)
@@ -513,10 +578,26 @@ function GroundPlaneCanvasComponent({
         ctx.setLineDash([])
         ctx.globalAlpha = 1
 
+        // Global weather/night tint — overlay on top of grass surface only (not dirt)
+        if (light.globalTint) {
+            ctx.save()
+            ctx.beginPath()
+            ctx.moveTo(topX, topY)
+            ctx.lineTo(rightX, rightY)
+            ctx.lineTo(bottomX, bottomY)
+            ctx.lineTo(leftX, leftY)
+            ctx.closePath()
+            ctx.clip()
+            ctx.fillStyle = light.globalTint
+            ctx.fillRect(0, 0, svgWidth, diamondHeight)
+            ctx.restore()
+        }
+
         staticDrawnRef.current = true
     }, [gridSize, tileSize, grassColor, grassDarkColor, dirtColor, dirtDarkColor, grassDetails,
         svgWidth, svgHeight, diamondWidth, diamondHeight, tileHeight,
-        topX, topY, rightX, rightY, bottomX, bottomY, leftX, leftY])
+        topX, topY, rightX, rightY, bottomX, bottomY, leftX, leftY,
+        weather, timeOfDay])
 
     // Main render effect - composites static canvas + dynamic overlays
     useEffect(() => {
