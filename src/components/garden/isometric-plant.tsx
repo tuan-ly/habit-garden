@@ -1,17 +1,10 @@
 'use client'
 
-import { memo, useMemo } from 'react'
+import { memo } from 'react'
 import { PlantVisual } from '@/components/plants/plant-visual'
 import type { PlantWithType, WeatherType } from '@/types/database'
 import { cn } from '@/lib/utils'
 import { getPlantSizeScale } from '@/lib/utils/grid-positioning'
-import {
-  PREMIUM_GARDEN_ENABLED,
-  computeLightProfile,
-  getPlantDropShadow,
-  getContactShadow,
-} from './lighting'
-import type { TimeOfDay } from './themes'
 
 export type FocusState = 'normal' | 'highlight' | 'dim' | 'urgent'
 
@@ -23,8 +16,6 @@ interface IsometricPlantProps {
   className?: string
   /** Focus mode visual state */
   focusState?: FocusState
-  /** Time of day (for premium lighting). Defaults to 'day'. */
-  timeOfDay?: TimeOfDay
 }
 
 // Map growth percentage to a visual scale (base scale)
@@ -44,7 +35,6 @@ function IsometricPlantComponent({
   scale = 1,
   className,
   focusState,
-  timeOfDay = 'day',
 }: IsometricPlantProps) {
   // Base scale from growth stage
   const growthScale = getGrowthScale(plant.growth_percentage)
@@ -55,20 +45,6 @@ function IsometricPlantComponent({
 
   // Combine all scale factors
   const finalScale = scale * growthScale * gridSizeScale
-
-  // Premium lighting — compute drop-shadow + contact shadow once per render
-  const lightProfile = useMemo(
-    () => (PREMIUM_GARDEN_ENABLED ? computeLightProfile(weather, timeOfDay) : null),
-    [weather, timeOfDay]
-  )
-  const dropShadow = useMemo(
-    () => (lightProfile ? getPlantDropShadow(lightProfile, finalScale) : null),
-    [lightProfile, finalScale]
-  )
-  const contactShadow = useMemo(
-    () => (lightProfile ? getContactShadow(lightProfile, finalScale) : null),
-    [lightProfile, finalScale]
-  )
 
   // Focus state visual classes
   const focusClasses = cn(
@@ -91,36 +67,8 @@ function IsometricPlantComponent({
         // Scale the whole container from bottom center
         transform: `scale(${finalScale}) translateY(-1px)`,
         transformOrigin: 'bottom center',
-        ...(dropShadow ? { filter: dropShadow } : {}),
       }}
     >
-      {/* Premium contact shadow — tight ellipse at plant base */}
-      {contactShadow && (
-        <svg
-          className="absolute left-1/2 bottom-0 pointer-events-none"
-          style={{
-            transform: `translate(-50%, 50%)`,
-            width: contactShadow.rx * 2 + contactShadow.blur * 2,
-            height: contactShadow.ry * 2 + contactShadow.blur * 2,
-            zIndex: 0,
-          }}
-          aria-hidden="true"
-        >
-          <defs>
-            <filter id={`contact-blur-${plant.id}`}>
-              <feGaussianBlur stdDeviation={contactShadow.blur} />
-            </filter>
-          </defs>
-          <ellipse
-            cx="50%"
-            cy="50%"
-            rx={contactShadow.rx}
-            ry={contactShadow.ry}
-            fill={contactShadow.fill}
-            filter={`url(#contact-blur-${plant.id})`}
-          />
-        </svg>
-      )}
       {/* Urgent glow ring */}
       {focusState === 'urgent' && (
         <div className="absolute inset-0 -m-2 rounded-full bg-red-500/20 animate-ping pointer-events-none" />
