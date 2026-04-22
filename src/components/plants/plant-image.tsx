@@ -17,12 +17,14 @@ const GROWTH_STAGES = {
 export type GrowthStage = keyof typeof GROWTH_STAGES
 
 // Size configurations - pixel dimensions for <img> + classNames for container
+// width/height = intrinsic bitmap size requested from Next.js image optimizer
+// Must be large enough to stay sharp at max zoom (2.5x) and on high-DPR screens
 const SIZE_CONFIG = {
     sm:  { width: 32,  height: 32,  className: 'w-8 h-8',   classNameAlignBottom: 'w-8' },
-    md:  { width: 40,  height: 40,  className: 'w-10 h-10', classNameAlignBottom: 'w-10' },
-    lg:  { width: 48,  height: 48,  className: 'w-12 h-12', classNameAlignBottom: 'w-12' },
-    xl:  { width: 64,  height: 64,  className: 'w-16 h-16', classNameAlignBottom: 'w-16' },
-    '2xl': { width: 96, height: 96, className: 'w-24 h-24', classNameAlignBottom: 'w-24' },
+    md:  { width: 48,  height: 48,  className: 'w-10 h-10', classNameAlignBottom: 'w-10' },
+    lg:  { width: 64,  height: 64,  className: 'w-12 h-12', classNameAlignBottom: 'w-12' },
+    xl:  { width: 384, height: 384, className: 'w-16 h-16', classNameAlignBottom: 'w-16' },
+    '2xl': { width: 512, height: 512, className: 'w-24 h-24', classNameAlignBottom: 'w-24' },
 } as const
 
 interface PlantImageProps {
@@ -134,6 +136,8 @@ export function PlantImage({
                     alt={`${plant.plant_type.name} - ${currentStage}`}
                     width={sizeConfig.width}
                     height={sizeConfig.height}
+                    sizes={`${sizeConfig.width}px`}
+                    quality={85}
                     loading="lazy"
                     onError={() => setImgError(true)}
                     className={cn(
