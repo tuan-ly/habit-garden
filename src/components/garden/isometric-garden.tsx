@@ -6,6 +6,7 @@ import { PlantInfoBar } from './plant-tooltip'
 import { GroundPlaneCanvas, type MultiCellArea } from './ground-plane-canvas'
 import { GardenDecorations } from './garden-decorations'
 import { PremiumDecorations } from './premium-decorations'
+import { AtmosphereLayer } from './atmosphere-layer'
 import { AmbientParticlesCanvas } from './ambient-particles-canvas'
 import { ZoomControls } from './zoom-controls'
 import { ModeToolbar, type GardenMode } from './mode-toolbar'
@@ -385,6 +386,16 @@ export function IsometricGarden({
             className="pointer-events-none absolute inset-0 z-5 transition-colors duration-1000"
             style={{ backgroundColor: lightProfile.ambientOverlay, mixBlendMode: 'multiply' }}
             aria-hidden="true"
+          />
+        )}
+
+        {/* Atmosphere (dust motes, vignette, rim light) */}
+        {PREMIUM_GARDEN_ENABLED && (
+          <AtmosphereLayer
+            width={viewportSize.width}
+            height={viewportSize.height}
+            weather={weather}
+            timeOfDay={currentTimeOfDay}
           />
         )}
       </div>
