@@ -45,7 +45,7 @@ function generateGrassDetails(gridSize: number, tileSize: number, seed: number =
     // Reduced detail count for performance (50% less than original)
     const detailCount = Math.floor(gridSize * gridSize * 0.75)
 
-    const flowerColors = ['#fff176', '#f48fb1', '#81d4fa', '#ce93d8']
+    const flowerColors = ['#E8C547', '#D4A0A0', '#B8C8A0', '#C4A8D0']
 
     for (let i = 0; i < detailCount; i++) {
         const r1 = random(i * 2)
@@ -69,7 +69,7 @@ function generateGrassDetails(gridSize: number, tileSize: number, seed: number =
             y,
             type,
             scale: 0.5 + random(i * 4) * 0.5,
-            color: type === 'flower' ? flowerColors[i % flowerColors.length] : '#4a7c23',
+            color: type === 'flower' ? flowerColors[i % flowerColors.length] : '#6B8C5E',
         })
     }
 
@@ -81,8 +81,8 @@ function drawGrass(ctx: CanvasRenderingContext2D, x: number, y: number, scale: n
     ctx.save()
     ctx.translate(x, y)
     ctx.scale(scale, scale)
-    ctx.fillStyle = '#4a7c23'
-    ctx.globalAlpha = 0.7
+    ctx.fillStyle = '#6B8C5E'
+    ctx.globalAlpha = 0.6
     ctx.beginPath()
     ctx.moveTo(0, 0)
     ctx.quadraticCurveTo(-2, -8, 0, -12)
@@ -98,26 +98,26 @@ function drawFlower(ctx: CanvasRenderingContext2D, x: number, y: number, scale: 
 
     // Petals
     ctx.fillStyle = color
-    ctx.globalAlpha = 0.9
+    ctx.globalAlpha = 0.75
     ctx.beginPath()
     ctx.arc(0, -6, 2.5, 0, Math.PI * 2)
     ctx.fill()
 
-    ctx.globalAlpha = 0.8
+    ctx.globalAlpha = 0.65
     ctx.beginPath()
     ctx.arc(2, -4, 2, 0, Math.PI * 2)
     ctx.arc(-2, -4, 2, 0, Math.PI * 2)
     ctx.fill()
 
     // Center
-    ctx.fillStyle = '#ffb74d'
-    ctx.globalAlpha = 1
+    ctx.fillStyle = '#D4A870'
+    ctx.globalAlpha = 0.9
     ctx.beginPath()
     ctx.arc(0, -5, 1.5, 0, Math.PI * 2)
     ctx.fill()
 
     // Stem
-    ctx.strokeStyle = '#66bb6a'
+    ctx.strokeStyle = '#7FA076'
     ctx.lineWidth = 1
     ctx.beginPath()
     ctx.moveTo(0, 0)
@@ -131,8 +131,8 @@ function drawClover(ctx: CanvasRenderingContext2D, x: number, y: number, scale: 
     ctx.save()
     ctx.translate(x, y)
     ctx.scale(scale * 0.6, scale * 0.6)
-    ctx.fillStyle = '#43a047'
-    ctx.globalAlpha = 0.7
+    ctx.fillStyle = '#7FA076'
+    ctx.globalAlpha = 0.55
 
     ctx.beginPath()
     ctx.arc(-2, -3, 2, 0, Math.PI * 2)
@@ -146,10 +146,10 @@ function drawClover(ctx: CanvasRenderingContext2D, x: number, y: number, scale: 
 function GroundPlaneCanvasComponent({
     gridSize,
     tileSize,
-    grassColor = '#7cb342',
-    grassDarkColor = '#558b2f',
-    dirtColor = '#8d6e4c',
-    dirtDarkColor = '#5d4037',
+    grassColor = '#A8C49A',
+    grassDarkColor = '#8FAE82',
+    dirtColor = '#A08060',
+    dirtDarkColor = '#7C5E48',
     showGridLines = true,
     multiCellAreas = [],
     hoveredMultiCellArea = null,
@@ -279,22 +279,22 @@ function GroundPlaneCanvasComponent({
 
         ctx.clearRect(0, 0, svgWidth, svgHeight)
 
-        // Draw shadow ellipse with blur
+        // Draw shadow ellipse with blur (warm cream tone, Art Bible §2)
         ctx.save()
-        ctx.filter = 'blur(20px)'
-        ctx.fillStyle = 'rgba(0,0,0,0.15)'
+        ctx.filter = 'blur(24px)'
+        ctx.fillStyle = 'rgba(124, 94, 72, 0.22)'
         ctx.beginPath()
-        ctx.ellipse(bottomX, bottomY + tileHeight + 20, diamondWidth * 0.4, diamondHeight * 0.12, 0, 0, Math.PI * 2)
+        ctx.ellipse(bottomX, bottomY + tileHeight + 20, diamondWidth * 0.42, diamondHeight * 0.13, 0, 0, Math.PI * 2)
         ctx.fill()
         ctx.restore()
 
-        // Draw grass surface with gradient
-        const gradient = ctx.createLinearGradient(svgWidth * 0.2, 0, svgWidth * 0.8, diamondHeight)
-        gradient.addColorStop(0, '#8bc34a')
-        gradient.addColorStop(0.25, grassColor)
-        gradient.addColorStop(0.5, '#7cb342')
-        gradient.addColorStop(0.75, grassDarkColor)
-        gradient.addColorStop(1, '#689f38')
+        // Draw grass surface with warm sage gradient — lighter center, darker edges for depth
+        const gradient = ctx.createLinearGradient(svgWidth * 0.15, 0, svgWidth * 0.85, diamondHeight)
+        gradient.addColorStop(0, '#B8D2A8')
+        gradient.addColorStop(0.2, grassColor)
+        gradient.addColorStop(0.45, '#B0C8A0')
+        gradient.addColorStop(0.65, grassDarkColor)
+        gradient.addColorStop(1, '#758F68')
 
         ctx.fillStyle = gradient
         ctx.beginPath()
@@ -305,22 +305,22 @@ function GroundPlaneCanvasComponent({
         ctx.closePath()
         ctx.fill()
 
-        // Grass edge
-        ctx.strokeStyle = '#558b2f'
+        // Grass edge (warm sage outline, softer)
+        ctx.strokeStyle = '#7FA076'
         ctx.lineWidth = 2
-        ctx.globalAlpha = 0.4
+        ctx.globalAlpha = 0.3
         ctx.stroke()
         ctx.globalAlpha = 1
 
-        // PREMIUM: Large diamond-shaped vignette (center bright, edges darker)
-        // This creates depth on the overall surface
+        // PREMIUM: Diamond vignette — bright cream center, warm darken at edges for depth
         const vignetteGrad = ctx.createRadialGradient(
             svgWidth / 2, diamondHeight / 2, 0,
-            svgWidth / 2, diamondHeight / 2, diamondWidth * 0.55
+            svgWidth / 2, diamondHeight / 2, diamondWidth * 0.52
         )
-        vignetteGrad.addColorStop(0, 'rgba(255,255,255,0.08)')
-        vignetteGrad.addColorStop(0.55, 'rgba(255,255,255,0)')
-        vignetteGrad.addColorStop(1, 'rgba(0,0,0,0.18)')
+        vignetteGrad.addColorStop(0, 'rgba(251,245,230,0.18)')
+        vignetteGrad.addColorStop(0.35, 'rgba(251,245,230,0.06)')
+        vignetteGrad.addColorStop(0.6, 'rgba(124,94,72,0)')
+        vignetteGrad.addColorStop(1, 'rgba(90,68,48,0.22)')
         ctx.save()
         ctx.beginPath()
         ctx.moveTo(topX, topY)
@@ -355,35 +355,35 @@ function GroundPlaneCanvasComponent({
             const ny = noiseRand() * diamondHeight
             const shade = noiseRand()
             ctx.fillStyle = shade < 0.5
-                ? `rgba(255,255,255,${0.04 + shade * 0.05})`
-                : `rgba(0,0,0,${0.04 + (shade - 0.5) * 0.06})`
+                ? `rgba(251,245,230,${0.05 + shade * 0.06})`
+                : `rgba(90,68,48,${0.03 + (shade - 0.5) * 0.05})`
             ctx.fillRect(nx, ny, 1.2, 1.2)
         }
         ctx.restore()
 
-        // PREMIUM: Beveled top edges - bright highlight on top-left, subtle shadow bottom-right
+        // PREMIUM: Beveled top edges - softened to 15% (Art Bible: gentle, not pronounced)
         ctx.save()
         ctx.lineWidth = 1.5
-        // Top-left bevel (top → left edge): bright highlight
-        ctx.strokeStyle = 'rgba(255,255,255,0.22)'
+        // Top-left bevel (top → left edge): cream highlight
+        ctx.strokeStyle = 'rgba(251,245,230,0.15)'
         ctx.beginPath()
         ctx.moveTo(topX, topY + 0.5)
         ctx.lineTo(leftX + 0.5, leftY)
         ctx.stroke()
-        // Top-right bevel (top → right edge): lighter highlight
-        ctx.strokeStyle = 'rgba(255,255,255,0.14)'
+        // Top-right bevel (top → right edge): subtler cream highlight
+        ctx.strokeStyle = 'rgba(251,245,230,0.10)'
         ctx.beginPath()
         ctx.moveTo(topX, topY + 0.5)
         ctx.lineTo(rightX - 0.5, rightY)
         ctx.stroke()
-        // Bottom-right bevel: subtle shadow
-        ctx.strokeStyle = 'rgba(0,0,0,0.12)'
+        // Bottom-right bevel: warm shadow
+        ctx.strokeStyle = 'rgba(124,94,72,0.10)'
         ctx.beginPath()
         ctx.moveTo(rightX - 0.5, rightY)
         ctx.lineTo(bottomX, bottomY - 0.5)
         ctx.stroke()
-        // Bottom-left bevel: subtle shadow
-        ctx.strokeStyle = 'rgba(0,0,0,0.08)'
+        // Bottom-left bevel: warm shadow
+        ctx.strokeStyle = 'rgba(124,94,72,0.06)'
         ctx.beginPath()
         ctx.moveTo(leftX + 0.5, leftY)
         ctx.lineTo(bottomX, bottomY - 0.5)
@@ -411,8 +411,8 @@ function GroundPlaneCanvasComponent({
         ctx.closePath()
         ctx.fill()
 
-        // Left face highlight
-        ctx.fillStyle = '#6d4c41'
+        // Left face highlight (warm earth)
+        ctx.fillStyle = '#8B6B52'
         ctx.globalAlpha = 0.3
         ctx.beginPath()
         ctx.moveTo(leftX, leftY)
@@ -433,8 +433,8 @@ function GroundPlaneCanvasComponent({
         ctx.closePath()
         ctx.fill()
 
-        // Right face highlight
-        ctx.fillStyle = '#a1887f'
+        // Right face highlight (warm cream-earth)
+        ctx.fillStyle = '#BFA080'
         ctx.globalAlpha = 0.3
         ctx.beginPath()
         ctx.moveTo(bottomX, bottomY)
@@ -445,32 +445,32 @@ function GroundPlaneCanvasComponent({
         ctx.fill()
         ctx.globalAlpha = 1
 
-        // Bottom edges
-        ctx.strokeStyle = 'rgba(0,0,0,0.4)'
+        // Bottom edges (warm earth, softened)
+        ctx.strokeStyle = 'rgba(82, 60, 44, 0.35)'
         ctx.lineWidth = 2
         ctx.beginPath()
         ctx.moveTo(leftX, leftY + tileHeight)
         ctx.lineTo(bottomX, bottomY + tileHeight)
         ctx.stroke()
 
-        ctx.strokeStyle = 'rgba(0,0,0,0.3)'
+        ctx.strokeStyle = 'rgba(82, 60, 44, 0.25)'
         ctx.beginPath()
         ctx.moveTo(bottomX, bottomY + tileHeight)
         ctx.lineTo(rightX, rightY + tileHeight)
         ctx.stroke()
 
-        // Strata lines
+        // Strata lines (warm earth tones)
         ctx.lineWidth = 1
-        ctx.globalAlpha = 0.4
+        ctx.globalAlpha = 0.35
         ctx.setLineDash([8, 4])
 
-        ctx.strokeStyle = '#5d4037'
+        ctx.strokeStyle = '#7C5E48'
         ctx.beginPath()
         ctx.moveTo(leftX, leftY + tileHeight * 0.5)
         ctx.lineTo(bottomX, bottomY + tileHeight * 0.5)
         ctx.stroke()
 
-        ctx.strokeStyle = '#6d4c41'
+        ctx.strokeStyle = '#8B6B52'
         ctx.beginPath()
         ctx.moveTo(bottomX, bottomY + tileHeight * 0.5)
         ctx.lineTo(rightX, rightY + tileHeight * 0.5)

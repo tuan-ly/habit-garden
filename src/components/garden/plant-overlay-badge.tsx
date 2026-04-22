@@ -14,9 +14,11 @@ interface PlantOverlayBadgeProps {
 }
 
 /**
- * Shows today's activity directly on plant in garden view.
- * - Simple Habits: Shows ✓ if watered, ○ if not
- * - Goal Plants: Shows progress (value / target) with target icon when not reached
+ * In-world status marker shown at the base of plants in the garden view.
+ * Art Bible v2.0 compliance:
+ *  - No Tailwind UI pills / backdrop-blur
+ *  - Palette limited to cream #FBF5E6, warm earth #A08060/#7C5E48, muted sage
+ *  - Small, grounded, feels like part of the world (not app UI overlaid)
  */
 function PlantOverlayBadgeComponent({
   plant,
@@ -29,122 +31,125 @@ function PlantOverlayBadgeComponent({
   const goal = plant.goal
   const isWateredToday = isToday(plant.last_watered_at)
 
-  // Scale badge based on tile size (min 0.4 to prevent too small on large plants)
-  const badgeScale = Math.max(0.4, (tileSize / 60) * 0.35)
+  // Scale marker based on tile size - markers are ~30% smaller than old pills
+  const scale = Math.max(0.3, (tileSize / 60) * 0.25)
 
-  // Simple habit - show checkbox
+  // Simple habit - tiny drop (watered) or ring (not watered), sitting on grass
   if (!hasGoal) {
     return (
       <div
-        className={cn(
-          'flex items-center justify-center',
-          'rounded-full',
-          'backdrop-blur-md shadow-lg',
-          'transition-all duration-300',
-          isWateredToday
-            ? 'bg-emerald-500/90 text-white'
-            : 'bg-slate-800/70 text-slate-400 opacity-80',
-          isWateredToday && 'animate-in zoom-in-50 duration-300',
-          className
-        )}
-        style={{
-          width: 18 * badgeScale,
-          height: 18 * badgeScale,
-        }}
+        className={cn('flex items-center justify-center transition-all duration-300', className)}
+        style={{ width: 18 * scale * 2, height: 14 * scale * 2 }}
       >
         {isWateredToday ? (
+          // Watered: soft cream water droplet, grounded (Art Bible cream + muted blue tint)
           <svg
             viewBox="0 0 24 24"
             fill="none"
-            stroke="currentColor"
-            strokeWidth="3"
-            style={{ width: 10 * badgeScale, height: 10 * badgeScale }}
+            style={{
+              width: 14 * scale * 2,
+              height: 14 * scale * 2,
+              filter: 'drop-shadow(0 1px 1px rgba(124,94,72,0.25))',
+            }}
           >
-            <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+            <path
+              d="M12 3 C7 10 6 14 6 16 a6 6 0 0 0 12 0 C18 14 17 10 12 3 Z"
+              fill="#B8D4D8"
+              stroke="#7FA5AB"
+              strokeWidth="1"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M10 11 C8 13 8 15 9 16"
+              stroke="#FBF5E6"
+              strokeWidth="1.2"
+              strokeLinecap="round"
+              fill="none"
+              opacity="0.8"
+            />
           </svg>
         ) : (
+          // Not watered: thin warm earth ring, subtle
           <span
-            className="rounded-full border-2 border-current"
-            style={{ width: 8 * badgeScale, height: 8 * badgeScale }}
+            className="rounded-full border"
+            style={{
+              width: 9 * scale * 2,
+              height: 9 * scale * 2,
+              borderColor: '#8B7355',
+              opacity: 0.5,
+              borderWidth: '1.5px',
+            }}
           />
         )}
       </div>
     )
   }
 
-  // Goal plant - show progress vs target
+  // Goal plant - wooden tag SVG grounded below plant
   const currentWeekTarget = Math.round(goal?.current_week_target || 0)
   const displayValue = todayValue ?? 0
   const hasReachedTarget = currentWeekTarget > 0 && displayValue >= currentWeekTarget
-  const trackingMetric = goal?.tracking_metric || 'total'
 
-  // Determine what value to show based on tracking metric
-  const getDisplayLabel = () => {
-    if (todayLogCount === 0) return '0'
-    if (trackingMetric === 'max') {
-      // For max: show best value today
-      return `${displayValue}`
-    }
-    // For total/min/avg: show accumulated value
-    return `${displayValue}`
-  }
+  const label = todayLogCount === 0
+    ? `${currentWeekTarget > 0 ? currentWeekTarget : '?'}`
+    : hasReachedTarget
+      ? `✓ ${displayValue}`
+      : `${displayValue}/${currentWeekTarget}`
 
-  // No logs today - show target icon to encourage logging
-  if (todayLogCount === 0) {
-    return (
-      <div
-        className={cn(
-          'flex items-center justify-center gap-0.5',
-          'rounded-full',
-          'bg-amber-500/80 backdrop-blur-md',
-          'text-white font-medium',
-          'shadow-lg shadow-amber-500/30',
-          'animate-pulse',
-          className
-        )}
-        style={{
-          padding: `${2 * badgeScale}px ${6 * badgeScale}px`,
-          fontSize: 10 * badgeScale,
-        }}
-      >
-        <span>🎯</span>
-        <span>{currentWeekTarget > 0 ? currentWeekTarget : '?'}</span>
-      </div>
-    )
-  }
+  // Dimensions for wooden tag
+  const tagW = (label.length * 5.5 + 14) * scale * 2
+  const tagH = 14 * scale * 2
+  const fontSize = 8.5 * scale * 2
 
-  // Has logs today - show progress
+  // Palette: warm earth tag, cream text, small pin above
+  const tagFill = hasReachedTarget ? '#8FAE82' : '#A08060'
+  const tagStroke = hasReachedTarget ? '#6B8C5E' : '#7C5E48'
+
   return (
     <div
-      className={cn(
-        'flex items-center justify-center gap-0.5',
-        'rounded-full',
-        'backdrop-blur-md',
-        'font-bold',
-        'shadow-lg',
-        'animate-in zoom-in-75 duration-300',
-        hasReachedTarget
-          ? 'bg-emerald-500/90 text-white shadow-emerald-500/30'
-          : 'bg-blue-500/90 text-white shadow-blue-500/30',
-        className
-      )}
-      style={{
-        padding: `${2 * badgeScale}px ${6 * badgeScale}px`,
-        fontSize: 9 * badgeScale,
-      }}
+      className={cn('flex flex-col items-center', className)}
+      style={{ width: tagW, lineHeight: 0 }}
     >
-      {hasReachedTarget ? (
-        <>
-          <span>✓</span>
-          <span>{getDisplayLabel()}</span>
-        </>
-      ) : (
-        <>
-          <span>{getDisplayLabel()}</span>
-          <span className="opacity-70">/</span>
-          <span className="opacity-70">{currentWeekTarget}</span>
-        </>
-      )}
+      <svg
+        width={tagW}
+        height={tagH + 4 * scale * 2}
+        viewBox={`0 0 ${tagW} ${tagH + 4 * scale * 2}`}
+        style={{ filter: 'drop-shadow(0 1px 1.5px rgba(124,94,72,0.3))', overflow: 'visible' }}
+      >
+        {/* Small pin/stem cắm xuống đất */}
+        <line
+          x1={tagW / 2}
+          y1={0}
+          x2={tagW / 2}
+          y2={4 * scale * 2}
+          stroke={tagStroke}
+          strokeWidth={1.2}
+        />
+        {/* Rounded wooden tag rectangle */}
+        <rect
+          x={0.5}
+          y={4 * scale * 2}
+          width={tagW - 1}
+          height={tagH - 1}
+          rx={tagH / 2}
+          fill={tagFill}
+          stroke={tagStroke}
+          strokeWidth={1}
+        />
+        {/* Label */}
+        <text
+          x={tagW / 2}
+          y={4 * scale * 2 + tagH / 2}
+          fontSize={fontSize}
+          fontFamily="system-ui, sans-serif"
+          fontWeight={600}
+          fill="#FBF5E6"
+          textAnchor="middle"
+          dominantBaseline="central"
+        >
+          {label}
+        </text>
+      </svg>
     </div>
   )
 }

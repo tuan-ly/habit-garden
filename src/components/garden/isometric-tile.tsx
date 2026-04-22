@@ -180,25 +180,44 @@ function IsometricTileComponent({
         </div>
       )}
 
-      {/* Plant/decoration shadow - centered in merged area, scales with grid size */}
+      {/* Plant/decoration shadow - Art Bible v2.0: cream AO tone #D4C9B0, offset lower-left */}
       {shadowType !== 'none' && (
-        <div
-          className="absolute pointer-events-none rounded-full"
-          style={{
-            left: tileSize / 2,
-            top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight),
-            width: tileSize * (shadowType === 'plant'
-              ? (0.4 + (plantGridSize - 1) * 0.3)
-              : (0.25 + (plantGridSize - 1) * 0.2)),
-            height: tileSize * (shadowType === 'plant'
-              ? (0.15 + (plantGridSize - 1) * 0.1)
-              : (0.1 + (plantGridSize - 1) * 0.06)),
-            transform: 'translate(-50%, -50%)',
-            background: shadowType === 'plant'
-              ? 'radial-gradient(ellipse, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.1) 50%, transparent 100%)'
-              : 'radial-gradient(ellipse, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.05) 50%, transparent 100%)',
-          }}
-        />
+        <>
+          {/* Soft AO halo - creates "cushion" grounding effect */}
+          {shadowType === 'plant' && (
+            <div
+              className="absolute pointer-events-none rounded-full"
+              style={{
+                left: tileSize / 2,
+                top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight),
+                width: tileSize * (0.55 + (plantGridSize - 1) * 0.35),
+                height: tileSize * (0.22 + (plantGridSize - 1) * 0.14),
+                transform: 'translate(-50%, -50%)',
+                background: 'radial-gradient(ellipse at 50% 50%, rgba(212,201,176,0.35) 0%, rgba(212,201,176,0.12) 55%, transparent 100%)',
+                filter: 'blur(6px)',
+              }}
+            />
+          )}
+          {/* Main shadow ellipse - cream AO, offset lower-left per upper-right light */}
+          <div
+            className="absolute pointer-events-none rounded-full"
+            style={{
+              left: tileSize / 2,
+              top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight),
+              width: tileSize * (shadowType === 'plant'
+                ? (0.46 + (plantGridSize - 1) * 0.32)
+                : (0.28 + (plantGridSize - 1) * 0.22)),
+              height: tileSize * (shadowType === 'plant'
+                ? (0.17 + (plantGridSize - 1) * 0.11)
+                : (0.11 + (plantGridSize - 1) * 0.07)),
+              transform: 'translate(-50%, -50%)',
+              background: shadowType === 'plant'
+                ? 'radial-gradient(ellipse at 40% 60%, rgba(124,94,72,0.38) 0%, rgba(124,94,72,0.14) 55%, transparent 100%)'
+                : 'radial-gradient(ellipse at 40% 60%, rgba(124,94,72,0.25) 0%, rgba(124,94,72,0.08) 55%, transparent 100%)',
+              filter: 'blur(3px)',
+            }}
+          />
+        </>
       )}
 
       {/*

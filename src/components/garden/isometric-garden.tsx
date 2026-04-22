@@ -352,6 +352,17 @@ export function IsometricGarden({
               onTileLeave={handleTileLeave}
               onContextMenu={interactions.handleContextMenu}
             />
+
+            {/* Golden-hour ambient lighting overlay - upper-right warm wash (Art Bible §2)
+                Subtle cream tint, soft-light blend, very high z-index but pointer-events-none */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: 'linear-gradient(to bottom left, rgba(251,245,230,0.18) 0%, rgba(251,245,230,0.06) 35%, transparent 65%)',
+                mixBlendMode: 'soft-light',
+                zIndex: 9999,
+              }}
+            />
           </div>
         </div>
       </div>

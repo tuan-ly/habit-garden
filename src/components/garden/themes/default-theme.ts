@@ -17,9 +17,9 @@ export const defaultTheme: GardenTheme = {
     },
   },
   ground: {
-    primary: '#7cb342', // Natural grass green (Forest-like)
-    secondary: '#689f38', // Darker grass
-    accent: '#8bc34a', // Light grass highlight
+    primary: '#A8C49A', // Warm sage (Art Bible v2.0)
+    secondary: '#8FAE82', // Darker sage
+    accent: '#B5CFA5', // Light sage highlight
   },
   decorations: {
     type: 'trees',
