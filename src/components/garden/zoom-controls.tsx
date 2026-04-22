@@ -2,8 +2,6 @@
 
 import { Plus, Minus, Maximize2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { PREMIUM_GARDEN_ENABLED } from './lighting'
-import { glassPanel, radius, motion } from './ui-tokens'
 
 interface ZoomControlsProps {
   zoom: number
@@ -28,28 +26,22 @@ export function ZoomControls({
   const canZoomOut = zoom > minZoom
   const isDefaultZoom = zoom === 1
 
-  const containerClass = PREMIUM_GARDEN_ENABLED
-    ? cn('flex flex-col items-center gap-1 p-1.5', glassPanel, radius.control, className)
-    : cn(
+  return (
+    <div
+      className={cn(
         'flex flex-col items-center gap-1 p-1.5 rounded-xl',
         'bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 shadow-lg',
         className
-      )
-
-  const btnBase = PREMIUM_GARDEN_ENABLED
-    ? cn('w-8 h-8 rounded-lg flex items-center justify-center', motion.fast)
-    : 'w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200'
-
-  return (
-    <div className={containerClass}>
+      )}
+    >
       {/* Zoom In */}
       <button
         onClick={onZoomIn}
         disabled={!canZoomIn}
         className={cn(
-          btnBase,
+          'w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200',
           canZoomIn
-            ? 'text-white hover:bg-white/10 active:scale-95'
+            ? 'text-white hover:bg-slate-700/50 active:scale-95'
             : 'text-slate-600 cursor-not-allowed'
         )}
         aria-label="Zoom in"
@@ -58,7 +50,7 @@ export function ZoomControls({
       </button>
 
       {/* Zoom percentage indicator */}
-      <div className="px-1 py-0.5 text-[10px] font-medium text-white/60 select-none">
+      <div className="px-1 py-0.5 text-[10px] font-medium text-slate-400 select-none">
         {Math.round(zoom * 100)}%
       </div>
 
@@ -67,9 +59,9 @@ export function ZoomControls({
         onClick={onZoomOut}
         disabled={!canZoomOut}
         className={cn(
-          btnBase,
+          'w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200',
           canZoomOut
-            ? 'text-white hover:bg-white/10 active:scale-95'
+            ? 'text-white hover:bg-slate-700/50 active:scale-95'
             : 'text-slate-600 cursor-not-allowed'
         )}
         aria-label="Zoom out"
@@ -78,16 +70,16 @@ export function ZoomControls({
       </button>
 
       {/* Divider */}
-      <div className="w-5 h-px bg-white/10 my-0.5" />
+      <div className="w-5 h-px bg-slate-700/50 my-0.5" />
 
       {/* Reset to 100% */}
       <button
         onClick={onReset}
         disabled={isDefaultZoom}
         className={cn(
-          btnBase,
+          'w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200',
           !isDefaultZoom
-            ? 'text-white hover:bg-white/10 active:scale-95'
+            ? 'text-white hover:bg-slate-700/50 active:scale-95'
             : 'text-slate-600 cursor-not-allowed'
         )}
         aria-label="Reset zoom"
