@@ -31,7 +31,60 @@ interface GroundPlaneCanvasProps {
 
 /**
  * Compute lighting mood based on weather + time of day.
- * Returns alphas for vignette/bevel/dirt highlights and an optional global tint.
+ *
+ * ─── PARAMETER GUIDE ──────────────────────────────────────────────────────
+ *
+ * All values are alpha (0..1). Higher = more visible / more contrast.
+ *
+ * • vignetteHighlight (0..0.3 typical)
+ *     The bright cream "spotlight" radiating from the sun's position
+ *     (upper-right of the diamond). Higher = stronger sunbeam feel.
+ *     Lower in overcast/night because diffuse light has no hot spot.
+ *
+ * • vignetteShadow (0..0.3 typical)
+ *     The dark warm halo at the diamond's outer edges (depth/falloff).
+ *     Higher = more dramatic depth, garden feels like it's in a "bowl".
+ *     Increase in stormy/night to compress the visual focus inward.
+ *
+ * • bevelHighlight (0..0.2 typical)
+ *     Cream stroke on the top-right grass edge — the rim of the island
+ *     catching direct sun. Higher = sharper, more "lit" edge definition.
+ *     Drop to near 0 in rainy/stormy because there's no direct rim light.
+ *
+ * • dirtHighlight (0..0.5 typical)
+ *     Alpha for the cream highlight overlay on the right (sun-facing)
+ *     dirt face. Higher = more "side-lit" 3D feel on the soil.
+ *     Lower in overcast — soil looks uniformly dim.
+ *
+ * • globalTint (CSS color string or null)
+ *     Solid color overlay clipped to the grass diamond, applied after
+ *     all grass details. Use cool colors for overcast moods, deep
+ *     blue-purple for night. null = no overlay (full sun).
+ *     Format: 'rgba(R,G,B,A)' — keep A ≤ 0.30 or details disappear.
+ *
+ * ─── HOW TO TUNE ──────────────────────────────────────────────────────────
+ *
+ * 1. Want a new weather mood (e.g. 'foggy')?
+ *    Add an `else if (weather === 'foggy')` block. Start by copying
+ *    'cloudy' values, then bump globalTint toward white-grey.
+ *
+ * 2. Garden too dark in rainy mode?
+ *    Increase dirtHighlight (sun-facing soil) FIRST — it's the most
+ *    visible cue. Then nudge vignetteHighlight up.
+ *
+ * 3. Night looks flat?
+ *    Lower the night-tint alpha (currently 0.32–0.40). Or increase
+ *    vignetteHighlight multiplier (currently × 0.4) to keep some
+ *    "moonlight" focus.
+ *
+ * 4. Want stronger contrast on sunny days?
+ *    Raise both vignetteHighlight (more sun) AND vignetteShadow
+ *    (more edge falloff) — they work as a pair.
+ *
+ * Always test ALL 5 weather × 2 time-of-day combos after tweaking
+ * any default. Use `?weather=stormy` URL param if you wire one up,
+ * or set in dev panel.
+ * ──────────────────────────────────────────────────────────────────────────
  */
 function getLightingProfile(weather: WeatherType | null | undefined, timeOfDay: TimeOfDay | undefined) {
     // Default: sunny day — full contrast, warm
@@ -43,34 +96,39 @@ function getLightingProfile(weather: WeatherType | null | undefined, timeOfDay: 
 
     // Weather modulation
     if (weather === 'cloudy') {
+        // Diffuse soft light — kill the hot spot, add cool grey wash
         vignetteHighlight = 0.08
         vignetteShadow = 0.12
         bevelHighlight = 0.07
         dirtHighlight = 0.18
         globalTint = 'rgba(180,195,210,0.10)'
     } else if (weather === 'rainy') {
+        // Wet overcast — cooler, darker, more compressed
         vignetteHighlight = 0.05
         vignetteShadow = 0.18
         bevelHighlight = 0.04
         dirtHighlight = 0.12
         globalTint = 'rgba(120,140,160,0.18)'
     } else if (weather === 'stormy') {
+        // Heavy storm — almost no direct light, deep cool wash
         vignetteHighlight = 0.03
         vignetteShadow = 0.25
         bevelHighlight = 0.02
         dirtHighlight = 0.08
         globalTint = 'rgba(70,85,105,0.28)'
     } else if (weather === 'rainbow') {
+        // Sun returning after rain — softer than full sunny, no tint
         vignetteHighlight = 0.14
         bevelHighlight = 0.12
         dirtHighlight = 0.28
     }
 
-    // Night modulation (stacks on top of weather)
+    // Night modulation (stacks on top of any weather above)
     if (timeOfDay === 'night') {
-        vignetteHighlight *= 0.4
-        bevelHighlight *= 0.3
-        dirtHighlight *= 0.4
+        vignetteHighlight *= 0.4   // dim the sun spot but keep some "moonlight"
+        bevelHighlight *= 0.3      // edges barely catch light at night
+        dirtHighlight *= 0.4       // soil reads as dark mass
+        // Deep blue-purple wash. If a weather tint already exists, deepen it.
         globalTint = globalTint ? 'rgba(30,40,65,0.40)' : 'rgba(30,40,65,0.32)'
     }
 
