@@ -17,7 +17,6 @@ import { GardenModals } from './garden-modals'
 import { GardenCelebrationLayer } from './garden-celebration-layer'
 import { useGardenInteractions } from './use-garden-interactions'
 import { PREMIUM_GARDEN_ENABLED, computeLightProfile } from './lighting'
-import { detectFocalPlant } from '@/lib/garden-composition'
 import { usePlants } from '@/lib/context/plants-context'
 import { useGardenSettingsOptional } from '@/lib/context/garden-settings-context'
 import { useInventoryOptional } from '@/lib/context/inventory-context'
@@ -220,12 +219,6 @@ export function IsometricGarden({
     [weather, currentTimeOfDay]
   )
 
-  // Focal plant — hero of the composition (Phase 6)
-  const focalPlantId = useMemo(
-    () => (PREMIUM_GARDEN_ENABLED ? detectFocalPlant(livingPlants)?.id ?? null : null),
-    [livingPlants]
-  )
-
   // Stable callbacks for modals
   const handleAddDialogPositionClear = useCallback(() => {
     interactions.setAddDialogPosition(null)
@@ -377,7 +370,6 @@ export function IsometricGarden({
               focusStates={focusStates}
               weather={weather}
               timeOfDay={currentTimeOfDay}
-              focalPlantId={focalPlantId}
               placedDecorations={placedDecorations}
               onTileClick={interactions.handleTileClick}
               onTileHover={handleTileHover}
