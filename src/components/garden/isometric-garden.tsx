@@ -14,6 +14,7 @@ import { GardenTileGrid } from './garden-tile-grid'
 import { GardenModals } from './garden-modals'
 import { GardenCelebrationLayer } from './garden-celebration-layer'
 import { useGardenInteractions } from './use-garden-interactions'
+import { PREMIUM_GARDEN_ENABLED, computeLightProfile } from './lighting'
 import { usePlants } from '@/lib/context/plants-context'
 import { useGardenSettingsOptional } from '@/lib/context/garden-settings-context'
 import { useInventoryOptional } from '@/lib/context/inventory-context'
@@ -210,6 +211,12 @@ export function IsometricGarden({
 
   const isEmpty = livingPlants.length === 0
 
+  // Premium garden lighting profile (gated by feature flag)
+  const lightProfile = useMemo(
+    () => (PREMIUM_GARDEN_ENABLED ? computeLightProfile(weather, currentTimeOfDay) : null),
+    [weather, currentTimeOfDay]
+  )
+
   // Stable callbacks for modals
   const handleAddDialogPositionClear = useCallback(() => {
     interactions.setAddDialogPosition(null)
@@ -299,6 +306,7 @@ export function IsometricGarden({
               transform: `scale(${zoom}) translate(${panOffset.x / zoom}px, ${panOffset.y / zoom}px)`,
               transformOrigin: 'center center',
               willChange: 'transform',
+              ...(lightProfile ? { filter: lightProfile.canvasFilter } : {}),
             }}
           >
             {/* Decorations */}
@@ -348,6 +356,7 @@ export function IsometricGarden({
               moveState={interactions.moveState}
               focusStates={focusStates}
               weather={weather}
+              timeOfDay={currentTimeOfDay}
               placedDecorations={placedDecorations}
               onTileClick={interactions.handleTileClick}
               onTileHover={handleTileHover}
@@ -357,6 +366,15 @@ export function IsometricGarden({
 
           </div>
         </div>
+
+        {/* Premium ambient tint overlay (above ground, below UI) */}
+        {lightProfile && lightProfile.ambientOverlay !== 'transparent' && (
+          <div
+            className="pointer-events-none absolute inset-0 z-5 transition-colors duration-1000"
+            style={{ backgroundColor: lightProfile.ambientOverlay, mixBlendMode: 'multiply' }}
+            aria-hidden="true"
+          />
+        )}
       </div>
 
       {/* Move mode indicator */}

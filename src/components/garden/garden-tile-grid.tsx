@@ -8,6 +8,7 @@ import { isAnchorCell } from '@/lib/utils/grid-positioning'
 import type { PlantWithType, PlacedDecorationWithType, WeatherType } from '@/types/database'
 import type { MoveState } from './use-garden-interactions'
 import type { GardenMode } from './mode-toolbar'
+import type { TimeOfDay } from './themes'
 
 interface TileData {
   row: number
@@ -27,6 +28,7 @@ interface GardenTileGridProps {
   moveState: MoveState
   focusStates?: Map<string, FocusState>
   weather?: WeatherType | null
+  timeOfDay?: TimeOfDay
   placedDecorations?: PlacedDecorationWithType[]
   onTileClick: (row: number, col: number, plant?: PlantWithType, event?: React.MouseEvent | React.TouchEvent) => void
   onTileHover: (row: number, col: number) => void
@@ -44,6 +46,7 @@ export const GardenTileGrid = memo(function GardenTileGrid({
   moveState,
   focusStates,
   weather,
+  timeOfDay = 'day',
   placedDecorations = [],
   onTileClick,
   onTileHover,
@@ -106,6 +109,7 @@ export const GardenTileGrid = memo(function GardenTileGrid({
                   plant={plant}
                   weather={weather}
                   focusState={focusStates?.get(plant.id)}
+                  timeOfDay={timeOfDay}
                 />
               </div>
             )}
