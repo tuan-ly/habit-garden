@@ -5,7 +5,6 @@ import { type FocusState } from './isometric-plant'
 import { PlantInfoBar } from './plant-tooltip'
 import { GroundPlaneCanvas, type MultiCellArea } from './ground-plane-canvas'
 import { GardenDecorations } from './garden-decorations'
-import { PremiumDecorations } from './premium-decorations'
 import { AmbientParticlesCanvas } from './ambient-particles-canvas'
 import { ZoomControls } from './zoom-controls'
 import { ModeToolbar, type GardenMode } from './mode-toolbar'
@@ -312,24 +311,13 @@ export function IsometricGarden({
           >
             {/* Decorations */}
             {gardenSettings.showDecorations && (
-              PREMIUM_GARDEN_ENABLED ? (
-                <PremiumDecorations
-                  gridSize={gridSize}
-                  tileSize={tileSize}
-                  timeOfDay={currentTimeOfDay}
-                  weather={weather}
-                  unlockedTypes={unlockedDecorations}
-                  occupiedCells={occupiedCellsSet}
-                />
-              ) : (
-                <GardenDecorations
-                  gridSize={gridSize}
-                  tileSize={tileSize}
-                  timeOfDay={currentTimeOfDay}
-                  unlockedTypes={unlockedDecorations}
-                  occupiedCells={occupiedCellsSet}
-                />
-              )
+              <GardenDecorations
+                gridSize={gridSize}
+                tileSize={tileSize}
+                timeOfDay={currentTimeOfDay}
+                unlockedTypes={unlockedDecorations}
+                occupiedCells={occupiedCellsSet}
+              />
             )}
 
             {/* Ground plane (canvas renderer) */}
