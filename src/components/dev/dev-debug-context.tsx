@@ -27,6 +27,7 @@ export interface DevOverrides {
   // Feature flags
   bypassSlotLimit?: boolean
   bypassTierLimit?: boolean
+  bypassPlantRestrictions?: boolean
 }
 
 interface DevDebugContextType {

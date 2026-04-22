@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useCallback, useTransition } from 'react'
-import { X, RotateCcw, Bug, ChevronUp, ChevronDown, Sparkles, Zap, Loader2 } from 'lucide-react'
+import { useEffect, useCallback, useTransition, useState } from 'react'
+import { X, RotateCcw, Bug, ChevronUp, ChevronDown, Sparkles, Zap, Loader2, Leaf } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -13,8 +13,9 @@ import { useDevDebug, type SubscriptionTier, type DevOverrides } from './dev-deb
 import { cn } from '@/lib/utils'
 import { getMaxPlants, getBasicUnlockedTiers, getGardenSize, getUserPhase } from '@/lib/progression-system'
 import { getXpForLevel, getLevelFromXp, getLevelTitle } from '@/lib/xp-system'
-import { devSetSubscriptionTier, devResetSubscriptionTier } from '@/lib/actions/dev'
-import type { PlantTier } from '@/types/database'
+import { devSetSubscriptionTier, devResetSubscriptionTier, devSetPlantBypass, devSetPlantParams } from '@/lib/actions/dev'
+import { getPlants } from '@/lib/actions/plants'
+import type { PlantTier, PlantWithType } from '@/types/database'
 
 interface ProfileSnapshot {
   level: number
@@ -46,6 +47,57 @@ export function DevDebugPanel({ profile }: DevDebugPanelProps) {
   } = useDevDebug()
 
   const [isPending, startTransition] = useTransition()
+
+  // Plants editor state
+  const [plants, setPlants] = useState<PlantWithType[]>([])
+  const [plantsLoading, setPlantsLoading] = useState(false)
+  const [plantsExpanded, setPlantsExpanded] = useState(false)
+  const [edits, setEdits] = useState<Record<string, { grid_size?: number; growth_percentage?: number; status?: string }>>({})
+  const [applyingId, setApplyingId] = useState<string | null>(null)
+
+  const loadPlants = useCallback(async () => {
+    setPlantsLoading(true)
+    try {
+      const data = await getPlants()
+      setPlants(data)
+    } finally {
+      setPlantsLoading(false)
+    }
+  }, [])
+
+  const togglePlantsSection = useCallback(() => {
+    setPlantsExpanded((prev) => {
+      const next = !prev
+      if (next && plants.length === 0) {
+        loadPlants()
+      }
+      return next
+    })
+  }, [plants.length, loadPlants])
+
+  const applyPlantEdits = useCallback(
+    async (plantId: string) => {
+      const params = edits[plantId]
+      if (!params) return
+      setApplyingId(plantId)
+      try {
+        const result = await devSetPlantParams(plantId, params)
+        if (!result.success) {
+          console.error('[DEV] devSetPlantParams failed:', result.error)
+        } else {
+          await loadPlants()
+          setEdits((prev) => {
+            const next = { ...prev }
+            delete next[plantId]
+            return next
+          })
+        }
+      } finally {
+        setApplyingId(null)
+      }
+    },
+    [edits, loadPlants]
+  )
 
   // Keyboard shortcut: Ctrl+Shift+D
   useEffect(() => {
@@ -113,6 +165,20 @@ export function DevDebugPanel({ profile }: DevDebugPanelProps) {
     [setOverrides]
   )
 
+  const handleBypassAllPlantRestrictions = useCallback(
+    (checked: boolean) => {
+      setOverrides({
+        bypassPlantRestrictions: checked,
+        bypassSlotLimit: checked,
+        bypassTierLimit: checked,
+      })
+      startTransition(async () => {
+        await devSetPlantBypass(checked)
+      })
+    },
+    [setOverrides]
+  )
+
   // Quick actions
   const quickLevelUp = useCallback(() => {
     const newLevel = Math.min(20, effectiveLevel + 1)
@@ -142,6 +208,7 @@ export function DevDebugPanel({ profile }: DevDebugPanelProps) {
     // Also clear the tier override cookie
     startTransition(async () => {
       await devResetSubscriptionTier()
+      await devSetPlantBypass(false)
     })
   }, [resetOverrides])
 
@@ -334,6 +401,169 @@ export function DevDebugPanel({ profile }: DevDebugPanelProps) {
               className="data-[state=checked]:bg-purple-500"
             />
           </div>
+
+          <div className="flex items-center justify-between">
+            <Label className="text-xs text-slate-300">
+              Bypass Plant Restrictions <span className="text-[10px] text-slate-500">(server)</span>
+            </Label>
+            <Switch
+              checked={overrides.bypassPlantRestrictions ?? false}
+              onCheckedChange={handleBypassAllPlantRestrictions}
+              className="data-[state=checked]:bg-purple-500"
+            />
+          </div>
+        </div>
+
+        <Separator className="bg-slate-700" />
+
+        {/* Plants Editor */}
+        <div className="space-y-2">
+          <button
+            onClick={togglePlantsSection}
+            className="flex items-center justify-between w-full text-[10px] uppercase tracking-wide text-slate-400 hover:text-slate-200"
+          >
+            <span className="flex items-center gap-1">
+              <Leaf className="w-3 h-3" /> Plants ({plants.length})
+            </span>
+            {plantsExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          </button>
+
+          {plantsExpanded && (
+            <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+              {plantsLoading && (
+                <div className="flex items-center justify-center py-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
+                </div>
+              )}
+
+              {!plantsLoading && plants.length === 0 && (
+                <div className="text-[11px] text-slate-500 text-center py-2">
+                  No plants. Press refresh after planting.
+                </div>
+              )}
+
+              {plants.map((p) => {
+                const edit = edits[p.id] || {}
+                const effSize = edit.grid_size ?? p.grid_size ?? 1
+                const effGrowth = edit.growth_percentage ?? p.growth_percentage ?? 0
+                const effStatus = edit.status ?? p.status
+                const dirty = !!edits[p.id]
+
+                return (
+                  <div
+                    key={p.id}
+                    className="p-2 bg-slate-800/50 rounded border border-slate-700 space-y-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-slate-200 truncate">
+                        {p.name || p.plant_type?.name || p.id.slice(0, 8)}
+                      </span>
+                      <Badge variant="outline" className="text-[9px] text-slate-400 border-slate-600">
+                        T{p.plant_type?.tier ?? 1}
+                      </Badge>
+                    </div>
+
+                    {/* Growth slider */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[10px] text-slate-400">
+                        <span>Growth</span>
+                        <span>{Math.round(effGrowth)}%</span>
+                      </div>
+                      <Slider
+                        value={[effGrowth]}
+                        min={0}
+                        max={100}
+                        step={1}
+                        onValueChange={(v) =>
+                          setEdits((prev) => ({
+                            ...prev,
+                            [p.id]: { ...prev[p.id], growth_percentage: v[0] },
+                          }))
+                        }
+                        className="[&_[role=slider]]:bg-green-500"
+                      />
+                    </div>
+
+                    {/* Size + Status row */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-[10px] text-slate-400">Size</Label>
+                        <Select
+                          value={String(effSize)}
+                          onValueChange={(v) =>
+                            setEdits((prev) => ({
+                              ...prev,
+                              [p.id]: { ...prev[p.id], grid_size: parseInt(v) },
+                            }))
+                          }
+                        >
+                          <SelectTrigger className="h-7 text-xs bg-slate-900 border-slate-700">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-slate-800 border-slate-700">
+                            <SelectItem value="1" className="text-xs">1×1</SelectItem>
+                            <SelectItem value="2" className="text-xs">2×2</SelectItem>
+                            <SelectItem value="3" className="text-xs">3×3</SelectItem>
+                            <SelectItem value="4" className="text-xs">4×4</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-[10px] text-slate-400">Status</Label>
+                        <Select
+                          value={effStatus}
+                          onValueChange={(v) =>
+                            setEdits((prev) => ({
+                              ...prev,
+                              [p.id]: { ...prev[p.id], status: v },
+                            }))
+                          }
+                        >
+                          <SelectTrigger className="h-7 text-xs bg-slate-900 border-slate-700">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-slate-800 border-slate-700">
+                            <SelectItem value="growing" className="text-xs">growing</SelectItem>
+                            <SelectItem value="thriving" className="text-xs">thriving</SelectItem>
+                            <SelectItem value="resting" className="text-xs">resting</SelectItem>
+                            <SelectItem value="waiting" className="text-xs">waiting</SelectItem>
+                            <SelectItem value="sleeping" className="text-xs">sleeping</SelectItem>
+                            <SelectItem value="mature" className="text-xs">mature</SelectItem>
+                            <SelectItem value="dead" className="text-xs">dead</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={!dirty || applyingId === p.id}
+                      onClick={() => applyPlantEdits(p.id)}
+                      className="w-full h-7 text-xs bg-purple-900/40 border-purple-700 hover:bg-purple-800/50 disabled:opacity-40"
+                    >
+                      {applyingId === p.id ? (
+                        <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                      ) : null}
+                      Apply
+                    </Button>
+                  </div>
+                )
+              })}
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={loadPlants}
+                disabled={plantsLoading}
+                className="w-full h-7 text-[10px] text-slate-400 hover:text-white"
+              >
+                <RotateCcw className="w-3 h-3 mr-1" />
+                Refresh
+              </Button>
+            </div>
+          )}
         </div>
 
         <Separator className="bg-slate-700" />
