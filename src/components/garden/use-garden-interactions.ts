@@ -337,6 +337,14 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
     setMoveState(prev => ({ ...prev, previewCell: { row, col }, isValidPreview: validation.valid }))
   }, [moveState.selectedPlant, livingPlants])
 
+  const clearMovePreview = useCallback(() => {
+    setMoveState(prev =>
+      prev.previewCell === null && prev.isValidPreview === false
+        ? prev
+        : { ...prev, previewCell: null, isValidPreview: false }
+    )
+  }, [])
+
   const confirmMove = useCallback(async (row: number, col: number) => {
     if (!moveState.selectedPlant) return
     const plant = moveState.selectedPlant
@@ -408,6 +416,7 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
     pendingAchievements, setPendingAchievements,
     // Move state
     moveState, resetMoveState,
+    updateMovePreview, clearMovePreview,
     // Handlers
     handleTileClick, handleContextMenu, handleWaterConfirm,
     handleLogAndWaterConfirm, handleOpenDetails,

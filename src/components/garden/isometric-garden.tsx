@@ -189,9 +189,15 @@ export function IsometricGarden({
     } else {
       setHoveredTile(`${row}-${col}`)
     }
-  }, [occupiedCells])
+    // Also drive the move-preview (ghost plant + green/red diamond) when
+    // a plant is selected in arrange mode. The hook guards on selectedPlant.
+    interactions.updateMovePreview(row, col)
+  }, [occupiedCells, interactions])
 
-  const handleTileLeave = useCallback(() => setHoveredTile(null), [])
+  const handleTileLeave = useCallback(() => {
+    setHoveredTile(null)
+    interactions.clearMovePreview()
+  }, [interactions])
 
   // Hovered data
   const hoveredPlant = hoveredTile ? occupiedCells.get(hoveredTile) ?? null : null
