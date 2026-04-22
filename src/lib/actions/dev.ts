@@ -177,7 +177,6 @@ export async function devSetPlantParams(
   }
 
   console.log(`[DEV] Plant ${plantId} updated:`, update)
-  revalidatePath('/dashboard')
-  revalidatePath('/garden')
+  revalidatePath('/', 'layout')
   return { success: true }
 }

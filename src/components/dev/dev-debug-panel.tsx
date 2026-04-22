@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useCallback, useTransition, useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   X,
   RotateCcw,
@@ -66,6 +67,7 @@ export function DevDebugPanel({ profile }: DevDebugPanelProps) {
   } = useDevDebug()
 
   const [isPending, startTransition] = useTransition()
+  const router = useRouter()
 
   // Plants editor state
   const [plants, setPlants] = useState<PlantWithType[]>([])
@@ -136,19 +138,25 @@ export function DevDebugPanel({ profile }: DevDebugPanelProps) {
         const result = await devSetPlantParams(plantId, params)
         if (!result.success) {
           console.error('[DEV] devSetPlantParams failed:', result.error)
+          if (typeof window !== 'undefined') {
+            window.alert(`Apply failed: ${result.error || 'unknown error'}`)
+          }
         } else {
+          console.log('[DEV] Plant updated:', plantId, params)
           await loadPlants()
           setEdits((prev) => {
             const next = { ...prev }
             delete next[plantId]
             return next
           })
+          // Force RSC refetch so garden/dashboard re-render with new values
+          router.refresh()
         }
       } finally {
         setApplyingId(null)
       }
     },
-    [edits, loadPlants]
+    [edits, loadPlants, router]
   )
 
   const visiblePlants = useMemo(() => {

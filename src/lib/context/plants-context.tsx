@@ -3,6 +3,7 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useOptimistic,
   useCallback,
   useMemo,
@@ -201,7 +202,12 @@ export function PlantsProvider({
   const [serverPlants, setServerPlants] = useState(initialPlants)
   const [isPending, startTransition] = useTransition()
   const [isSyncing, setIsSyncing] = useState(false)
-  
+
+  // Sync when RSC refetches new initialPlants (e.g. after dev panel edits)
+  useEffect(() => {
+    setServerPlants(initialPlants)
+  }, [initialPlants])
+
   // Optimistic state management
   const [optimisticPlants, addOptimisticUpdate] = useOptimistic(
     serverPlants,
