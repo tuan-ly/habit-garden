@@ -364,7 +364,7 @@ export function DevDebugPanel({ profile }: DevDebugPanelProps) {
             <SelectTrigger className="h-8 text-xs bg-slate-800 border-slate-700">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-slate-800 border-slate-700">
+            <SelectContent className="z-[200] bg-slate-800 border-slate-700">
               <SelectItem value="FREE" className="text-xs">
                 FREE - 3 plants, Tier 1-2
               </SelectItem>
@@ -500,7 +500,7 @@ export function DevDebugPanel({ profile }: DevDebugPanelProps) {
                           <SelectTrigger className="h-7 text-xs bg-slate-900 border-slate-700">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="bg-slate-800 border-slate-700">
+                          <SelectContent className="z-[200] bg-slate-800 border-slate-700">
                             <SelectItem value="1" className="text-xs">1×1</SelectItem>
                             <SelectItem value="2" className="text-xs">2×2</SelectItem>
                             <SelectItem value="3" className="text-xs">3×3</SelectItem>
@@ -523,7 +523,7 @@ export function DevDebugPanel({ profile }: DevDebugPanelProps) {
                           <SelectTrigger className="h-7 text-xs bg-slate-900 border-slate-700">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="bg-slate-800 border-slate-700">
+                          <SelectContent className="z-[200] bg-slate-800 border-slate-700">
                             <SelectItem value="growing" className="text-xs">growing</SelectItem>
                             <SelectItem value="thriving" className="text-xs">thriving</SelectItem>
                             <SelectItem value="resting" className="text-xs">resting</SelectItem>
