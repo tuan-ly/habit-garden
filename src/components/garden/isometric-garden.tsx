@@ -9,6 +9,7 @@ import { AmbientParticlesCanvas } from './ambient-particles-canvas'
 import { ZoomControls } from './zoom-controls'
 import { ModeToolbar, type GardenMode } from './mode-toolbar'
 import { EditModeOverlay } from './edit-mode/edit-mode-overlay'
+import { useEditMode } from './edit-mode/use-edit-mode'
 import { getTimeOfDay, type TimeOfDay, defaultTheme } from './themes'
 import { GardenTileGrid } from './garden-tile-grid'
 import { GardenModals } from './garden-modals'
@@ -64,6 +65,7 @@ export function IsometricGarden({
   const { plants, movePlant, updatePlant } = usePlants()
   const gardenSettings = useGardenSettingsOptional()
   const inventory = useInventoryOptional()
+  const editMode = useEditMode()
   const placedDecorations = inventory?.placedDecorations ?? []
 
   // Zoom and pan
@@ -173,6 +175,11 @@ export function IsometricGarden({
   const interactions = useGardenInteractions({
     movePlant, updatePlant, welcomeBackPending, onWelcomeBackUsed,
     mode, didPan, resetDidPan, occupiedCells, livingPlants,
+    editSelectedItem: editMode.selectedItem,
+    editGhostRotation: editMode.ghostRotation,
+    onPlaceDecoration: inventory?.placeDecoration,
+    onEditPushUndo: editMode.pushUndo,
+    onEditDeselectItem: editMode.deselectItem,
   })
 
   // Fix setMode to use interactions ref
@@ -373,6 +380,20 @@ export function IsometricGarden({
         </div>
       )}
 
+      {/* Decoration placement indicator */}
+      {mode === 'arrange' && editMode.selectedItem && !interactions.moveState.selectedPlant && (
+        <div className="absolute left-1/2 -translate-x-1/2 top-20 z-30 pointer-events-none">
+          <div className="px-4 py-2 bg-blue-600/90 backdrop-blur-md rounded-full text-xs text-white border border-blue-400/50 shadow-lg">
+            <span className="flex items-center gap-2">
+              <span>{editMode.selectedItem.decoration_type?.icon || '🎀'}</span>
+              <span>Placing {editMode.selectedItem.decoration_type?.name || 'decoration'}</span>
+              <span className="text-blue-200">•</span>
+              <span>Tap an empty tile</span>
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Info bar */}
       {!isTouchDevice && <PlantInfoBar plant={hoveredPlant} />}
 
@@ -412,6 +433,7 @@ export function IsometricGarden({
           gridSize={gridSize}
           occupiedCells={occupiedCellsSet}
           onDone={() => setModeWithReset('interact')}
+          editMode={editMode}
         />
       )}
 

@@ -3,7 +3,7 @@
 import { useCallback, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useInventory } from '@/lib/context/inventory-context'
-import { useEditMode } from './use-edit-mode'
+import type { UseEditModeReturn } from './use-edit-mode'
 import { EditModeToolbar } from './edit-mode-toolbar'
 import { InventoryPanel } from '@/components/inventory/inventory-panel'
 import type { InventoryItemWithDetails, PlacedDecorationWithType } from '@/types/database'
@@ -15,14 +15,15 @@ interface EditModeOverlayProps {
   onDone: () => void
   onTileClick?: (row: number, col: number) => void
   onDecorationClick?: (decoration: PlacedDecorationWithType) => void
+  editMode: UseEditModeReturn
 }
 
 export function EditModeOverlay({
   isActive,
   onDone,
+  editMode,
 }: EditModeOverlayProps) {
   const inventory = useInventory()
-  const editMode = useEditMode()
 
   // Enter/exit edit mode and load inventory
   useEffect(() => {

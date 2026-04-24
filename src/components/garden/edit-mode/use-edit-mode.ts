@@ -23,6 +23,8 @@ export interface EditModeState {
 
 const MAX_UNDO = 20
 
+export type UseEditModeReturn = ReturnType<typeof useEditMode>
+
 export function useEditMode() {
   const [isActive, setIsActive] = useState(false)
   const [selectedItem, setSelectedItem] = useState<InventoryItemWithDetails | null>(null)

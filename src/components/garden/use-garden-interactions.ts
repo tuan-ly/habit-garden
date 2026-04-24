@@ -10,7 +10,7 @@ import {
 import { isToday } from '@/lib/utils'
 import { logActivity } from '@/lib/actions/activity'
 import { validatePlantMove } from '@/lib/utils/grid-positioning'
-import type { PlantWithType } from '@/types/database'
+import type { PlantWithType, InventoryItemWithDetails, DecorationRotation } from '@/types/database'
 import type { GardenMode } from './mode-toolbar'
 
 // Double tap threshold for opening detail sheet
@@ -41,12 +41,19 @@ interface UseGardenInteractionsOpts {
   resetDidPan: () => void
   occupiedCells: Map<string, PlantWithType>
   livingPlants: PlantWithType[]
+  // Decoration placement
+  editSelectedItem: InventoryItemWithDetails | null
+  editGhostRotation: DecorationRotation
+  onPlaceDecoration?: (inventoryItemId: string, row: number, col: number, rotation?: DecorationRotation) => Promise<{ success: boolean; decorationId?: string; error?: string }>
+  onEditPushUndo?: (action: { type: 'place'; placedDecoId: string; inventoryItemId: string; row: number; col: number }) => void
+  onEditDeselectItem?: () => void
 }
 
 export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
   const {
     movePlant, updatePlant, welcomeBackPending, onWelcomeBackUsed,
     mode, didPan, resetDidPan, occupiedCells, livingPlants,
+    editSelectedItem, editGhostRotation, onPlaceDecoration, onEditPushUndo, onEditDeselectItem,
   } = opts
 
   // Modal state
@@ -355,6 +362,20 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
     }
   }, [moveState.selectedPlant, livingPlants, movePlant])
 
+  // Place decoration on tile
+  const handlePlaceDecoration = useCallback(
+    async (row: number, col: number) => {
+      if (!editSelectedItem || !onPlaceDecoration) return
+      const inventoryItemId = editSelectedItem.id
+      const result = await onPlaceDecoration(inventoryItemId, row, col, editGhostRotation)
+      if (result.success && result.decorationId) {
+        onEditPushUndo?.({ type: 'place', placedDecoId: result.decorationId, inventoryItemId, row, col })
+        onEditDeselectItem?.()
+      }
+    },
+    [editSelectedItem, editGhostRotation, onPlaceDecoration, onEditPushUndo, onEditDeselectItem]
+  )
+
   // Tile click — mode-based
   const handleTileClick = useCallback(
     (row: number, col: number, plant?: PlantWithType, event?: React.MouseEvent | React.TouchEvent) => {
@@ -365,7 +386,10 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
           if (plant) handlePlantTap(plant)
           break
         case 'arrange':
-          if (moveState.selectedPlant) {
+          // Decoration placement takes priority when an inventory item is selected
+          if (editSelectedItem && !plant) {
+            handlePlaceDecoration(row, col)
+          } else if (moveState.selectedPlant) {
             if (moveState.selectedPlant.id === plant?.id) {
               cancelMoveSelection()
             } else {
@@ -380,7 +404,7 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
           break
       }
     },
-    [mode, handlePlantTap, didPan, resetDidPan, moveState.selectedPlant, selectPlantForMove, cancelMoveSelection, confirmMove]
+    [mode, handlePlantTap, didPan, resetDidPan, moveState.selectedPlant, selectPlantForMove, cancelMoveSelection, confirmMove, editSelectedItem, handlePlaceDecoration]
   )
 
   // Context menu (right-click)
