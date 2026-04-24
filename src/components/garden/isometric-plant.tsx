@@ -20,12 +20,12 @@ interface IsometricPlantProps {
 
 // Map growth percentage to a visual scale (base scale)
 function getGrowthScale(growthPercentage: number): number {
-  if (growthPercentage < 10) return 0.6 // Seed
-  if (growthPercentage < 25) return 0.7 // Sprout
-  if (growthPercentage < 50) return 0.8 // Early growing
-  if (growthPercentage < 75) return 0.9 // Mid growing
-  if (growthPercentage < 100) return 0.95 // Late growing/blooming
-  return 1.0 // Mature
+  if (growthPercentage < 10) return 0.72 // Seed
+  if (growthPercentage < 25) return 0.84 // Sprout
+  if (growthPercentage < 50) return 0.96 // Early growing
+  if (growthPercentage < 75) return 1.08 // Mid growing
+  if (growthPercentage < 100) return 1.14 // Late growing/blooming
+  return 1.2 // Mature
 }
 
 function IsometricPlantComponent({
