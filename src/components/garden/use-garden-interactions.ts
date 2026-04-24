@@ -76,9 +76,10 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
     isValidPreview: false,
   })
 
-  // Level up + achievements
+  // Level up + achievements + harvest
   const [levelUpData, setLevelUpData] = useState<{ newLevel: number; oldLevel: number } | null>(null)
   const [pendingAchievements, setPendingAchievements] = useState<AchievementDefinition[]>([])
+  const [harvestData, setHarvestData] = useState<{ plantName: string; material: { name: string; icon: string } } | null>(null)
 
   // Cooldown tracking
   const actionCooldown = useRef<Set<string>>(new Set())
@@ -92,13 +93,14 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
     return isToday(plant.last_watered_at)
   }, [])
 
-  // Helper: handle server result (level up, achievements)
+  // Helper: handle server result (level up, achievements, harvest)
   const handleServerResult = useCallback((result: {
     leveledUp?: boolean
     newLevel?: number
     oldLevel?: number
     newAchievementIds?: string[]
-  }) => {
+    harvestedMaterial?: { name: string; icon: string }
+  }, plantName?: string) => {
     if (result.leveledUp && result.newLevel) {
       setLevelUpData({ newLevel: result.newLevel, oldLevel: result.oldLevel ?? result.newLevel - 1 })
     }
@@ -109,6 +111,9 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
       if (defs.length > 0) {
         setPendingAchievements(prev => [...prev, ...defs])
       }
+    }
+    if (result.harvestedMaterial && plantName) {
+      setHarvestData({ plantName, material: result.harvestedMaterial })
     }
   }, [])
 
@@ -176,7 +181,7 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
             xpEarned: result.xpEarned || 0,
             streakCount: newStreak,
           })
-          handleServerResult(result)
+          handleServerResult(result, plant.name)
         }
       } catch {
         setCelebration(null)
@@ -274,7 +279,7 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
               streakCount: newStreak,
             })
           }
-          handleServerResult(result)
+          handleServerResult(result, plant.name)
         }
       } catch {
         setCelebration(null)
@@ -438,6 +443,7 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
     celebration, setCelebration,
     levelUpData, setLevelUpData,
     pendingAchievements, setPendingAchievements,
+    harvestData, setHarvestData,
     // Move state
     moveState, resetMoveState,
     updateMovePreview, clearMovePreview,

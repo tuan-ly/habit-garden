@@ -9,6 +9,7 @@ import type { CelebrationState } from './use-garden-interactions'
 // Dynamic imports — these are shown rarely (level up, achievement unlock)
 const LevelUpModal = dynamic(() => import('@/components/game-ui/level-up-modal').then(m => ({ default: m.LevelUpModal })), { ssr: false })
 const AchievementQueue = dynamic(() => import('@/components/gamification/achievement-popup').then(m => ({ default: m.AchievementQueue })), { ssr: false })
+const HarvestDialog = dynamic(() => import('@/components/plants/harvest-dialog').then(m => ({ default: m.HarvestDialog })), { ssr: false })
 
 interface GardenCelebrationLayerProps {
   celebration: CelebrationState | null
@@ -17,6 +18,8 @@ interface GardenCelebrationLayerProps {
   onLevelUpClose: () => void
   pendingAchievements: AchievementDefinition[]
   onAchievementsComplete: () => void
+  harvestData: { plantName: string; material: { name: string; icon: string } } | null
+  onHarvestClose: () => void
   showCelebrations: boolean
 }
 
@@ -27,6 +30,8 @@ export const GardenCelebrationLayer = memo(function GardenCelebrationLayer({
   onLevelUpClose,
   pendingAchievements,
   onAchievementsComplete,
+  harvestData,
+  onHarvestClose,
   showCelebrations,
 }: GardenCelebrationLayerProps) {
   return (
@@ -59,6 +64,14 @@ export const GardenCelebrationLayer = memo(function GardenCelebrationLayer({
           onComplete={onAchievementsComplete}
         />
       )}
+
+      {/* Harvest material notification */}
+      <HarvestDialog
+        open={!!harvestData}
+        onClose={onHarvestClose}
+        plantName={harvestData?.plantName ?? ''}
+        material={harvestData?.material ?? null}
+      />
     </>
   )
 })

@@ -234,6 +234,10 @@ export function IsometricGarden({
     interactions.setPendingAchievements([])
   }, [interactions])
 
+  const handleHarvestClose = useCallback(() => {
+    interactions.setHarvestData(null)
+  }, [interactions])
+
   return (
     <div className="relative w-full h-full flex flex-col select-none">
       {/* Mode toolbar */}
@@ -445,6 +449,8 @@ export function IsometricGarden({
         onLevelUpClose={handleLevelUpClose}
         pendingAchievements={interactions.pendingAchievements}
         onAchievementsComplete={handleAchievementsComplete}
+        harvestData={interactions.harvestData}
+        onHarvestClose={handleHarvestClose}
         showCelebrations={gardenSettings.showCelebrations}
       />
     </div>

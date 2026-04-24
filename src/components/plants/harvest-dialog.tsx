@@ -2,13 +2,12 @@
 
 import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
-import type { Material } from '@/types/database'
 
 interface HarvestDialogProps {
   open: boolean
   onClose: () => void
   plantName: string
-  material: Material | null
+  material: { name: string; icon: string } | null
 }
 
 export function HarvestDialog({
@@ -54,9 +53,6 @@ export function HarvestDialog({
               <span className="text-4xl">{material.icon}</span>
               <div className="text-left">
                 <div className="font-semibold">{material.name}</div>
-                <div className="text-xs text-muted-foreground capitalize">
-                  {material.rarity} material
-                </div>
               </div>
               <span className="text-lg font-bold text-amber-600">×1</span>
             </motion.div>
