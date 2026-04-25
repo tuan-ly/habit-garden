@@ -78,6 +78,18 @@ souliti push          # Sync to Souliti Cloud
 
 ## **App Language: English**
 
+## Design Quality Principle
+
+> The app may be incomplete, but it must NEVER look cheap.
+
+- **Unfinished is OK. Ugly is not.** Missing features are acceptable — poor visual quality is not.
+- Every visible element must feel intentional and polished, even if the feature behind it is minimal.
+- Prefer showing less with high quality over showing more with low quality.
+- No placeholder-looking UI in production: no unstyled defaults, no broken layouts, no misaligned elements.
+- When a feature isn't ready, hide it entirely rather than showing a half-baked version.
+- Animations, colors, spacing, and typography must always feel cohesive and premium.
+- If you can't make it look good within scope, propose a simpler version that still looks polished — never ship something that looks cheap.
+
 ## Quick Start
 
 1. **Read** `.claude/MEMO.md` - Start with **Current Sprint** section
