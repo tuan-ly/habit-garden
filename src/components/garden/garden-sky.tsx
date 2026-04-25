@@ -295,13 +295,29 @@ export function GardenSky({ weather, className, contained, timeOfDay: forcedTime
         </svg>
       </div>
 
-      {/* Decorative trees on sides - with better styling */}
-      <div className="absolute bottom-28 sm:bottom-32 left-2 text-2xl opacity-30">🌲</div>
-      <div className="absolute bottom-28 sm:bottom-32 left-10 sm:left-14 text-3xl opacity-40">🌳</div>
-      <div className="absolute bottom-36 sm:bottom-40 left-6 text-xl opacity-25">🌲</div>
-      <div className="absolute bottom-28 sm:bottom-32 right-2 text-2xl opacity-30">🌲</div>
-      <div className="absolute bottom-28 sm:bottom-32 right-10 sm:right-14 text-3xl opacity-40">🌳</div>
-      <div className="absolute bottom-36 sm:bottom-40 right-6 text-xl opacity-25">🌲</div>
+      {/* Decorative tree silhouettes on sides — SVG for cohesive look */}
+      <div className="absolute bottom-24 left-0 w-32 sm:w-44 pointer-events-none" style={{ opacity: timeOfDay === 'day' ? 0.18 : 0.28 }}>
+        <svg viewBox="0 0 160 120" fill="none" className="w-full h-auto">
+          {/* Tall pine */}
+          <path d="M40,115 L40,70 L28,80 L36,60 L26,68 L35,45 L30,50 L40,25 L50,50 L45,45 L54,68 L44,60 L52,80 L40,70 Z" fill={timeOfDay === 'day' ? '#1a5c2a' : '#0f2818'} />
+          {/* Round tree */}
+          <ellipse cx="85" cy="65" rx="28" ry="32" fill={timeOfDay === 'day' ? '#1a6830' : '#0e2a18'} />
+          <rect x="82" y="90" width="6" height="25" fill={timeOfDay === 'day' ? '#3e2723' : '#1a1208'} />
+          {/* Small pine behind */}
+          <path d="M130,115 L130,85 L122,90 L128,72 L124,76 L130,58 L136,76 L132,72 L138,90 L130,85 Z" fill={timeOfDay === 'day' ? '#15502a' : '#0b2015'} />
+        </svg>
+      </div>
+      <div className="absolute bottom-24 right-0 w-32 sm:w-44 pointer-events-none" style={{ opacity: timeOfDay === 'day' ? 0.18 : 0.28 }}>
+        <svg viewBox="0 0 160 120" fill="none" className="w-full h-auto" style={{ transform: 'scaleX(-1)' }}>
+          {/* Mirrored: Tall pine */}
+          <path d="M40,115 L40,70 L28,80 L36,60 L26,68 L35,45 L30,50 L40,25 L50,50 L45,45 L54,68 L44,60 L52,80 L40,70 Z" fill={timeOfDay === 'day' ? '#1a5c2a' : '#0f2818'} />
+          {/* Mirrored: Round tree */}
+          <ellipse cx="85" cy="65" rx="28" ry="32" fill={timeOfDay === 'day' ? '#1a6830' : '#0e2a18'} />
+          <rect x="82" y="90" width="6" height="25" fill={timeOfDay === 'day' ? '#3e2723' : '#1a1208'} />
+          {/* Mirrored: Small pine */}
+          <path d="M130,115 L130,85 L122,90 L128,72 L124,76 L130,58 L136,76 L132,72 L138,90 L130,85 Z" fill={timeOfDay === 'day' ? '#15502a' : '#0b2015'} />
+        </svg>
+      </div>
 
       {/* Birds silhouettes for sunny days */}
       {timeOfDay === 'day' && (weather === 'sunny' || !weather) && (

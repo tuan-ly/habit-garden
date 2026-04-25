@@ -180,41 +180,41 @@ function IsometricTileComponent({
         </div>
       )}
 
-      {/* Plant/decoration shadow - Art Bible v2.0: cream AO tone #D4C9B0, offset lower-left */}
+      {/* Plant/decoration shadow — ground contact ellipse with offset for directional light */}
       {shadowType !== 'none' && (
         <>
-          {/* Soft AO halo - creates "cushion" grounding effect */}
+          {/* Soft AO halo — wide diffuse glow that grounds the object */}
           {shadowType === 'plant' && (
             <div
               className="absolute pointer-events-none rounded-full"
               style={{
-                left: tileSize / 2,
-                top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight),
-                width: tileSize * (0.55 + (plantGridSize - 1) * 0.35),
-                height: tileSize * (0.22 + (plantGridSize - 1) * 0.14),
+                left: tileSize / 2 - 2,
+                top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight) + 2,
+                width: tileSize * (0.62 + (plantGridSize - 1) * 0.38),
+                height: tileSize * (0.26 + (plantGridSize - 1) * 0.16),
                 transform: 'translate(-50%, -50%)',
-                background: 'radial-gradient(ellipse at 50% 50%, rgba(212,201,176,0.35) 0%, rgba(212,201,176,0.12) 55%, transparent 100%)',
-                filter: 'blur(6px)',
+                background: 'radial-gradient(ellipse at 48% 50%, rgba(20,15,8,0.32) 0%, rgba(20,15,8,0.10) 60%, transparent 100%)',
+                filter: 'blur(5px)',
               }}
             />
           )}
-          {/* Main shadow ellipse - cream AO, offset lower-left per upper-right light */}
+          {/* Core shadow ellipse — tighter, darker, slightly offset lower-left for upper-right light */}
           <div
             className="absolute pointer-events-none rounded-full"
             style={{
-              left: tileSize / 2,
-              top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight),
+              left: tileSize / 2 - 1,
+              top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight) + 1,
               width: tileSize * (shadowType === 'plant'
-                ? (0.46 + (plantGridSize - 1) * 0.32)
-                : (0.28 + (plantGridSize - 1) * 0.22)),
+                ? (0.50 + (plantGridSize - 1) * 0.34)
+                : (0.32 + (plantGridSize - 1) * 0.24)),
               height: tileSize * (shadowType === 'plant'
-                ? (0.17 + (plantGridSize - 1) * 0.11)
-                : (0.11 + (plantGridSize - 1) * 0.07)),
+                ? (0.20 + (plantGridSize - 1) * 0.13)
+                : (0.13 + (plantGridSize - 1) * 0.09)),
               transform: 'translate(-50%, -50%)',
               background: shadowType === 'plant'
-                ? 'radial-gradient(ellipse at 40% 60%, rgba(124,94,72,0.38) 0%, rgba(124,94,72,0.14) 55%, transparent 100%)'
-                : 'radial-gradient(ellipse at 40% 60%, rgba(124,94,72,0.25) 0%, rgba(124,94,72,0.08) 55%, transparent 100%)',
-              filter: 'blur(3px)',
+                ? 'radial-gradient(ellipse at 42% 55%, rgba(15,10,5,0.45) 0%, rgba(15,10,5,0.15) 55%, transparent 100%)'
+                : 'radial-gradient(ellipse at 42% 55%, rgba(15,10,5,0.30) 0%, rgba(15,10,5,0.08) 55%, transparent 100%)',
+              filter: 'blur(2px)',
             }}
           />
         </>

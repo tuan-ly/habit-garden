@@ -67,20 +67,9 @@ function getPlantGradient(plantTypeId: string): string {
 }
 
 export function PlantInfoBar({ plant }: PlantInfoBarProps) {
-  // Empty state - show subtle hint centered above garden
+  // No plant hovered — render nothing (avoid placeholder-looking UI)
   if (!plant) {
-    return (
-      <div className="absolute left-1/2 -translate-x-1/2 top-16 z-20 pointer-events-none">
-        <div className="px-4 py-2 bg-slate-900/70 backdrop-blur-md rounded-full text-xs text-slate-400 border border-slate-700/50 shadow-lg">
-          <span className="flex items-center gap-2">
-            <span>✨</span>
-            <span>Hover a plant to see info</span>
-            <span className="text-slate-600">•</span>
-            <span>Click to open details</span>
-          </span>
-        </div>
-      </div>
-    )
+    return null
   }
 
   const gradient = getPlantGradient(plant.plant_type.id)

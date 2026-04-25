@@ -32,7 +32,8 @@ export function DecorationImage({
 }: DecorationImageProps) {
   const [imgError, setImgError] = useState(false)
   const sizeConfig = SIZE_CONFIG[size]
-  const imagePath = decorationType.image_url || `/items/decorations/${decorationType.slug}.png`
+  const imagePath = decorationType.image_url
+  const hasImage = !!imagePath && !imgError
 
   const rotationStyle = rotation !== 0
     ? { transform: `rotate(${rotation}deg)` }
@@ -48,11 +49,7 @@ export function DecorationImage({
       )}
       style={rotationStyle}
     >
-      {imgError ? (
-        <span className="text-2xl select-none" role="img" aria-label={decorationType.name}>
-          {decorationType.icon}
-        </span>
-      ) : (
+      {hasImage ? (
         <Image
           src={imagePath}
           alt={decorationType.name}
@@ -62,6 +59,20 @@ export function DecorationImage({
           onError={() => setImgError(true)}
           className="object-contain"
         />
+      ) : (
+        <span
+          className={cn(
+            'select-none',
+            size === 'sm' && 'text-lg',
+            size === 'md' && 'text-2xl',
+            size === 'lg' && 'text-3xl',
+            size === 'xl' && 'text-5xl',
+          )}
+          role="img"
+          aria-label={decorationType.name}
+        >
+          {decorationType.icon}
+        </span>
       )}
 
       {/* Ghost border for placement preview */}
