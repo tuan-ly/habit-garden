@@ -99,7 +99,7 @@ export function IsometricGarden({
     return () => window.removeEventListener('resize', updateDeviceInfo)
   }, [])
 
-  // Prevent browser zoom within garden container
+  // Prevent browser zoom and text selection within garden container
   useEffect(() => {
     const container = scrollContainerRef.current
     if (!container) return
@@ -110,15 +110,20 @@ export function IsometricGarden({
     const preventTouchZoom = (e: TouchEvent) => {
       if (e.touches.length >= 2) e.preventDefault()
     }
+    const preventSelectStart = (e: Event) => {
+      e.preventDefault()
+    }
 
     container.addEventListener('wheel', preventBrowserZoom, { passive: false })
     container.addEventListener('touchmove', preventTouchZoom, { passive: false })
     container.addEventListener('touchstart', preventTouchZoom, { passive: false })
+    container.addEventListener('selectstart', preventSelectStart)
 
     return () => {
       container.removeEventListener('wheel', preventBrowserZoom)
       container.removeEventListener('touchmove', preventTouchZoom)
       container.removeEventListener('touchstart', preventTouchZoom)
+      container.removeEventListener('selectstart', preventSelectStart)
     }
   }, [])
 
@@ -288,6 +293,7 @@ export function IsometricGarden({
         style={{
           touchAction: 'manipulation',
           cursor: isPanning ? 'grabbing' : mode === 'arrange' ? (interactions.moveState.selectedPlant ? 'crosshair' : 'grab') : 'default',
+          userSelect: 'none',
           WebkitUserSelect: 'none',
           WebkitTouchCallout: 'none',
         }}
