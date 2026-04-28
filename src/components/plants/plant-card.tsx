@@ -22,7 +22,6 @@ const PLANT_ACCENTS: Record<string, string> = {
   lotus: 'bg-[#B794D1]',
   rose: 'bg-[#D97A8E]',
   bonsai: 'bg-leaf',
-  'money tree': 'bg-[#C4B268]',
 }
 
 function getPlantAccent(typeName: string): string {

@@ -60,8 +60,6 @@ function getPlantFolder(plantTypeName: string): string {
         'lotus': 'lotus',
         'rose': 'rose',
         'bamboo': 'bamboo',
-        'money tree': 'money-tree',
-        'money': 'money-tree',
     }
     const normalizedName = plantTypeName.toLowerCase().trim()
     return PLANT_TYPE_FOLDERS[normalizedName] || 'generic'

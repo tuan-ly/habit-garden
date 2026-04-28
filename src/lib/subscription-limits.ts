@@ -18,10 +18,8 @@ export interface TierLimits {
   hasGoals: boolean
   hasIdentity: boolean
   hasMetrics: boolean
-  hasWeeklyReports: boolean
 
   // Watering
-  backfillDays: number
   quickNoteChars: number // -1 = unlimited
 
   // Gamification
@@ -29,21 +27,23 @@ export interface TierLimits {
   xpMultiplier: number
 
   // App Features
-  hasAds: boolean
   themes: string[]
   decorations: string[]
-  offlineDays: number
-  devices: number // -1 = unlimited
 
   // Decorations & Crafting
   maxPlacedDecorations: number // max decorations on grid
   hasCrafting: boolean
   hasShop: boolean
 
-  // Premium only
-  earlyAccess?: boolean
-  prioritySupport?: boolean
-  aiSuggestions?: boolean
+  // ROADMAP — flags reserved for future features, NOT yet implemented
+  hasWeeklyReports: boolean // no UI or backend
+  backfillDays: number // no UI or backend
+  hasAds: boolean // no ad SDK integrated
+  offlineDays: number // no service worker
+  devices: number // no session enforcement, -1 = unlimited
+  earlyAccess?: boolean // no implementation
+  prioritySupport?: boolean // no implementation
+  aiSuggestions?: boolean // no implementation
 }
 
 /**

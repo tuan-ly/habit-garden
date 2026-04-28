@@ -19,7 +19,6 @@ const SPECIAL_PLANT_EFFECTS: Record<string, string> = {
   lotus: 'plant-effect-lotus',
   rose: 'plant-effect-rose',
   bonsai: 'plant-effect-bonsai',
-  'money tree': 'plant-effect-money',
 }
 
 // Plant glow colors based on type
@@ -32,7 +31,6 @@ const PLANT_GLOW_COLORS: Record<string, string> = {
   lotus: 'rgba(139, 92, 246, 0.4)',
   rose: 'rgba(244, 63, 94, 0.4)',
   bonsai: 'rgba(101, 163, 13, 0.4)',
-  'money tree': 'rgba(251, 191, 36, 0.5)',
 }
 
 // Weather effect classes

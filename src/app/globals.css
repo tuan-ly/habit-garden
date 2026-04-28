@@ -684,34 +684,6 @@
   animation: bonsai-zen 6s ease-in-out infinite;
 }
 
-/* Money Tree - Coin shimmer */
-@keyframes money-shimmer {
-
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-
-  25% {
-    transform: scale(1.02);
-    opacity: 0.95;
-  }
-
-  50% {
-    transform: scale(1);
-    opacity: 1;
-  }
-
-  75% {
-    transform: scale(1.01);
-    opacity: 0.97;
-  }
-}
-
-.plant-effect-money {
-  animation: money-shimmer 4s ease-in-out infinite;
-}
 
 /* ========================================
    Weather Effect Overlays

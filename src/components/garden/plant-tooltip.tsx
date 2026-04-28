@@ -54,7 +54,6 @@ function getPlantGradient(plantTypeId: string): string {
     'bamboo': 'from-lime-500 to-green-600',
     'lotus': 'from-pink-400 to-fuchsia-500',
     'cherry-blossom': 'from-pink-300 to-rose-400',
-    'money-tree': 'from-yellow-500 to-amber-600',
     'fruit-tree': 'from-orange-400 to-red-500',
   }
   // Try to match by id containing the key
