@@ -161,7 +161,7 @@ function generateGrassDetails(gridSize: number, tileSize: number, seed: number =
     const centerX = diamondWidth / 2
 
     // Detail count — denser for lusher ground feel
-    const detailCount = Math.floor(gridSize * gridSize * 1.8)
+    const detailCount = Math.floor(gridSize * gridSize * (gridSize <= 3 ? 4.2 : 2.65))
 
     const flowerColors = ['#E8C547', '#D4A0A0', '#B8C8A0', '#C4A8D0']
 
@@ -261,6 +261,71 @@ function drawClover(ctx: CanvasRenderingContext2D, x: number, y: number, scale: 
     ctx.restore()
 }
 
+function drawSoftPath(
+    ctx: CanvasRenderingContext2D,
+    gridSize: number,
+    tileSize: number,
+    topX: number,
+    topY: number,
+    rightX: number,
+    rightY: number,
+    bottomX: number,
+    bottomY: number,
+    leftX: number,
+    leftY: number
+) {
+    const cellCenter = (row: number, col: number) => ({
+        x: topX + (col - row) * (tileSize / 2),
+        y: (col + row) * (tileSize / 4) + tileSize / 4,
+    })
+
+    const mid = Math.floor(gridSize / 2)
+    const pathA = [
+        cellCenter(0, mid),
+        cellCenter(Math.max(0, mid - 1), mid),
+        cellCenter(mid, mid),
+        cellCenter(Math.min(gridSize - 1, mid + 1), mid),
+        cellCenter(gridSize - 1, mid),
+    ]
+    const pathB = [
+        cellCenter(mid, 0),
+        cellCenter(mid, Math.max(0, mid - 1)),
+        cellCenter(mid, mid),
+        cellCenter(mid, Math.min(gridSize - 1, mid + 1)),
+        cellCenter(mid, gridSize - 1),
+    ]
+
+    ctx.save()
+    ctx.beginPath()
+    ctx.moveTo(topX, topY)
+    ctx.lineTo(rightX, rightY)
+    ctx.lineTo(bottomX, bottomY)
+    ctx.lineTo(leftX, leftY)
+    ctx.closePath()
+    ctx.clip()
+
+    const drawPath = (points: { x: number; y: number }[], alpha: number) => {
+        ctx.beginPath()
+        points.forEach((p, i) => {
+            if (i === 0) ctx.moveTo(p.x, p.y)
+            else {
+                const prev = points[i - 1]
+                ctx.quadraticCurveTo(prev.x, prev.y, (prev.x + p.x) / 2, (prev.y + p.y) / 2)
+            }
+        })
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y)
+        ctx.lineCap = 'round'
+        ctx.lineJoin = 'round'
+        ctx.strokeStyle = `rgba(231, 211, 170, ${alpha})`
+        ctx.lineWidth = Math.max(4, tileSize * 0.07)
+        ctx.stroke()
+    }
+
+    drawPath(pathA, 0.11)
+    drawPath(pathB, 0.07)
+    ctx.restore()
+}
+
 function GroundPlaneCanvasComponent({
     gridSize,
     tileSize,
@@ -281,7 +346,7 @@ function GroundPlaneCanvasComponent({
     const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null)
     const staticDrawnRef = useRef(false)
 
-    const tileHeight = tileSize * 0.35
+    const tileHeight = tileSize * 0.31
 
     const diamondWidth = gridSize * tileSize
     const diamondHeight = gridSize * (tileSize / 2)
@@ -436,6 +501,8 @@ function GroundPlaneCanvasComponent({
         ctx.stroke()
         ctx.globalAlpha = 1
 
+        drawSoftPath(ctx, gridSize, tileSize, topX, topY, rightX, rightY, bottomX, bottomY, leftX, leftY)
+
         // PREMIUM: Diamond vignette — bright spot offset toward upper-right (sun direction)
         const vignetteGrad = ctx.createRadialGradient(
             svgWidth * 0.58, diamondHeight * 0.38, 0,
@@ -499,15 +566,15 @@ function GroundPlaneCanvasComponent({
             patchState = (patchState * 9301 + 49297) % 233280
             return patchState / 233280
         }
-        const patchCount = Math.floor(gridSize * gridSize * 0.4)
+        const patchCount = Math.floor(gridSize * gridSize * (gridSize <= 3 ? 0.55 : 0.36))
         for (let i = 0; i < patchCount; i++) {
             const px = patchRand() * diamondWidth
             const py = patchRand() * diamondHeight
             const dx = Math.abs(px - svgWidth / 2) / (diamondWidth / 2)
             const dy = Math.abs(py - diamondHeight / 2) / (diamondHeight / 2)
             if (dx + dy > 0.85) continue
-            const rx = 15 + patchRand() * 35
-            const ry = 8 + patchRand() * 18
+            const rx = 18 + patchRand() * 42
+            const ry = 9 + patchRand() * 22
             const tone = patchRand()
             ctx.fillStyle = tone < 0.5
                 ? `rgba(180,210,165,${0.08 + tone * 0.06})`

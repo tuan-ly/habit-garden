@@ -15,7 +15,7 @@ interface GardenDecorationsProps {
 }
 
 // Decorative element types - extended with new decorations
-type DecoType = 'bush' | 'rock' | 'mushroom' | 'flower-patch' | 'fence-post' | 'fence-corner' | 'lantern' | 'pond' | 'fountain'
+type DecoType = 'bush' | 'rock' | 'mushroom' | 'flower-patch' | 'fence-post' | 'fence-corner' | 'lantern' | 'pond' | 'fountain' | 'soil-patch' | 'tiny-bloom'
 
 interface DecoElement {
   type: DecoType
@@ -27,7 +27,7 @@ interface DecoElement {
 }
 
 // Default unlocked types (level 1)
-const DEFAULT_UNLOCKED: DecoType[] = ['bush', 'rock']
+const DEFAULT_UNLOCKED: DecorationType[] = ['bush', 'rock']
 
 // Inverse isometric projection: given pixel (x, y), return which grid cell (row, col) contains it.
 // Matches the forward projection used in isometric-tile.tsx / ground-plane-canvas.tsx.
@@ -134,7 +134,7 @@ function generateDecorations(
 
   // Add bushes (level 1)
   if (isUnlocked('bush')) {
-    const bushCount = Math.floor(gridSize * 1.2)
+    const bushCount = Math.floor(gridSize * (gridSize <= 3 ? 1.8 : 1.2))
     for (let i = 0; i < bushCount; i++) {
       const angle = (i / bushCount) * Math.PI * 2 + 0.3
       const distance = diamondWidth * 0.45 + random(i + 100) * diamondWidth * 0.12
@@ -159,7 +159,7 @@ function generateDecorations(
 
   // Add rocks (level 1)
   if (isUnlocked('rock')) {
-    const rockCount = Math.floor(gridSize * 0.8)
+    const rockCount = Math.floor(gridSize * (gridSize <= 3 ? 1.3 : 0.8))
     for (let i = 0; i < rockCount; i++) {
       const angle = (i / rockCount) * Math.PI * 2 + 0.7
       const distance = diamondWidth * 0.42 + random(i + 200) * diamondWidth * 0.1
@@ -180,6 +180,33 @@ function generateDecorations(
         zIndex: Math.floor(placed.y),
       })
     }
+  }
+
+  // Starter gardens need automatic inner texture so the plot reads as a living place.
+  // These are intentionally tiny and low-contrast; user plants still remain the hero layer.
+  const ambientCount = Math.max(3, Math.floor(gridSize * gridSize * (gridSize <= 3 ? 0.46 : 0.22)))
+  for (let i = 0; i < ambientCount; i++) {
+    const row = Math.floor(random(i + 850) * gridSize)
+    const col = Math.floor(random(i + 851) * gridSize)
+    if (occupiedCells.has(`${row}-${col}`)) continue
+
+    const center = gridCellCenter(row, col, tileSize, centerX)
+    const placed = tryPlace(
+      center.x + (random(i + 852) - 0.5) * tileSize * 0.46,
+      center.y + (random(i + 853) - 0.5) * tileSize * 0.22,
+      random(i + 854),
+      random(i + 855)
+    )
+    if (!placed) continue
+
+    decos.push({
+      type: random(i + 856) > 0.45 ? 'tiny-bloom' : 'soil-patch',
+      x: Math.round(placed.x * 10000) / 10000,
+      y: Math.round(placed.y * 10000) / 10000,
+      scale: Math.round((0.32 + random(i + 857) * 0.28) * 10000) / 10000,
+      flip: random(i + 858) > 0.5,
+      zIndex: Math.floor(placed.y) - 2,
+    })
   }
 
   // Add mushrooms (level 5)
@@ -435,6 +462,29 @@ function FlowerPatch({ scale, flip }: { scale: number; flip: boolean }) {
   )
 }
 
+function SoilPatch({ scale, flip }: { scale: number; flip: boolean }) {
+  return (
+    <g transform={`scale(${flip ? -scale : scale}, ${scale})`}>
+      <ellipse cx="0" cy="-2" rx="18" ry="8" fill="#A08060" opacity="0.22" />
+      <ellipse cx="-4" cy="-4" rx="9" ry="3.5" fill="#D4C9B0" opacity="0.28" />
+      <ellipse cx="7" cy="0" rx="5" ry="2.5" fill="#7C5E48" opacity="0.18" />
+    </g>
+  )
+}
+
+function TinyBloom({ scale, flip }: { scale: number; flip: boolean }) {
+  return (
+    <g transform={`scale(${flip ? -scale : scale}, ${scale})`}>
+      <path d="M-9,2 Q-7,-8 -5,2" stroke="#7FA076" fill="none" strokeWidth="1.5" opacity="0.8" />
+      <path d="M0,2 Q1,-9 3,2" stroke="#8FAE82" fill="none" strokeWidth="1.5" opacity="0.8" />
+      <path d="M8,2 Q6,-7 10,2" stroke="#6B8C5E" fill="none" strokeWidth="1.5" opacity="0.7" />
+      <circle cx="-5" cy="-8" r="2.5" fill="#E8B96A" opacity="0.85" />
+      <circle cx="3" cy="-9" r="2.2" fill="#E8B8C6" opacity="0.8" />
+      <circle cx="10" cy="-6" r="1.8" fill="#FBF5E6" opacity="0.7" />
+    </g>
+  )
+}
+
 function Lantern({ scale, flip, isNight }: { scale: number; flip: boolean; isNight: boolean }) {
   return (
     <g transform={`scale(${flip ? -scale : scale}, ${scale})`}>
@@ -557,6 +607,8 @@ function DecorationElement({ deco, timeOfDay }: { deco: DecoElement; timeOfDay: 
       {deco.type === 'rock' && <Rock scale={deco.scale} flip={deco.flip} />}
       {deco.type === 'mushroom' && <Mushroom scale={deco.scale} flip={deco.flip} />}
       {deco.type === 'flower-patch' && <FlowerPatch scale={deco.scale} flip={deco.flip} />}
+      {deco.type === 'soil-patch' && <SoilPatch scale={deco.scale} flip={deco.flip} />}
+      {deco.type === 'tiny-bloom' && <TinyBloom scale={deco.scale} flip={deco.flip} />}
       {deco.type === 'lantern' && <Lantern scale={deco.scale} flip={deco.flip} isNight={isNight} />}
       {deco.type === 'fence-post' && <FencePost scale={deco.scale} flip={deco.flip} />}
       {deco.type === 'fence-corner' && <FenceCorner scale={deco.scale} flip={deco.flip} />}

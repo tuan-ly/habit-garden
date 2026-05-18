@@ -32,9 +32,8 @@ export function GameHud({ profile }: GameHudProps) {
             onClick={() => setExpanded(!expanded)}
             className={cn(
               "group relative flex items-center gap-1.5 sm:gap-2 rounded-xl sm:rounded-2xl overflow-hidden",
-              "bg-gradient-to-r from-slate-900/90 to-slate-800/90",
-              "border-2 border-amber-500/30 shadow-lg shadow-amber-500/10",
-              "transition-all duration-300 hover:border-amber-400/50",
+              "garden-chrome",
+              "transition-all duration-300 hover:border-bloom/60",
               "px-2 py-1.5 sm:px-2.5 sm:py-2"
             )}
           >
@@ -56,17 +55,17 @@ export function GameHud({ profile }: GameHudProps) {
             {/* XP info - Compact - Hidden on very small screens */}
             <div className="hidden xs:flex flex-col min-w-16 sm:min-w-20 gap-0.5">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] sm:text-xs font-bold text-amber-400 truncate max-w-14 sm:max-w-none">
+                <span className="text-[10px] sm:text-xs font-bold text-canopy truncate max-w-14 sm:max-w-none">
                   {levelInfo.title}
                 </span>
                 <ChevronDown className={cn(
-                  "w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400/60 transition-transform ml-1",
+                  "w-2.5 h-2.5 sm:w-3 sm:h-3 text-canopy/45 transition-transform ml-1",
                   expanded && "rotate-180"
                 )} />
               </div>
 
               {/* XP Bar - Compact */}
-              <div className="relative h-1.5 sm:h-2 w-full bg-slate-700/80 rounded-full overflow-hidden border border-slate-600/50">
+              <div className="relative h-1.5 sm:h-2 w-full bg-canopy/10 rounded-full overflow-hidden border border-canopy/10">
                 <div
                   className={cn(
                     "absolute inset-y-0 left-0 rounded-full transition-all duration-700",
@@ -90,7 +89,7 @@ export function GameHud({ profile }: GameHudProps) {
                     MAX
                   </span>
                 ) : (
-                  <span className="text-slate-400 hidden sm:inline">
+                  <span className="text-canopy/45 hidden sm:inline">
                     Lv.{levelInfo.level + 1}: {levelInfo.xpForNextLevel}
                   </span>
                 )}
@@ -100,10 +99,10 @@ export function GameHud({ profile }: GameHudProps) {
 
           {/* Expanded details */}
           {expanded && (
-            <div className="mt-2 p-3 bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl rounded-xl border-2 border-amber-500/20 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="garden-chrome mt-2 p-3 rounded-xl animate-in fade-in slide-in-from-top-2 duration-200">
               <div className="space-y-2 text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-400">Current XP</span>
+                  <span className="text-canopy/55">Current XP</span>
                   <span className="font-bold text-amber-400 flex items-center gap-1">
                     <Zap className="w-3 h-3" />
                     {effectiveXp.toLocaleString()}
@@ -111,7 +110,7 @@ export function GameHud({ profile }: GameHudProps) {
                 </div>
                 {levelInfo.isAtCap ? (
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-400">Level Cap</span>
+                    <span className="text-canopy/55">Level Cap</span>
                     <button
                       onClick={() => showUpgradeModal('feature_gate', 'higher level cap')}
                       className="font-bold text-emerald-400 flex items-center gap-1 hover:text-emerald-300 transition-colors"
@@ -122,15 +121,15 @@ export function GameHud({ profile }: GameHudProps) {
                   </div>
                 ) : (
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-400">To Next Level</span>
+                  <span className="text-canopy/55">To Next Level</span>
                     <span className="font-bold text-cyan-400">
                       {(levelInfo.xpForNextLevel - (effectiveXp || 0)).toLocaleString()} XP
                     </span>
                   </div>
                 )}
-                <div className="h-px bg-gradient-to-r from-transparent via-slate-600 to-transparent" />
+                <div className="h-px bg-gradient-to-r from-transparent via-canopy/15 to-transparent" />
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-400">Progress</span>
+                  <span className="text-canopy/55">Progress</span>
                   <span className={cn(
                     "font-bold",
                     levelInfo.isAtCap ? "text-amber-400" : "text-green-400"

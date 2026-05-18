@@ -78,8 +78,7 @@ export function MoodSelector({ className }: MoodSelectorProps) {
         <button
           className={cn(
             'flex items-center gap-2 px-3 py-1.5 rounded-full',
-            'bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm',
-            'border border-white/20 dark:border-slate-700/50',
+            'garden-chrome text-canopy',
             'shadow-sm hover:shadow-md transition-all duration-200',
             'hover:scale-105 active:scale-95',
             className
@@ -99,7 +98,7 @@ export function MoodSelector({ className }: MoodSelectorProps) {
       <SheetContent side="bottom" className="rounded-t-3xl">
         <SheetHeader className="text-center pb-4">
           <SheetTitle className="flex items-center justify-center gap-2">
-            How's your weather today?
+            How&apos;s your weather today?
           </SheetTitle>
           <SheetDescription>
             Check in with yourself - how are you feeling right now?

@@ -25,33 +25,33 @@ const navItems: NavItem[] = [
     title: 'Garden',
     url: '/garden',
     icon: Flower2,
-    color: 'from-green-400 to-emerald-500',
-    activeColor: 'bg-green-500',
-    glowColor: 'shadow-green-500/50'
+    color: 'from-leaf to-canopy',
+    activeColor: 'bg-leaf',
+    glowColor: 'shadow-leaf/30'
   },
   {
     title: 'Overview',
     url: '/overview',
     icon: TreeDeciduous,
-    color: 'from-teal-400 to-cyan-500',
-    activeColor: 'bg-teal-500',
-    glowColor: 'shadow-teal-500/50'
+    color: 'from-moisture to-leaf',
+    activeColor: 'bg-moisture',
+    glowColor: 'shadow-moisture/30'
   },
   {
     title: 'Store',
     url: '/store',
     icon: ShoppingBag,
-    color: 'from-pink-400 to-rose-500',
-    activeColor: 'bg-pink-500',
-    glowColor: 'shadow-pink-500/50'
+    color: 'from-bloom to-honey',
+    activeColor: 'bg-bloom',
+    glowColor: 'shadow-bloom/30'
   },
   {
     title: 'Stats',
     url: '/stats',
     icon: BarChart3,
-    color: 'from-blue-400 to-indigo-500',
-    activeColor: 'bg-blue-500',
-    glowColor: 'shadow-blue-500/50'
+    color: 'from-honey to-[#D7893A]',
+    activeColor: 'bg-honey',
+    glowColor: 'shadow-honey/30'
   },
 ]
 
@@ -65,10 +65,10 @@ export function GameNav() {
       {/* Bottom Navigation Bar - Game Style - Floats over content */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none">
         <div className="max-w-lg mx-auto px-3 pb-2 sm:px-4 sm:pb-3 pointer-events-auto">
-          {/* Main nav container - Dark game style with transparency to see content behind */}
-          <div className="relative bg-gradient-to-t from-slate-900/95 via-slate-900/90 to-slate-800/85 backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-slate-700/40 shadow-2xl shadow-black/50">
+          {/* Main nav container */}
+          <div className="garden-chrome relative rounded-2xl sm:rounded-3xl">
             {/* Top glow line */}
-            <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-green-500/50 to-transparent" />
+            <div className="absolute top-0 left-5 right-5 h-px bg-gradient-to-r from-transparent via-leaf/35 to-transparent" />
 
             <div className="flex items-center justify-around px-1 py-1.5 sm:px-2 sm:py-2">
               {navItems.map((item) => {
@@ -92,7 +92,7 @@ export function GameNav() {
                       "relative flex items-center justify-center w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl transition-all duration-300",
                       isActive
                         ? `bg-gradient-to-br ${item.color} shadow-lg ${item.glowColor} scale-110 -translate-y-1.5`
-                        : "bg-slate-800/80 group-hover:bg-slate-700/80 border border-slate-700/50"
+                        : "bg-cream/65 group-hover:bg-leaf/10 border border-canopy/10"
                     )}>
                       {/* Inner glow for active */}
                       {isActive && (
@@ -103,7 +103,7 @@ export function GameNav() {
                         "w-5 h-5 sm:w-6 sm:h-6 transition-all duration-300 relative z-10",
                         isActive
                           ? "text-white drop-shadow-lg"
-                          : "text-slate-400 group-hover:text-slate-200"
+                          : "text-canopy/50 group-hover:text-canopy"
                       )} />
 
                       {/* Sparkle for active */}
@@ -123,8 +123,8 @@ export function GameNav() {
                     <span className={cn(
                       "text-[9px] sm:text-[10px] font-bold mt-1 transition-all duration-300 uppercase tracking-wide",
                       isActive
-                        ? "text-white translate-y-0.5"
-                        : "text-slate-500 group-hover:text-slate-300"
+                        ? "text-canopy translate-y-0.5"
+                        : "text-canopy/45 group-hover:text-canopy/70"
                     )}>
                       {item.title}
                     </span>
@@ -145,10 +145,10 @@ export function GameNav() {
                 onClick={() => setMenuOpen(true)}
                 className="relative group flex flex-col items-center py-1 px-1 sm:py-1 sm:px-2 transition-all duration-300"
               >
-                <div className="relative flex items-center justify-center w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-800/80 group-hover:bg-slate-700/80 border border-slate-700/50 transition-all duration-300">
-                  <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-slate-400 group-hover:text-slate-200 transition-colors" />
+                <div className="relative flex items-center justify-center w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-cream/65 group-hover:bg-leaf/10 border border-canopy/10 transition-all duration-300">
+                  <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-canopy/50 group-hover:text-canopy transition-colors" />
                 </div>
-                <span className="text-[9px] sm:text-[10px] font-bold mt-1 text-slate-500 group-hover:text-slate-300 uppercase tracking-wide">
+                <span className="text-[9px] sm:text-[10px] font-bold mt-1 text-canopy/45 group-hover:text-canopy/70 uppercase tracking-wide">
                   Menu
                 </span>
               </button>

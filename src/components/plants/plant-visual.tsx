@@ -1,9 +1,10 @@
 'use client'
 
 import { cn, isToday } from '@/lib/utils'
-import type { PlantWithType, PlantStatus, WeatherType } from '@/types/database'
-import { memo, useEffect, useState, useRef, useMemo } from 'react'
+import type { PlantWithType, WeatherType } from '@/types/database'
+import { memo, useEffect, useState, useRef } from 'react'
 import { PlantImage, getGrowthStage, type GrowthStage } from './plant-image'
+import { Droplets, Sprout } from 'lucide-react'
 
 // Re-export growth stages for backwards compatibility
 export { getGrowthStage }
@@ -213,9 +214,9 @@ export const PlantVisual = memo(function PlantVisual({
       {isWatering && (
         <div className="water-effect absolute inset-0">
           {/* Water drops */}
-          <span className="water-drop absolute top-0 left-1/4 text-blue-400 text-lg">💧</span>
-          <span className="water-drop absolute top-0 left-1/2 text-blue-400 text-lg delay-100">💧</span>
-          <span className="water-drop absolute top-0 left-3/4 text-blue-400 text-lg delay-200">💧</span>
+          <Droplets className="water-drop absolute top-0 left-1/4 h-4 w-4 text-moisture" />
+          <Droplets className="water-drop absolute top-0 left-1/2 h-4 w-4 text-moisture delay-100" />
+          <Droplets className="water-drop absolute top-0 left-3/4 h-4 w-4 text-moisture delay-200" />
 
           {/* Splash ring */}
           <div className="water-splash-ring absolute bottom-1/4 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-blue-400/40" />
@@ -227,7 +228,7 @@ export const PlantVisual = memo(function PlantVisual({
         <div className="needs-water-indicator">
           <div className="relative flex items-center justify-center">
             {/* Watering can icon */}
-            <span className="watering-can-anim text-lg">🚿</span>
+            <Droplets className="watering-can-anim h-5 w-5 text-moisture drop-shadow-sm" />
             {/* Water drops falling */}
             {/* <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-1">
               <span className="needs-water-drop text-xs text-blue-400">💧</span>
@@ -256,8 +257,9 @@ export const PlantVisual = memo(function PlantVisual({
 
       {/* Mature badge */}
       {plant.status === 'mature' && !isDead && (
-        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-md">
-          MATURE
+        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex items-center gap-1 rounded-full border border-[#D4C9B0] bg-[#FBF5E6]/90 px-1.5 py-0.5 text-[#6B4423] shadow-sm">
+          <Sprout className="h-2.5 w-2.5 text-leaf" />
+          <span className="sr-only">Mature plant</span>
         </div>
       )}
 

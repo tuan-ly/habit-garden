@@ -108,9 +108,12 @@ export function GardenSky({ weather, className, contained, timeOfDay: forcedTime
 
   useEffect(() => {
     if (!forcedTimeOfDay) {
-      setCurrentTimeOfDay(getTimeOfDay())
+      const frame = window.requestAnimationFrame(() => setCurrentTimeOfDay(getTimeOfDay()))
       const interval = setInterval(() => setCurrentTimeOfDay(getTimeOfDay()), 60000)
-      return () => clearInterval(interval)
+      return () => {
+        window.cancelAnimationFrame(frame)
+        clearInterval(interval)
+      }
     }
   }, [forcedTimeOfDay])
 
@@ -342,13 +345,13 @@ export function GardenSky({ weather, className, contained, timeOfDay: forcedTime
 
       {/* Rainbow effect */}
       {weather === 'rainbow' && timeOfDay === 'day' && (
-        <div className="absolute top-[5%] left-[10%] right-[10%] h-40 opacity-30 pointer-events-none">
-          <div
-            className="w-full h-full rounded-t-full"
-            style={{
-              background: 'linear-gradient(to bottom, transparent 40%, #ef4444 50%, #f97316 55%, #eab308 60%, #22c55e 65%, #3b82f6 70%, #8b5cf6 75%, transparent 85%)',
-            }}
-          />
+        <div className="absolute top-14 right-8 h-20 w-28 opacity-35 pointer-events-none sm:right-16 sm:h-24 sm:w-36">
+          <svg viewBox="0 0 140 90" className="h-full w-full overflow-visible">
+            <path d="M18 82 A52 52 0 0 1 122 82" fill="none" stroke="#F87171" strokeWidth="9" strokeLinecap="round" />
+            <path d="M30 82 A40 40 0 0 1 110 82" fill="none" stroke="#FBBF24" strokeWidth="9" strokeLinecap="round" />
+            <path d="M42 82 A28 28 0 0 1 98 82" fill="none" stroke="#34D399" strokeWidth="9" strokeLinecap="round" />
+            <path d="M54 82 A16 16 0 0 1 86 82" fill="none" stroke="#60A5FA" strokeWidth="9" strokeLinecap="round" />
+          </svg>
         </div>
       )}
     </div>

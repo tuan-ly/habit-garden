@@ -2,71 +2,68 @@
 
 import type { PlantWithType } from '@/types/database'
 import { cn } from '@/lib/utils'
+import { AlertTriangle, Droplets, Flame, Sprout } from 'lucide-react'
 
 interface PlantTooltipProps {
   plant: PlantWithType
 }
 
-// Simple mini tooltip that shows essential info only
-// This is displayed as a small badge near the cursor, not blocking the garden
-export function PlantTooltip({ plant }: PlantTooltipProps) {
-  // Moisture color
-  const getMoistureColor = (moisture: number) => {
-    if (moisture >= 70) return 'text-emerald-500'
-    if (moisture >= 40) return 'text-amber-500'
-    if (moisture >= 20) return 'text-orange-500'
-    return 'text-red-500'
-  }
-
-  return (
-    <div className="flex items-center gap-2 px-2.5 py-1.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-lg shadow-lg border border-slate-200/50 dark:border-slate-700/50">
-      <span className="text-lg">{plant.plant_type.icon}</span>
-      <div className="flex items-center gap-3 text-xs">
-        <span className="font-medium text-slate-700 dark:text-slate-200 max-w-20 truncate">
-          {plant.name}
-        </span>
-        <span className={cn('font-semibold', getMoistureColor(plant.current_moisture))}>
-          💧{plant.current_moisture}%
-        </span>
-        <span className="font-semibold text-green-600 dark:text-green-400">
-          🌱{Math.round(plant.growth_percentage)}%
-        </span>
-        {plant.current_moisture < 30 && plant.status !== 'dead' && (
-          <span className="text-red-500 animate-pulse">⚠️</span>
-        )}
-      </div>
-    </div>
-  )
+function getMoistureColor(moisture: number) {
+  if (moisture >= 70) return 'text-leaf'
+  if (moisture >= 40) return 'text-honey'
+  if (moisture >= 20) return 'text-[#B7793A]'
+  return 'text-bloom'
 }
 
-// Floating tooltip - shows details when hovering a plant
-// Positioned as fixed element above the garden area
-interface PlantInfoBarProps {
-  plant: PlantWithType | null
-}
-
-// Get gradient based on plant type
 function getPlantGradient(plantTypeId: string): string {
   const gradients: Record<string, string> = {
-    'cactus': 'from-emerald-500 to-green-600',
-    'rose': 'from-pink-500 to-rose-600',
-    'bonsai': 'from-green-600 to-emerald-700',
-    'bamboo': 'from-lime-500 to-green-600',
-    'lotus': 'from-pink-400 to-fuchsia-500',
-    'cherry-blossom': 'from-pink-300 to-rose-400',
-    'fruit-tree': 'from-orange-400 to-red-500',
+    cactus: 'from-leaf to-canopy',
+    rose: 'from-bloom to-[#C96B88]',
+    bonsai: 'from-canopy to-leaf',
+    bamboo: 'from-sage to-leaf',
+    lotus: 'from-bloom to-[#D18AA2]',
+    'cherry-blossom': 'from-bloom to-[#D18AA2]',
+    'fruit-tree': 'from-honey to-[#D7893A]',
   }
-  // Try to match by id containing the key
+
   for (const [key, value] of Object.entries(gradients)) {
     if (plantTypeId.toLowerCase().includes(key)) {
       return value
     }
   }
-  return 'from-green-500 to-emerald-600'
+
+  return 'from-leaf to-canopy'
+}
+
+export function PlantTooltip({ plant }: PlantTooltipProps) {
+  const isThirsty = plant.current_moisture < 30 && plant.status !== 'dead'
+
+  return (
+    <div className="garden-chrome flex items-center gap-2 px-2.5 py-1.5 rounded-lg">
+      <span className="text-lg">{plant.plant_type.icon}</span>
+      <div className="flex items-center gap-3 text-xs">
+        <span className="font-medium text-canopy max-w-20 truncate">
+          {plant.name}
+        </span>
+        <span className={cn('inline-flex items-center gap-1 font-semibold', getMoistureColor(plant.current_moisture))}>
+          <Droplets className="h-3 w-3" />
+          {plant.current_moisture}%
+        </span>
+        <span className="inline-flex items-center gap-1 font-semibold text-leaf">
+          <Sprout className="h-3 w-3" />
+          {Math.round(plant.growth_percentage)}%
+        </span>
+        {isThirsty && <AlertTriangle className="h-3.5 w-3.5 text-bloom animate-pulse" />}
+      </div>
+    </div>
+  )
+}
+
+interface PlantInfoBarProps {
+  plant: PlantWithType | null
 }
 
 export function PlantInfoBar({ plant }: PlantInfoBarProps) {
-  // No plant hovered — render nothing (avoid placeholder-looking UI)
   if (!plant) {
     return null
   }
@@ -78,106 +75,93 @@ export function PlantInfoBar({ plant }: PlantInfoBarProps) {
 
   return (
     <div className="absolute left-1/2 -translate-x-1/2 top-16 z-20 pointer-events-none">
-      <div className={cn(
-        "relative overflow-hidden rounded-2xl shadow-2xl",
-        "bg-slate-900/95 border-2 border-slate-700/50",
-        "animate-in fade-in zoom-in-95 duration-200"
-      )}>
-        {/* Gradient accent bar */}
-        <div className={cn("h-1 bg-linear-to-r", gradient)} />
+      <div
+        className={cn(
+          'garden-chrome relative overflow-hidden rounded-2xl border-2 border-cream/70 shadow-2xl',
+          'animate-in fade-in zoom-in-95 duration-200'
+        )}
+      >
+        <div className={cn('h-1 bg-linear-to-r', gradient)} />
 
         <div className="flex items-center gap-5 px-5 py-3">
-          {/* Plant icon with glow */}
           <div className="relative">
-            <div className={cn(
-              "absolute inset-0 blur-xl opacity-50 bg-linear-to-r",
-              gradient
-            )} />
+            <div className={cn('absolute inset-0 blur-xl opacity-35 bg-linear-to-r', gradient)} />
             <span className="relative text-4xl drop-shadow-lg">{plant.plant_type.icon}</span>
           </div>
 
-          {/* Plant name */}
           <div className="min-w-0">
-            <div className="font-bold text-white text-lg leading-tight">
+            <div className="font-bold text-canopy text-lg leading-tight">
               {plant.name}
             </div>
-            <div className="text-xs text-slate-400 font-medium">
+            <div className="text-xs text-canopy/55 font-medium">
               {plant.plant_type.name}
             </div>
           </div>
 
-          {/* Divider */}
-          <div className="w-px h-10 bg-slate-700" />
+          <div className="w-px h-10 bg-canopy/10" />
 
-          {/* Stats */}
           <div className="flex items-center gap-4">
-            {/* Moisture */}
             <div className="text-center">
               <div className="flex items-center gap-1.5 mb-1">
-                <span className="text-lg">💧</span>
-                <span className={cn(
-                  "text-xl font-bold tabular-nums",
-                  moisturePercent >= 70 ? 'text-emerald-400' :
-                  moisturePercent >= 40 ? 'text-amber-400' :
-                  moisturePercent >= 20 ? 'text-orange-400' : 'text-red-400'
-                )}>
+                <Droplets className="h-4 w-4 text-moisture" />
+                <span className={cn('text-xl font-bold tabular-nums', getMoistureColor(moisturePercent))}>
                   {moisturePercent}%
                 </span>
               </div>
-              <div className="w-16 h-2 bg-slate-700 rounded-full overflow-hidden">
+              <div className="w-16 h-2 bg-canopy/10 rounded-full overflow-hidden">
                 <div
                   className={cn(
-                    "h-full rounded-full transition-all",
-                    moisturePercent >= 70 ? 'bg-emerald-500' :
-                    moisturePercent >= 40 ? 'bg-amber-500' :
-                    moisturePercent >= 20 ? 'bg-orange-500' : 'bg-red-500'
+                    'h-full rounded-full transition-all',
+                    moisturePercent >= 70
+                      ? 'bg-leaf'
+                      : moisturePercent >= 40
+                        ? 'bg-honey'
+                        : moisturePercent >= 20
+                          ? 'bg-[#D7893A]'
+                          : 'bg-bloom'
                   )}
                   style={{ width: `${moisturePercent}%` }}
                 />
               </div>
             </div>
 
-            {/* Growth */}
             <div className="text-center">
               <div className="flex items-center gap-1.5 mb-1">
-                <span className="text-lg">🌱</span>
-                <span className="text-xl font-bold tabular-nums text-green-400">
+                <Sprout className="h-4 w-4 text-leaf" />
+                <span className="text-xl font-bold tabular-nums text-leaf">
                   {growthPercent}%
                 </span>
               </div>
-              <div className="w-16 h-2 bg-slate-700 rounded-full overflow-hidden">
+              <div className="w-16 h-2 bg-canopy/10 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-linear-to-r from-green-400 to-emerald-500 rounded-full transition-all"
+                  className="h-full bg-linear-to-r from-leaf to-canopy rounded-full transition-all"
                   style={{ width: `${growthPercent}%` }}
                 />
               </div>
             </div>
 
-            {/* Streak */}
             {plant.current_streak > 0 && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-900/50 rounded-xl border border-orange-500/30">
-                <span className="text-base">🔥</span>
-                <span className="font-bold text-orange-400">{plant.current_streak}</span>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-honey/15 rounded-xl border border-honey/35">
+                <Flame className="h-4 w-4 text-honey" />
+                <span className="font-bold text-canopy">{plant.current_streak}</span>
               </div>
             )}
           </div>
 
-          {/* Warning badge */}
           {isThirsty && (
             <>
-              <div className="w-px h-10 bg-slate-700" />
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-900/50 rounded-xl border border-red-500/30 animate-pulse">
-                <span>⚠️</span>
-                <span className="text-sm font-bold text-red-400">Thirsty!</span>
+              <div className="w-px h-10 bg-canopy/10" />
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-bloom/15 rounded-xl border border-bloom/35 animate-pulse">
+                <AlertTriangle className="h-4 w-4 text-bloom" />
+                <span className="text-sm font-bold text-canopy">Thirsty!</span>
               </div>
             </>
           )}
 
-          {/* Click hint */}
-          <div className="w-px h-10 bg-slate-700" />
-          <div className="text-xs text-slate-500 font-medium flex items-center gap-1">
+          <div className="w-px h-10 bg-canopy/10" />
+          <div className="text-xs text-canopy/45 font-medium flex items-center gap-1">
             <span>Click</span>
-            <span className="text-slate-400">→</span>
+            <span className="text-canopy/35">-&gt;</span>
           </div>
         </div>
       </div>

@@ -30,7 +30,7 @@ export function ZoomControls({
     <div
       className={cn(
         'flex flex-col items-center gap-1 p-1.5 rounded-xl',
-        'bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 shadow-lg',
+        'garden-chrome',
         className
       )}
     >
@@ -41,8 +41,8 @@ export function ZoomControls({
         className={cn(
           'w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200',
           canZoomIn
-            ? 'text-white hover:bg-slate-700/50 active:scale-95'
-            : 'text-slate-600 cursor-not-allowed'
+            ? 'garden-icon-button active:scale-95'
+            : 'text-canopy/30 cursor-not-allowed'
         )}
         aria-label="Zoom in"
       >
@@ -50,7 +50,7 @@ export function ZoomControls({
       </button>
 
       {/* Zoom percentage indicator */}
-      <div className="px-1 py-0.5 text-[10px] font-medium text-slate-400 select-none">
+      <div className="px-1 py-0.5 text-[10px] font-semibold text-canopy/60 select-none">
         {Math.round(zoom * 100)}%
       </div>
 
@@ -61,8 +61,8 @@ export function ZoomControls({
         className={cn(
           'w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200',
           canZoomOut
-            ? 'text-white hover:bg-slate-700/50 active:scale-95'
-            : 'text-slate-600 cursor-not-allowed'
+            ? 'garden-icon-button active:scale-95'
+            : 'text-canopy/30 cursor-not-allowed'
         )}
         aria-label="Zoom out"
       >
@@ -70,7 +70,7 @@ export function ZoomControls({
       </button>
 
       {/* Divider */}
-      <div className="w-5 h-px bg-slate-700/50 my-0.5" />
+      <div className="w-5 h-px bg-canopy/10 my-0.5" />
 
       {/* Reset to 100% */}
       <button
@@ -79,8 +79,8 @@ export function ZoomControls({
         className={cn(
           'w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200',
           !isDefaultZoom
-            ? 'text-white hover:bg-slate-700/50 active:scale-95'
-            : 'text-slate-600 cursor-not-allowed'
+            ? 'garden-icon-button active:scale-95'
+            : 'text-canopy/30 cursor-not-allowed'
         )}
         aria-label="Reset zoom"
       >

@@ -66,7 +66,7 @@ export function GardenView({ weather }: GardenViewProps) {
     }
   })();
 
-  const displayWeather = moodWeather;
+  const displayWeather = weather ?? moodWeather;
 
   const [selectedPlant, setSelectedPlant] = useState<PlantWithType | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -82,18 +82,27 @@ export function GardenView({ weather }: GardenViewProps) {
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0]
     const lastVisit = localStorage.getItem(LAST_VISIT_KEY)
+    let frame: number | null = null
 
     if (lastVisit && lastVisit !== today) {
       const daysDiff = getDaysDiff(lastVisit, today)
       if (daysDiff >= ABSENCE_THRESHOLD_DAYS) {
-        setWelcomeBackDays(daysDiff)
-        setWelcomeBackPending(true)
-        setWelcomeBackOpen(true)
+        frame = window.requestAnimationFrame(() => {
+          setWelcomeBackDays(daysDiff)
+          setWelcomeBackPending(true)
+          setWelcomeBackOpen(true)
+        })
       }
     }
 
     // Always update last visit to today
     localStorage.setItem(LAST_VISIT_KEY, today)
+
+    return () => {
+      if (frame !== null) {
+        window.cancelAnimationFrame(frame)
+      }
+    }
   }, [])
 
   const sleepingPlantCount = plants.filter(
@@ -148,8 +157,8 @@ export function GardenView({ weather }: GardenViewProps) {
   )
   useEffect(() => {
     if (plantIdsWithGoals.length === 0) {
-      setGoalsMap(new Map())
-      return
+      const frame = window.requestAnimationFrame(() => setGoalsMap(new Map()))
+      return () => window.cancelAnimationFrame(frame)
     }
     getGoalsForPlants(plantIdsWithGoals).then(setGoalsMap)
   }, [plantIdsWithGoals])
@@ -409,14 +418,14 @@ function ViewToggle({
   return (
     <div className="fixed top-14 sm:top-3 left-1/2 -translate-x-1/2 z-30 pointer-events-auto flex items-center gap-2">
       {/* View Modes */}
-      <div className="flex items-center gap-0.5 p-0.5 sm:p-1 bg-slate-900/80 backdrop-blur-xl rounded-lg sm:rounded-xl border border-slate-700/50 shadow-lg">
+      <div className="garden-chrome flex items-center gap-0.5 p-1 rounded-xl">
         <button
           onClick={() => onViewModeChange('garden')}
           className={cn(
             "flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-bold transition-all duration-300",
             viewMode === 'garden'
-              ? "bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-md shadow-green-500/30"
-              : "text-slate-400 hover:text-white hover:bg-slate-800"
+              ? "bg-leaf text-primary-foreground shadow-leaf"
+              : "text-canopy/60 hover:text-canopy hover:bg-leaf/10"
           )}
         >
           <TreesIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
@@ -427,8 +436,8 @@ function ViewToggle({
           className={cn(
             "flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-bold transition-all duration-300",
             viewMode === 'list'
-              ? "bg-gradient-to-br from-blue-400 to-indigo-500 text-white shadow-md shadow-blue-500/30"
-              : "text-slate-400 hover:text-white hover:bg-slate-800"
+              ? "bg-moisture text-primary-foreground shadow-[0_8px_20px_rgba(77,157,166,0.24)]"
+              : "text-canopy/60 hover:text-canopy hover:bg-moisture/10"
           )}
         >
           <LayoutGrid className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
@@ -439,8 +448,8 @@ function ViewToggle({
           className={cn(
             "flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-bold transition-all duration-300",
             viewMode === 'focus'
-              ? "bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-md shadow-amber-500/30"
-              : "text-slate-400 hover:text-white hover:bg-slate-800"
+              ? "bg-honey text-canopy shadow-[0_8px_20px_rgba(245,183,0,0.24)]"
+              : "text-canopy/60 hover:text-canopy hover:bg-honey/15"
           )}
         >
           <Target className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
@@ -449,14 +458,14 @@ function ViewToggle({
       </div>
 
       {/* Zen Mode Toggle (Separate pill) */}
-      <div className="flex items-center p-0.5 sm:p-1 bg-slate-900/80 backdrop-blur-xl rounded-lg sm:rounded-xl border border-slate-700/50 shadow-lg">
+      <div className="garden-chrome flex items-center p-1 rounded-xl">
         <button
           onClick={() => onZenModeChange(!isZenMode)}
           className={cn(
             "flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-bold transition-all duration-300",
             isZenMode
-              ? "bg-gradient-to-br from-pink-400 to-rose-500 text-white shadow-md shadow-rose-500/30"
-              : "text-slate-400 hover:text-white hover:bg-slate-800"
+              ? "bg-bloom text-white shadow-[0_8px_20px_rgba(232,142,164,0.24)]"
+              : "text-canopy/60 hover:text-canopy hover:bg-bloom/15"
           )}
           title="Zen Mode: Relax with breathing weather and music"
         >
