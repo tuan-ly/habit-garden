@@ -10,16 +10,50 @@ import { FocusGardenView } from './focus-garden-view'
 import { GardenSky } from './garden-sky'
 import { WeatherEffects } from './weather-effects'
 import { WelcomeBackModal } from '@/components/game-ui/welcome-back-modal'
-import { TreesIcon, LayoutGrid, Plus, Target, Flower2 } from 'lucide-react'
+import { PlantImage } from '@/components/plants/plant-image'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Progress } from '@/components/ui/progress'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  BarChart3,
+  CalendarDays,
+  CheckCircle2,
+  ChevronRight,
+  Clock3,
+  Droplets,
+  Flame,
+  Flower2,
+  LayoutGrid,
+  Leaf,
+  ListChecks,
+  Plus,
+  Sprout,
+  Target,
+  TreesIcon,
+  Zap,
+  type LucideIcon,
+} from 'lucide-react'
 import { GameHud } from '@/components/game-ui/game-hud'
-import { cn } from '@/lib/utils'
+import { cn, isToday } from '@/lib/utils'
 import { usePlants } from '@/lib/context/plants-context'
 import { useMood } from '@/lib/context/mood-context'
 import { usePlantTypes, useProfile } from '@/lib/context/dashboard-data-context'
 import { useBreathingRhythm } from '@/hooks/use-breathing-rhythm'
 import { useDevOverride } from '@/components/dev/dev-debug-context'
 import { getGoalsForPlants, type GoalWithStats } from '@/lib/actions/goals'
-import type { PlantWithType, WeatherType } from '@/types/database'
+import { toast } from 'sonner'
+import type { PlantWithType, Profile, WeatherType } from '@/types/database'
 
 const LAST_VISIT_KEY = 'habit-garden-last-visit'
 const ABSENCE_THRESHOLD_DAYS = 3
@@ -31,15 +65,15 @@ function getDaysDiff(dateStr: string, today: string): number {
   return Math.floor(diffMs / (1000 * 60 * 60 * 24))
 }
 
-type ViewMode = 'garden' | 'list' | 'focus'
+type ViewMode = 'today' | 'garden' | 'list' | 'focus'
 
 interface GardenViewProps {
   weather?: WeatherType | null
 }
 
-export function GardenView({ weather }: GardenViewProps) {
+export function GardenView({}: GardenViewProps) {
   // Get plants from context with optimistic updates
-  const { plants } = usePlants()
+  const { plants, waterPlant, logGoal, isSyncing } = usePlants()
   const { mood } = useMood()
   // Get plantTypes and profile from DashboardDataContext
   const plantTypes = usePlantTypes()
@@ -71,6 +105,7 @@ export function GardenView({ weather }: GardenViewProps) {
   const [selectedPlant, setSelectedPlant] = useState<PlantWithType | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [quickLogPlant, setQuickLogPlant] = useState<PlantWithType | null>(null)
   const [isZenMode, setIsZenMode] = useState(false)
 
   // Welcome back system
@@ -86,9 +121,11 @@ export function GardenView({ weather }: GardenViewProps) {
     if (lastVisit && lastVisit !== today) {
       const daysDiff = getDaysDiff(lastVisit, today)
       if (daysDiff >= ABSENCE_THRESHOLD_DAYS) {
-        setWelcomeBackDays(daysDiff)
-        setWelcomeBackPending(true)
-        setWelcomeBackOpen(true)
+        queueMicrotask(() => {
+          setWelcomeBackDays(daysDiff)
+          setWelcomeBackPending(true)
+          setWelcomeBackOpen(true)
+        })
       }
     }
 
@@ -117,11 +154,11 @@ export function GardenView({ weather }: GardenViewProps) {
     // Initialize from localStorage on client side
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('gardenViewMode') as ViewMode | null
-      if (saved === 'garden' || saved === 'list' || saved === 'focus') {
+      if (saved === 'today' || saved === 'garden' || saved === 'list' || saved === 'focus') {
         return saved
       }
     }
-    return 'garden'
+    return 'today'
   })
 
   // Save preference
@@ -133,6 +170,19 @@ export function GardenView({ weather }: GardenViewProps) {
   const handlePlantClick = (plant: PlantWithType) => {
     setSelectedPlant(plant)
     setSheetOpen(true)
+  }
+
+  const handleWaterPlant = async (plant: PlantWithType) => {
+    await waterPlant(plant.id)
+  }
+
+  const handleQuickGoalLog = async (plant: PlantWithType, value: number, notes?: string) => {
+    const result = await logGoal(plant.id, value, notes)
+    if (result.success) {
+      toast.success(`Logged ${formatHabitValue(value)} ${plant.goal?.unit ?? ''}`.trim(), {
+        description: `${plant.name} is updated for today.`,
+      })
+    }
   }
 
   // Include all living gentle-growth statuses (thriving/resting/waiting/sleeping/growing)
@@ -148,7 +198,7 @@ export function GardenView({ weather }: GardenViewProps) {
   )
   useEffect(() => {
     if (plantIdsWithGoals.length === 0) {
-      setGoalsMap(new Map())
+      queueMicrotask(() => setGoalsMap(new Map()))
       return
     }
     getGoalsForPlants(plantIdsWithGoals).then(setGoalsMap)
@@ -173,7 +223,7 @@ export function GardenView({ weather }: GardenViewProps) {
         />
 
         {/* Game HUD */}
-        <GameHud profile={profile} />
+        {viewMode !== 'today' && <GameHud profile={profile} />}
 
         {/* View toggle - top center */}
         <ViewToggle
@@ -183,14 +233,18 @@ export function GardenView({ weather }: GardenViewProps) {
           onZenModeChange={setIsZenMode}
         />
 
-        <IsometricGarden
-          plantTypes={plantTypes}
-          weather={displayWeather}
-          journalStreak={profile?.journal_streak ?? 0}
-          userLevel={effectiveLevel}
-          welcomeBackPending={welcomeBackPending}
-          onWelcomeBackUsed={() => setWelcomeBackPending(false)}
-        />
+        {viewMode === 'today' ? (
+          <EmptyTodayDashboard onAddPlant={() => setAddDialogOpen(true)} />
+        ) : (
+          <IsometricGarden
+            plantTypes={plantTypes}
+            weather={displayWeather}
+            journalStreak={profile?.journal_streak ?? 0}
+            userLevel={effectiveLevel}
+            welcomeBackPending={welcomeBackPending}
+            onWelcomeBackUsed={() => setWelcomeBackPending(false)}
+          />
+        )}
 
         <AddPlantDialog
           plantTypes={plantTypes}
@@ -228,7 +282,7 @@ export function GardenView({ weather }: GardenViewProps) {
       )}
 
       {/* Game HUD - floating at top corners */}
-      <GameHud profile={profile} />
+      {viewMode !== 'today' && <GameHud profile={profile} />}
 
       {/* View toggle - top center */}
       <ViewToggle
@@ -240,6 +294,21 @@ export function GardenView({ weather }: GardenViewProps) {
 
       {/* Floating Add Plant button - only in list view */}
       {viewMode === 'list' && <FloatingAddButton onClick={() => setAddDialogOpen(true)} />}
+
+      {/* Today View - habit-first tracking dashboard */}
+      {viewMode === 'today' && (
+        <TodayHabitDashboard
+          plants={plants}
+          profile={profile}
+          goalsMap={goalsMap}
+          isSyncing={isSyncing}
+          onAddPlant={() => setAddDialogOpen(true)}
+          onOpenPlant={handlePlantClick}
+          onWaterPlant={handleWaterPlant}
+          onQuickLog={handleQuickGoalLog}
+          onOpenLog={setQuickLogPlant}
+        />
+      )}
 
       {/* Isometric Garden View - fills entire screen */}
       {viewMode === 'garden' && (
@@ -379,6 +448,19 @@ export function GardenView({ weather }: GardenViewProps) {
         onOpenChange={setAddDialogOpen}
       />
 
+      <QuickLogDialog
+        plant={quickLogPlant}
+        open={!!quickLogPlant}
+        onOpenChange={(open) => {
+          if (!open) setQuickLogPlant(null)
+        }}
+        onSubmit={async (value, notes) => {
+          if (!quickLogPlant) return
+          await handleQuickGoalLog(quickLogPlant, value, notes)
+          setQuickLogPlant(null)
+        }}
+      />
+
       {/* Welcome back modal */}
       <WelcomeBackModal
         open={welcomeBackOpen}
@@ -394,6 +476,601 @@ export function GardenView({ weather }: GardenViewProps) {
   )
 }
 
+function EmptyTodayDashboard({ onAddPlant }: { onAddPlant: () => void }) {
+  return (
+    <div className="relative z-10 flex h-full items-center justify-center px-4 pb-28 pt-24">
+      <section className="w-full max-w-2xl overflow-hidden rounded-[2rem] border border-white/60 bg-white/80 p-6 shadow-dappled-lg backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/70 sm:p-8">
+        <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-3xl bg-primary/10 text-primary">
+          <Sprout className="h-8 w-8" />
+        </div>
+        <Badge variant="secondary" className="mb-3 bg-primary/10 text-primary">
+          Start with one habit
+        </Badge>
+        <h1 className="font-display text-3xl font-semibold leading-tight text-foreground sm:text-4xl">
+          Plant the first habit you want to see every day.
+        </h1>
+        <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
+          The new home screen is built around a daily loop: choose the next habit,
+          check in fast, and let the garden become the reward layer after the action.
+        </p>
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <Button onClick={onAddPlant} size="lg" className="h-12 gap-2 rounded-2xl">
+            <Plus className="h-5 w-5" />
+            Create first habit
+          </Button>
+          <div className="flex items-center gap-2 rounded-2xl border bg-background/70 px-4 py-3 text-sm text-muted-foreground">
+            <ListChecks className="h-4 w-4 text-primary" />
+            Today, streaks, progress, and garden feedback in one place.
+          </div>
+        </div>
+      </section>
+    </div>
+  )
+}
+
+interface TodayHabitDashboardProps {
+  plants: PlantWithType[]
+  profile: Profile | null
+  goalsMap: Map<string, GoalWithStats>
+  isSyncing: boolean
+  onAddPlant: () => void
+  onOpenPlant: (plant: PlantWithType) => void
+  onWaterPlant: (plant: PlantWithType) => Promise<void>
+  onQuickLog: (plant: PlantWithType, value: number) => Promise<void>
+  onOpenLog: (plant: PlantWithType) => void
+}
+
+function TodayHabitDashboard({
+  plants,
+  profile,
+  goalsMap,
+  isSyncing,
+  onAddPlant,
+  onOpenPlant,
+  onWaterPlant,
+  onQuickLog,
+  onOpenLog,
+}: TodayHabitDashboardProps) {
+  const livingPlants = useMemo(
+    () => plants.filter((plant) => plant.status !== 'dead' && plant.status !== 'dormant'),
+    [plants]
+  )
+  const completedPlants = useMemo(
+    () => livingPlants.filter((plant) => isHabitDoneToday(plant)),
+    [livingPlants]
+  )
+  const duePlants = useMemo(
+    () =>
+      livingPlants
+        .filter((plant) => !isHabitDoneToday(plant))
+        .sort((a, b) => getHabitUrgency(b) - getHabitUrgency(a)),
+    [livingPlants]
+  )
+  const completionPercent = livingPlants.length
+    ? Math.round((completedPlants.length / livingPlants.length) * 100)
+    : 0
+  const focusPlant = duePlants[0] ?? completedPlants[0] ?? livingPlants[0]
+  const attentionCount = duePlants.filter((plant) => getHabitUrgency(plant) >= 4).length
+  const averageGoalProgress = getAverageGoalProgress(livingPlants)
+
+  return (
+    <div className="h-full overflow-y-auto bg-[linear-gradient(180deg,#FEFCF7_0%,#F1ECDD_46%,#DDEBDD_100%)] px-4 pb-36 pt-24 dark:bg-[linear-gradient(180deg,#0F1A14_0%,#172620_48%,#1F3028_100%)] sm:px-6 lg:px-8">
+      <div className="mx-auto grid max-w-7xl gap-5 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px]">
+        <section className="space-y-5">
+          <div className="rounded-[2rem] border border-white/70 bg-white/80 p-5 shadow-dappled-lg backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/60 sm:p-6">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+              <div className="max-w-2xl">
+                <Badge variant="secondary" className="mb-3 bg-primary/10 text-primary">
+                  Today plan
+                </Badge>
+                <h1 className="font-display text-3xl font-semibold leading-tight text-foreground sm:text-5xl">
+                  {completionPercent === 100 ? 'Daily loop complete.' : 'Pick the next habit and move.'}
+                </h1>
+                <p className="mt-3 text-sm leading-6 text-muted-foreground sm:text-base">
+                  {completionPercent === 100
+                    ? 'You have checked in on every active habit. The garden can stay calm now.'
+                    : `${duePlants.length} habit${duePlants.length === 1 ? '' : 's'} still need a check-in. Start with the smallest clear action.`}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 sm:min-w-[340px]">
+                <TodayMetric
+                  icon={CheckCircle2}
+                  label="Done"
+                  value={`${completedPlants.length}/${livingPlants.length}`}
+                  tone="green"
+                />
+                <TodayMetric
+                  icon={Flame}
+                  label="Best streak"
+                  value={String(getBestStreak(livingPlants))}
+                  tone="amber"
+                />
+                <TodayMetric
+                  icon={BarChart3}
+                  label="Period"
+                  value={`${averageGoalProgress}%`}
+                  tone="blue"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
+              <div className="rounded-3xl border bg-background/80 p-4 dark:bg-slate-900/70">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-semibold">Today completion</span>
+                  <span className="font-bold text-primary">{completionPercent}%</span>
+                </div>
+                <Progress value={completionPercent} className="mt-3 h-3 bg-primary/10" />
+                <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+                  <Clock3 className="h-4 w-4 text-primary" />
+                  {isSyncing ? 'Syncing latest check-in...' : 'Actions update immediately.'}
+                </div>
+              </div>
+
+              {focusPlant && (
+                <div className="relative overflow-hidden rounded-3xl border bg-[radial-gradient(circle_at_85%_10%,rgba(232,185,106,0.28),transparent_32%),linear-gradient(135deg,rgba(59,122,87,0.12),rgba(255,255,255,0.78))] p-4 dark:bg-[linear-gradient(135deg,rgba(107,165,122,0.16),rgba(15,26,20,0.82))]">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-24 w-24 shrink-0 items-end justify-center rounded-3xl bg-white/70 p-2 shadow-dappled dark:bg-white/5">
+                      <PlantImage plant={focusPlant} size="2xl" alignBottom />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <Badge className={cn('border-0', isHabitDoneToday(focusPlant) ? 'bg-green-600' : 'bg-primary')}>
+                          {isHabitDoneToday(focusPlant) ? 'Checked in' : 'Next best action'}
+                        </Badge>
+                        {focusPlant.easy_mode && (
+                          <Badge variant="outline" className="bg-white/60 dark:bg-white/5">
+                            2-minute seed
+                          </Badge>
+                        )}
+                      </div>
+                      <h2 className="truncate text-xl font-black text-foreground sm:text-2xl">
+                        {focusPlant.name}
+                      </h2>
+                      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                        {focusPlant.tiny_seed || focusPlant.habit_description || 'A small daily check-in keeps this plant alive.'}
+                      </p>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {focusPlant.goal ? (
+                          <>
+                            <Button onClick={() => onOpenLog(focusPlant)} className="gap-2 rounded-2xl">
+                              <Zap className="h-4 w-4" />
+                              Log progress
+                            </Button>
+                            <Button variant="secondary" onClick={() => onQuickLog(focusPlant, 1)} className="rounded-2xl">
+                              +1 quick log
+                            </Button>
+                          </>
+                        ) : (
+                          <Button
+                            onClick={() => onWaterPlant(focusPlant)}
+                            disabled={isHabitDoneToday(focusPlant)}
+                            className="gap-2 rounded-2xl"
+                          >
+                            <CheckCircle2 className="h-4 w-4" />
+                            {isHabitDoneToday(focusPlant) ? 'Done today' : 'Check in'}
+                          </Button>
+                        )}
+                        <Button variant="ghost" onClick={() => onOpenPlant(focusPlant)} className="hidden gap-1 rounded-2xl sm:inline-flex">
+                          Details
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <section className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-black">Action queue</h2>
+                <p className="text-sm text-muted-foreground">
+                  Ordered by habits that need attention first.
+                </p>
+              </div>
+              <Button variant="outline" onClick={onAddPlant} className="shrink-0 gap-2 rounded-2xl bg-white/70 dark:bg-white/5">
+                <Plus className="h-4 w-4" />
+                Add
+              </Button>
+            </div>
+
+            <div className="grid gap-3 xl:grid-cols-2">
+              {duePlants.map((plant) => (
+                <HabitActionCard
+                  key={plant.id}
+                  plant={plant}
+                  goalStats={goalsMap.get(plant.id) ?? null}
+                  status="due"
+                  onOpen={onOpenPlant}
+                  onWaterPlant={onWaterPlant}
+                  onQuickLog={onQuickLog}
+                  onOpenLog={onOpenLog}
+                />
+              ))}
+              {duePlants.length === 0 && (
+                <div className="rounded-3xl border border-green-200 bg-green-50/90 p-5 text-green-900 shadow-dappled dark:border-green-900/50 dark:bg-green-950/30 dark:text-green-100">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="h-6 w-6" />
+                    <div>
+                      <h3 className="font-bold">Nothing urgent left today.</h3>
+                      <p className="text-sm text-green-700 dark:text-green-300">
+                        You can review details, add a note, or enjoy the garden view.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+        </section>
+
+        <aside className="space-y-4">
+          <section className="rounded-[2rem] border border-white/70 bg-white/80 p-5 shadow-dappled backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/60">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-black">Momentum</h2>
+                <p className="text-sm text-muted-foreground">Daily habit health.</p>
+              </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <Leaf className="h-5 w-5" />
+              </div>
+            </div>
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <InsightTile label="Needs attention" value={String(attentionCount)} icon={Clock3} />
+              <InsightTile label="Journal streak" value={String(profile?.journal_streak ?? 0)} icon={CalendarDays} />
+              <InsightTile label="Level" value={String(profile?.level ?? 1)} icon={Zap} />
+              <InsightTile label="Living habits" value={String(livingPlants.length)} icon={Sprout} />
+            </div>
+          </section>
+
+          <section className="rounded-[2rem] border border-white/70 bg-white/80 p-5 shadow-dappled backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/60">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="font-black">Done today</h2>
+                <p className="text-sm text-muted-foreground">Positive feedback, not clutter.</p>
+              </div>
+              <Badge variant="secondary">{completedPlants.length}</Badge>
+            </div>
+            <div className="space-y-2">
+              {completedPlants.slice(0, 5).map((plant) => (
+                <button
+                  key={plant.id}
+                  onClick={() => onOpenPlant(plant)}
+                  className="flex w-full items-center gap-3 rounded-2xl border bg-background/70 p-3 text-left transition hover:bg-primary/5 dark:bg-white/5"
+                >
+                  <div className="flex h-11 w-11 items-end justify-center rounded-2xl bg-green-100 p-1 dark:bg-green-950/50">
+                    <PlantImage plant={plant} size="lg" alignBottom />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold">{plant.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {plant.today_log_count ? `${plant.today_log_count} log${plant.today_log_count === 1 ? '' : 's'}` : 'Checked in'}
+                    </p>
+                  </div>
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                </button>
+              ))}
+              {completedPlants.length === 0 && (
+                <p className="rounded-2xl border border-dashed p-4 text-sm text-muted-foreground">
+                  Completed habits will move here after the first check-in.
+                </p>
+              )}
+            </div>
+          </section>
+        </aside>
+      </div>
+    </div>
+  )
+}
+
+function TodayMetric({
+  icon: Icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: LucideIcon
+  label: string
+  value: string
+  tone: 'green' | 'amber' | 'blue'
+}) {
+  const tones = {
+    green: 'bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-300',
+    amber: 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
+    blue: 'bg-sky-100 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300',
+  }
+
+  return (
+    <div className="rounded-2xl border bg-background/75 p-3 dark:bg-white/5">
+      <div className={cn('mb-2 flex h-8 w-8 items-center justify-center rounded-xl', tones[tone])}>
+        <Icon className="h-4 w-4" />
+      </div>
+      <div className="text-xl font-black leading-none">{value}</div>
+      <div className="mt-1 text-[11px] font-bold uppercase text-muted-foreground">{label}</div>
+    </div>
+  )
+}
+
+function InsightTile({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: LucideIcon
+  label: string
+  value: string
+}) {
+  return (
+    <div className="rounded-2xl border bg-background/70 p-3 dark:bg-white/5">
+      <Icon className="mb-2 h-4 w-4 text-primary" />
+      <div className="text-lg font-black leading-none">{value}</div>
+      <div className="mt-1 text-xs text-muted-foreground">{label}</div>
+    </div>
+  )
+}
+
+function HabitActionCard({
+  plant,
+  goalStats,
+  status,
+  onOpen,
+  onWaterPlant,
+  onQuickLog,
+  onOpenLog,
+}: {
+  plant: PlantWithType
+  goalStats: GoalWithStats | null
+  status: 'due' | 'done'
+  onOpen: (plant: PlantWithType) => void
+  onWaterPlant: (plant: PlantWithType) => Promise<void>
+  onQuickLog: (plant: PlantWithType, value: number) => Promise<void>
+  onOpenLog: (plant: PlantWithType) => void
+}) {
+  const done = status === 'done' || isHabitDoneToday(plant)
+  const progress = getHabitGoalProgress(plant, goalStats)
+  const urgency = getHabitUrgency(plant)
+
+  return (
+    <article className="rounded-[1.5rem] border border-white/70 bg-white/85 p-4 shadow-dappled transition hover:-translate-y-0.5 hover:shadow-dappled-lg dark:border-white/10 dark:bg-slate-950/65">
+      <div className="flex gap-4">
+        <button
+          onClick={() => onOpen(plant)}
+          className="flex h-20 w-20 shrink-0 items-end justify-center rounded-3xl bg-gradient-to-b from-primary/10 to-primary/5 p-2"
+          aria-label={`Open ${plant.name}`}
+        >
+          <PlantImage plant={plant} size="2xl" alignBottom />
+        </button>
+
+        <div className="min-w-0 flex-1">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <Badge
+              variant={done ? 'secondary' : 'outline'}
+              className={cn(
+                done && 'bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-300',
+                !done && urgency >= 4 && 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300'
+              )}
+            >
+              {done ? 'Done today' : urgency >= 4 ? 'Needs attention' : 'Ready'}
+            </Badge>
+            {plant.current_streak > 0 && (
+              <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-300">
+                <Flame className="h-3.5 w-3.5" />
+                {plant.current_streak}
+              </span>
+            )}
+          </div>
+          <h3 className="truncate text-base font-black">{plant.name}</h3>
+          <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+            {plant.tiny_seed || plant.habit_description || plant.plant_type.description || 'Small progress counts today.'}
+          </p>
+        </div>
+      </div>
+
+      {progress && (
+        <div className="mt-4 rounded-2xl border bg-background/70 p-3 dark:bg-white/5">
+          <div className="mb-2 flex items-center justify-between gap-3 text-xs">
+            <span className="font-semibold text-muted-foreground">{progress.label}</span>
+            <span className="font-black">
+              {formatHabitValue(progress.current)} / {formatHabitValue(progress.target)} {progress.unit}
+            </span>
+          </div>
+          <Progress value={progress.percent} className="h-2.5 bg-primary/10" />
+        </div>
+      )}
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        {plant.goal ? (
+          <>
+            <Button onClick={() => onOpenLog(plant)} size="sm" className="gap-2 rounded-2xl">
+              <Zap className="h-4 w-4" />
+              Log
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => onQuickLog(plant, 1)} className="rounded-2xl">
+              +1
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => onQuickLog(plant, 5)} className="rounded-2xl bg-white/60 dark:bg-white/5">
+              +5
+            </Button>
+          </>
+        ) : (
+          <Button
+            onClick={() => onWaterPlant(plant)}
+            disabled={done}
+            size="sm"
+            className="gap-2 rounded-2xl"
+          >
+            {done ? <CheckCircle2 className="h-4 w-4" /> : <Droplets className="h-4 w-4" />}
+            {done ? 'Checked in' : 'Check in'}
+          </Button>
+        )}
+        <Button variant="ghost" size="sm" onClick={() => onOpen(plant)} className="ml-auto rounded-2xl">
+          Details
+        </Button>
+      </div>
+    </article>
+  )
+}
+
+function QuickLogDialog({
+  plant,
+  open,
+  onOpenChange,
+  onSubmit,
+}: {
+  plant: PlantWithType | null
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onSubmit: (value: number, notes?: string) => Promise<void>
+}) {
+  const [value, setValue] = useState('')
+  const [notes, setNotes] = useState('')
+
+  useEffect(() => {
+    if (open) {
+      queueMicrotask(() => {
+        setValue('')
+        setNotes('')
+      })
+    }
+  }, [open])
+
+  const goal = plant?.goal
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="rounded-3xl sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Zap className="h-5 w-5 text-primary" />
+            Log progress
+          </DialogTitle>
+          <DialogDescription>
+            {plant ? `${plant.name}${goal ? ` - ${goal.period_label}` : ''}` : 'Add a habit check-in.'}
+          </DialogDescription>
+        </DialogHeader>
+
+        <form
+          className="space-y-4"
+          onSubmit={async (event) => {
+            event.preventDefault()
+            const parsed = Number(value)
+            if (!parsed || parsed <= 0) {
+              toast.error('Enter a value greater than 0')
+              return
+            }
+            await onSubmit(parsed, notes.trim() || undefined)
+          }}
+        >
+          <div className="space-y-2">
+            <Label htmlFor="quick-log-value">Value {goal?.unit ? `(${goal.unit})` : ''}</Label>
+            <Input
+              id="quick-log-value"
+              type="number"
+              min="0"
+              step="0.1"
+              value={value}
+              onChange={(event) => setValue(event.target.value)}
+              placeholder="0"
+              className="h-12 rounded-2xl text-lg font-bold"
+              autoFocus
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {[1, 5, 10, 25].map((amount) => (
+              <Button
+                key={amount}
+                type="button"
+                variant={value === String(amount) ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setValue(String(amount))}
+                className="rounded-2xl"
+              >
+                {amount}
+              </Button>
+            ))}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="quick-log-notes">Reflection note</Label>
+            <Textarea
+              id="quick-log-notes"
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
+              placeholder="What helped today?"
+              className="min-h-20 rounded-2xl"
+            />
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" className="rounded-2xl">
+              Save check-in
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function isHabitDoneToday(plant: PlantWithType): boolean {
+  if (plant.goal) {
+    return (plant.today_log_count ?? 0) > 0
+  }
+
+  return isToday(plant.last_watered_at)
+}
+
+function getHabitUrgency(plant: PlantWithType): number {
+  let score = 0
+  if (plant.status === 'sleeping' || plant.status === 'waiting') score += 3
+  if (plant.current_moisture < 30) score += 3
+  else if (plant.current_moisture < 55) score += 1
+  if (plant.growth_blocked) score += 2
+  if (!isHabitDoneToday(plant)) score += 1
+  return score
+}
+
+function getBestStreak(plants: PlantWithType[]): number {
+  return plants.reduce((max, plant) => Math.max(max, plant.current_streak ?? 0), 0)
+}
+
+function getAverageGoalProgress(plants: PlantWithType[]): number {
+  const goalPlants = plants.filter((plant) => plant.goal)
+  if (goalPlants.length === 0) return 0
+
+  const total = goalPlants.reduce((sum, plant) => {
+    const progress = getHabitGoalProgress(plant, null)
+    return sum + (progress?.percent ?? 0)
+  }, 0)
+
+  return Math.round(total / goalPlants.length)
+}
+
+function getHabitGoalProgress(plant: PlantWithType, goalStats: GoalWithStats | null) {
+  const goal = plant.goal
+  if (!goal && !goalStats) return null
+
+  const current = goalStats?.periodProgress ?? goal?.period_progress ?? 0
+  const target = goalStats?.currentPeriodTarget ?? goal?.current_period_target ?? 1
+  const percent = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0
+  const unit = goalStats?.unit ?? goal?.unit ?? ''
+  const label = goalStats?.periodLabel ?? goal?.period_label ?? 'This period'
+
+  return { current, target, percent, unit, label }
+}
+
+function formatHabitValue(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1)
+}
+
 // View toggle component - compact, positioned at top center
 function ViewToggle({
   viewMode,
@@ -406,62 +1083,51 @@ function ViewToggle({
   isZenMode: boolean
   onZenModeChange: (isZen: boolean) => void
 }) {
-  return (
-    <div className="fixed top-14 sm:top-3 left-1/2 -translate-x-1/2 z-30 pointer-events-auto flex items-center gap-2">
-      {/* View Modes */}
-      <div className="flex items-center gap-0.5 p-0.5 sm:p-1 bg-slate-900/80 backdrop-blur-xl rounded-lg sm:rounded-xl border border-slate-700/50 shadow-lg">
-        <button
-          onClick={() => onViewModeChange('garden')}
-          className={cn(
-            "flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-bold transition-all duration-300",
-            viewMode === 'garden'
-              ? "bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-md shadow-green-500/30"
-              : "text-slate-400 hover:text-white hover:bg-slate-800"
-          )}
-        >
-          <TreesIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-          Garden
-        </button>
-        <button
-          onClick={() => onViewModeChange('list')}
-          className={cn(
-            "flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-bold transition-all duration-300",
-            viewMode === 'list'
-              ? "bg-gradient-to-br from-blue-400 to-indigo-500 text-white shadow-md shadow-blue-500/30"
-              : "text-slate-400 hover:text-white hover:bg-slate-800"
-          )}
-        >
-          <LayoutGrid className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-          List
-        </button>
-        <button
-          onClick={() => onViewModeChange('focus')}
-          className={cn(
-            "flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-bold transition-all duration-300",
-            viewMode === 'focus'
-              ? "bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-md shadow-amber-500/30"
-              : "text-slate-400 hover:text-white hover:bg-slate-800"
-          )}
-        >
-          <Target className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-          Focus
-        </button>
-      </div>
+  const viewItems: Array<{ mode: ViewMode; label: string; icon: LucideIcon; active: string }> = [
+    { mode: 'today', label: 'Today', icon: ListChecks, active: 'from-emerald-500 to-green-600' },
+    { mode: 'garden', label: 'Garden', icon: TreesIcon, active: 'from-green-400 to-emerald-500' },
+    { mode: 'list', label: 'List', icon: LayoutGrid, active: 'from-blue-400 to-indigo-500' },
+    { mode: 'focus', label: 'Focus', icon: Target, active: 'from-amber-400 to-orange-500' },
+  ]
 
-      {/* Zen Mode Toggle (Separate pill) */}
-      <div className="flex items-center p-0.5 sm:p-1 bg-slate-900/80 backdrop-blur-xl rounded-lg sm:rounded-xl border border-slate-700/50 shadow-lg">
+  return (
+    <div className="fixed top-2 left-1/2 z-30 flex max-w-[calc(100vw-0.75rem)] -translate-x-1/2 items-center pointer-events-auto">
+      {/* View Modes */}
+      <div className="flex shrink-0 items-center gap-0.5 rounded-2xl border border-slate-700/50 bg-slate-950/85 p-1 shadow-lg backdrop-blur-xl">
+        {viewItems.map((item) => {
+          const Icon = item.icon
+          const active = viewMode === item.mode
+          return (
+            <button
+              key={item.mode}
+              aria-label={item.label}
+              onClick={() => onViewModeChange(item.mode)}
+              className={cn(
+                "flex h-8 items-center gap-1 rounded-xl px-2 text-[10px] font-bold transition-all duration-300 sm:h-10 sm:gap-1.5 sm:px-3.5 sm:text-xs",
+                active
+                  ? `bg-gradient-to-br ${item.active} text-white shadow-md`
+                  : "text-slate-400 hover:bg-slate-800 hover:text-white"
+              )}
+            >
+              <Icon className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+              <span>{item.label}</span>
+            </button>
+          )
+        })}
+        <div className="mx-0.5 h-5 w-px bg-slate-700/70" />
         <button
+          aria-label="Zen"
           onClick={() => onZenModeChange(!isZenMode)}
           className={cn(
-            "flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-bold transition-all duration-300",
+            "flex h-8 items-center gap-1 rounded-xl px-2 text-[10px] font-bold transition-all duration-300 sm:h-10 sm:gap-1.5 sm:px-3.5 sm:text-xs",
             isZenMode
               ? "bg-gradient-to-br from-pink-400 to-rose-500 text-white shadow-md shadow-rose-500/30"
               : "text-slate-400 hover:text-white hover:bg-slate-800"
           )}
           title="Zen Mode: Relax with breathing weather and music"
         >
-          <Flower2 className={cn("w-3 h-3 sm:w-3.5 sm:h-3.5", isZenMode && "animate-pulse")} />
-          <span className="hidden sm:inline">Zen</span>
+          <Flower2 className={cn("h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4", isZenMode && "animate-pulse")} />
+          <span>Zen</span>
         </button>
       </div>
     </div>

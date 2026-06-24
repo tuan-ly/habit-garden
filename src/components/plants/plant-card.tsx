@@ -10,8 +10,11 @@ import { PlantVisual, StreakFire, XpPopup } from './plant-visual'
 import { usePlants } from '@/lib/context/plants-context'
 import { useState, useEffect, memo } from 'react'
 import { cn } from '@/lib/utils'
+import {
+  formatGoalValue,
+  getRemainingGoalValue,
+} from '@/lib/goal-progress'
 import { getGoalForPlant, type GoalWithStats } from '@/lib/actions/goals'
-import { GoalProgressRing, GoalModeBadge } from '@/components/goals'
 
 // Plant type accent — a single hue for top border, not full gradient
 const PLANT_ACCENTS: Record<string, string> = {
@@ -47,6 +50,13 @@ export const PlantCard = memo(function PlantCard({ plant: initialPlant, onClick,
   const goal = goalStats ?? lazyGoal
 
   const hasGoal = !!plant.goal_mode
+  const periodProgress = plant.goal?.period_progress ?? goal?.periodProgress ?? 0
+  const currentPeriodTarget = plant.goal?.current_period_target ?? goal?.currentPeriodTarget ?? 0
+  const periodLabel = plant.goal?.period_label ?? goal?.periodLabel ?? 'This period'
+  const goalUnit = plant.goal?.unit ?? goal?.unit ?? ''
+  const remainingPeriodValue = getRemainingGoalValue(periodProgress, currentPeriodTarget)
+  const isPeriodComplete = currentPeriodTarget > 0 && remainingPeriodValue === 0
+  const isPeriodOnTrack = goal?.isOnTrack ?? periodProgress >= currentPeriodTarget * 0.8
 
   useEffect(() => {
     if (hasGoal && goalStats === undefined) {
@@ -63,12 +73,14 @@ export const PlantCard = memo(function PlantCard({ plant: initialPlant, onClick,
 
   const handleWater = async (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (isWateredToday || isDead) return
+    if (isDead) return
 
     if (hasGoal) {
       onClick?.()
       return
     }
+
+    if (isWateredToday) return
 
     setIsWatering(true)
     const result = await waterPlant(plant.id)
@@ -90,7 +102,7 @@ export const PlantCard = memo(function PlantCard({ plant: initialPlant, onClick,
         'hover:scale-[1.02]',
         isDead && 'opacity-60 grayscale',
         isMature && 'ring-1 ring-leaf/30',
-        hasGoal && goal && !goal.isOnTrack && 'ring-1 ring-bloom/40'
+        hasGoal && currentPeriodTarget > 0 && !isPeriodOnTrack && 'ring-1 ring-bloom/40'
       )}
       onClick={onClick}
     >
@@ -129,40 +141,50 @@ export const PlantCard = memo(function PlantCard({ plant: initialPlant, onClick,
             </div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            {goal && <GoalProgressRing goal={goal} size="sm" showPeriod={true} />}
+            {hasGoal && currentPeriodTarget > 0 && (
+              <span className={cn(
+                'rounded-full px-2.5 py-1 text-[11px] font-semibold',
+                isPeriodComplete
+                  ? 'bg-leaf/15 text-leaf'
+                  : 'bg-bloom/15 text-bloom'
+              )}>
+                {isPeriodComplete
+                  ? 'Done'
+                  : `${formatGoalValue(remainingPeriodValue)} ${goalUnit} left`.trim()}
+              </span>
+            )}
             <StreakFire streak={plant.current_streak} show={plant.current_streak > 0 && !hasGoal} />
           </div>
         </div>
 
         {/* Metrics block */}
-        {hasGoal && goal ? (
+        {hasGoal && (goal || plant.goal) ? (
           <div className="space-y-3 mb-4 p-3.5 rounded-2xl bg-mist/60 dark:bg-muted/50">
-            <MoistureBar value={plant.current_moisture} />
             <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground font-medium">{goal.periodLabel}</span>
+              <span className="text-muted-foreground font-medium">{periodLabel}</span>
               <span className={cn(
                 'font-display font-semibold tabular-nums',
-                goal.periodProgress >= goal.currentPeriodTarget ? 'text-leaf'
-                  : !goal.isOnTrack ? 'text-bloom'
+                isPeriodComplete ? 'text-leaf'
+                  : !isPeriodOnTrack ? 'text-bloom'
                   : 'text-canopy dark:text-foreground'
               )}>
-                {Math.round(goal.periodProgress * 10) / 10} / {Math.round(goal.currentPeriodTarget * 10) / 10} {goal.unit}
+                {formatGoalValue(periodProgress)} / {formatGoalValue(currentPeriodTarget)} {goalUnit}
               </span>
             </div>
             <div className="h-1.5 w-full rounded-full bg-white/70 dark:bg-black/30 overflow-hidden">
               <div
                 className={cn(
                   'h-full rounded-full transition-[width] duration-500 ease-out',
-                  goal.periodProgress >= goal.currentPeriodTarget ? 'bg-leaf'
-                    : goal.isOnTrack ? 'bg-moss'
+                  isPeriodComplete ? 'bg-leaf'
+                    : isPeriodOnTrack ? 'bg-moss'
                     : 'bg-bloom'
                 )}
-                style={{ width: `${Math.min(100, goal.currentPeriodTarget > 0 ? (goal.periodProgress / goal.currentPeriodTarget) * 100 : 0)}%` }}
+                style={{ width: `${Math.min(100, currentPeriodTarget > 0 ? (periodProgress / currentPeriodTarget) * 100 : 0)}%` }}
               />
             </div>
-            {goal.periodProgress < goal.currentPeriodTarget && (
+            {!isPeriodComplete && (
               <p className="text-[10px] text-bloom/90 font-medium">
-                {Math.round((goal.currentPeriodTarget - goal.periodProgress) * 10) / 10} {goal.unit} to go
+                {formatGoalValue(remainingPeriodValue)} {goalUnit} to go
               </p>
             )}
           </div>
@@ -183,17 +205,17 @@ export const PlantCard = memo(function PlantCard({ plant: initialPlant, onClick,
             size="sm"
             className={cn(
               'w-full h-10 rounded-full font-semibold cursor-pointer transition-colors',
-              isWateredToday || isDead
+              isDead
                 ? 'bg-mist hover:bg-mist text-muted-foreground shadow-none dark:bg-muted'
                 : 'bg-leaf hover:bg-canopy text-white shadow-leaf'
             )}
             onClick={handleWater}
-            disabled={isWateredToday || isDead}
+            disabled={isDead}
           >
-            {isWateredToday ? (
-              <><Check className="h-4 w-4 mr-2" />Logged today</>
-            ) : isDead ? (
+            {isDead ? (
               'Dead'
+            ) : isWateredToday ? (
+              <><Plus className="h-4 w-4 mr-2" />Log more</>
             ) : (
               <><Plus className="h-4 w-4 mr-2" />Log Progress</>
             )}

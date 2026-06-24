@@ -32,6 +32,17 @@ interface GardenModalsProps {
   isWateredToday: (plant: PlantWithType) => boolean
 }
 
+function getDaysLeftInPeriod(periodEnd?: string): number | undefined {
+  if (!periodEnd) return undefined
+
+  const end = new Date(periodEnd)
+  const now = new Date()
+  if (Number.isNaN(end.getTime())) return undefined
+
+  const millisecondsPerDay = 24 * 60 * 60 * 1000
+  return Math.max(0, Math.ceil((end.getTime() - now.getTime()) / millisecondsPerDay))
+}
+
 export const GardenModals = memo(function GardenModals({
   wateringPlant,
   wateringModalOpen,
@@ -73,10 +84,10 @@ export const GardenModals = memo(function GardenModals({
         goalMode={wateringPlant?.goal_mode || undefined}
         isWateredToday={wateringPlant ? isWateredToday(wateringPlant) : false}
         journalStreak={journalStreak}
-        periodProgress={wateringPlant?.today_value}
-        currentPeriodTarget={wateringPlant?.goal?.current_week_target}
-        periodLabel={wateringPlant?.goal ? `Week ${wateringPlant.goal.week_number}` : undefined}
-        daysLeftInPeriod={wateringPlant?.goal ? (() => { const d = new Date().getDay(); return d === 0 ? 0 : 7 - d })() : undefined}
+        periodProgress={wateringPlant?.goal?.period_progress}
+        currentPeriodTarget={wateringPlant?.goal?.current_period_target}
+        periodLabel={wateringPlant?.goal?.period_label}
+        daysLeftInPeriod={getDaysLeftInPeriod(wateringPlant?.goal?.period_end)}
       />
 
       {/* Add plant dialog */}

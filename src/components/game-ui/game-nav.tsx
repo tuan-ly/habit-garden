@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Flower2, BarChart3, User as UserIcon, TreeDeciduous, Menu, X, Settings, LogOut, Sparkles, Crown, Hammer, ShoppingBag } from 'lucide-react'
+import { BarChart3, CheckCircle2, User as UserIcon, TreeDeciduous, Menu, X, Settings, LogOut, Sparkles, Crown, Hammer, ShoppingBag } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -22,15 +22,15 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   {
-    title: 'Garden',
+    title: 'Today',
     url: '/garden',
-    icon: Flower2,
+    icon: CheckCircle2,
     color: 'from-green-400 to-emerald-500',
     activeColor: 'bg-green-500',
     glowColor: 'shadow-green-500/50'
   },
   {
-    title: 'Overview',
+    title: 'Garden',
     url: '/overview',
     icon: TreeDeciduous,
     color: 'from-teal-400 to-cyan-500',

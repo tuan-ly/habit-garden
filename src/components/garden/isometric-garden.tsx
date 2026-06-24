@@ -19,6 +19,7 @@ import { usePlants } from '@/lib/context/plants-context'
 import { useGardenSettingsOptional } from '@/lib/context/garden-settings-context'
 import { useInventoryOptional } from '@/lib/context/inventory-context'
 import { useGardenZoom, useVisibleTiles } from '@/lib/hooks'
+import { formatGoalValue } from '@/lib/goal-progress'
 import type { PlantWithType, PlantType, WeatherType } from '@/types/database'
 import {
   calculateRequiredGridSize,
@@ -411,7 +412,10 @@ export function IsometricGarden({
       <ul className="sr-only" aria-label="Plants in your garden">
         {livingPlants.map((p) => (
           <li key={p.id}>
-            {p.name} — {p.status}, growth {Math.round(p.growth_percentage)}%
+            {p.name} — {p.status}, consistency growth {Math.round(p.growth_percentage)}%
+            {p.goal && (
+              <>, {p.goal.period_label} goal {formatGoalValue(p.goal.period_progress)} of {formatGoalValue(p.goal.current_period_target)} {p.goal.unit}</>
+            )}
           </li>
         ))}
       </ul>

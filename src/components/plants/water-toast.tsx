@@ -1,7 +1,11 @@
 'use client'
 
 import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
+import {
+  formatGoalValue,
+  getPeriodContext,
+  getRemainingGoalValue,
+} from '@/lib/goal-progress'
 
 interface WaterToastOptions {
   plantName: string
@@ -92,7 +96,10 @@ export function showGoalLogToast({
   unit,
   xpEarned,
   isPersonalRecord,
-  exceededTarget,
+  periodProgress,
+  periodTarget,
+  periodLabel,
+  consistencyDayAdded = false,
 }: {
   plantName: string
   plantIcon?: string
@@ -100,29 +107,49 @@ export function showGoalLogToast({
   unit: string
   xpEarned: number
   isPersonalRecord?: boolean
-  exceededTarget?: boolean
+  periodProgress?: number
+  periodTarget?: number
+  periodLabel?: string
+  consistencyDayAdded?: boolean
 }) {
-  let bonusText = ''
-  if (isPersonalRecord) {
-    bonusText = '🏆 Personal Record!'
-  } else if (exceededTarget) {
-    bonusText = '⭐ Target exceeded!'
-  }
+  const hasPeriodProgress = periodProgress !== undefined
+    && periodTarget !== undefined
+    && periodTarget > 0
+  const remaining = hasPeriodProgress
+    ? getRemainingGoalValue(periodProgress, periodTarget)
+    : undefined
+  const periodContext = getPeriodContext(periodLabel)
+  const progressMessage = remaining === undefined
+    ? 'Goal progress updated.'
+    : remaining === 0
+      ? `Target complete ${periodContext}.`
+      : `${formatGoalValue(remaining)} ${unit} left ${periodContext}.`
+  const consistencyMessage = consistencyDayAdded
+    ? 'Your tree gained a consistency day.'
+    : 'Your tree already counted today; goal progress still increased.'
 
   toast.success(
     <div className="flex items-center gap-3">
       <span className="text-2xl">{plantIcon}</span>
       <div>
         <div className="font-bold text-emerald-400">
-          +{xpEarned} XP • {value} {unit}
+          Logged {formatGoalValue(value)} {unit}
         </div>
-        <div className="text-xs text-slate-400">Logged for {plantName}</div>
+        <div className="text-xs text-slate-400">
+          {plantName}{xpEarned > 0 ? ` - +${xpEarned} XP` : ''}
+        </div>
       </div>
     </div>,
     {
-      description: bonusText ? (
-        <div className="text-amber-400 text-sm font-medium mt-1">{bonusText}</div>
-      ) : undefined,
+      description: (
+        <div className="mt-1 space-y-1 text-sm">
+          <div>{progressMessage}</div>
+          <div className="text-xs text-muted-foreground">{consistencyMessage}</div>
+          {isPersonalRecord && (
+            <div className="font-medium text-amber-500">New personal record.</div>
+          )}
+        </div>
+      ),
       duration: 3500,
     }
   )

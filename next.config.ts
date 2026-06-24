@@ -12,6 +12,9 @@ const withPWA = withPWAInit({
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
+  images: {
+    qualities: [75, 85],
+  },
   // Empty turbopack config to silence the warning in dev mode
   // next-pwa adds webpack config but is disabled in development anyway
   turbopack: {},

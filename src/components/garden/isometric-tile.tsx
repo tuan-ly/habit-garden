@@ -269,8 +269,6 @@ function IsometricTileComponent({
         >
           <PlantOverlayBadge
             plant={plant}
-            todayLogCount={plant.today_log_count}
-            todayValue={plant.today_value}
             tileSize={tileSize}
           />
         </div>

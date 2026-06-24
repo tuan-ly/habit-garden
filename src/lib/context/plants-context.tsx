@@ -15,6 +15,7 @@ import type { PlantWithType, TodayGoalLog } from '@/types/database'
 import { waterPlant as waterPlantAction, updatePlantPosition as updatePlantPositionAction } from '@/lib/actions/plants'
 import { logGoalValue as logGoalValueAction } from '@/lib/actions/goals'
 import { validatePlantMove } from '@/lib/utils/grid-positioning'
+import { applyGoalLogToPeriod } from '@/lib/goal-progress'
 import { toast } from 'sonner'
 
 // Types for optimistic updates
@@ -138,7 +139,15 @@ function plantsReducer(
           const newCurrentValue = updatedGoal.goal_mode === 'total_progress'
             ? updatedGoal.current_value + action.value
             : Math.max(updatedGoal.current_value, action.value)
-          updatedGoal = { ...updatedGoal, current_value: newCurrentValue }
+          updatedGoal = {
+            ...updatedGoal,
+            current_value: newCurrentValue,
+            period_progress: applyGoalLogToPeriod(
+              updatedGoal.goal_mode,
+              updatedGoal.period_progress,
+              action.value
+            ),
+          }
         }
 
         return {
@@ -292,7 +301,7 @@ export function PlantsProvider({
         }
       } catch {
         toast.error('Network error', {
-          description: 'Changes will sync when connection is restored',
+          description: 'Check-in was not saved. Please try again.',
         })
         return { success: false, error: 'Network error' }
       } finally {
@@ -360,7 +369,15 @@ export function PlantsProvider({
               // Update goal
               let updatedGoal = p.goal
               if (updatedGoal && result.newValue !== undefined) {
-                updatedGoal = { ...updatedGoal, current_value: result.newValue }
+                updatedGoal = {
+                  ...updatedGoal,
+                  current_value: result.newValue,
+                  period_progress: applyGoalLogToPeriod(
+                    updatedGoal.goal_mode,
+                    updatedGoal.period_progress,
+                    value
+                  ),
+                }
               }
 
               return {
@@ -395,7 +412,7 @@ export function PlantsProvider({
         }
       } catch {
         toast.error('Network error', {
-          description: 'Changes will sync when connection is restored',
+          description: 'Progress was not saved. Please try again.',
         })
         return { success: false, error: 'Network error' }
       } finally {

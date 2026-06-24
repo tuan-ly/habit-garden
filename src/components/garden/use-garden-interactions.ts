@@ -10,6 +10,7 @@ import {
 import { isToday } from '@/lib/utils'
 import { logActivity } from '@/lib/actions/activity'
 import { validatePlantMove } from '@/lib/utils/grid-positioning'
+import { applyGoalLogToPeriod } from '@/lib/goal-progress'
 import type { PlantWithType, InventoryItemWithDetails, DecorationRotation } from '@/types/database'
 import type { GardenMode } from './mode-toolbar'
 
@@ -240,7 +241,15 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
         const newCurrentValue = plant.goal.goal_mode === 'total_progress'
           ? plant.goal.current_value + value
           : Math.max(plant.goal.current_value, value)
-        optimisticUpdates.goal = { ...plant.goal, current_value: newCurrentValue }
+        optimisticUpdates.goal = {
+          ...plant.goal,
+          current_value: newCurrentValue,
+          period_progress: applyGoalLogToPeriod(
+            plant.goal.goal_mode,
+            plant.goal.period_progress,
+            value
+          ),
+        }
         optimisticUpdates.today_value = (plant.today_value || 0) + value
         optimisticUpdates.today_log_count = (plant.today_log_count || 0) + 1
       }
@@ -262,6 +271,14 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
         } else {
           if (welcomeBackPending) onWelcomeBackUsed?.()
           if (hasGoal && value !== undefined) {
+            const nextPeriodProgress = plant.goal
+              ? applyGoalLogToPeriod(
+                  plant.goal.goal_mode,
+                  plant.goal.period_progress,
+                  value
+                )
+              : undefined
+
             showGoalLogToast({
               plantName: plant.name,
               plantIcon: plant.plant_type.icon,
@@ -269,7 +286,10 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
               unit: plant.goal?.unit || '',
               xpEarned: result.xpEarned || 0,
               isPersonalRecord: result.isPersonalRecord,
-              exceededTarget: false,
+              periodProgress: nextPeriodProgress,
+              periodTarget: plant.goal?.current_period_target,
+              periodLabel: plant.goal?.period_label,
+              consistencyDayAdded: isFirstActivityToday,
             })
           } else {
             showWaterToast({

@@ -14,6 +14,7 @@ import type { PlantWithType } from '@/types/database'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -40,6 +41,11 @@ import {
 } from 'lucide-react'
 import { resolveGrowthConflict } from '@/lib/actions/plants'
 import { waterPlantSimple, logProgress } from '@/lib/actions/activity'
+import {
+  formatGoalValue,
+  getGoalLogCopy,
+  roundGoalValue,
+} from '@/lib/goal-progress'
 import { toast } from 'sonner'
 import { XP_VALUES, isMorningTime } from '@/lib/xp-constants'
 
@@ -99,6 +105,7 @@ export function GentleWateringModal({
   const [isLoading, setIsLoading] = useState(false)
   const [isResolving, setIsResolving] = useState(false)
   const notesRef = useRef<HTMLTextAreaElement>(null)
+  const logInputRef = useRef<HTMLInputElement>(null)
 
   const noteBonus = useMemo(() => {
     return calculateNoteBonus(notes.trim().length, journalStreak)
@@ -117,18 +124,23 @@ export function GentleWateringModal({
 
   useEffect(() => {
     if (open) {
-      setMode('choose')
+      setMode(hasGoal ? 'log' : 'choose')
       setNotes('')
       setLogValue('')
       setIsLoading(false)
     }
-  }, [open])
+  }, [open, hasGoal])
 
   useEffect(() => {
+    if (!open) return
+
     if (mode === 'water' && window.matchMedia('(min-width: 640px)').matches) {
       setTimeout(() => notesRef.current?.focus(), 100)
     }
-  }, [mode])
+    if (mode === 'log') {
+      setTimeout(() => logInputRef.current?.focus(), 100)
+    }
+  }, [mode, open])
 
   const handleWater = async () => {
     if (isLoading || !plant) return
@@ -224,10 +236,18 @@ export function GentleWateringModal({
 
   const noteLength = notes.trim().length
   const noteTier = noteLength > 100 ? 'detailed' : noteLength > 50 ? 'thoughtful' : noteLength > 0 ? 'basic' : 'none'
+  const goalLogCopy = getGoalLogCopy(goalMode ?? 'total_progress', goalUnit)
+  const numericLogValue = Number.parseFloat(logValue)
+  const hasValidLogValue = Number.isFinite(numericLogValue) && numericLogValue > 0
+  const logStep = goalUnit.toLowerCase().includes('km') ? 0.5 : 1
+  const adjustLogValue = (delta: number) => {
+    const currentValue = Number.isFinite(numericLogValue) ? numericLogValue : 0
+    setLogValue(String(roundGoalValue(Math.max(0, currentValue + delta))))
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md surface-paper border-0 shadow-dappled-lg p-6 gap-0">
+      <DialogContent className="sm:max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto surface-paper border-0 shadow-dappled-lg p-6 gap-0">
         <DialogHeader className="text-left">
           <div className="flex items-center gap-3">
             <div className="relative w-14 h-14 rounded-2xl bg-white/90 dark:bg-card flex items-center justify-center shadow-dappled">
@@ -239,6 +259,11 @@ export function GentleWateringModal({
                   {plant.name}
                 </h2>
               </DialogTitle>
+              <DialogDescription className="sr-only">
+                {hasGoal
+                  ? `Log measurable progress for ${plant.name}.`
+                  : `Record today\u2019s check-in for ${plant.name}.`}
+              </DialogDescription>
               <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                 {plant.current_streak > 0 && (
                   <span className="inline-flex items-center gap-1 text-bloom">
@@ -322,7 +347,7 @@ export function GentleWateringModal({
           )}
 
           {/* Goal context strip */}
-          {hasGoal && currentPeriodTarget !== undefined && currentPeriodTarget > 0 && mode === 'choose' && (
+          {hasGoal && currentPeriodTarget !== undefined && currentPeriodTarget > 0 && mode !== 'water' && (
             <div className={cn(
               'rounded-2xl p-3.5 space-y-2 ring-1',
               (periodProgress ?? 0) >= currentPeriodTarget
@@ -480,9 +505,13 @@ export function GentleWateringModal({
                 <div className="flex items-start gap-3">
                   <Sparkles className="w-5 h-5 text-leaf flex-shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="text-sm font-semibold text-canopy dark:text-foreground">Great job!</h4>
+                    <h4 className="text-sm font-semibold text-canopy dark:text-foreground">
+                      {hasGoal ? 'Log today\u2019s progress' : 'Great job!'}
+                    </h4>
                     <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                      Every small step counts toward your goals.
+                      {hasGoal
+                        ? 'Goal progress tracks the result. Your tree grows from showing up.'
+                        : 'Every small step counts toward your goals.'}
                     </p>
                   </div>
                 </div>
@@ -491,15 +520,20 @@ export function GentleWateringModal({
               {hasGoal && (
                 <>
                   <div>
-                    <label className="text-sm font-medium text-canopy dark:text-foreground mb-2 block">
-                      How much?
+                    <label
+                      htmlFor="goal-log-value"
+                      className="text-sm font-medium text-canopy dark:text-foreground mb-1 block"
+                    >
+                      {goalLogCopy.label}
                     </label>
+                    <p className="text-xs text-muted-foreground mb-2">{goalLogCopy.hint}</p>
                     <div className="flex items-center gap-3">
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={() => setLogValue(v => String(Math.max(0, (parseInt(v) || 0) - 1)))}
-                        disabled={!logValue || parseInt(logValue) <= 0}
+                        onClick={() => adjustLogValue(-logStep)}
+                        disabled={!hasValidLogValue}
+                        aria-label={`Decrease by ${logStep} ${goalUnit}`.trim()}
                         className="h-12 w-12 rounded-xl border-border bg-white/70 dark:bg-card text-canopy dark:text-foreground hover:bg-white shrink-0 cursor-pointer"
                       >
                         <Minus className="w-5 h-5" />
@@ -507,7 +541,12 @@ export function GentleWateringModal({
 
                       <div className="flex-1 relative">
                         <input
+                          ref={logInputRef}
+                          id="goal-log-value"
                           type="number"
+                          inputMode="decimal"
+                          min={logStep}
+                          step={logStep}
                           value={logValue}
                           onChange={(e) => setLogValue(e.target.value)}
                           className={cn(
@@ -528,7 +567,8 @@ export function GentleWateringModal({
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={() => setLogValue(v => String((parseInt(v) || 0) + 1))}
+                        onClick={() => adjustLogValue(logStep)}
+                        aria-label={`Increase by ${logStep} ${goalUnit}`.trim()}
                         className="h-12 w-12 rounded-xl border-border bg-white/70 dark:bg-card text-canopy dark:text-foreground hover:bg-white shrink-0 cursor-pointer"
                       >
                         <Plus className="w-5 h-5" />
@@ -552,7 +592,7 @@ export function GentleWateringModal({
                           onClick={() => setLogValue(String(v))}
                           className={cn(
                             'flex-1 py-2 rounded-full text-sm font-medium transition-colors cursor-pointer',
-                            parseInt(logValue) === v
+                            numericLogValue === v
                               ? 'bg-leaf text-white shadow-leaf'
                               : 'bg-white/70 dark:bg-card text-canopy dark:text-foreground hover:bg-mist'
                           )}
@@ -588,13 +628,18 @@ export function GentleWateringModal({
 
               <Button
                 onClick={handleLogAndWater}
-                disabled={isLoading || (hasGoal && (!logValue || parseInt(logValue) <= 0))}
+                disabled={isLoading || (hasGoal && !hasValidLogValue)}
                 className="w-full h-12 rounded-full bg-leaf hover:bg-canopy text-white shadow-leaf font-semibold cursor-pointer disabled:opacity-50"
               >
                 {isLoading ? (
                   <><Loader2 className="w-5 h-5 mr-2 animate-spin" />Logging…</>
                 ) : (
-                  <><Droplets className="w-5 h-5 mr-2" />Log (+{logXp} XP)</>
+                  <>
+                    <Droplets className="w-5 h-5 mr-2" />
+                    {hasGoal && hasValidLogValue
+                      ? `Log ${formatGoalValue(numericLogValue)} ${goalUnit}`.trim()
+                      : `Log (+${logXp} XP)`}
+                  </>
                 )}
               </Button>
             </div>
@@ -604,9 +649,9 @@ export function GentleWateringModal({
           <div className="flex justify-between text-[11px] text-muted-foreground px-1 pt-2">
             <span className="flex items-center gap-1">
               <Sprout className="w-3 h-3" />
-              Growth: {Math.round(plant.growth_percentage)}%
+              {hasGoal ? 'Consistency growth' : 'Growth'}: {Math.round(plant.growth_percentage)}%
             </span>
-            <span>Total Waterings: {plant.total_waterings}</span>
+            <span>{hasGoal ? 'Check-ins' : 'Total Waterings'}: {plant.total_waterings}</span>
           </div>
         </div>
       </DialogContent>

@@ -2,12 +2,14 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import type { CreatePlantDto, PlantWithType, PlantType, Difficulty, WeatherType, PlantGoalInfo, TodayGoalLog, GoalMode, PlantTier, Profile } from '@/types/database'
+import type { CreatePlantDto, PlantWithType, PlantType, Difficulty, WeatherType, PlantGoalInfo, TodayGoalLog, GoalMode, PlantTier, Profile, Goal } from '@/types/database'
 import { getAuthUser } from '@/lib/auth-cached'
 import { getTodayWeather, calculateWeatherXp } from '@/lib/weather-system'
 import { calculateWateringXp, calculateNoteBonus } from '@/lib/xp-system'
 import { getTodayMood } from '@/lib/actions/mood'
-import { calculateXpWithMood, getMoodBonusXp, getMoodConfig } from '@/lib/mood-system'
+import { calculateXpWithMood, getMoodBonusXp, getMoodConfig, type MoodLevel } from '@/lib/mood-system'
+import { getPeriodInfo, getPeriodTarget } from '@/lib/goal-utils'
+import { applyGoalLogToPeriod } from '@/lib/goal-progress'
 import {
   calculateRequiredGridSize,
   findNextAvailablePosition,
@@ -17,8 +19,6 @@ import {
 import {
   checkSlotAvailability,
   canPlantTier,
-  getMaxPlants,
-  calculateProgressionFields,
 } from '@/lib/progression-system'
 import { getDevPlantBypass } from '@/lib/actions/dev'
 
@@ -62,65 +62,109 @@ export async function getPlants(): Promise<PlantWithType[]> {
   }
 
   // Get plant IDs that have goals
-  const plantIds = plantsData.map(p => p.id)
   const plantsWithGoalMode = plantsData.filter(p => p.goal_mode)
   const plantIdsWithGoal = plantsWithGoalMode.map(p => p.id)
 
-  // Fetch goals and today's logs in parallel for plants that have goal_mode
-  let goalsMap = new Map<string, PlantGoalInfo>()
-  let todayLogsMap = new Map<string, TodayGoalLog[]>()
+  // Fetch active goals and the logs needed to calculate each current period.
+  const goalsMap = new Map<string, PlantGoalInfo>()
+  const todayLogsMap = new Map<string, TodayGoalLog[]>()
 
   if (plantIdsWithGoal.length > 0) {
-    const [goalsResult, todayLogsResult] = await Promise.all([
-      supabase
-        .from('goals')
-        .select('id, plant_id, goal_mode, tracking_metric, unit, target_value, current_value, weekly_targets, started_at')
-        .in('plant_id', plantIdsWithGoal),
-      supabase
-        .from('goal_logs')
-        .select('id, plant_id, value, notes, logged_at')
-        .in('plant_id', plantIdsWithGoal)
-        .eq('logged_date', today)
-        .order('logged_at', { ascending: false }),
-    ])
+    const { data: goalsData, error: goalsError } = await supabase
+      .from('goals')
+      .select(`
+        id, plant_id, goal_mode, tracking_metric, unit,
+        target_value, current_value, weekly_targets, started_at,
+        duration_weeks, frequency, frequency_target, period_start_day,
+        season_status
+      `)
+      .in('plant_id', plantIdsWithGoal)
+      .eq('season_status', 'active')
 
-    const goals = goalsResult.data
-    const todayLogs = todayLogsResult.data
-
-    if (goals) {
-      for (const goal of goals) {
-        // Calculate week number and current week target
-        const startDate = new Date(goal.started_at)
-        const daysSinceStart = Math.floor((Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24))
-        const weekNumber = Math.floor(daysSinceStart / 7) + 1
-        const weeklyTargets = (goal.weekly_targets as number[]) || []
-        const currentWeekTarget = weeklyTargets[Math.min(weekNumber - 1, weeklyTargets.length - 1)] || goal.target_value
-
-        goalsMap.set(goal.plant_id, {
-          id: goal.id,
-          goal_mode: goal.goal_mode,
-          tracking_metric: goal.tracking_metric,
-          unit: goal.unit,
-          target_value: goal.target_value,
-          current_value: goal.current_value,
-          weekly_targets: weeklyTargets,
-          current_week_target: currentWeekTarget,
-          week_number: weekNumber,
-        })
-      }
+    if (goalsError) {
+      console.error('Error fetching active goals:', goalsError)
     }
 
-    if (todayLogs) {
-      for (const log of todayLogs) {
+    const goals = (goalsData || []) as Goal[]
+    const periodInfoByGoal = new Map<string, ReturnType<typeof getPeriodInfo>>()
+
+    for (const goal of goals) {
+      periodInfoByGoal.set(goal.id, getPeriodInfo(goal))
+    }
+
+    const earliestPeriodStart = Array.from(periodInfoByGoal.values())
+      .reduce<Date | null>((earliest, period) => {
+        if (!earliest || period.periodStart < earliest) return period.periodStart
+        return earliest
+      }, null)
+
+    const goalLogs = earliestPeriodStart && goals.length > 0
+      ? (await supabase
+          .from('goal_logs')
+          .select('id, goal_id, plant_id, value, notes, logged_at, logged_date')
+          .in('goal_id', goals.map(goal => goal.id))
+          .gte('logged_at', earliestPeriodStart.toISOString())
+          .order('logged_at', { ascending: false })).data || []
+      : []
+
+    const logsByGoal = new Map<string, typeof goalLogs>()
+    for (const log of goalLogs) {
+      const goalLogsForPeriod = logsByGoal.get(log.goal_id) || []
+      goalLogsForPeriod.push(log)
+      logsByGoal.set(log.goal_id, goalLogsForPeriod)
+
+      if (log.logged_date === today) {
         const plantLogs = todayLogsMap.get(log.plant_id) || []
         plantLogs.push({
           id: log.id,
-          value: log.value,
+          value: Number(log.value),
           notes: log.notes,
           logged_at: log.logged_at,
         })
         todayLogsMap.set(log.plant_id, plantLogs)
       }
+    }
+
+    for (const goal of goals) {
+      const periodInfo = periodInfoByGoal.get(goal.id)
+      if (!periodInfo) continue
+
+      const periodLogs = (logsByGoal.get(goal.id) || []).filter(log => {
+        const loggedAt = new Date(log.logged_at)
+        return loggedAt >= periodInfo.periodStart && loggedAt <= periodInfo.periodEnd
+      })
+
+      const periodProgress = periodLogs.reduce(
+        (progress, log) => applyGoalLogToPeriod(goal.goal_mode, progress, Number(log.value)),
+        0
+      )
+      const currentPeriodTarget = getPeriodTarget(goal, periodInfo.periodNumber)
+
+      // Keep the legacy week fields while period-aware UI is rolled out.
+      const startDate = new Date(goal.started_at)
+      const daysSinceStart = Math.floor((Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+      const weekNumber = Math.floor(daysSinceStart / 7) + 1
+      const weeklyTargets = (goal.weekly_targets as number[]) || []
+      const currentWeekTarget = weeklyTargets[Math.min(weekNumber - 1, weeklyTargets.length - 1)] || goal.target_value
+
+      goalsMap.set(goal.plant_id, {
+        id: goal.id,
+        goal_mode: goal.goal_mode,
+        tracking_metric: goal.tracking_metric,
+        unit: goal.unit,
+        target_value: Number(goal.target_value),
+        current_value: Number(goal.current_value),
+        weekly_targets: weeklyTargets,
+        current_week_target: Number(currentWeekTarget),
+        week_number: weekNumber,
+        frequency: goal.frequency || 'weekly',
+        period_progress: periodProgress,
+        current_period_target: Number(currentPeriodTarget),
+        period_number: periodInfo.periodNumber,
+        period_label: periodInfo.periodLabel,
+        period_date_range: periodInfo.periodDateRange,
+        period_end: periodInfo.periodEnd.toISOString(),
+      })
     }
   }
 
@@ -404,16 +448,18 @@ export async function waterPlant(
     return { success: false, error: 'Plant not found' }
   }
 
-  // Check if already watered today
+  // Check if already logged today
   const today = new Date().toISOString().split('T')[0]
-  const { data: existingWatering } = await supabase
-    .from('watering_logs')
+  const { data: existingActivity } = await supabase
+    .from('activity_logs')
     .select('id')
     .eq('plant_id', plantId)
-    .eq('watered_date', today)
-    .single()
+    .eq('user_id', user.id)
+    .eq('logged_date', today)
+    .limit(1)
+    .maybeSingle()
 
-  if (existingWatering) {
+  if (existingActivity) {
     return { success: false, error: 'Already watered today' }
   }
 
@@ -542,23 +588,25 @@ export async function waterPlant(
     }
   }
 
-  // Create watering log
+  // Create activity log
   const { error: logError } = await supabase
-    .from('watering_logs')
+    .from('activity_logs')
     .insert({
       plant_id: plantId,
       user_id: user.id,
-      watered_date: today,
+      activity_type: 'watering',
+      logged_date: today,
       difficulty: options?.difficulty || null,
       notes: options?.notes || null,
       xp_earned: totalXp,
       morning_bonus: isMorning,
       streak_bonus: breakdown.streakBonus || 0,
-      note_bonus: noteBonusXp,
+      is_first_of_day: true,
+      is_personal_record: false,
     })
 
   if (logError) {
-    console.error('Error creating watering log:', logError)
+    console.error('Error creating activity log:', logError)
     return { success: false, error: logError.message }
   }
 
@@ -734,12 +782,13 @@ export async function checkAndUnlockAchievements(userId: string): Promise<string
     .single()
 
   const { count: totalWaterings } = await supabase
-    .from('watering_logs')
+    .from('activity_logs')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', userId)
+    .eq('is_first_of_day', true)
 
   const { count: morningWaterings } = await supabase
-    .from('watering_logs')
+    .from('activity_logs')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', userId)
     .eq('morning_bonus', true)
@@ -755,7 +804,6 @@ export async function checkAndUnlockAchievements(userId: string): Promise<string
   const totalPlants = plants?.length || 0
   const maturePlants = plants?.filter(p => p.status === 'mature').length || 0
   const bestStreak = Math.max(...(plants?.map(p => p.longest_streak) || [0]))
-  const currentStreak = Math.max(...(plants?.map(p => p.current_streak) || [0]))
 
   // Define achievement checks
   const achievementChecks = [
@@ -1069,17 +1117,27 @@ export async function getGardenStats(
   }
 }
 
+type MoodLogForWeather = {
+  mood_level: number | null
+}
+
+function isMoodLevel(level: number): level is MoodLevel {
+  return Number.isInteger(level) && level >= 1 && level <= 5
+}
+
 // Helper to calculate dominant weather from mood logs
-function calculateDominantWeather(logs: any[]): WeatherType | null {
+function calculateDominantWeather(logs: MoodLogForWeather[]): WeatherType | null {
   if (!logs || logs.length === 0) return null
 
   // Count mood levels
-  const counts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+  const counts: Record<MoodLevel, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
   let maxCount = 0
-  let dominantLevel = 4 // Default to neutral/good
+  let dominantLevel: MoodLevel = 4 // Default to neutral/good
 
   for (const log of logs) {
-    const level = log.mood_level
+    const level = Number(log.mood_level)
+    if (!isMoodLevel(level)) continue
+
     counts[level] = (counts[level] || 0) + 1
     
     // Update dominant (prefer lower moods if tie for "tough" days logic? or just first found? 
@@ -1093,7 +1151,7 @@ function calculateDominantWeather(logs: any[]): WeatherType | null {
 
   // Map mood level to weather type for GardenSky
   // 5: Sunny, 4: Partly Cloudy, 3: Cloudy, 2: Rainy, 1: Stormy
-  const config = getMoodConfig(dominantLevel as any)
+  const config = getMoodConfig(dominantLevel)
   if (!config) return 'sunny'
 
   const weatherMap: Record<string, WeatherType> = {

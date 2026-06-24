@@ -188,6 +188,13 @@ export interface PlantGoalInfo {
   weekly_targets: number[] | null
   current_week_target: number
   week_number: number
+  frequency: GoalFrequency
+  period_progress: number
+  current_period_target: number
+  period_number: number
+  period_label: string
+  period_date_range: string
+  period_end: string
 }
 
 // Plant with type info (joined)

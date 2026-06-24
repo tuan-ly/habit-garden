@@ -232,6 +232,7 @@ export function PlantDetailSheet({
     const newGoal = await getGoalForPlant(plant.id)
     setGoal(newGoal)
     if (newGoal) {
+      const periodInfo = getPeriodInfo(newGoal)
       updatePlant(plant.id, {
         goal_mode: newGoal.goal_mode,
         goal: {
@@ -244,6 +245,13 @@ export function PlantDetailSheet({
           weekly_targets: newGoal.weekly_targets,
           current_week_target: newGoal.currentWeekTarget,
           week_number: newGoal.weekNumber,
+          frequency: newGoal.frequency,
+          period_progress: newGoal.periodProgress,
+          current_period_target: newGoal.currentPeriodTarget,
+          period_number: newGoal.periodNumber,
+          period_label: newGoal.periodLabel,
+          period_date_range: newGoal.periodDateRange,
+          period_end: periodInfo.periodEnd.toISOString(),
         },
       })
     }
@@ -438,14 +446,13 @@ export function PlantDetailSheet({
                       className={cn(
                         'w-full h-12 text-base font-semibold rounded-full transition-all cursor-pointer',
                         'bg-leaf hover:bg-canopy text-white shadow-leaf',
-                        isWatering && 'animate-pulse',
-                        isWateredToday && 'bg-mist text-muted-foreground hover:bg-mist shadow-none dark:bg-muted'
+                        isWatering && 'animate-pulse'
                       )}
                       onClick={() => setShowGoalLog(true)}
-                      disabled={isWateredToday || isLoadingGoal}
+                      disabled={isLoadingGoal}
                     >
                       <Plus className="h-5 w-5 mr-2" />
-                      {isLoadingGoal ? 'Loading…' : isWateredToday ? 'Logged for today' : isSleeping ? 'Wake & Log Progress' : 'Log Progress'}
+                      {isLoadingGoal ? 'Loading…' : isWateredToday ? 'Log more progress' : isSleeping ? 'Wake & Log Progress' : 'Log Progress'}
                     </Button>
                   ) : (
                     <Button
@@ -678,6 +685,9 @@ export function PlantDetailSheet({
       {goal && (
         <GoalLogModal
           goal={goal}
+          plantName={plant.name}
+          plantIcon={plant.plant_type.icon}
+          consistencyDayAdded={!isWateredToday}
           open={showGoalLog}
           onOpenChange={setShowGoalLog}
           onSuccess={handleGoalComplete}
