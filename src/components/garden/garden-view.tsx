@@ -339,16 +339,16 @@ export function GardenView({}: GardenViewProps) {
 
       {/* List View (card grid with game styling) */}
       {viewMode === 'list' && (
-        <div className="h-full overflow-y-auto pt-20 px-4 pb-36 space-y-6 bg-gradient-to-br from-sky-200 via-emerald-100 to-green-200 dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950">
+        <div className="h-full overflow-y-auto pt-20 px-4 pb-36 space-y-6 bg-[linear-gradient(135deg,#FFFBF3_0%,#F4E6D0_42%,#E5EEF2_74%,#F1D8C7_100%)] dark:bg-[linear-gradient(135deg,#15110D_0%,#211A13_48%,#182126_78%,#2A1C16_100%)]">
           {/* Stats bar */}
           <div className="flex items-center justify-center gap-4">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-100 dark:bg-green-900/30 rounded-full">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 dark:bg-amber-950/30 rounded-full">
               <span className="text-sm">🌱</span>
-              <span className="text-sm font-medium text-green-700 dark:text-green-400">{growingPlants.length} growing</span>
+              <span className="text-sm font-medium text-amber-800 dark:text-amber-300">{growingPlants.length} growing</span>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-full">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#E6EEDC] dark:bg-[#263224] rounded-full">
               <span className="text-sm">🌳</span>
-              <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">{maturePlants.length} mature</span>
+              <span className="text-sm font-medium text-[#536B44] dark:text-[#B9D0A8]">{maturePlants.length} mature</span>
             </div>
             {deadPlants.length > 0 && (
               <div className="flex items-center gap-2 px-3 py-1.5 bg-red-100 dark:bg-red-900/30 rounded-full">
@@ -362,7 +362,7 @@ export function GardenView({}: GardenViewProps) {
           {growingPlants.length > 0 && (
             <section>
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-md shadow-green-500/30">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-md shadow-amber-500/30">
                   <span className="text-lg">🌱</span>
                 </div>
                 <div>
@@ -387,7 +387,7 @@ export function GardenView({}: GardenViewProps) {
           {maturePlants.length > 0 && (
             <section>
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-md shadow-emerald-500/30">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#8DAA78] to-[#6F8F63] flex items-center justify-center shadow-md shadow-lime-600/20">
                   <span className="text-lg">🌳</span>
                 </div>
                 <div>
@@ -554,13 +554,13 @@ function TodayHabitDashboard({
   const averageGoalProgress = getAverageGoalProgress(livingPlants)
 
   return (
-    <div className="h-full overflow-y-auto bg-[linear-gradient(180deg,#FEFCF7_0%,#F1ECDD_46%,#DDEBDD_100%)] px-4 pb-36 pt-24 dark:bg-[linear-gradient(180deg,#0F1A14_0%,#172620_48%,#1F3028_100%)] sm:px-6 lg:px-8">
+    <div className="h-full overflow-y-auto bg-[linear-gradient(180deg,#FFFBF3_0%,#F4E6D0_42%,#E5EEF2_76%,#F1D8C7_100%)] px-4 pb-36 pt-24 dark:bg-[linear-gradient(180deg,#15110D_0%,#211A13_48%,#182126_78%,#2A1C16_100%)] sm:px-6 lg:px-8">
       <div className="mx-auto grid max-w-7xl gap-5 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px]">
         <section className="space-y-5">
-          <div className="rounded-[2rem] border border-white/70 bg-white/80 p-5 shadow-dappled-lg backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/60 sm:p-6">
+          <div className="rounded-[2rem] border border-[#EFE0C9] bg-white/82 p-5 shadow-dappled-lg backdrop-blur-xl dark:border-white/10 dark:bg-[#211A13]/78 sm:p-6">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
               <div className="max-w-2xl">
-                <Badge variant="secondary" className="mb-3 bg-primary/10 text-primary">
+                <Badge variant="secondary" className="mb-3 bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
                   Today plan
                 </Badge>
                 <h1 className="font-display text-3xl font-semibold leading-tight text-foreground sm:text-5xl">
@@ -578,7 +578,7 @@ function TodayHabitDashboard({
                   icon={CheckCircle2}
                   label="Done"
                   value={`${completedPlants.length}/${livingPlants.length}`}
-                  tone="green"
+                  tone="sage"
                 />
                 <TodayMetric
                   icon={Flame}
@@ -596,7 +596,7 @@ function TodayHabitDashboard({
             </div>
 
             <div className="mt-6 grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
-              <div className="rounded-3xl border bg-background/80 p-4 dark:bg-slate-900/70">
+              <div className="order-2 rounded-3xl border bg-background/80 p-4 dark:bg-slate-900/70 lg:order-1">
                 <div className="flex items-center justify-between text-sm">
                   <span className="font-semibold">Today completion</span>
                   <span className="font-bold text-primary">{completionPercent}%</span>
@@ -609,14 +609,14 @@ function TodayHabitDashboard({
               </div>
 
               {focusPlant && (
-                <div className="relative overflow-hidden rounded-3xl border bg-[radial-gradient(circle_at_85%_10%,rgba(232,185,106,0.28),transparent_32%),linear-gradient(135deg,rgba(59,122,87,0.12),rgba(255,255,255,0.78))] p-4 dark:bg-[linear-gradient(135deg,rgba(107,165,122,0.16),rgba(15,26,20,0.82))]">
+                <div className="order-1 relative overflow-hidden rounded-3xl border border-[#EBD8B8] bg-[radial-gradient(circle_at_85%_10%,rgba(201,130,47,0.30),transparent_34%),linear-gradient(135deg,rgba(246,239,226,0.92),rgba(255,255,255,0.78))] p-4 dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(217,149,69,0.14),rgba(33,26,19,0.88))] lg:order-2">
                   <div className="flex items-center gap-4">
                     <div className="flex h-24 w-24 shrink-0 items-end justify-center rounded-3xl bg-white/70 p-2 shadow-dappled dark:bg-white/5">
                       <PlantImage plant={focusPlant} size="2xl" alignBottom />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="mb-2 flex flex-wrap items-center gap-2">
-                        <Badge className={cn('border-0', isHabitDoneToday(focusPlant) ? 'bg-green-600' : 'bg-primary')}>
+                        <Badge className={cn('border-0', isHabitDoneToday(focusPlant) ? 'bg-[#6F8F63]' : 'bg-primary')}>
                           {isHabitDoneToday(focusPlant) ? 'Checked in' : 'Next best action'}
                         </Badge>
                         {focusPlant.easy_mode && (
@@ -692,12 +692,12 @@ function TodayHabitDashboard({
                 />
               ))}
               {duePlants.length === 0 && (
-                <div className="rounded-3xl border border-green-200 bg-green-50/90 p-5 text-green-900 shadow-dappled dark:border-green-900/50 dark:bg-green-950/30 dark:text-green-100">
+                <div className="rounded-3xl border border-[#D7E3C8] bg-[#F3F7ED]/90 p-5 text-[#405235] shadow-dappled dark:border-[#3A4A34] dark:bg-[#263224]/50 dark:text-[#DDEBCF]">
                   <div className="flex items-center gap-3">
                     <CheckCircle2 className="h-6 w-6" />
                     <div>
                       <h3 className="font-bold">Nothing urgent left today.</h3>
-                      <p className="text-sm text-green-700 dark:text-green-300">
+                      <p className="text-sm text-[#607A52] dark:text-[#B9D0A8]">
                         You can review details, add a note, or enjoy the garden view.
                       </p>
                     </div>
@@ -709,13 +709,13 @@ function TodayHabitDashboard({
         </section>
 
         <aside className="space-y-4">
-          <section className="rounded-[2rem] border border-white/70 bg-white/80 p-5 shadow-dappled backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/60">
+          <section className="rounded-[2rem] border border-[#EFE0C9] bg-white/82 p-5 shadow-dappled backdrop-blur-xl dark:border-white/10 dark:bg-[#211A13]/78">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="font-black">Momentum</h2>
                 <p className="text-sm text-muted-foreground">Daily habit health.</p>
               </div>
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#E6EEDC] text-[#607A52] dark:bg-[#263224] dark:text-[#B9D0A8]">
                 <Leaf className="h-5 w-5" />
               </div>
             </div>
@@ -727,7 +727,7 @@ function TodayHabitDashboard({
             </div>
           </section>
 
-          <section className="rounded-[2rem] border border-white/70 bg-white/80 p-5 shadow-dappled backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/60">
+          <section className="rounded-[2rem] border border-[#EFE0C9] bg-white/82 p-5 shadow-dappled backdrop-blur-xl dark:border-white/10 dark:bg-[#211A13]/78">
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h2 className="font-black">Done today</h2>
@@ -740,9 +740,9 @@ function TodayHabitDashboard({
                 <button
                   key={plant.id}
                   onClick={() => onOpenPlant(plant)}
-                  className="flex w-full items-center gap-3 rounded-2xl border bg-background/70 p-3 text-left transition hover:bg-primary/5 dark:bg-white/5"
+                  className="flex w-full items-center gap-3 rounded-2xl border bg-background/70 p-3 text-left transition hover:bg-amber-50 dark:bg-white/5"
                 >
-                  <div className="flex h-11 w-11 items-end justify-center rounded-2xl bg-green-100 p-1 dark:bg-green-950/50">
+                  <div className="flex h-11 w-11 items-end justify-center rounded-2xl bg-[#E6EEDC] p-1 dark:bg-[#263224]">
                     <PlantImage plant={plant} size="lg" alignBottom />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -751,7 +751,7 @@ function TodayHabitDashboard({
                       {plant.today_log_count ? `${plant.today_log_count} log${plant.today_log_count === 1 ? '' : 's'}` : 'Checked in'}
                     </p>
                   </div>
-                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  <CheckCircle2 className="h-5 w-5 text-[#6F8F63]" />
                 </button>
               ))}
               {completedPlants.length === 0 && (
@@ -776,10 +776,10 @@ function TodayMetric({
   icon: LucideIcon
   label: string
   value: string
-  tone: 'green' | 'amber' | 'blue'
+  tone: 'sage' | 'amber' | 'blue'
 }) {
   const tones = {
-    green: 'bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-300',
+    sage: 'bg-[#E6EEDC] text-[#536B44] dark:bg-[#263224] dark:text-[#B9D0A8]',
     amber: 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
     blue: 'bg-sky-100 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300',
   }
@@ -839,7 +839,7 @@ function HabitActionCard({
       <div className="flex gap-4">
         <button
           onClick={() => onOpen(plant)}
-          className="flex h-20 w-20 shrink-0 items-end justify-center rounded-3xl bg-gradient-to-b from-primary/10 to-primary/5 p-2"
+          className="flex h-20 w-20 shrink-0 items-end justify-center rounded-3xl bg-gradient-to-b from-[#E6EEDC] to-[#F6EFE2] p-2 dark:from-[#263224] dark:to-[#211A13]"
           aria-label={`Open ${plant.name}`}
         >
           <PlantImage plant={plant} size="2xl" alignBottom />
@@ -850,7 +850,7 @@ function HabitActionCard({
             <Badge
               variant={done ? 'secondary' : 'outline'}
               className={cn(
-                done && 'bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-300',
+                done && 'bg-[#E6EEDC] text-[#536B44] dark:bg-[#263224] dark:text-[#B9D0A8]',
                 !done && urgency >= 4 && 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300'
               )}
             >
@@ -1084,8 +1084,8 @@ function ViewToggle({
   onZenModeChange: (isZen: boolean) => void
 }) {
   const viewItems: Array<{ mode: ViewMode; label: string; icon: LucideIcon; active: string }> = [
-    { mode: 'today', label: 'Today', icon: ListChecks, active: 'from-emerald-500 to-green-600' },
-    { mode: 'garden', label: 'Garden', icon: TreesIcon, active: 'from-green-400 to-emerald-500' },
+    { mode: 'today', label: 'Today', icon: ListChecks, active: 'from-amber-400 to-orange-500' },
+    { mode: 'garden', label: 'Garden', icon: TreesIcon, active: 'from-[#8DAA78] to-[#6F8F63]' },
     { mode: 'list', label: 'List', icon: LayoutGrid, active: 'from-blue-400 to-indigo-500' },
     { mode: 'focus', label: 'Focus', icon: Target, active: 'from-amber-400 to-orange-500' },
   ]
@@ -1142,12 +1142,12 @@ function FloatingAddButton({ onClick }: { onClick: () => void }) {
       className={cn(
         "fixed top-14 right-2 sm:top-16 sm:right-3 z-30",
         "flex items-center gap-1 sm:gap-1.5 px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl",
-        "bg-gradient-to-br from-green-400 to-emerald-500",
+        "bg-gradient-to-br from-amber-400 to-orange-500",
         "text-white text-[11px] sm:text-xs font-bold",
-        "shadow-lg shadow-green-500/30",
-        "hover:shadow-xl hover:shadow-green-500/40 hover:scale-105",
+        "shadow-lg shadow-amber-500/30",
+        "hover:shadow-xl hover:shadow-amber-500/40 hover:scale-105",
         "transition-all duration-300",
-        "border border-green-300/30"
+        "border border-amber-300/30"
       )}
     >
       <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />

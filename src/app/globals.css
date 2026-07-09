@@ -73,43 +73,43 @@
   --radius: 0.875rem; /* 14px — softer, Organic Biophilic */
 
   /* ---- Living Garden brand palette (Sage) ---- */
-  --garden-canopy: #1F3A2E;  /* Deep forest — primary text */
-  --garden-leaf:   #3B7A57;  /* Sage — CTA, active status */
-  --garden-moss:   #6BA57A;  /* Fresh leaf — hover, accent */
-  --garden-bloom:  #E8B96A;  /* Warm honey — streak, reward */
-  --garden-sky:    #CFE6E3;  /* Misty water — secondary bg */
-  --garden-mist:   #F7F4EC;  /* Cream paper — surface */
-  --garden-cloud:  #FEFCF7;  /* Off-white — background */
+  --garden-canopy: #2E241B;  /* Ink bark - primary text */
+  --garden-leaf:   #6F8F63;  /* Muted sage - garden identity */
+  --garden-moss:   #93AA79;  /* Soft moss - gentle garden accent */
+  --garden-bloom:  #C9822F;  /* Warm honey - actions, streak, reward */
+  --garden-sky:    #D9E7E2;  /* Quiet water - secondary bg */
+  --garden-mist:   #F6EFE2;  /* Parchment - surface */
+  --garden-cloud:  #FFFBF3;  /* Warm off-white - background */
 
   /* Functional tokens */
   --moisture-full: #4A9EDE;
   --moisture-low:  #D97757;
-  --growth-active: #8DB982;
-  --dead-ash:      #A39B8A;
+  --growth-active: #93AA79;
+  --dead-ash:      #A79B88;
 
   /* Font stacks (CSS variables provided by next/font/google in layout.tsx) */
   --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
   --font-body:    var(--font-nunito), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 
   /* Shadcn tokens — remapped to Sage palette */
-  --background: #FEFCF7;
-  --foreground: #1F3A2E;
+  --background: #FFFBF3;
+  --foreground: #2E241B;
   --card: #FFFFFF;
-  --card-foreground: #1F3A2E;
+  --card-foreground: #2E241B;
   --popover: #FFFFFF;
-  --popover-foreground: #1F3A2E;
-  --primary: #3B7A57;
-  --primary-foreground: #FEFCF7;
-  --secondary: #F7F4EC;
-  --secondary-foreground: #1F3A2E;
-  --muted: #F0EBDE;
-  --muted-foreground: #6B7568;
-  --accent: #CFE6E3;
-  --accent-foreground: #1F3A2E;
+  --popover-foreground: #2E241B;
+  --primary: #B86F2A;
+  --primary-foreground: #FFF8EC;
+  --secondary: #F6EFE2;
+  --secondary-foreground: #2E241B;
+  --muted: #EFE5D4;
+  --muted-foreground: #756B5F;
+  --accent: #EAD8B8;
+  --accent-foreground: #2E241B;
   --destructive: #D97757;
-  --border: #E4DFD1;
-  --input: #E4DFD1;
-  --ring: #6BA57A;
+  --border: #E6D8C1;
+  --input: #E6D8C1;
+  --ring: #C9822F;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -127,24 +127,24 @@
 
 .dark {
   /* Dark sage — kept subtle, not pure black */
-  --background: #0F1A14;
-  --foreground: #E8F0E6;
-  --card: #172620;
-  --card-foreground: #E8F0E6;
-  --popover: #172620;
-  --popover-foreground: #E8F0E6;
-  --primary: #6BA57A;
-  --primary-foreground: #0F1A14;
-  --secondary: #1F3028;
-  --secondary-foreground: #E8F0E6;
-  --muted: #1F3028;
-  --muted-foreground: #A8B5A5;
-  --accent: #2A4236;
-  --accent-foreground: #E8F0E6;
+  --background: #15110D;
+  --foreground: #F1E8D8;
+  --card: #211A13;
+  --card-foreground: #F1E8D8;
+  --popover: #211A13;
+  --popover-foreground: #F1E8D8;
+  --primary: #D99545;
+  --primary-foreground: #1A120B;
+  --secondary: #2B241B;
+  --secondary-foreground: #F1E8D8;
+  --muted: #2B241B;
+  --muted-foreground: #B9AD9B;
+  --accent: #3A2C1C;
+  --accent-foreground: #F1E8D8;
   --destructive: #D97757;
-  --border: rgba(232, 240, 230, 0.08);
-  --input: rgba(232, 240, 230, 0.12);
-  --ring: #6BA57A;
+  --border: rgba(241, 232, 216, 0.10);
+  --input: rgba(241, 232, 216, 0.14);
+  --ring: #D99545;
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
@@ -185,28 +185,28 @@
 /* Dappled-light shadow — like sunshine through leaves */
 .shadow-dappled {
   box-shadow:
-    0 1px 2px rgba(31, 58, 46, 0.04),
-    0 8px 24px -8px rgba(31, 58, 46, 0.10),
+    0 1px 2px rgba(46, 36, 27, 0.04),
+    0 8px 24px -8px rgba(46, 36, 27, 0.10),
     inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .shadow-dappled-lg {
   box-shadow:
-    0 2px 4px rgba(31, 58, 46, 0.06),
-    0 18px 40px -12px rgba(31, 58, 46, 0.16),
+    0 2px 4px rgba(46, 36, 27, 0.06),
+    0 18px 40px -12px rgba(46, 36, 27, 0.16),
     inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .shadow-bloom {
   box-shadow:
-    0 8px 24px -8px rgba(232, 185, 106, 0.35),
-    0 2px 4px rgba(232, 185, 106, 0.15);
+    0 8px 24px -8px rgba(201, 130, 47, 0.35),
+    0 2px 4px rgba(201, 130, 47, 0.15);
 }
 
 .shadow-leaf {
   box-shadow:
-    0 8px 24px -8px rgba(59, 122, 87, 0.35),
-    0 2px 4px rgba(59, 122, 87, 0.15);
+    0 8px 24px -8px rgba(111, 143, 99, 0.28),
+    0 2px 4px rgba(111, 143, 99, 0.12);
 }
 
 .dark .shadow-dappled {
@@ -229,22 +229,22 @@
 }
 
 .dark .surface-paper {
-  background: linear-gradient(180deg, #172620 0%, #0F1A14 100%);
+  background: linear-gradient(180deg, #211A13 0%, #15110D 100%);
 }
 
 /* Garden gradient — used behind hero plant visual */
 .surface-garden {
   background:
-    radial-gradient(circle at 30% 20%, rgba(207, 230, 227, 0.6), transparent 50%),
-    radial-gradient(circle at 70% 80%, rgba(141, 185, 130, 0.25), transparent 50%),
+    radial-gradient(circle at 30% 20%, rgba(217, 231, 226, 0.48), transparent 50%),
+    radial-gradient(circle at 70% 80%, rgba(147, 170, 121, 0.18), transparent 50%),
     linear-gradient(180deg, var(--garden-cloud) 0%, var(--garden-mist) 100%);
 }
 
 .dark .surface-garden {
   background:
-    radial-gradient(circle at 30% 20%, rgba(107, 165, 122, 0.15), transparent 50%),
-    radial-gradient(circle at 70% 80%, rgba(107, 165, 122, 0.08), transparent 50%),
-    linear-gradient(180deg, #172620 0%, #0F1A14 100%);
+    radial-gradient(circle at 30% 20%, rgba(111, 143, 99, 0.10), transparent 50%),
+    radial-gradient(circle at 70% 80%, rgba(217, 149, 69, 0.08), transparent 50%),
+    linear-gradient(180deg, #211A13 0%, #15110D 100%);
 }
 
 /* Segmented progress bar — organic feel */

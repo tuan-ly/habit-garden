@@ -25,17 +25,17 @@ const navItems: NavItem[] = [
     title: 'Today',
     url: '/garden',
     icon: CheckCircle2,
-    color: 'from-green-400 to-emerald-500',
-    activeColor: 'bg-green-500',
-    glowColor: 'shadow-green-500/50'
+    color: 'from-amber-400 to-orange-500',
+    activeColor: 'bg-amber-500',
+    glowColor: 'shadow-amber-500/50'
   },
   {
     title: 'Garden',
     url: '/overview',
     icon: TreeDeciduous,
-    color: 'from-teal-400 to-cyan-500',
-    activeColor: 'bg-teal-500',
-    glowColor: 'shadow-teal-500/50'
+    color: 'from-lime-500 to-emerald-600',
+    activeColor: 'bg-emerald-500',
+    glowColor: 'shadow-emerald-500/50'
   },
   {
     title: 'Store',
@@ -68,7 +68,7 @@ export function GameNav() {
           {/* Main nav container - Dark game style with transparency to see content behind */}
           <div className="relative bg-gradient-to-t from-slate-900/95 via-slate-900/90 to-slate-800/85 backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-slate-700/40 shadow-2xl shadow-black/50">
             {/* Top glow line */}
-            <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-green-500/50 to-transparent" />
+            <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-amber-400/60 to-transparent" />
 
             <div className="flex items-center justify-around px-1 py-1.5 sm:px-2 sm:py-2">
               {navItems.map((item) => {
@@ -173,11 +173,11 @@ export function GameNav() {
                 {/* Header with close button */}
                 <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-white text-lg shadow-lg shadow-green-500/30">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-lg shadow-lg shadow-amber-500/30">
                       🌱
                     </div>
                     <div>
-                      <h2 className="font-bold text-lg bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                      <h2 className="font-bold text-lg bg-gradient-to-r from-amber-700 to-orange-600 bg-clip-text text-transparent">
                         Habit Garden
                       </h2>
                       <p className="text-[10px] text-slate-500 uppercase tracking-wider">Menu</p>
@@ -194,9 +194,9 @@ export function GameNav() {
                 {/* User profile section */}
                 <div className="p-4 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-800">
                   <div className="flex items-center gap-4">
-                    <Avatar className="h-14 w-14 ring-4 ring-green-500/20 ring-offset-2 ring-offset-white dark:ring-offset-slate-900">
+                    <Avatar className="h-14 w-14 ring-4 ring-amber-500/20 ring-offset-2 ring-offset-white dark:ring-offset-slate-900">
                       <AvatarImage src={user?.user_metadata?.avatar_url} />
-                      <AvatarFallback className="bg-gradient-to-br from-green-400 to-emerald-500 text-white text-xl font-bold">
+                      <AvatarFallback className="bg-gradient-to-br from-amber-400 to-orange-500 text-white text-xl font-bold">
                         {user?.email?.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
