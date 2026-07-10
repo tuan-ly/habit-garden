@@ -2181,6 +2181,46 @@
   animation: expansion-ripple 1.5s ease-out forwards;
 }
 
+@keyframes sanctuary-primary-pulse {
+  0%, 100% {
+    box-shadow: 0 14px 35px rgba(13, 37, 20, 0.28), 0 0 0 0 rgba(220, 233, 184, 0.38);
+  }
+  50% {
+    box-shadow: 0 16px 42px rgba(13, 37, 20, 0.32), 0 0 0 10px rgba(220, 233, 184, 0);
+  }
+}
+
+.sanctuary-primary-pulse {
+  animation: sanctuary-primary-pulse 2.8s ease-in-out infinite;
+}
+
+@keyframes sanctuary-reaction-glow {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+  35% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.35); }
+}
+
+@keyframes sanctuary-reaction-leaves {
+  0% { opacity: 0; transform: translate(-50%, 25%) scale(0.45) rotate(-12deg); }
+  30% { opacity: 1; transform: translate(-50%, -50%) scale(1.1) rotate(4deg); }
+  100% { opacity: 0; transform: translate(-50%, -110%) scale(0.9) rotate(12deg); }
+}
+
+@keyframes sanctuary-reaction-copy {
+  0% { opacity: 0; transform: translate(-50%, 18px); }
+  25%, 72% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -10px); }
+}
+
+.sanctuary-reaction-glow { animation: sanctuary-reaction-glow 2.6s ease-out forwards; }
+.sanctuary-reaction-leaves { animation: sanctuary-reaction-leaves 2.2s ease-out forwards; }
+.sanctuary-reaction-copy { animation: sanctuary-reaction-copy 2.6s ease-in-out forwards; }
+
+.sanctuary-active button[title="Open Dev Panel (Ctrl+Shift+D)"],
+.sanctuary-active button[aria-label="Open Next.js Dev Tools"] {
+  display: none !important;
+}
+
 /* ========================================
    Reduced Motion - Disable animations for accessibility & performance
    ======================================== */

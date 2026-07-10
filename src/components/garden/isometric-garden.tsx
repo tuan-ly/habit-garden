@@ -15,6 +15,7 @@ import { GardenTileGrid } from './garden-tile-grid'
 import { GardenModals } from './garden-modals'
 import { GardenCelebrationLayer } from './garden-celebration-layer'
 import { useGardenInteractions } from './use-garden-interactions'
+import { SanctuaryGardenChrome } from './sanctuary-garden-chrome'
 import { usePlants } from '@/lib/context/plants-context'
 import { useGardenSettingsOptional } from '@/lib/context/garden-settings-context'
 import { useInventoryOptional } from '@/lib/context/inventory-context'
@@ -41,6 +42,8 @@ interface IsometricGardenProps {
   focusStates?: Map<string, FocusState>
   welcomeBackPending?: boolean
   onWelcomeBackUsed?: () => void
+  sanctuaryMode?: boolean
+  welcomeBackDays?: number
 }
 
 const DEFAULT_TILE_SIZE = 140
@@ -62,18 +65,23 @@ export function IsometricGarden({
   focusStates,
   welcomeBackPending = false,
   onWelcomeBackUsed,
+  sanctuaryMode = false,
+  welcomeBackDays = 0,
 }: IsometricGardenProps) {
-  const { plants, movePlant, updatePlant } = usePlants()
+  const { plants, movePlant, updatePlant, isSyncing } = usePlants()
   const gardenSettings = useGardenSettingsOptional()
   const inventory = useInventoryOptional()
   const editMode = useEditMode()
-  const placedDecorations = inventory?.placedDecorations ?? []
+  const placedDecorations = useMemo(
+    () => inventory?.placedDecorations ?? [],
+    [inventory?.placedDecorations]
+  )
 
   // Zoom and pan
   const {
     zoom, minZoom, maxZoom, zoomIn, zoomOut, resetZoom,
     isPanning, didPan, panOffset, bindGestures, resetPan, resetDidPan,
-  } = useGardenZoom()
+  } = useGardenZoom({ persist: !sanctuaryMode })
 
   // Garden mode
   const [mode, setModeInternal] = useState<GardenMode>('interact')
@@ -83,22 +91,33 @@ export function IsometricGarden({
   const [tileSize, setTileSize] = useState(DEFAULT_TILE_SIZE)
   const [viewportSize, setViewportSize] = useState({ width: 1200, height: 800 })
   const [isTouchDevice, setIsTouchDevice] = useState(false)
-  const [currentTimeOfDay, setCurrentTimeOfDay] = useState<TimeOfDay>('day')
+  const [currentTimeOfDay, setCurrentTimeOfDay] = useState<TimeOfDay>(() => getTimeOfDay())
+  const [sanctuaryFocusedPlantId, setSanctuaryFocusedPlantId] = useState<string | null>(null)
+  const [sanctuaryFocusClosing, setSanctuaryFocusClosing] = useState(false)
 
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const gardenContainerRef = useRef<HTMLDivElement>(null)
+  const focusExitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const focusReturnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (focusExitTimerRef.current) clearTimeout(focusExitTimerRef.current)
+      if (focusReturnTimerRef.current) clearTimeout(focusReturnTimerRef.current)
+    }
+  }, [])
 
   // Device info + resize
   useEffect(() => {
     const updateDeviceInfo = () => {
-      setTileSize(getClientTileSize())
+      setTileSize(sanctuaryMode && window.innerWidth < 640 ? 132 : getClientTileSize())
       setViewportSize({ width: window.innerWidth, height: window.innerHeight })
       setIsTouchDevice(window.matchMedia('(pointer: coarse)').matches)
     }
     updateDeviceInfo()
     window.addEventListener('resize', updateDeviceInfo)
     return () => window.removeEventListener('resize', updateDeviceInfo)
-  }, [])
+  }, [sanctuaryMode])
 
   // Prevent browser zoom and text selection within garden container
   useEffect(() => {
@@ -130,7 +149,6 @@ export function IsometricGarden({
 
   // Time of day
   useEffect(() => {
-    setCurrentTimeOfDay(getTimeOfDay())
     const interval = setInterval(() => setCurrentTimeOfDay(getTimeOfDay()), 60000)
     return () => clearInterval(interval)
   }, [])
@@ -180,12 +198,13 @@ export function IsometricGarden({
   // Interactions hook
   const interactions = useGardenInteractions({
     movePlant, updatePlant, welcomeBackPending, onWelcomeBackUsed,
-    mode, didPan, resetDidPan, occupiedCells, livingPlants,
+    mode, didPan, resetDidPan, livingPlants,
     editSelectedItem: editMode.selectedItem,
     editGhostRotation: editMode.ghostRotation,
     onPlaceDecoration: inventory?.placeDecoration,
     onEditPushUndo: editMode.pushUndo,
     onEditDeselectItem: editMode.deselectItem,
+    calmFeedback: sanctuaryMode,
   })
 
   // Fix setMode to use interactions ref
@@ -223,6 +242,141 @@ export function IsometricGarden({
 
   const isEmpty = livingPlants.length === 0
 
+  const sanctuaryPlants = useMemo(
+    () => livingPlants.filter((plant) => plant.status !== 'dormant'),
+    [livingPlants]
+  )
+  const sanctuaryCompleted = useMemo(
+    () => sanctuaryPlants.filter((plant) => interactions.isWateredToday(plant)),
+    [sanctuaryPlants, interactions]
+  )
+  const sanctuaryActivePlant = useMemo(() => {
+    const due = sanctuaryPlants
+      .filter((plant) => !interactions.isWateredToday(plant))
+      .sort((a, b) => a.current_moisture - b.current_moisture)
+    return due[0] ?? sanctuaryCompleted[0] ?? sanctuaryPlants[0] ?? null
+  }, [sanctuaryPlants, sanctuaryCompleted, interactions])
+  const sanctuaryFocusedPlant = useMemo(
+    () => sanctuaryPlants.find((plant) => plant.id === sanctuaryFocusedPlantId) ?? null,
+    [sanctuaryPlants, sanctuaryFocusedPlantId]
+  )
+  const sanctuaryDisplayPlant = sanctuaryFocusedPlant ?? sanctuaryActivePlant
+  const sanctuaryDisplayPlantCompleted = sanctuaryDisplayPlant
+    ? interactions.isWateredToday(sanctuaryDisplayPlant)
+    : false
+
+  const handleSanctuaryPlantFocus = useCallback((plant: PlantWithType) => {
+    if (focusExitTimerRef.current) clearTimeout(focusExitTimerRef.current)
+    if (focusReturnTimerRef.current) clearTimeout(focusReturnTimerRef.current)
+    setSanctuaryFocusClosing(false)
+    setSanctuaryFocusedPlantId(plant.id)
+  }, [])
+
+  const handleSanctuaryFocusClose = useCallback(() => {
+    if (!sanctuaryFocusedPlantId || sanctuaryFocusClosing) return
+    setSanctuaryFocusClosing(true)
+    focusExitTimerRef.current = setTimeout(() => {
+      setSanctuaryFocusedPlantId(null)
+      setSanctuaryFocusClosing(false)
+    }, 280)
+  }, [sanctuaryFocusedPlantId, sanctuaryFocusClosing])
+
+  useEffect(() => {
+    if (!sanctuaryMode || !sanctuaryFocusedPlantId) return
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') handleSanctuaryFocusClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [sanctuaryMode, sanctuaryFocusedPlantId, handleSanctuaryFocusClose])
+
+  const handleSanctuaryTileClick = useCallback(
+    (_row: number, _col: number, plant?: PlantWithType) => {
+      if (didPan) {
+        resetDidPan()
+        return
+      }
+      if (plant) {
+        handleSanctuaryPlantFocus(plant)
+      } else if (sanctuaryFocusedPlantId) {
+        handleSanctuaryFocusClose()
+      }
+    },
+    [
+      didPan,
+      resetDidPan,
+      sanctuaryFocusedPlantId,
+      handleSanctuaryPlantFocus,
+      handleSanctuaryFocusClose,
+    ]
+  )
+
+  const handleSanctuaryAction = useCallback(
+    (mode: 'log' | 'water') => {
+      if (sanctuaryDisplayPlant) {
+        interactions.handleQuickWaterRequest(sanctuaryDisplayPlant, mode)
+      }
+    },
+    [sanctuaryDisplayPlant, interactions]
+  )
+
+  const handleWateringOpenChange = useCallback(
+    (open: boolean) => {
+      interactions.setWateringModalOpen(open)
+      if (!open && sanctuaryFocusedPlantId) {
+        if (focusReturnTimerRef.current) clearTimeout(focusReturnTimerRef.current)
+        focusReturnTimerRef.current = setTimeout(() => {
+          handleSanctuaryFocusClose()
+        }, 750)
+      }
+    },
+    [interactions, sanctuaryFocusedPlantId, handleSanctuaryFocusClose]
+  )
+
+  const resolvedFocusStates = useMemo(() => {
+    if (!sanctuaryMode || !sanctuaryActivePlant) return focusStates
+    const states = new Map<string, FocusState>()
+    for (const plant of sanctuaryPlants) {
+      if (sanctuaryFocusedPlant) {
+        states.set(plant.id, plant.id === sanctuaryFocusedPlant.id ? 'highlight' : 'dim')
+      } else {
+        states.set(plant.id, plant.id === sanctuaryActivePlant.id ? 'highlight' : 'normal')
+      }
+    }
+    return states
+  }, [focusStates, sanctuaryMode, sanctuaryActivePlant, sanctuaryFocusedPlant, sanctuaryPlants])
+
+  const gardenTransform = useMemo(() => {
+    if (!sanctuaryMode || !sanctuaryFocusedPlant) {
+      return `scale(${zoom}) translate(${panOffset.x / zoom}px, ${panOffset.y / zoom}px)`
+    }
+
+    const row = sanctuaryFocusedPlant.grid_row ?? 0
+    const col = sanctuaryFocusedPlant.grid_col ?? 0
+    const plantGridSize = sanctuaryFocusedPlant.grid_size || 1
+    const plantAnchorX = containerWidth / 2 + (col - row) * (tileSize / 2)
+    const plantAnchorY = (col + row) * (tileSize / 4)
+      + tileSize / 4
+      + (plantGridSize - 1) * tileSize / 4
+    const focusScale = Math.min(maxZoom, Math.max(zoom, viewportSize.width < 640 ? 1.28 : 1.18))
+    const targetYOffset = viewportSize.width < 640 ? -66 : -36
+    const translateX = -(plantAnchorX - containerWidth / 2) * focusScale
+    const translateY = targetYOffset - (plantAnchorY - containerHeight / 2) * focusScale
+
+    return `translate(${translateX}px, ${translateY}px) scale(${focusScale})`
+  }, [
+    sanctuaryMode,
+    sanctuaryFocusedPlant,
+    zoom,
+    panOffset.x,
+    panOffset.y,
+    containerWidth,
+    containerHeight,
+    tileSize,
+    maxZoom,
+    viewportSize.width,
+  ])
+
   // Stable callbacks for modals
   const handleAddDialogPositionClear = useCallback(() => {
     interactions.setAddDialogPosition(null)
@@ -247,7 +401,7 @@ export function IsometricGarden({
   return (
     <div className="relative w-full h-full flex flex-col select-none">
       {/* Mode toolbar */}
-      {!focusMode && (
+      {!focusMode && !sanctuaryMode && (
         <ModeToolbar
           mode={mode}
           onModeChange={setModeWithReset}
@@ -256,18 +410,20 @@ export function IsometricGarden({
       )}
 
       {/* Zoom Controls */}
-      <ZoomControls
-        zoom={zoom}
-        minZoom={minZoom}
-        maxZoom={maxZoom}
-        onZoomIn={zoomIn}
-        onZoomOut={zoomOut}
-        onReset={() => { resetZoom(); resetPan() }}
-        className="fixed right-3 top-1/2 -translate-y-1/2 z-30"
-      />
+      {!sanctuaryMode && (
+        <ZoomControls
+          zoom={zoom}
+          minZoom={minZoom}
+          maxZoom={maxZoom}
+          onZoomIn={zoomIn}
+          onZoomOut={zoomOut}
+          onReset={() => { resetZoom(); resetPan() }}
+          className="fixed right-3 top-1/2 -translate-y-1/2 z-30"
+        />
+      )}
 
       {/* Empty state */}
-      {isEmpty && (
+      {isEmpty && !sanctuaryMode && (
         <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
           <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-6 sm:p-8 max-w-sm mx-4 text-center shadow-2xl border border-white/20 dark:border-slate-700/50 pointer-events-auto animate-fade-in">
             <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-green-500/30">
@@ -298,23 +454,28 @@ export function IsometricGarden({
           WebkitUserSelect: 'none',
           WebkitTouchCallout: 'none',
         }}
-        onWheel={bindGestures.onWheel}
-        onTouchStart={bindGestures.onTouchStart}
-        onTouchMove={bindGestures.onTouchMove}
-        onTouchEnd={bindGestures.onTouchEnd}
-        onMouseDown={bindGestures.onMouseDown}
-        onMouseMove={bindGestures.onMouseMove}
-        onMouseUp={bindGestures.onMouseUp}
-        onMouseLeave={bindGestures.onMouseLeave}
+        onWheel={sanctuaryFocusedPlant ? undefined : bindGestures.onWheel}
+        onTouchStart={sanctuaryFocusedPlant ? undefined : bindGestures.onTouchStart}
+        onTouchMove={sanctuaryFocusedPlant ? undefined : bindGestures.onTouchMove}
+        onTouchEnd={sanctuaryFocusedPlant ? undefined : bindGestures.onTouchEnd}
+        onMouseDown={sanctuaryFocusedPlant ? undefined : bindGestures.onMouseDown}
+        onMouseMove={sanctuaryFocusedPlant ? undefined : bindGestures.onMouseMove}
+        onMouseUp={sanctuaryFocusedPlant ? undefined : bindGestures.onMouseUp}
+        onMouseLeave={sanctuaryFocusedPlant ? undefined : bindGestures.onMouseLeave}
       >
-        <div className="flex justify-center items-end w-full h-full" style={{ paddingBottom: '16px' }}>
+        <div
+          className={sanctuaryMode
+            ? 'flex h-full w-full items-center justify-center px-2 pb-36 pt-64 sm:pb-44 sm:pt-28'
+            : 'flex h-full w-full items-end justify-center'}
+          style={sanctuaryMode ? undefined : { paddingBottom: '16px' }}
+        >
           <div
             ref={gardenContainerRef}
-            className="relative flex-shrink-0"
+            className="relative flex-shrink-0 transition-[transform] duration-[600ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:duration-150"
             style={{
               width: containerWidth,
               height: containerHeight,
-              transform: `scale(${zoom}) translate(${panOffset.x / zoom}px, ${panOffset.y / zoom}px)`,
+              transform: gardenTransform,
               transformOrigin: 'center center',
               willChange: 'transform',
             }}
@@ -364,13 +525,16 @@ export function IsometricGarden({
               hoveredTile={hoveredTile}
               mode={mode}
               moveState={interactions.moveState}
-              focusStates={focusStates}
+              focusStates={resolvedFocusStates}
               weather={weather}
               placedDecorations={placedDecorations}
-              onTileClick={interactions.handleTileClick}
+              onTileClick={sanctuaryMode ? handleSanctuaryTileClick : interactions.handleTileClick}
               onTileHover={handleTileHover}
               onTileLeave={handleTileLeave}
               onContextMenu={interactions.handleContextMenu}
+              hidePlantBadges={sanctuaryMode}
+              featuredPlantId={sanctuaryMode ? sanctuaryDisplayPlant?.id : null}
+              hideStatusIndicators={sanctuaryMode}
             />
 
           </div>
@@ -424,7 +588,7 @@ export function IsometricGarden({
       <GardenModals
         wateringPlant={interactions.wateringPlant}
         wateringModalOpen={interactions.wateringModalOpen}
-        onWateringOpenChange={interactions.setWateringModalOpen}
+        onWateringOpenChange={sanctuaryMode ? handleWateringOpenChange : interactions.setWateringModalOpen}
         onWater={interactions.handleWaterConfirm}
         onLogAndWater={interactions.handleLogAndWaterConfirm}
         onDetails={interactions.handleOpenDetails}
@@ -438,7 +602,30 @@ export function IsometricGarden({
         onSheetOpenChange={interactions.setSheetOpen}
         journalStreak={journalStreak}
         isWateredToday={interactions.isWateredToday}
+        wateringInitialMode={interactions.wateringInitialMode}
+        sanctuaryMode={sanctuaryMode}
       />
+
+      {sanctuaryMode && (
+        <SanctuaryGardenChrome
+          activePlant={sanctuaryDisplayPlant}
+          focusedPlant={sanctuaryFocusedPlant}
+          activePlantCompleted={sanctuaryDisplayPlantCompleted}
+          focusClosing={sanctuaryFocusClosing}
+          completedCount={sanctuaryCompleted.length}
+          totalCount={sanctuaryPlants.length}
+          isSyncing={isSyncing}
+          welcomeBackDays={welcomeBackDays}
+          onPrimaryAction={() => handleSanctuaryAction('log')}
+          onTinyAction={() => handleSanctuaryAction('log')}
+          onRestAction={() => handleSanctuaryAction('water')}
+          onOpenDetails={() => {
+            if (sanctuaryDisplayPlant) handleSanctuaryPlantFocus(sanctuaryDisplayPlant)
+          }}
+          onCloseFocus={handleSanctuaryFocusClose}
+          onAddPlant={() => interactions.setAddDialogOpen(true)}
+        />
+      )}
 
       {/* Decoration edit overlay (visible in arrange mode) */}
       {inventory && (
@@ -462,6 +649,7 @@ export function IsometricGarden({
         harvestData={interactions.harvestData}
         onHarvestClose={handleHarvestClose}
         showCelebrations={gardenSettings.showCelebrations}
+        sanctuaryMode={sanctuaryMode}
       />
     </div>
   )

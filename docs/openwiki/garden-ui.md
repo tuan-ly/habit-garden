@@ -3,8 +3,11 @@
 ## Main Entry Points
 
 - `src/app/(dashboard)/garden/page.tsx` - server page, plant fetch, `PlantsProvider`.
-- `src/components/garden/garden-view.tsx` - top-level client orchestrator for today/garden/list/focus modes.
+- `src/components/garden/garden-view.tsx` - top-level Garden-first experience shell and scenic background.
 - `src/components/garden/isometric-garden.tsx` - isometric garden orchestrator.
+- `src/components/garden/sanctuary-garden-chrome.tsx` - mobile sanctuary HUD, next-plant focus and three daily actions.
+- `src/components/garden/sanctuary-action-dialog.tsx` - no-guilt action entry for completed, tiny and rest paths.
+- `src/components/garden/sanctuary-plant-detail-sheet.tsx` - identity-first plant detail and Journey handoff.
 
 ## Rendering Strategy
 
@@ -24,6 +27,7 @@ Avoid Framer Motion for many garden elements. It is acceptable for small UI tran
 - decoration placement through inventory context
 - modal state through `GardenModals`
 - celebration state through `GardenCelebrationLayer`
+- sanctuary active-plant selection and the focused hero plant
 
 ## Grid Positioning
 
@@ -36,17 +40,40 @@ Important concepts:
 - required grid size - grows based on user level and placed items.
 - displacement moves - used when larger plants need space.
 
-## View Modes
+## Current Experience Model
 
-`GardenView` supports:
+The production `/garden` route is now **Garden-first**:
 
-- `today` - dashboard/check-in oriented view.
-- `garden` - isometric garden.
-- `list` - plant list.
-- `focus` - focused calming view.
+- no separate Today dashboard or competing mode toggle
+- one automatically suggested plant receives the visual focus
+- action dock offers `Đã làm`, `2 phút`, and `Nghỉ` with equal reachability
+- the primary metric is plants cared for today (`x/y`)
+- XP, streaks, achievements, store and stats are not primary Garden-home motivation
+- `/overview` is Journey; `/profile` is Me; `/stats` redirects to Journey
 
-The selected mode is stored in `localStorage` under `gardenViewMode`.
+Legacy list/focus/edit primitives still exist for compatibility and garden arrangement, but they are not first-level navigation.
+
+## Reaction And Modal Rules
+
+- `useGardenInteractions()` performs existing optimistic mutations and can open a selected action mode directly.
+- In sanctuary mode, `GardenCelebrationLayer` renders `SanctuaryGardenReaction`; XP-first overlays are suppressed.
+- Mood is no longer a proactive blocking modal. Onboarding is the only automatic entry modal.
+- The plant remains the visual focal point before and after an action.
+- Use real plant/background assets; do not replace them with emoji or placeholder drawings.
+
+## Plant Focus Interaction
+
+Garden dùng **Spatial Anchoring**: plant luôn được render từ anchor cell của chính nó, gốc cây và bóng đổ cùng nằm trên mặt tile. Không tách plant “hero” khỏi grid để render lại ở tọa độ màn hình cố định.
+
+Trong sanctuary mode, chạm plant sẽ chạy luồng `overview → focus → care → reaction → return`:
+
+- camera pan và zoom theo `grid_row`, `grid_col`, `grid_size` của plant được chọn
+- plant được chọn giữ màu và glow; các plant còn lại giảm tương phản
+- focus panel hiển thị câu chuyện ngắn, tiến trình và ba lựa chọn `Chăm cây`, `2 phút`, `Nghỉ`
+- đóng bằng nút X, Escape hoặc chạm tile trống; camera quay về trạng thái trước đó
+- tile plant là button có accessible name `Đến thăm <tên plant>` và hỗ trợ Enter/Space
+- animation phải tôn trọng `prefers-reduced-motion`
 
 ## UX Constraints
 
-The app can be incomplete, but visible UI must not feel cheap. Hide unfinished features rather than showing rough placeholders. Maintain premium spacing, polished empty states, and coherent game-like visual tone.
+The chosen direction is **Soft Isometric Sanctuary**: warm golden-hour light, sage/cream surfaces, generous organic radii and calm motion. Visible UI must not use death, critical-state, guilt or streak-loss messaging as primary motivation.

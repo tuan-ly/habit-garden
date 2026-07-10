@@ -8,16 +8,6 @@ const OnboardingModal = dynamic(
   () => import('@/components/onboarding').then(m => ({ default: m.OnboardingModal })),
   { ssr: false }
 )
-const MoodProactivePrompt = dynamic(
-  () => import('@/components/mood').then(m => ({ default: m.MoodProactivePrompt })),
-  { ssr: false }
-)
-
 export function ClientModals() {
-  return (
-    <>
-      <OnboardingModal />
-      <MoodProactivePrompt />
-    </>
-  )
+  return <OnboardingModal />
 }

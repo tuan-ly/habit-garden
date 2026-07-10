@@ -16,7 +16,7 @@ This pattern solves the **Double Fetch Problem**: the page can render from serve
 </PlantsProvider>
 ```
 
-`GardenView` reads plants from `usePlants()`, mood from `useMood()`, profile/plant types from `DashboardDataContext`, and then selects one of the today/garden/list/focus views.
+`GardenView` reads plants from `usePlants()`, mood from `useMood()`, profile/plant types from `DashboardDataContext`, and renders the Garden-first sanctuary shell. `IsometricGarden` selects a due plant with the lowest moisture as the suggested focus and passes it to `SanctuaryGardenChrome`.
 
 ## Optimistic Updates
 
@@ -28,6 +28,16 @@ This pattern solves the **Double Fetch Problem**: the page can render from serve
 - adding/removing/updating local plant state
 
 Server actions remain the source of truth. Optimistic updates give immediate UI feedback, then `serverPlants` is updated after the action succeeds.
+
+The sanctuary action sequence is:
+
+`action dock -> SanctuaryActionDialog -> useGardenInteractions -> PlantsProvider optimistic helper -> server action -> SanctuaryGardenReaction`
+
+The three entry paths reuse existing mutation boundaries:
+
+- `Đã làm` - standard watering or goal log.
+- `2 phút` - opens the same mutation flow with tiny-action framing.
+- `Nghỉ` - records the existing intentional rest/watering path without shame messaging.
 
 ## Mutation Pattern
 

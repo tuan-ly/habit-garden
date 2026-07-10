@@ -2,9 +2,9 @@
 
 ## Product
 
-Habit Garden turns habit building into a garden game. A habit is represented by a plant; check-ins water the plant, goal logs grow it, and long-term consistency unlocks stronger visual states and progression.
+Habit Garden (product name: Habien) turns habit building into a calm personal garden. A habit is represented by a plant; check-ins, tiny actions and intentional rest become visible growth, while Journey turns long-term activity into chapters and reflection.
 
-The app language is English. The repo also contains planning docs and Vietnamese creator notes, but production UI should stay English unless a feature explicitly localizes copy.
+The rebuilt core experience is Vietnamese-first. Keep user-facing copy natural, no-guilt and consistent across Garden, Journey, Me, onboarding and auth. Legacy secondary surfaces may still contain English while localization cleanup continues.
 
 ## Stack
 
@@ -23,6 +23,8 @@ The app language is English. The repo also contains planning docs and Vietnamese
 - `src/components/plants/` - plant cards, detail sheet, watering, add plant, visuals.
 - `src/components/goals/` - goal setup, logging, charts, adaptive suggestions, progress UI.
 - `src/components/game-ui/` - HUD, nav, level-up, upgrade modal, welcome-back flow.
+- `src/components/auth/` - shared sanctuary auth shell.
+- `src/components/onboarding/` - first-seed entry flow.
 - `src/components/ui/` - reusable Radix/shadcn-style primitives.
 - `src/lib/actions/` - server actions and all database writes.
 - `src/lib/context/` - client context providers hydrated from server data.
@@ -41,3 +43,5 @@ The app language is English. The repo also contains planning docs and Vietnamese
 - Prefer explicit Supabase column lists over `select('*')`.
 - The garden is canvas-first; avoid DOM-heavy animation for tiles, plants, particles, and weather.
 - Keep plant status semantics gentle: `dead` and `dormant` are legacy compatibility states; new UI should think in `sleeping` and `resting`.
+- Product IA is Garden / Journey / Me. Store is a secondary workshop location; Stats is merged into Journey.
+- Prefer plant reaction and narrative reveal over XP/currency headlines.

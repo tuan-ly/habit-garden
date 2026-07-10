@@ -3,11 +3,14 @@
 import { memo, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import type { PlantWithType, PlantType } from '@/types/database'
+import type { WateringActionMode } from '@/components/plants/gentle-watering-modal'
 
 // Dynamic imports — these heavy modal components are only loaded when needed
 const AddPlantDialog = dynamic(() => import('@/components/plants/add-plant-dialog').then(m => ({ default: m.AddPlantDialog })), { ssr: false })
 const PlantDetailSheet = dynamic(() => import('@/components/plants/plant-detail-sheet').then(m => ({ default: m.PlantDetailSheet })), { ssr: false })
 const GentleWateringModal = dynamic(() => import('@/components/plants/gentle-watering-modal').then(m => ({ default: m.GentleWateringModal })), { ssr: false })
+const SanctuaryActionDialog = dynamic(() => import('./sanctuary-action-dialog').then(m => ({ default: m.SanctuaryActionDialog })), { ssr: false })
+const SanctuaryPlantDetailSheet = dynamic(() => import('./sanctuary-plant-detail-sheet').then(m => ({ default: m.SanctuaryPlantDetailSheet })), { ssr: false })
 
 interface GardenModalsProps {
   // Watering modal
@@ -30,6 +33,8 @@ interface GardenModalsProps {
   // Shared
   journalStreak: number
   isWateredToday: (plant: PlantWithType) => boolean
+  wateringInitialMode?: WateringActionMode
+  sanctuaryMode?: boolean
 }
 
 function getDaysLeftInPeriod(periodEnd?: string): number | undefined {
@@ -60,6 +65,8 @@ export const GardenModals = memo(function GardenModals({
   onSheetOpenChange,
   journalStreak,
   isWateredToday,
+  wateringInitialMode,
+  sanctuaryMode = false,
 }: GardenModalsProps) {
   const handleAddDialogOpenChange = useCallback(
     (open: boolean) => {
@@ -71,24 +78,37 @@ export const GardenModals = memo(function GardenModals({
 
   return (
     <>
-      {/* Gentle watering modal */}
-      <GentleWateringModal
-        plant={wateringPlant}
-        open={wateringModalOpen}
-        onOpenChange={onWateringOpenChange}
-        onWater={onWater}
-        onLogAndWater={onLogAndWater}
-        onDetails={onDetails}
-        hasGoal={!!wateringPlant?.goal_mode}
-        goalUnit={wateringPlant?.goal?.unit}
-        goalMode={wateringPlant?.goal_mode || undefined}
-        isWateredToday={wateringPlant ? isWateredToday(wateringPlant) : false}
-        journalStreak={journalStreak}
-        periodProgress={wateringPlant?.goal?.period_progress}
-        currentPeriodTarget={wateringPlant?.goal?.current_period_target}
-        periodLabel={wateringPlant?.goal?.period_label}
-        daysLeftInPeriod={getDaysLeftInPeriod(wateringPlant?.goal?.period_end)}
-      />
+      {sanctuaryMode ? (
+        <SanctuaryActionDialog
+          key={wateringPlant?.id ?? 'sanctuary-action'}
+          plant={wateringPlant}
+          open={wateringModalOpen}
+          initialMode={wateringInitialMode ?? 'choose'}
+          onOpenChange={onWateringOpenChange}
+          onWater={onWater}
+          onLogAndWater={onLogAndWater}
+          onDetails={onDetails}
+        />
+      ) : (
+        <GentleWateringModal
+          plant={wateringPlant}
+          open={wateringModalOpen}
+          onOpenChange={onWateringOpenChange}
+          onWater={onWater}
+          onLogAndWater={onLogAndWater}
+          onDetails={onDetails}
+          hasGoal={!!wateringPlant?.goal_mode}
+          goalUnit={wateringPlant?.goal?.unit}
+          goalMode={wateringPlant?.goal_mode || undefined}
+          isWateredToday={wateringPlant ? isWateredToday(wateringPlant) : false}
+          journalStreak={journalStreak}
+          periodProgress={wateringPlant?.goal?.period_progress}
+          currentPeriodTarget={wateringPlant?.goal?.current_period_target}
+          periodLabel={wateringPlant?.goal?.period_label}
+          daysLeftInPeriod={getDaysLeftInPeriod(wateringPlant?.goal?.period_end)}
+          initialMode={wateringInitialMode}
+        />
+      )}
 
       {/* Add plant dialog */}
       <AddPlantDialog
@@ -98,12 +118,19 @@ export const GardenModals = memo(function GardenModals({
         gridPosition={gridPosition}
       />
 
-      {/* Plant detail sheet */}
-      <PlantDetailSheet
-        plant={selectedPlant}
-        open={sheetOpen}
-        onOpenChange={onSheetOpenChange}
-      />
+      {sanctuaryMode ? (
+        <SanctuaryPlantDetailSheet
+          plant={selectedPlant}
+          open={sheetOpen}
+          onOpenChange={onSheetOpenChange}
+        />
+      ) : (
+        <PlantDetailSheet
+          plant={selectedPlant}
+          open={sheetOpen}
+          onOpenChange={onSheetOpenChange}
+        />
+      )}
     </>
   )
 })

@@ -16,6 +16,8 @@ interface IsometricPlantProps {
   className?: string
   /** Focus mode visual state */
   focusState?: FocusState
+  hideStatusIndicators?: boolean
+  priority?: boolean
 }
 
 // Map growth percentage to a visual scale (base scale)
@@ -35,6 +37,8 @@ function IsometricPlantComponent({
   scale = 1,
   className,
   focusState,
+  hideStatusIndicators = false,
+  priority = false,
 }: IsometricPlantProps) {
   // Base scale from growth stage
   const growthScale = getGrowthScale(plant.growth_percentage)
@@ -48,10 +52,10 @@ function IsometricPlantComponent({
 
   // Focus state visual classes
   const focusClasses = cn(
-    // Highlight: pulse glow animation
-    focusState === 'highlight' && 'animate-pulse-glow',
-    // Dim: reduced opacity and grayscale
-    focusState === 'dim' && 'opacity-40 grayscale',
+    // Highlight without animating transform so tile scale and camera scale stay intact.
+    focusState === 'highlight' && 'drop-shadow-[0_0_14px_rgba(246,235,167,0.72)]',
+    // Dim: keep the garden legible while giving the selected plant the stage.
+    focusState === 'dim' && 'opacity-35 saturate-50',
     // Urgent: red ring + bounce
     focusState === 'urgent' && 'animate-bounce-subtle'
   )
@@ -76,7 +80,7 @@ function IsometricPlantComponent({
 
       {/* Highlight glow */}
       {focusState === 'highlight' && (
-        <div className="absolute inset-0 -m-1 rounded-full bg-amber-400/30 blur-md pointer-events-none" />
+        <div className="absolute inset-0 -m-1 animate-pulse rounded-full bg-amber-400/30 blur-md pointer-events-none" />
       )}
 
       <PlantVisual
@@ -85,6 +89,8 @@ function IsometricPlantComponent({
         weather={weather}
         showWateringEffect={showWateringEffect}
         alignBottom
+        hideStatusIndicators={hideStatusIndicators}
+        priority={priority}
       />
 
       {/* Growth Blocked Indicator */}

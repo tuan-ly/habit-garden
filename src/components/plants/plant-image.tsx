@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { PlantWithType, PlantStatus } from '@/types/database'
 
@@ -34,6 +34,8 @@ interface PlantImageProps {
     className?: string
     /** If true, aligns content to bottom (no vertical centering) */
     alignBottom?: boolean
+    showStatusIndicator?: boolean
+    priority?: boolean
 }
 
 function getGrowthStage(growthPercentage: number, status: PlantStatus): GrowthStage {
@@ -90,6 +92,8 @@ export function PlantImage({
     showGrowthTransition = false,
     className,
     alignBottom = false,
+    showStatusIndicator = true,
+    priority = false,
 }: PlantImageProps) {
     const isDead = plant.status === 'dead'
     const currentStage = getGrowthStage(plant.growth_percentage, plant.status)
@@ -99,12 +103,8 @@ export function PlantImage({
     const icon = plant.plant_type.icon || '🌱'
 
     // Track image load errors for emoji fallback
-    const [imgError, setImgError] = useState(false)
-
-    // Reset error state when plant type or stage changes
-    useEffect(() => {
-        setImgError(false)
-    }, [plant.plant_type.name, currentStage, isDead])
+    const [failedPath, setFailedPath] = useState<string | null>(null)
+    const imgError = failedPath === imagePath
 
     return (
         <div
@@ -136,8 +136,9 @@ export function PlantImage({
                     height={sizeConfig.height}
                     sizes={`${sizeConfig.width}px`}
                     quality={85}
-                    loading="lazy"
-                    onError={() => setImgError(true)}
+                    priority={priority}
+                    loading={priority ? undefined : 'lazy'}
+                    onError={() => setFailedPath(imagePath)}
                     className={cn(
                         'transition-all duration-300 object-contain',
                         isDead && 'grayscale opacity-60'
@@ -146,7 +147,7 @@ export function PlantImage({
             )}
 
             {/* Wilting indicator for low moisture */}
-            {!isDead && plant.current_moisture < 30 && (
+            {showStatusIndicator && !isDead && plant.current_moisture < 30 && (
                 <span className="absolute -top-1 -right-1 text-xs animate-pulse">💦</span>
             )}
         </div>

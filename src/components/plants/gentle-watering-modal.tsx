@@ -49,7 +49,7 @@ import {
 import { toast } from 'sonner'
 import { XP_VALUES, isMorningTime } from '@/lib/xp-constants'
 
-type ActionMode = 'choose' | 'water' | 'log'
+export type WateringActionMode = 'choose' | 'water' | 'log'
 
 interface GentleWateringModalProps {
   plant: PlantWithType | null
@@ -68,6 +68,7 @@ interface GentleWateringModalProps {
   currentPeriodTarget?: number
   periodLabel?: string
   daysLeftInPeriod?: number
+  initialMode?: WateringActionMode
 }
 
 function calculateNoteBonus(noteLength: number, journalStreak: number): number {
@@ -98,8 +99,9 @@ export function GentleWateringModal({
   currentPeriodTarget,
   periodLabel,
   daysLeftInPeriod,
+  initialMode,
 }: GentleWateringModalProps) {
-  const [mode, setMode] = useState<ActionMode>('choose')
+  const [mode, setMode] = useState<WateringActionMode>('choose')
   const [notes, setNotes] = useState('')
   const [logValue, setLogValue] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
@@ -114,7 +116,6 @@ export function GentleWateringModal({
   const isMorning = isMorningTime()
   const isFirstActivityToday = !isWateredToday
 
-  const wateringBaseXp = 0
   const totalXp = noteBonus
 
   const logBaseXp = isFirstActivityToday
@@ -124,12 +125,12 @@ export function GentleWateringModal({
 
   useEffect(() => {
     if (open) {
-      setMode(hasGoal ? 'log' : 'choose')
+      setMode(initialMode ?? (hasGoal ? 'log' : 'choose'))
       setNotes('')
       setLogValue('')
       setIsLoading(false)
     }
-  }, [open, hasGoal])
+  }, [open, hasGoal, initialMode])
 
   useEffect(() => {
     if (!open) return

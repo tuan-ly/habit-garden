@@ -4,10 +4,10 @@ import { memo, useMemo } from 'react'
 import { IsometricTile } from './isometric-tile'
 import { IsometricPlant, type FocusState } from './isometric-plant'
 import { DecorationImage } from './decoration-image'
-import { isAnchorCell } from '@/lib/utils/grid-positioning'
 import type { PlantWithType, PlacedDecorationWithType, WeatherType } from '@/types/database'
 import type { MoveState } from './use-garden-interactions'
 import type { GardenMode } from './mode-toolbar'
+import { getPlantSizeScale } from '@/lib/utils/grid-positioning'
 
 interface TileData {
   row: number
@@ -32,6 +32,9 @@ interface GardenTileGridProps {
   onTileHover: (row: number, col: number) => void
   onTileLeave: () => void
   onContextMenu: (e: React.MouseEvent, plant?: PlantWithType) => void
+  hidePlantBadges?: boolean
+  featuredPlantId?: string | null
+  hideStatusIndicators?: boolean
 }
 
 export const GardenTileGrid = memo(function GardenTileGrid({
@@ -49,6 +52,9 @@ export const GardenTileGrid = memo(function GardenTileGrid({
   onTileHover,
   onTileLeave,
   onContextMenu,
+  hidePlantBadges = false,
+  featuredPlantId,
+  hideStatusIndicators = false,
 }: GardenTileGridProps) {
   // Build a map from "row-col" -> decoration (anchor only) for O(1) lookup.
   // Memoized so we don't rebuild the Map on every render (only when decorations change).
@@ -89,12 +95,18 @@ export const GardenTileGrid = memo(function GardenTileGrid({
             isPartOfMultiCell={isPartOfMultiCell}
             plantGridSize={plant?.grid_size || decoration?.grid_size || 1}
             onClick={(e) => onTileClick(row, col, clickPlant, e)}
+            onKeyDown={(e) => {
+              if (clickPlant && (e.key === 'Enter' || e.key === ' ')) {
+                e.preventDefault()
+                onTileClick(row, col, clickPlant)
+              }
+            }}
             onContextMenu={(e) => onContextMenu(e, clickPlant)}
             onMouseEnter={() => onTileHover(row, col)}
             onMouseLeave={onTileLeave}
             tileSize={tileSize}
             plant={isAnchor ? plant : null}
-            hideBadge={isSelectedForMove}
+            hideBadge={hidePlantBadges || isSelectedForMove}
             showAddHint={mode === 'arrange' && !moveState.selectedPlant}
             isSelectedForMove={isSelectedForMove}
             previewPlant={isPreviewTile && moveState.selectedPlant ? moveState.selectedPlant : undefined}
@@ -105,7 +117,12 @@ export const GardenTileGrid = memo(function GardenTileGrid({
                 <IsometricPlant
                   plant={plant}
                   weather={weather}
+                  scale={plant.id === featuredPlantId
+                    ? 1.9 / getPlantSizeScale(plant.grid_size || 1)
+                    : 1}
                   focusState={focusStates?.get(plant.id)}
+                  hideStatusIndicators={hideStatusIndicators}
+                  priority={plant.id === featuredPlantId}
                 />
               </div>
             )}

@@ -20,6 +20,7 @@ interface IsometricTileProps {
   /** Plant grid size for positioning and shadow scaling (default 1) */
   plantGridSize?: number
   onClick: (e: React.MouseEvent) => void
+  onKeyDown?: (e: React.KeyboardEvent) => void
   onMouseEnter: () => void
   onMouseLeave: () => void
   onContextMenu?: (e: React.MouseEvent) => void
@@ -67,6 +68,7 @@ function IsometricTileComponent({
   isPartOfMultiCell = false,
   plantGridSize = 1,
   onClick,
+  onKeyDown,
   onMouseEnter,
   onMouseLeave,
   onContextMenu,
@@ -97,9 +99,13 @@ function IsometricTileComponent({
   const tileHitHeight = tileSize / 2
 
   return (
-    <div
+    <button
+      type="button"
+      tabIndex={plant ? 0 : -1}
+      aria-label={plant ? `Đến thăm ${plant.name}` : undefined}
       className={cn(
-        'absolute cursor-pointer'
+        'absolute cursor-pointer border-0 bg-transparent p-0 text-left focus-visible:outline-none',
+        plant && 'focus-visible:ring-2 focus-visible:ring-[#f6edb0] focus-visible:ring-offset-4 focus-visible:ring-offset-transparent'
       )}
       style={{
         left: tileCenterX,
@@ -107,9 +113,11 @@ function IsometricTileComponent({
         width: tileSize,
         height: tileHitHeight,
         transform: 'translate(-50%, 0)', // Align from top-center
-        zIndex: row + col + 10, // Above ground plane
+        // Plant anchors must stay above neighboring transparent tile hit areas.
+        zIndex: row + col + (plant ? 100 : 10),
       }}
       onClick={onClick}
+      onKeyDown={onKeyDown}
       onContextMenu={onContextMenu}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
@@ -273,7 +281,7 @@ function IsometricTileComponent({
           />
         </div>
       )}
-    </div>
+    </button>
   )
 }
 

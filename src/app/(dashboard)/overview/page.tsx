@@ -12,7 +12,7 @@ function formatDateLocal(date: Date): string {
 export default async function OverviewPage() {
   // Pre-fetch default period stats on the server so the first paint
   // includes data — removes client-side fetch waterfall on page load.
-  const initialPeriod = 'month' as const
+  const initialPeriod = 'week' as const
   const initialStats = await getAggregatedGardenStats(
     initialPeriod,
     formatDateLocal(new Date())
