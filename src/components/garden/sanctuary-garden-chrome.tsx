@@ -12,7 +12,6 @@ import {
   Leaf,
   MapPinned,
   Moon,
-  Plus,
   Sparkles,
   Sprout,
   X,
@@ -32,7 +31,6 @@ interface SanctuaryGardenChromeProps {
   onRestAction: () => void
   onOpenDetails: () => void
   onCloseFocus: () => void
-  onAddPlant: () => void
 }
 
 function getGardenDate(): string {
@@ -41,16 +39,6 @@ function getGardenDate(): string {
     day: 'numeric',
     month: 'long',
   }).format(new Date())
-}
-
-function getTeaser(plant: PlantWithType | null): string {
-  if (!plant) return 'Một hạt giống mới đang chờ bạn'
-  const growth = Math.max(0, Math.min(100, plant.growth_percentage))
-  if (growth >= 90) return 'Một mùa nở hoa đang rất gần'
-  if (growth >= 60) return 'Tán lá mới đang dần mở ra'
-  if (growth >= 35) return 'Rễ đã vững hơn sau mỗi lần chăm'
-  if (growth >= 15) return 'Chồi non đang tìm ánh sáng'
-  return 'Mầm nhỏ đã bắt đầu thức giấc'
 }
 
 function getVisitCopy(plant: PlantWithType, isComplete: boolean): string {
@@ -75,11 +63,9 @@ export function SanctuaryGardenChrome({
   onRestAction,
   onOpenDetails,
   onCloseFocus,
-  onAddPlant,
 }: SanctuaryGardenChromeProps) {
   const user = useUser()
   const allDone = totalCount > 0 && completedCount >= totalCount
-  const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0
   const initials = (user?.user_metadata?.full_name || user?.email || 'G')
     .trim()
     .charAt(0)
@@ -104,6 +90,14 @@ export function SanctuaryGardenChrome({
           <p className="mt-1 text-xs font-medium capitalize text-[#5d7655]">
             {getGardenDate()}
           </p>
+          <div
+            className="mx-auto mt-2 inline-flex items-center gap-1.5 rounded-full border border-white/65 bg-[#fffaf0]/86 px-2.5 py-1 text-xs font-bold text-[#49693f] shadow-sm backdrop-blur-md"
+            role="img"
+            aria-label={`Đã chăm ${completedCount} trên ${totalCount} cây hôm nay`}
+          >
+            <span>{completedCount}/{totalCount}</span>
+            <span className="font-medium text-[#6b8062]">đã chăm</span>
+          </div>
         </div>
 
         <Link
@@ -120,24 +114,7 @@ export function SanctuaryGardenChrome({
         </Link>
       </header>
 
-      <section
-        className={cn(
-          'absolute left-1/2 top-[5.6rem] -translate-x-1/2 text-center transition-all duration-300 sm:top-[6.25rem]',
-          focusedPlant && 'pointer-events-none -translate-y-3 opacity-0'
-        )}
-      >
-        <div
-          className="relative grid h-[4.4rem] w-[4.4rem] place-items-center rounded-full p-[6px] shadow-[0_12px_35px_rgba(38,65,32,0.16)]"
-          style={{
-            background: `conic-gradient(#5d8a48 ${progress * 3.6}deg, rgba(255,250,240,0.72) 0deg)`,
-          }}
-          role="img"
-          aria-label={`Đã chăm ${completedCount} trên ${totalCount} cây hôm nay`}
-        >
-          <div className="grid h-full w-full place-items-center rounded-full bg-[#fffaf0]/94 font-display text-xl font-semibold text-[#315027] backdrop-blur-md">
-            {completedCount}/{totalCount}
-          </div>
-        </div>
+      <section className="absolute left-1/2 top-[7.6rem] -translate-x-1/2 text-center">
         {welcomeBackDays >= 3 && (
           <p className="mt-2 whitespace-nowrap rounded-full bg-[#fffaf0]/78 px-3 py-1 text-[11px] font-medium text-[#58704d] backdrop-blur-md">
             Khu vườn vẫn ở đây, chờ bạn trở lại
@@ -149,7 +126,7 @@ export function SanctuaryGardenChrome({
         <button
           type="button"
           onClick={onOpenDetails}
-          className="pointer-events-auto absolute left-1/2 top-[11.7rem] max-w-[82%] -translate-x-1/2 rounded-2xl border border-white/70 bg-[#fffaf0]/90 px-4 py-2.5 text-left shadow-[0_10px_30px_rgba(45,72,38,0.14)] backdrop-blur-xl transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#789a68] sm:top-[12.5rem]"
+          className="pointer-events-auto absolute left-1/2 top-[11.7rem] max-w-[82%] -translate-x-1/2 rounded-2xl border border-white/70 bg-[#fffaf0]/90 px-4 py-2.5 text-left shadow-[0_10px_30px_rgba(45,72,38,0.14)] backdrop-blur-xl transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#789a68] sm:hidden"
         >
           <span className="flex items-center justify-center gap-2 text-sm font-bold text-[#315027]">
             <Leaf className="h-4 w-4 fill-[#6f995b]/20 text-[#628a50]" />
@@ -162,7 +139,7 @@ export function SanctuaryGardenChrome({
         </button>
       )}
 
-      <div className="pointer-events-auto absolute inset-x-3 bottom-[max(1rem,env(safe-area-inset-bottom))] sm:inset-x-5">
+      {focusedPlant && <div className="pointer-events-auto absolute inset-x-3 bottom-[max(1rem,env(safe-area-inset-bottom))] sm:inset-x-5">
         {focusedPlant ? (
           <section
             role="dialog"
@@ -244,63 +221,8 @@ export function SanctuaryGardenChrome({
               </button>
             </div>
           </section>
-        ) : (
-        <div className="rounded-[2rem] border border-white/55 bg-[#314b36]/72 px-4 pb-4 pt-3 shadow-[0_24px_70px_rgba(20,47,29,0.35)] backdrop-blur-2xl">
-          {activePlant ? (
-            <>
-              <div className="grid grid-cols-[1fr_1.28fr_1fr] items-end gap-2">
-                <button
-                  type="button"
-                  onClick={onTinyAction}
-                  disabled={allDone || isSyncing}
-                  className="flex min-h-[4.75rem] flex-col items-center justify-center gap-1 rounded-full border border-white/50 bg-[#fffaf0]/92 px-2 text-xs font-semibold text-[#49693f] shadow-[0_8px_24px_rgba(18,45,26,0.18)] transition hover:-translate-y-1 disabled:cursor-not-allowed disabled:opacity-55 motion-reduce:transform-none"
-                >
-                  <Clock3 className="h-5 w-5" />
-                  2 phút
-                </button>
-
-                <button
-                  type="button"
-                  onClick={onPrimaryAction}
-                  disabled={allDone || isSyncing}
-                  className={cn(
-                    'flex min-h-[6rem] flex-col items-center justify-center gap-1 rounded-full border-2 border-white/75 bg-[#fffaf0] px-3 font-bold text-[#416633] shadow-[0_14px_35px_rgba(13,37,20,0.28)] transition hover:-translate-y-1.5 disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transform-none',
-                    !allDone && 'sanctuary-primary-pulse'
-                  )}
-                >
-                  {allDone ? <Check className="h-8 w-8" /> : <Leaf className="h-8 w-8 fill-[#6f995b]/35" />}
-                  <span>{allDone ? 'Đã xong' : 'Đã làm'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={onRestAction}
-                  disabled={allDone || isSyncing}
-                  className="flex min-h-[4.75rem] flex-col items-center justify-center gap-1 rounded-full border border-white/50 bg-[#fffaf0]/92 px-2 text-xs font-semibold text-[#625f4f] shadow-[0_8px_24px_rgba(18,45,26,0.18)] transition hover:-translate-y-1 disabled:cursor-not-allowed disabled:opacity-55 motion-reduce:transform-none"
-                >
-                  <Moon className="h-5 w-5" />
-                  Nghỉ
-                </button>
-              </div>
-
-              <div className="mt-3 flex items-center justify-center gap-2 text-center text-xs font-medium text-[#f7f0d9]">
-                <Sprout className="h-4 w-4 text-[#dce9b8]" />
-                <span>{allDone ? 'Khu vườn có thể yên nghỉ hôm nay' : getTeaser(activePlant)}</span>
-              </div>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={onAddPlant}
-              className="flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-[#fffaf0] px-5 font-bold text-[#416633] shadow-[0_12px_30px_rgba(13,37,20,0.25)]"
-            >
-              <Plus className="h-5 w-5" />
-              Gieo hạt giống đầu tiên
-            </button>
-          )}
-        </div>
-        )}
-      </div>
+        ) : null}
+      </div>}
     </div>
   )
 }

@@ -28,13 +28,15 @@ interface GardenTileGridProps {
   focusStates?: Map<string, FocusState>
   weather?: WeatherType | null
   placedDecorations?: PlacedDecorationWithType[]
-  onTileClick: (row: number, col: number, plant?: PlantWithType, event?: React.MouseEvent | React.TouchEvent) => void
+  onTileClick: (row: number, col: number, plant?: PlantWithType, decoration?: PlacedDecorationWithType, event?: React.MouseEvent | React.TouchEvent) => void
   onTileHover: (row: number, col: number) => void
   onTileLeave: () => void
   onContextMenu: (e: React.MouseEvent, plant?: PlantWithType) => void
   hidePlantBadges?: boolean
   featuredPlantId?: string | null
   hideStatusIndicators?: boolean
+  cinematic?: boolean
+  selectedDecorationId?: string | null
 }
 
 export const GardenTileGrid = memo(function GardenTileGrid({
@@ -55,6 +57,8 @@ export const GardenTileGrid = memo(function GardenTileGrid({
   hidePlantBadges = false,
   featuredPlantId,
   hideStatusIndicators = false,
+  cinematic = false,
+  selectedDecorationId,
 }: GardenTileGridProps) {
   // Build a map from "row-col" -> decoration (anchor only) for O(1) lookup.
   // Memoized so we don't rebuild the Map on every render (only when decorations change).
@@ -62,6 +66,15 @@ export const GardenTileGrid = memo(function GardenTileGrid({
     const map = new Map<string, PlacedDecorationWithType>()
     for (const deco of placedDecorations) {
       map.set(`${deco.grid_row}-${deco.grid_col}`, deco)
+    }
+    return map
+  }, [placedDecorations])
+  const decorationCellMap = useMemo(() => {
+    const map = new Map<string, PlacedDecorationWithType>()
+    for (const deco of placedDecorations) {
+      for (let r = 0; r < deco.grid_size; r++) {
+        for (let c = 0; c < deco.grid_size; c++) map.set(`${deco.grid_row + r}-${deco.grid_col + c}`, deco)
+      }
     }
     return map
   }, [placedDecorations])
@@ -82,6 +95,8 @@ export const GardenTileGrid = memo(function GardenTileGrid({
 
         // Check if a decoration is anchored at this tile
         const decoration = decorationAnchorMap.get(tileKey)
+        const occupyingDecoration = decorationCellMap.get(tileKey)
+        const decorationSelected = occupyingDecoration?.id === selectedDecorationId
 
         return (
           <IsometricTile
@@ -89,16 +104,16 @@ export const GardenTileGrid = memo(function GardenTileGrid({
             row={row}
             col={col}
             gridSize={gridSize}
-            isEmpty={!plant && !isOccupiedByMultiCell && !decoration}
+            isEmpty={!plant && !isOccupiedByMultiCell && !occupyingDecoration}
             isHovered={isHovered}
             isOccupiedByMultiCell={isOccupiedByMultiCell}
-            isPartOfMultiCell={isPartOfMultiCell}
+            isPartOfMultiCell={isPartOfMultiCell || (!!occupyingDecoration && occupyingDecoration.grid_size > 1)}
             plantGridSize={plant?.grid_size || decoration?.grid_size || 1}
-            onClick={(e) => onTileClick(row, col, clickPlant, e)}
+            onClick={(e) => onTileClick(row, col, clickPlant, occupyingDecoration, e)}
             onKeyDown={(e) => {
               if (clickPlant && (e.key === 'Enter' || e.key === ' ')) {
                 e.preventDefault()
-                onTileClick(row, col, clickPlant)
+                onTileClick(row, col, clickPlant, occupyingDecoration)
               }
             }}
             onContextMenu={(e) => onContextMenu(e, clickPlant)}
@@ -111,6 +126,7 @@ export const GardenTileGrid = memo(function GardenTileGrid({
             isSelectedForMove={isSelectedForMove}
             previewPlant={isPreviewTile && moveState.selectedPlant ? moveState.selectedPlant : undefined}
             shadowType={plant && isAnchor ? 'plant' : decoration ? 'small' : 'none'}
+            cinematicShadows={cinematic}
           >
             {plant && isAnchor && (
               <div className={isSelectedForMove ? 'opacity-40 scale-95 transition-all' : ''}>
@@ -118,20 +134,24 @@ export const GardenTileGrid = memo(function GardenTileGrid({
                   plant={plant}
                   weather={weather}
                   scale={plant.id === featuredPlantId
-                    ? 1.9 / getPlantSizeScale(plant.grid_size || 1)
+                    ? (cinematic ? 3.4 : 1.9) / getPlantSizeScale(plant.grid_size || 1)
                     : 1}
                   focusState={focusStates?.get(plant.id)}
                   hideStatusIndicators={hideStatusIndicators}
                   priority={plant.id === featuredPlantId}
+                  cinematic={cinematic}
                 />
               </div>
             )}
             {decoration && !plant && (
-              <DecorationImage
-                decorationType={decoration.decoration_type}
-                size={decoration.grid_size >= 2 ? 'xl' : 'lg'}
-                rotation={decoration.rotation}
-              />
+              <div className={decorationSelected ? 'rounded-full opacity-55 ring-4 ring-[#f7d477]/80 transition' : 'transition'}>
+                <DecorationImage
+                  decorationType={decoration.decoration_type}
+                  size={decoration.grid_size >= 2 ? 'xl' : 'lg'}
+                  rotation={decoration.rotation}
+                  pixelSize={tileSize * (0.62 + decoration.grid_size * 0.62)}
+                />
+              </div>
             )}
           </IsometricTile>
         )

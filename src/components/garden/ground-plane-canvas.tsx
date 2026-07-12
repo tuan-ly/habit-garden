@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useEffect, useMemo, memo } from 'react'
+import { useRef, useEffect, useMemo, useState, memo } from 'react'
 import type { WeatherType } from '@/types/database'
 import type { TimeOfDay } from './themes'
 
@@ -27,6 +27,10 @@ interface GroundPlaneCanvasProps {
     weather?: WeatherType | null
     /** Time of day affects overall brightness */
     timeOfDay?: TimeOfDay
+    /** Sanctuary-only cinematic art direction */
+    cinematic?: boolean
+    /** Active plant area used to anchor the worn-earth focal zone */
+    focalArea?: MultiCellArea | null
 }
 
 /**
@@ -142,7 +146,7 @@ function getLightingProfile(weather: WeatherType | null | undefined, timeOfDay: 
 }
 
 // Pre-calculate grass details at module level for zero re-computation
-function generateGrassDetails(gridSize: number, tileSize: number, seed: number = 42) {
+function generateGrassDetails(gridSize: number, tileSize: number, seed: number = 42, cinematic = false) {
     const details: Array<{
         x: number
         y: number
@@ -161,7 +165,7 @@ function generateGrassDetails(gridSize: number, tileSize: number, seed: number =
     const centerX = diamondWidth / 2
 
     // Detail count — denser for lusher ground feel
-    const detailCount = Math.floor(gridSize * gridSize * 1.8)
+    const detailCount = Math.floor(gridSize * gridSize * (cinematic ? 1.24 : 1.8))
 
     const flowerColors = ['#E8C547', '#D4A0A0', '#B8C8A0', '#C4A8D0']
 
@@ -178,8 +182,8 @@ function generateGrassDetails(gridSize: number, tileSize: number, seed: number =
 
         const typeRand = random(i * 3)
         let type: 'grass' | 'flower' | 'clover'
-        if (typeRand < 0.7) type = 'grass'
-        else if (typeRand < 0.9) type = 'flower'
+        if (typeRand < (cinematic ? 0.9 : 0.7)) type = 'grass'
+        else if (typeRand < (cinematic ? 0.975 : 0.9)) type = 'flower'
         else type = 'clover'
 
         details.push({
@@ -199,13 +203,20 @@ function drawGrass(ctx: CanvasRenderingContext2D, x: number, y: number, scale: n
     ctx.save()
     ctx.translate(x, y)
     ctx.scale(scale, scale)
-    ctx.fillStyle = '#6B8C5E'
-    ctx.globalAlpha = 0.6
-    ctx.beginPath()
-    ctx.moveTo(0, 0)
-    ctx.quadraticCurveTo(-2, -8, 0, -12)
-    ctx.quadraticCurveTo(2, -8, 0, 0)
-    ctx.fill()
+    ctx.fillStyle = '#58764D'
+    ctx.globalAlpha = 0.76
+    const blades = [
+        { x: -2.6, lean: -2.8, height: 8.5 },
+        { x: 0, lean: 0.6, height: 12 },
+        { x: 2.7, lean: 3, height: 9.5 },
+    ]
+    for (const blade of blades) {
+        ctx.beginPath()
+        ctx.moveTo(blade.x - 0.8, 0)
+        ctx.quadraticCurveTo(blade.x + blade.lean * 0.55, -blade.height * 0.64, blade.x + blade.lean, -blade.height)
+        ctx.quadraticCurveTo(blade.x + blade.lean * 0.4, -blade.height * 0.55, blade.x + 0.8, 0)
+        ctx.fill()
+    }
     ctx.restore()
 }
 
@@ -261,6 +272,56 @@ function drawClover(ctx: CanvasRenderingContext2D, x: number, y: number, scale: 
     ctx.restore()
 }
 
+/**
+ * Trace the visible grass silhouette without changing the logical diamond/grid.
+ * Rounded tips and tiny deterministic bends keep the island organic while
+ * placement, collision and isometric math continue to use the exact tile grid.
+ */
+function traceOrganicDiamond(
+    ctx: CanvasRenderingContext2D,
+    topX: number,
+    topY: number,
+    rightX: number,
+    rightY: number,
+    bottomX: number,
+    bottomY: number,
+    leftX: number,
+    leftY: number,
+    radius: number,
+    wobble: number
+) {
+    const rx = radius
+    const ry = radius * 0.48
+    const sideRadius = radius * 1.12
+
+    ctx.moveTo(topX - rx, topY + ry)
+    ctx.quadraticCurveTo(topX, topY, topX + rx, topY + ry)
+    ctx.bezierCurveTo(
+        topX + (rightX - topX) * 0.34, topY + (rightY - topY) * 0.34 - wobble,
+        topX + (rightX - topX) * 0.68, topY + (rightY - topY) * 0.68 + wobble,
+        rightX - sideRadius, rightY - ry
+    )
+    ctx.quadraticCurveTo(rightX, rightY, rightX - sideRadius, rightY + ry)
+    ctx.bezierCurveTo(
+        rightX + (bottomX - rightX) * 0.34, rightY + (bottomY - rightY) * 0.34 + wobble,
+        rightX + (bottomX - rightX) * 0.68, rightY + (bottomY - rightY) * 0.68 - wobble,
+        bottomX + rx, bottomY - ry
+    )
+    ctx.quadraticCurveTo(bottomX, bottomY, bottomX - rx, bottomY - ry)
+    ctx.bezierCurveTo(
+        bottomX + (leftX - bottomX) * 0.34, bottomY + (leftY - bottomY) * 0.34 + wobble,
+        bottomX + (leftX - bottomX) * 0.68, bottomY + (leftY - bottomY) * 0.68 - wobble,
+        leftX + sideRadius, leftY + ry
+    )
+    ctx.quadraticCurveTo(leftX, leftY, leftX + sideRadius, leftY - ry)
+    ctx.bezierCurveTo(
+        leftX + (topX - leftX) * 0.34, leftY + (topY - leftY) * 0.34 - wobble,
+        leftX + (topX - leftX) * 0.68, leftY + (topY - leftY) * 0.68 + wobble,
+        topX - rx, topY + ry
+    )
+    ctx.closePath()
+}
+
 function GroundPlaneCanvasComponent({
     gridSize,
     tileSize,
@@ -276,12 +337,36 @@ function GroundPlaneCanvasComponent({
     isDragTargetValid = false,
     weather = null,
     timeOfDay = 'day',
+    cinematic = false,
+    focalArea = null,
 }: GroundPlaneCanvasProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null)
     const staticDrawnRef = useRef(false)
+    const grassTextureRef = useRef<HTMLImageElement | null>(null)
+    const [grassTextureReady, setGrassTextureReady] = useState(false)
 
-    const tileHeight = tileSize * 0.35
+    useEffect(() => {
+        if (!cinematic) {
+            grassTextureRef.current = null
+            return
+        }
+
+        let cancelled = false
+        const texture = new Image()
+        texture.decoding = 'async'
+        texture.src = '/garden/textures/sanctuary-grass.webp'
+        texture.onload = () => {
+            if (cancelled) return
+            grassTextureRef.current = texture
+            setGrassTextureReady(true)
+        }
+        return () => {
+            cancelled = true
+        }
+    }, [cinematic])
+
+    const tileHeight = tileSize * (cinematic ? 0.24 : 0.35)
 
     const diamondWidth = gridSize * tileSize
     const diamondHeight = gridSize * (tileSize / 2)
@@ -297,11 +382,13 @@ function GroundPlaneCanvasComponent({
     const bottomY = diamondHeight
     const leftX = 0
     const leftY = diamondHeight / 2
+    const organicRadius = cinematic ? Math.max(16, tileSize * 0.22) : 0
+    const organicWobble = cinematic ? Math.max(3, tileSize * 0.032) : 0
 
     // Pre-generate grass details (memoized)
     const grassDetails = useMemo(
-        () => generateGrassDetails(gridSize, tileSize, 42),
-        [gridSize, tileSize]
+        () => generateGrassDetails(gridSize, tileSize, 42, cinematic),
+        [gridSize, tileSize, cinematic]
     )
 
     // Calculate grid lines once
@@ -382,7 +469,7 @@ function GroundPlaneCanvasComponent({
         }
 
         return lines
-    }, [gridSize, tileSize, showGridLines, multiCellAreas, topX, topY, leftX, leftY, rightX, rightY, bottomX, bottomY])
+    }, [gridSize, showGridLines, multiCellAreas, topX, topY, leftX, leftY, rightX, rightY, bottomX, bottomY])
 
     // Draw static elements to offscreen canvas (only once)
     useEffect(() => {
@@ -401,6 +488,12 @@ function GroundPlaneCanvasComponent({
 
         // Adaptive lighting based on weather + time of day
         const light = getLightingProfile(weather, timeOfDay)
+        if (cinematic && timeOfDay === 'day') {
+            light.vignetteHighlight = Math.max(light.vignetteHighlight, 0.38)
+            light.vignetteShadow = Math.max(light.vignetteShadow, 0.37)
+            light.bevelHighlight = Math.max(light.bevelHighlight, 0.24)
+            light.dirtHighlight = Math.max(light.dirtHighlight, 0.42)
+        }
 
         // Draw shadow ellipse with blur (warm cream tone, Art Bible §2)
         ctx.save()
@@ -414,20 +507,30 @@ function GroundPlaneCanvasComponent({
         // Draw grass surface with warm sage gradient — sun from UPPER-RIGHT
         // Light hits the right/top side, shadow falls toward lower-left
         const gradient = ctx.createLinearGradient(svgWidth * 0.85, 0, svgWidth * 0.15, diamondHeight)
-        gradient.addColorStop(0, '#B8D2A8')
-        gradient.addColorStop(0.2, grassColor)
-        gradient.addColorStop(0.45, '#B0C8A0')
-        gradient.addColorStop(0.65, grassDarkColor)
-        gradient.addColorStop(1, '#758F68')
+        gradient.addColorStop(0, cinematic ? '#C4D184' : '#B8D2A8')
+        gradient.addColorStop(0.2, cinematic ? '#A4B879' : grassColor)
+        gradient.addColorStop(0.45, cinematic ? '#879C66' : '#B0C8A0')
+        gradient.addColorStop(0.7, cinematic ? '#687F57' : grassDarkColor)
+        gradient.addColorStop(1, cinematic ? '#42583D' : '#758F68')
 
         ctx.fillStyle = gradient
         ctx.beginPath()
-        ctx.moveTo(topX, topY)
-        ctx.lineTo(rightX, rightY)
-        ctx.lineTo(bottomX, bottomY)
-        ctx.lineTo(leftX, leftY)
-        ctx.closePath()
+        traceOrganicDiamond(ctx, topX, topY, rightX, rightY, bottomX, bottomY, leftX, leftY, organicRadius, organicWobble)
         ctx.fill()
+
+        // A low-opacity real material texture supplies the painterly fibers
+        // that procedural gradients cannot reproduce. Lighting and grid math
+        // remain fully dynamic in canvas.
+        if (cinematic && grassTextureReady && grassTextureRef.current) {
+            ctx.save()
+            ctx.beginPath()
+            traceOrganicDiamond(ctx, topX, topY, rightX, rightY, bottomX, bottomY, leftX, leftY, organicRadius, organicWobble)
+            ctx.clip()
+            ctx.globalAlpha = 0.42
+            ctx.globalCompositeOperation = 'multiply'
+            ctx.drawImage(grassTextureRef.current, 0, 0, svgWidth, diamondHeight)
+            ctx.restore()
+        }
 
         // Grass edge — nearly invisible, just enough to define shape
         ctx.strokeStyle = '#7FA076'
@@ -447,11 +550,7 @@ function GroundPlaneCanvasComponent({
         vignetteGrad.addColorStop(1, `rgba(90,68,48,${light.vignetteShadow})`)
         ctx.save()
         ctx.beginPath()
-        ctx.moveTo(topX, topY)
-        ctx.lineTo(rightX, rightY)
-        ctx.lineTo(bottomX, bottomY)
-        ctx.lineTo(leftX, leftY)
-        ctx.closePath()
+        traceOrganicDiamond(ctx, topX, topY, rightX, rightY, bottomX, bottomY, leftX, leftY, organicRadius, organicWobble)
         ctx.clip()
         ctx.fillStyle = vignetteGrad
         ctx.fillRect(0, 0, svgWidth, diamondHeight)
@@ -461,11 +560,7 @@ function GroundPlaneCanvasComponent({
         // Generated once with deterministic seed to avoid SSR/client mismatch
         ctx.save()
         ctx.beginPath()
-        ctx.moveTo(topX, topY)
-        ctx.lineTo(rightX, rightY)
-        ctx.lineTo(bottomX, bottomY)
-        ctx.lineTo(leftX, leftY)
-        ctx.closePath()
+        traceOrganicDiamond(ctx, topX, topY, rightX, rightY, bottomX, bottomY, leftX, leftY, organicRadius, organicWobble)
         ctx.clip()
         const noiseSeed = 0xC0FFEE
         let noiseState = noiseSeed
@@ -473,77 +568,112 @@ function GroundPlaneCanvasComponent({
             noiseState = (noiseState * 9301 + 49297) % 233280
             return noiseState / 233280
         }
-        const noiseCount = Math.floor(diamondWidth * diamondHeight / 180)
+        const noiseCount = Math.floor(diamondWidth * diamondHeight / (cinematic ? 105 : 180))
         for (let i = 0; i < noiseCount; i++) {
             const nx = noiseRand() * diamondWidth
             const ny = noiseRand() * diamondHeight
             const shade = noiseRand()
             ctx.fillStyle = shade < 0.5
-                ? `rgba(251,245,230,${0.05 + shade * 0.06})`
-                : `rgba(90,68,48,${0.03 + (shade - 0.5) * 0.05})`
-            ctx.fillRect(nx, ny, 1.2, 1.2)
+                ? `rgba(251,245,230,${(cinematic ? 0.065 : 0.05) + shade * 0.07})`
+                : `rgba(90,68,48,${(cinematic ? 0.045 : 0.03) + (shade - 0.5) * 0.07})`
+            const grainSize = cinematic ? 1.45 : 1.2
+            ctx.fillRect(nx, ny, grainSize, grainSize)
         }
         ctx.restore()
+
+        // Soft painterly mottling adds material depth between the tiny grain
+        // and the large tonal zones without introducing obvious blob shapes.
+        if (cinematic) {
+            ctx.save()
+            ctx.beginPath()
+            traceOrganicDiamond(ctx, topX, topY, rightX, rightY, bottomX, bottomY, leftX, leftY, organicRadius, organicWobble)
+            ctx.clip()
+            ctx.filter = `blur(${Math.max(3, tileSize * 0.035)}px)`
+            let mottleState = 0xA17E
+            const mottleRand = () => {
+                mottleState = (mottleState * 9301 + 49297) % 233280
+                return mottleState / 233280
+            }
+            const mottleCount = Math.floor(gridSize * gridSize * 1.15)
+            for (let i = 0; i < mottleCount; i++) {
+                const mx = mottleRand() * diamondWidth
+                const my = mottleRand() * diamondHeight
+                const dx = Math.abs(mx - svgWidth / 2) / (diamondWidth / 2)
+                const dy = Math.abs(my - diamondHeight / 2) / (diamondHeight / 2)
+                if (dx + dy > 0.88) continue
+                const mr = 4 + mottleRand() * 11
+                ctx.fillStyle = mottleRand() > 0.48
+                    ? 'rgba(232,224,164,0.038)'
+                    : 'rgba(50,76,43,0.035)'
+                ctx.beginPath()
+                ctx.ellipse(mx, my, mr * 1.5, mr * 0.62, mottleRand() * Math.PI, 0, Math.PI * 2)
+                ctx.fill()
+            }
+            ctx.restore()
+        }
 
         // PREMIUM: Grass patch variation — organic lighter/darker zones for depth
         ctx.save()
         ctx.beginPath()
-        ctx.moveTo(topX, topY)
-        ctx.lineTo(rightX, rightY)
-        ctx.lineTo(bottomX, bottomY)
-        ctx.lineTo(leftX, leftY)
-        ctx.closePath()
+        traceOrganicDiamond(ctx, topX, topY, rightX, rightY, bottomX, bottomY, leftX, leftY, organicRadius, organicWobble)
         ctx.clip()
         let patchState = 0xBEEF
         const patchRand = () => {
             patchState = (patchState * 9301 + 49297) % 233280
             return patchState / 233280
         }
-        const patchCount = Math.floor(gridSize * gridSize * 0.4)
+        const patchCount = Math.floor(gridSize * gridSize * (cinematic ? 0.16 : 0.4))
+        if (cinematic) ctx.filter = `blur(${Math.max(12, tileSize * 0.12)}px)`
         for (let i = 0; i < patchCount; i++) {
             const px = patchRand() * diamondWidth
             const py = patchRand() * diamondHeight
             const dx = Math.abs(px - svgWidth / 2) / (diamondWidth / 2)
             const dy = Math.abs(py - diamondHeight / 2) / (diamondHeight / 2)
             if (dx + dy > 0.85) continue
-            const rx = 15 + patchRand() * 35
-            const ry = 8 + patchRand() * 18
+            const rx = (cinematic ? 34 : 15) + patchRand() * (cinematic ? 58 : 35)
+            const ry = (cinematic ? 16 : 8) + patchRand() * (cinematic ? 24 : 18)
             const tone = patchRand()
             ctx.fillStyle = tone < 0.5
-                ? `rgba(180,210,165,${0.08 + tone * 0.06})`
-                : `rgba(110,140,95,${0.06 + (tone - 0.5) * 0.05})`
+                ? `rgba(199,213,145,${(cinematic ? 0.065 : 0.08) + tone * 0.04})`
+                : `rgba(78,103,66,${(cinematic ? 0.055 : 0.06) + (tone - 0.5) * 0.04})`
             ctx.beginPath()
             ctx.ellipse(px, py, rx, ry, patchRand() * Math.PI, 0, Math.PI * 2)
             ctx.fill()
         }
+        ctx.filter = 'none'
         ctx.restore()
 
-        // PREMIUM: Beveled edges — sun from upper-right
+        // Cinematic focal zone: compressed earth grounds the active plant and
+        // prevents the hero from feeling pasted onto a uniform lawn.
+        if (cinematic && focalArea) {
+            const focalX = svgWidth / 2 + (focalArea.col - focalArea.row) * tileSize / 2
+            const focalY = (focalArea.col + focalArea.row) * tileSize / 4
+                + tileSize / 4
+                + (focalArea.size - 1) * tileSize / 4
+            const focalRadius = tileSize * (0.42 + (focalArea.size - 1) * 0.22)
+            ctx.save()
+            ctx.beginPath()
+            traceOrganicDiamond(ctx, topX, topY, rightX, rightY, bottomX, bottomY, leftX, leftY, organicRadius, organicWobble)
+            ctx.clip()
+            ctx.translate(focalX, focalY)
+            ctx.scale(1, 0.46)
+            const earth = ctx.createRadialGradient(0, 0, focalRadius * 0.08, 0, 0, focalRadius)
+            earth.addColorStop(0, 'rgba(126,94,53,0.30)')
+            earth.addColorStop(0.52, 'rgba(150,116,66,0.18)')
+            earth.addColorStop(1, 'rgba(150,116,66,0)')
+            ctx.fillStyle = earth
+            ctx.beginPath()
+            ctx.arc(0, 0, focalRadius, 0, Math.PI * 2)
+            ctx.fill()
+            ctx.restore()
+        }
+
+        // PREMIUM: one continuous organic rim instead of four ruler-straight bevels.
         ctx.save()
-        ctx.lineWidth = 1.5
-        // Top-right bevel (top → right edge): cream highlight (sun-facing)
-        ctx.strokeStyle = `rgba(251,245,230,${light.bevelHighlight})`
+        ctx.lineWidth = cinematic ? 2.2 : 1.5
+        ctx.strokeStyle = `rgba(251,245,230,${light.bevelHighlight * 0.72})`
         ctx.beginPath()
-        ctx.moveTo(topX, topY + 0.5)
-        ctx.lineTo(rightX - 0.5, rightY)
-        ctx.stroke()
-        // Top-left bevel (top → left edge): subtler highlight
-        ctx.strokeStyle = `rgba(251,245,230,${light.bevelHighlight * 0.4})`
-        ctx.beginPath()
-        ctx.moveTo(topX, topY + 0.5)
-        ctx.lineTo(leftX + 0.5, leftY)
-        ctx.stroke()
-        // Bottom-left bevel: warm shadow (away from sun)
-        ctx.strokeStyle = 'rgba(124,94,72,0.12)'
-        ctx.beginPath()
-        ctx.moveTo(leftX + 0.5, leftY)
-        ctx.lineTo(bottomX, bottomY - 0.5)
-        ctx.stroke()
-        // Bottom-right bevel: lighter shadow (partially sun-lit)
-        ctx.strokeStyle = 'rgba(124,94,72,0.06)'
-        ctx.beginPath()
-        ctx.moveTo(rightX - 0.5, rightY)
-        ctx.lineTo(bottomX, bottomY - 0.5)
+        traceOrganicDiamond(ctx, topX, topY, rightX, rightY, bottomX, bottomY, leftX, leftY, organicRadius, organicWobble)
         ctx.stroke()
         ctx.restore()
 
@@ -558,13 +688,23 @@ function GroundPlaneCanvasComponent({
             }
         }
 
-        // Left dirt face
-        ctx.fillStyle = dirtDarkColor
+        // Soil faces use vertical tonal falloff so the island reads as earth,
+        // not a flat extruded board.
+        const leftSoil = ctx.createLinearGradient(0, leftY, 0, leftY + tileHeight)
+        leftSoil.addColorStop(0, cinematic ? '#8C6A4E' : dirtDarkColor)
+        leftSoil.addColorStop(0.55, cinematic ? '#73533F' : dirtDarkColor)
+        leftSoil.addColorStop(1, cinematic ? '#5F4436' : '#6F513F')
+        ctx.fillStyle = leftSoil
         ctx.beginPath()
-        ctx.moveTo(leftX, leftY)
-        ctx.lineTo(bottomX, bottomY)
+        ctx.moveTo(leftX + organicRadius * 1.12, leftY + organicRadius * 0.48)
+        ctx.bezierCurveTo(
+            leftX + (bottomX - leftX) * 0.36, leftY + (bottomY - leftY) * 0.36 + organicWobble,
+            leftX + (bottomX - leftX) * 0.7, leftY + (bottomY - leftY) * 0.7 - organicWobble,
+            bottomX, bottomY
+        )
         ctx.lineTo(bottomX, bottomY + tileHeight)
         ctx.lineTo(leftX, leftY + tileHeight)
+        ctx.quadraticCurveTo(leftX, leftY, leftX + organicRadius * 1.12, leftY + organicRadius * 0.48)
         ctx.closePath()
         ctx.fill()
 
@@ -580,11 +720,69 @@ function GroundPlaneCanvasComponent({
         ctx.fill()
         ctx.globalAlpha = 1
 
-        // Right dirt face
-        ctx.fillStyle = dirtColor
+        // Tiny strata flecks break the large flat faces without turning the
+        // soil into a noisy texture sheet.
+        if (cinematic) {
+            let faceState = 0x51DE
+            const faceRand = () => {
+                faceState = (faceState * 9301 + 49297) % 233280
+                return faceState / 233280
+            }
+            ctx.save()
+            ctx.lineCap = 'round'
+            for (let i = 0; i < 28; i++) {
+                const t = 0.04 + faceRand() * 0.92
+                const depth = 0.18 + faceRand() * 0.68
+                const onLeft = i % 2 === 0
+                const startX = onLeft
+                    ? leftX + (bottomX - leftX) * t
+                    : bottomX + (rightX - bottomX) * t
+                const startY = onLeft
+                    ? leftY + (bottomY - leftY) * t + tileHeight * depth
+                    : bottomY + (rightY - bottomY) * t + tileHeight * depth
+                const length = 2 + faceRand() * 7
+                ctx.strokeStyle = faceRand() > 0.5
+                    ? 'rgba(246,220,174,0.11)'
+                    : 'rgba(67,45,34,0.10)'
+                ctx.lineWidth = 0.7 + faceRand() * 0.55
+                ctx.beginPath()
+                ctx.moveTo(startX, startY)
+                ctx.lineTo(startX + (onLeft ? length : -length), startY + length * 0.12)
+                ctx.stroke()
+            }
+            ctx.restore()
+        }
+
+        if (cinematic) {
+            // A few tufts sit directly on the rear silhouette so the grass
+            // plane meets the sky with a living edge instead of a clean cut.
+            const rearStops = [0.1, 0.22, 0.39, 0.58, 0.73, 0.89]
+            for (let i = 0; i < rearStops.length; i++) {
+                const t = rearStops[i]
+                const leftRearX = topX + (leftX - topX) * t
+                const leftRearY = topY + (leftY - topY) * t
+                const rightRearX = topX + (rightX - topX) * t
+                const rightRearY = topY + (rightY - topY) * t
+                drawGrass(ctx, leftRearX + (i % 2 ? 2 : -1), leftRearY + 1, 0.38 + (i % 3) * 0.08)
+                if (i % 2 === 0) {
+                    drawGrass(ctx, rightRearX + (i % 3 - 1) * 2, rightRearY + 1, 0.36 + (i % 2) * 0.1)
+                }
+            }
+        }
+
+        const rightSoil = ctx.createLinearGradient(0, rightY, 0, rightY + tileHeight)
+        rightSoil.addColorStop(0, cinematic ? '#B89A72' : dirtColor)
+        rightSoil.addColorStop(0.5, cinematic ? '#9A795B' : dirtColor)
+        rightSoil.addColorStop(1, cinematic ? '#795C47' : dirtColor)
+        ctx.fillStyle = rightSoil
         ctx.beginPath()
         ctx.moveTo(bottomX, bottomY)
-        ctx.lineTo(rightX, rightY)
+        ctx.bezierCurveTo(
+            bottomX + (rightX - bottomX) * 0.32, bottomY + (rightY - bottomY) * 0.32 + organicWobble,
+            bottomX + (rightX - bottomX) * 0.68, bottomY + (rightY - bottomY) * 0.68 - organicWobble,
+            rightX - organicRadius * 1.12, rightY + organicRadius * 0.48
+        )
+        ctx.quadraticCurveTo(rightX, rightY, rightX, rightY + tileHeight)
         ctx.lineTo(rightX, rightY + tileHeight)
         ctx.lineTo(bottomX, bottomY + tileHeight)
         ctx.closePath()
@@ -618,8 +816,8 @@ function GroundPlaneCanvasComponent({
 
         // Strata lines (warm earth tones)
         ctx.lineWidth = 1
-        ctx.globalAlpha = 0.35
-        ctx.setLineDash([8, 4])
+        ctx.globalAlpha = cinematic ? 0.16 : 0.35
+        ctx.setLineDash(cinematic ? [18, 12] : [8, 4])
 
         ctx.strokeStyle = '#7C5E48'
         ctx.beginPath()
@@ -636,15 +834,51 @@ function GroundPlaneCanvasComponent({
         ctx.setLineDash([])
         ctx.globalAlpha = 1
 
+        // Sparse grass overhang breaks the hard silhouette at the two front
+        // edges while keeping the logical tile boundary untouched.
+        if (cinematic) {
+            ctx.save()
+            ctx.lineCap = 'round'
+            const fringeStops = [0.055, 0.12, 0.205, 0.31, 0.36, 0.515, 0.63, 0.715, 0.825, 0.93]
+            for (let i = 0; i < fringeStops.length; i++) {
+                const t = fringeStops[i]
+                const leftEdgeX = leftX + (bottomX - leftX) * t
+                const leftEdgeY = leftY + (bottomY - leftY) * t
+                const rightEdgeX = bottomX + (rightX - bottomX) * t
+                const rightEdgeY = bottomY + (rightY - bottomY) * t
+                const length = 5.5 + (i % 4) * 1.8
+                const bladeCount = i % 3 === 0 ? 3 : 2
+
+                ctx.strokeStyle = i % 2 ? 'rgba(70,102,57,0.86)' : 'rgba(103,132,73,0.78)'
+                ctx.lineWidth = i % 3 === 0 ? 1.8 : 1.35
+                for (let blade = 0; blade < bladeCount; blade++) {
+                    const spread = (blade - (bladeCount - 1) / 2) * 2
+                    ctx.beginPath()
+                    ctx.moveTo(leftEdgeX + spread, leftEdgeY - 1)
+                    ctx.quadraticCurveTo(
+                        leftEdgeX + spread * 1.4 - 1,
+                        leftEdgeY + length * 0.42,
+                        leftEdgeX + spread * 1.7 + (i % 2 ? 1 : -1),
+                        leftEdgeY + length * (0.82 + blade * 0.12)
+                    )
+                    ctx.stroke()
+                }
+
+                if (i % 3 !== 1) {
+                    ctx.beginPath()
+                    ctx.moveTo(rightEdgeX, rightEdgeY - 1)
+                    ctx.quadraticCurveTo(rightEdgeX + 2, rightEdgeY + length * 0.4, rightEdgeX + (i % 2 ? -2 : 2), rightEdgeY + length * 0.78)
+                    ctx.stroke()
+                }
+            }
+            ctx.restore()
+        }
+
         // Global weather/night tint — overlay on top of grass surface only (not dirt)
         if (light.globalTint) {
             ctx.save()
             ctx.beginPath()
-            ctx.moveTo(topX, topY)
-            ctx.lineTo(rightX, rightY)
-            ctx.lineTo(bottomX, bottomY)
-            ctx.lineTo(leftX, leftY)
-            ctx.closePath()
+            traceOrganicDiamond(ctx, topX, topY, rightX, rightY, bottomX, bottomY, leftX, leftY, organicRadius, organicWobble)
             ctx.clip()
             ctx.fillStyle = light.globalTint
             ctx.fillRect(0, 0, svgWidth, diamondHeight)
@@ -655,7 +889,7 @@ function GroundPlaneCanvasComponent({
     }, [gridSize, tileSize, grassColor, grassDarkColor, dirtColor, dirtDarkColor, grassDetails,
         svgWidth, svgHeight, diamondWidth, diamondHeight, tileHeight,
         topX, topY, rightX, rightY, bottomX, bottomY, leftX, leftY,
-        weather, timeOfDay])
+        weather, timeOfDay, cinematic, focalArea, organicRadius, organicWobble, grassTextureReady])
 
     // Main render effect - composites static canvas + dynamic overlays
     useEffect(() => {

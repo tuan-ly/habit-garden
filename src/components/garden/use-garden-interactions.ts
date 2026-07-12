@@ -48,6 +48,9 @@ interface UseGardenInteractionsOpts {
   onPlaceDecoration?: (inventoryItemId: string, row: number, col: number, rotation?: DecorationRotation) => Promise<{ success: boolean; decorationId?: string; error?: string }>
   onEditPushUndo?: (action: { type: 'place'; placedDecoId: string; inventoryItemId: string; row: number; col: number }) => void
   onEditDeselectItem?: () => void
+  onEditPlacementError?: (error: string) => void
+  onEditPlacementSuccess?: () => void
+  editPlacementPending?: boolean
   calmFeedback?: boolean
 }
 
@@ -56,6 +59,7 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
     movePlant, updatePlant, welcomeBackPending, onWelcomeBackUsed,
     mode, didPan, resetDidPan, livingPlants,
     editSelectedItem, editGhostRotation, onPlaceDecoration, onEditPushUndo, onEditDeselectItem,
+    onEditPlacementError, onEditPlacementSuccess, editPlacementPending = false,
     calmFeedback = false,
   } = opts
 
@@ -396,15 +400,21 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
   // Place decoration on tile
   const handlePlaceDecoration = useCallback(
     async (row: number, col: number) => {
-      if (!editSelectedItem || !onPlaceDecoration) return
+      if (!editSelectedItem || !onPlaceDecoration || editPlacementPending) return
       const inventoryItemId = editSelectedItem.id
       const result = await onPlaceDecoration(inventoryItemId, row, col, editGhostRotation)
       if (result.success && result.decorationId) {
         onEditPushUndo?.({ type: 'place', placedDecoId: result.decorationId, inventoryItemId, row, col })
         onEditDeselectItem?.()
+        onEditPlacementSuccess?.()
+        return
       }
+      onEditPlacementError?.(result.error || 'Không thể đặt vật trang trí')
     },
-    [editSelectedItem, editGhostRotation, onPlaceDecoration, onEditPushUndo, onEditDeselectItem]
+    [
+      editSelectedItem, editGhostRotation, onPlaceDecoration, onEditPushUndo,
+      onEditDeselectItem, onEditPlacementError, onEditPlacementSuccess, editPlacementPending,
+    ]
   )
 
   // Tile click — mode-based

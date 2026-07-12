@@ -4,7 +4,6 @@ import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { type FocusState } from './isometric-plant'
 import { PlantInfoBar } from './plant-tooltip'
 import { GroundPlaneCanvas, type MultiCellArea } from './ground-plane-canvas'
-import { GardenDecorations } from './garden-decorations'
 import { AmbientParticlesCanvas } from './ambient-particles-canvas'
 import { ZoomControls } from './zoom-controls'
 import { ModeToolbar, type GardenMode } from './mode-toolbar'
@@ -26,12 +25,12 @@ import {
   calculateRequiredGridSize,
   buildOccupiedCellsMap,
   isAnchorCell,
-  decorationsAsGridItems,
+  decorationsAsGridItems, canPlacePlantAt,
 } from '@/lib/utils/grid-positioning'
 import {
   getGardenSize,
-  getUnlockedDecorations,
 } from '@/lib/progression-system'
+import { toast } from 'sonner'
 
 interface IsometricGardenProps {
   plantTypes: PlantType[]
@@ -47,6 +46,16 @@ interface IsometricGardenProps {
 }
 
 const DEFAULT_TILE_SIZE = 140
+
+function getPlacementErrorMessage(error: string): string {
+  const normalized = error.toLowerCase()
+  if (normalized.includes('occupied')) return 'Khu vực này đã có cây hoặc vật trang trí khác.'
+  if (normalized.includes('inventory') || normalized.includes('no items')) return 'Vật này không còn trong kho. Hãy mở lại kho trang trí.'
+  if (normalized.includes('unauthorized')) return 'Phiên đăng nhập đã hết hạn. Hãy tải lại trang.'
+  if (normalized.includes('grid position')) return 'Vị trí này nằm ngoài khu vườn.'
+  if (normalized.includes('network')) return 'Mất kết nối khi đặt vật trang trí. Hãy thử lại.'
+  return error
+}
 
 function getClientTileSize(): number {
   if (typeof window === 'undefined') return DEFAULT_TILE_SIZE
@@ -156,7 +165,6 @@ export function IsometricGarden({
   // Grid computation
   const livingPlants = useMemo(() => plants.filter((p) => p.status !== 'dead'), [plants])
   const minimumGridSize = useMemo(() => getGardenSize(userLevel), [userLevel])
-  const unlockedDecorations = useMemo(() => getUnlockedDecorations(userLevel), [userLevel])
   // Include decorations in grid size calculation so placed decos don't get cut off
   const allGridItems = useMemo(
     () => [...livingPlants, ...decorationsAsGridItems(placedDecorations)],
@@ -167,10 +175,10 @@ export function IsometricGarden({
   const occupiedCellsSet = useMemo(() => new Set(occupiedCells.keys()), [occupiedCells])
 
   const multiCellAreas: MultiCellArea[] = useMemo(() => {
-    return livingPlants
+    return [...livingPlants, ...placedDecorations]
       .filter((p) => (p.grid_size || 1) > 1)
       .map((p) => ({ row: p.grid_row || 0, col: p.grid_col || 0, size: p.grid_size || 1 }))
-  }, [livingPlants])
+  }, [livingPlants, placedDecorations])
 
   const tiles = useMemo(() => {
     const result: { row: number; col: number; plant?: PlantWithType; isAnchor: boolean; isOccupiedByMultiCell: boolean }[] = []
@@ -204,6 +212,11 @@ export function IsometricGarden({
     onPlaceDecoration: inventory?.placeDecoration,
     onEditPushUndo: editMode.pushUndo,
     onEditDeselectItem: editMode.deselectItem,
+    editPlacementPending: inventory?.isPlacing,
+    onEditPlacementError: (error) => toast.error('Chưa thể đặt vật trang trí', {
+      description: getPlacementErrorMessage(error),
+    }),
+    onEditPlacementSuccess: () => toast.success('Đã đặt vật trang trí'),
     calmFeedback: sanctuaryMode,
   })
 
@@ -224,12 +237,78 @@ export function IsometricGarden({
     // Also drive the move-preview (ghost plant + green/red diamond) when
     // a plant is selected in arrange mode. The hook guards on selectedPlant.
     interactions.updateMovePreview(row, col)
-  }, [occupiedCells, interactions])
+    const movingDecoration = editMode.selectedDecoration
+    const placingType = editMode.selectedItem?.decoration_type
+    const footprint = movingDecoration?.grid_size ?? placingType?.grid_size
+    if (footprint) {
+      const otherItems = [
+        ...livingPlants,
+        ...decorationsAsGridItems(placedDecorations.filter((item) => item.id !== movingDecoration?.id)),
+      ]
+      editMode.setGhostPosition({ row, col })
+      editMode.setIsGhostValid(canPlacePlantAt(
+        { id: movingDecoration?.id, grid_row: row, grid_col: col, grid_size: footprint },
+        row,
+        col,
+        otherItems,
+        gridSize
+      ))
+    }
+  }, [occupiedCells, interactions, editMode, livingPlants, placedDecorations, gridSize])
 
   const handleTileLeave = useCallback(() => {
     setHoveredTile(null)
     interactions.clearMovePreview()
   }, [interactions])
+
+  const handleGardenTileClick = useCallback(async (
+    row: number,
+    col: number,
+    plant?: PlantWithType,
+    decoration?: typeof placedDecorations[number]
+  ) => {
+    if (mode !== 'arrange') {
+      interactions.handleTileClick(row, col, plant)
+      return
+    }
+
+    if (editMode.selectedItem) {
+      if (inventory?.isPlacing) return
+      if (!editMode.isGhostValid || plant || decoration) {
+        toast.error('Vị trí chưa phù hợp', {
+          description: 'Hãy chọn vùng màu xanh không chồng lên cây hoặc vật trang trí khác.',
+        })
+        return
+      }
+      interactions.handleTileClick(row, col, plant)
+      return
+    }
+
+    if (editMode.selectedDecoration) {
+      const selected = editMode.selectedDecoration
+      if (decoration?.id === selected.id && row === selected.grid_row && col === selected.grid_col) {
+        editMode.deselectDecoration()
+        return
+      }
+      if (!editMode.isGhostValid) return
+      const result = await inventory?.moveDecoration(selected.id, row, col)
+      if (result?.success) {
+        editMode.pushUndo({
+          type: 'move', placedDecoId: selected.id,
+          fromRow: selected.grid_row, fromCol: selected.grid_col,
+          toRow: row, toCol: col,
+        })
+        editMode.deselectDecoration()
+      }
+      return
+    }
+
+    if (decoration) {
+      editMode.selectDecoration(decoration)
+      return
+    }
+    interactions.handleTileClick(row, col, plant)
+  }, [mode, interactions, editMode, inventory])
 
   // Hovered data
   const hoveredPlant = hoveredTile ? occupiedCells.get(hoveredTile) ?? null : null
@@ -348,7 +427,14 @@ export function IsometricGarden({
 
   const gardenTransform = useMemo(() => {
     if (!sanctuaryMode || !sanctuaryFocusedPlant) {
-      return `scale(${zoom}) translate(${panOffset.x / zoom}px, ${panOffset.y / zoom}px)`
+      const sanctuaryIdleOffset = sanctuaryMode
+        ? Math.min(132, Math.max(82, viewportSize.height * 0.16))
+        : 0
+      const sanctuaryFitScale = sanctuaryMode && viewportSize.width >= 640
+        ? Math.min(1, Math.max(0.5, (viewportSize.width - 64) / containerWidth))
+        : 1
+      const displayScale = zoom * sanctuaryFitScale
+      return `translateY(${sanctuaryIdleOffset}px) scale(${displayScale}) translate(${panOffset.x / displayScale}px, ${panOffset.y / displayScale}px)`
     }
 
     const row = sanctuaryFocusedPlant.grid_row ?? 0
@@ -375,6 +461,7 @@ export function IsometricGarden({
     tileSize,
     maxZoom,
     viewportSize.width,
+    viewportSize.height,
   ])
 
   // Stable callbacks for modals
@@ -401,26 +488,26 @@ export function IsometricGarden({
   return (
     <div className="relative w-full h-full flex flex-col select-none">
       {/* Mode toolbar */}
-      {!focusMode && !sanctuaryMode && (
+      {!focusMode && (
         <ModeToolbar
           mode={mode}
           onModeChange={setModeWithReset}
-          className="fixed left-3 top-1/2 -translate-y-1/2 z-30"
+          sanctuary={sanctuaryMode}
+          className="fixed left-3 top-1/2 -translate-y-1/2 z-50"
         />
       )}
 
       {/* Zoom Controls */}
-      {!sanctuaryMode && (
-        <ZoomControls
+      <ZoomControls
           zoom={zoom}
           minZoom={minZoom}
           maxZoom={maxZoom}
           onZoomIn={zoomIn}
           onZoomOut={zoomOut}
           onReset={() => { resetZoom(); resetPan() }}
-          className="fixed right-3 top-1/2 -translate-y-1/2 z-30"
+          sanctuary={sanctuaryMode}
+          className="fixed right-3 top-1/2 -translate-y-1/2 z-50"
         />
-      )}
 
       {/* Empty state */}
       {isEmpty && !sanctuaryMode && (
@@ -480,17 +567,6 @@ export function IsometricGarden({
               willChange: 'transform',
             }}
           >
-            {/* Decorations */}
-            {gardenSettings.showDecorations && (
-              <GardenDecorations
-                gridSize={gridSize}
-                tileSize={tileSize}
-                timeOfDay={currentTimeOfDay}
-                unlockedTypes={unlockedDecorations}
-                occupiedCells={occupiedCellsSet}
-              />
-            )}
-
             {/* Ground plane (canvas renderer) */}
             <GroundPlaneCanvas
               gridSize={gridSize}
@@ -499,11 +575,25 @@ export function IsometricGarden({
               grassDarkColor={defaultTheme.ground.secondary}
               multiCellAreas={multiCellAreas}
               hoveredMultiCellArea={hoveredMultiCellArea}
-              dragTargetCell={interactions.moveState.selectedPlant ? interactions.moveState.previewCell : null}
-              dragPlantSize={interactions.moveState.selectedPlant?.grid_size || 1}
-              isDragTargetValid={interactions.moveState.isValidPreview}
+              dragTargetCell={interactions.moveState.selectedPlant
+                ? interactions.moveState.previewCell
+                : (editMode.selectedDecoration || editMode.selectedItem) ? editMode.ghostPosition : null}
+              dragPlantSize={interactions.moveState.selectedPlant?.grid_size
+                || editMode.selectedDecoration?.grid_size
+                || editMode.selectedItem?.decoration_type?.grid_size
+                || 1}
+              isDragTargetValid={interactions.moveState.selectedPlant
+                ? interactions.moveState.isValidPreview
+                : editMode.isGhostValid}
               weather={gardenSettings.showWeatherEffects ? weather : null}
               timeOfDay={currentTimeOfDay}
+              showGridLines={!sanctuaryMode || mode === 'arrange'}
+              cinematic={sanctuaryMode}
+              focalArea={sanctuaryActivePlant ? {
+                row: sanctuaryActivePlant.grid_row ?? 0,
+                col: sanctuaryActivePlant.grid_col ?? 0,
+                size: sanctuaryActivePlant.grid_size || 1,
+              } : null}
             />
 
             {/* Ambient particles (canvas renderer) */}
@@ -513,6 +603,7 @@ export function IsometricGarden({
                 timeOfDay={currentTimeOfDay}
                 width={containerWidth}
                 height={containerHeight}
+                cinematic={sanctuaryMode}
               />
             )}
 
@@ -527,14 +618,18 @@ export function IsometricGarden({
               moveState={interactions.moveState}
               focusStates={resolvedFocusStates}
               weather={weather}
-              placedDecorations={placedDecorations}
-              onTileClick={sanctuaryMode ? handleSanctuaryTileClick : interactions.handleTileClick}
+              placedDecorations={gardenSettings.showDecorations ? placedDecorations : []}
+              onTileClick={sanctuaryMode && mode === 'interact'
+                ? (row, col, plant) => handleSanctuaryTileClick(row, col, plant)
+                : handleGardenTileClick}
               onTileHover={handleTileHover}
               onTileLeave={handleTileLeave}
               onContextMenu={interactions.handleContextMenu}
               hidePlantBadges={sanctuaryMode}
               featuredPlantId={sanctuaryMode ? sanctuaryDisplayPlant?.id : null}
               hideStatusIndicators={sanctuaryMode}
+              cinematic={sanctuaryMode}
+              selectedDecorationId={editMode.selectedDecoration?.id}
             />
 
           </div>
@@ -561,9 +656,9 @@ export function IsometricGarden({
           <div className="px-4 py-2 bg-blue-600/90 backdrop-blur-md rounded-full text-xs text-white border border-blue-400/50 shadow-lg">
             <span className="flex items-center gap-2">
               <span>{editMode.selectedItem.decoration_type?.icon || '🎀'}</span>
-              <span>Placing {editMode.selectedItem.decoration_type?.name || 'decoration'}</span>
+              <span>{inventory?.isPlacing ? 'Đang đặt' : 'Đặt'} {editMode.selectedItem.decoration_type?.name || 'vật trang trí'} ({editMode.selectedItem.decoration_type?.grid_size || 1}×{editMode.selectedItem.decoration_type?.grid_size || 1})</span>
               <span className="text-blue-200">•</span>
-              <span>Tap an empty tile</span>
+              <span>{inventory?.isPlacing ? 'Vui lòng chờ…' : 'Chạm vùng màu xanh'}</span>
             </span>
           </div>
         </div>
@@ -623,8 +718,15 @@ export function IsometricGarden({
             if (sanctuaryDisplayPlant) handleSanctuaryPlantFocus(sanctuaryDisplayPlant)
           }}
           onCloseFocus={handleSanctuaryFocusClose}
-          onAddPlant={() => interactions.setAddDialogOpen(true)}
         />
+      )}
+
+      {mode === 'arrange' && editMode.selectedDecoration && (
+        <div className="pointer-events-none absolute left-1/2 top-20 z-30 -translate-x-1/2">
+          <div className="rounded-full border border-amber-300/70 bg-[#49693f]/92 px-4 py-2 text-xs text-white shadow-lg backdrop-blur-md">
+            Dời {editMode.selectedDecoration.decoration_type.name} · {editMode.selectedDecoration.grid_size}×{editMode.selectedDecoration.grid_size} · chạm tile đích
+          </div>
+        </div>
       )}
 
       {/* Decoration edit overlay (visible in arrange mode) */}

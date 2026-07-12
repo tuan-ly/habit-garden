@@ -646,7 +646,8 @@ export interface DecorationType {
   description: string | null
   icon: string
   image_url: string | null
-  grid_size: 1 | 2
+  /** Square tile footprint. Decorations follow the same 1x1, 2x2, 3x3… model as plants. */
+  grid_size: number
   category: DecorationCategory
   rarity: ItemRarity
   unlock_level: number

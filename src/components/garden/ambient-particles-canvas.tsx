@@ -13,6 +13,7 @@ interface AmbientParticlesCanvasProps {
     width?: number
     height?: number
     className?: string
+    cinematic?: boolean
 }
 
 type ParticleType = 'leaf' | 'pollen' | 'firefly' | 'sparkle' | 'butterfly'
@@ -48,7 +49,8 @@ function generateParticles(
     weather: WeatherType | null | undefined,
     timeOfDay: TimeOfDay,
     width: number,
-    height: number
+    height: number,
+    cinematic = false
 ): Particle[] {
     const particles: Particle[] = []
     const rand = seededRandom(12345)
@@ -58,7 +60,7 @@ function generateParticles(
     const sparkleColors = ['#ff5252', '#ffeb3b', '#4caf50', '#2196f3', '#e040fb']
 
     // Sunny day particles
-    if (timeOfDay === 'day' && (weather === 'sunny' || weather === 'rainbow' || !weather)) {
+    if (!cinematic && timeOfDay === 'day' && (weather === 'sunny' || weather === 'rainbow' || !weather)) {
         // Single butterfly — premium 4-wing model with organic wandering
         particles.push({
             type: 'butterfly',
@@ -94,6 +96,35 @@ function generateParticles(
                 lifespan: 0,
                 maxLife: Infinity,
             })
+        }
+    }
+
+    // Sanctuary direction: a few intentional warm points around three focal
+    // zones instead of particles scattered uniformly across the whole garden.
+    if (cinematic && timeOfDay === 'day' && (weather === 'sunny' || weather === 'rainbow' || !weather)) {
+        const zones = [
+            { x: 0.5, y: 0.27, spreadX: 0.12, spreadY: 0.13, count: 5 },
+            { x: 0.27, y: 0.52, spreadX: 0.09, spreadY: 0.10, count: 3 },
+            { x: 0.69, y: 0.62, spreadX: 0.10, spreadY: 0.09, count: 3 },
+        ]
+        for (const zone of zones) {
+            for (let i = 0; i < zone.count; i++) {
+                particles.push({
+                    type: 'firefly',
+                    x: width * (zone.x + (rand() - 0.5) * zone.spreadX),
+                    y: height * (zone.y + (rand() - 0.5) * zone.spreadY),
+                    vx: (rand() - 0.5) * 0.16,
+                    vy: (rand() - 0.5) * 0.12,
+                    size: 2.1 + rand() * 1.5,
+                    opacity: 0,
+                    rotation: 0,
+                    rotationSpeed: 0,
+                    phase: rand() * Math.PI * 2,
+                    color: '#f6df75',
+                    lifespan: 0,
+                    maxLife: Infinity,
+                })
+            }
         }
     }
 
@@ -225,6 +256,7 @@ function AmbientParticlesCanvasComponent({
     width = 800,
     height = 600,
     className,
+    cinematic = false,
 }: AmbientParticlesCanvasProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const particlesRef = useRef<Particle[]>([])
@@ -235,8 +267,8 @@ function AmbientParticlesCanvasComponent({
 
     // Initialize particles
     useEffect(() => {
-        particlesRef.current = generateParticles(weather, timeOfDay, width, height)
-    }, [weather, timeOfDay, width, height])
+        particlesRef.current = generateParticles(weather, timeOfDay, width, height, cinematic)
+    }, [weather, timeOfDay, width, height, cinematic])
 
     // Animation loop
     useEffect(() => {
@@ -529,7 +561,7 @@ function AmbientParticlesCanvasComponent({
             cancelAnimationFrame(rafRef.current)
             document.removeEventListener('visibilitychange', handleVisibilityChange)
         }
-    }, [weather, timeOfDay, width, height])
+    }, [weather, timeOfDay, width, height, cinematic])
 
     // Don't render during stormy
     if (weather === 'stormy') return null

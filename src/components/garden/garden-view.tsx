@@ -88,6 +88,17 @@ export function GardenView({ weather }: GardenViewProps) {
 
       <div className="absolute inset-0 bg-white/5" aria-hidden="true" />
 
+      <div
+        className="pointer-events-none absolute inset-0"
+        aria-hidden="true"
+        style={{
+          background: [
+            'radial-gradient(circle at 71% 12%, rgba(255,239,170,0.25) 0%, rgba(255,239,170,0.08) 28%, transparent 54%)',
+            'linear-gradient(180deg, rgba(255,249,224,0.05) 42%, rgba(185,205,183,0.14) 100%)',
+          ].join(', '),
+        }}
+      />
+
       {displayWeather !== 'sunny' && (
         <div className="absolute inset-0 z-10 pointer-events-none opacity-55">
           <WeatherEffects weather={displayWeather} />

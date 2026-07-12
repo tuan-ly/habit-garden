@@ -38,6 +38,7 @@ interface IsometricTileProps {
   previewPlant?: PlantWithType
   /** Shadow type: 'plant' for full shadow, 'small' for decoration shadow, 'none' (default) for no shadow */
   shadowType?: 'plant' | 'small' | 'none'
+  cinematicShadows?: boolean
 }
 
 /**
@@ -80,6 +81,7 @@ function IsometricTileComponent({
   isSelectedForMove = false,
   previewPlant,
   shadowType = 'none',
+  cinematicShadows = false,
 }: IsometricTileProps) {
   // Isometric tile positioning:
   // The grid's top point (0,0) is at the top-center of the diamond
@@ -191,6 +193,21 @@ function IsometricTileComponent({
       {/* Plant/decoration shadow — ground contact ellipse with offset for directional light */}
       {shadowType !== 'none' && (
         <>
+          {shadowType === 'plant' && cinematicShadows && (
+            <div
+              className="absolute pointer-events-none rounded-full"
+              style={{
+                left: tileSize / 2 - tileSize * 0.28,
+                top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight) + tileSize * 0.12,
+                width: tileSize * (1.18 + (plantGridSize - 1) * 0.52),
+                height: tileSize * (0.16 + (plantGridSize - 1) * 0.09),
+                transform: 'translate(-50%, -50%) rotate(22deg)',
+                background: 'linear-gradient(90deg, rgba(42,36,22,0), rgba(42,36,22,0.25) 58%, rgba(42,36,22,0.40))',
+                filter: 'blur(6px)',
+                transformOrigin: 'right center',
+              }}
+            />
+          )}
           {/* Soft AO halo — wide diffuse glow that grounds the object */}
           {shadowType === 'plant' && (
             <div

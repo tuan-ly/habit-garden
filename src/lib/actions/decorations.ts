@@ -45,6 +45,8 @@ export async function placeDecoration(
 
   const supabase = await createClient()
 
+  if (dto.grid_row < 0 || dto.grid_col < 0) return { error: 'Invalid grid position' }
+
   // 1. Verify inventory item exists and belongs to user
   const { data: invItem, error: invError } = await supabase
     .from('user_inventory')
@@ -146,6 +148,8 @@ export async function moveDecoration(
   if (!user) return { error: 'Unauthorized' }
 
   const supabase = await createClient()
+
+  if (dto.grid_row < 0 || dto.grid_col < 0) return { error: 'Invalid grid position' }
 
   // Verify ownership
   const { data: deco, error: decoError } = await supabase

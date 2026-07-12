@@ -18,6 +18,7 @@ interface IsometricPlantProps {
   focusState?: FocusState
   hideStatusIndicators?: boolean
   priority?: boolean
+  cinematic?: boolean
 }
 
 // Map growth percentage to a visual scale (base scale)
@@ -39,6 +40,7 @@ function IsometricPlantComponent({
   focusState,
   hideStatusIndicators = false,
   priority = false,
+  cinematic = false,
 }: IsometricPlantProps) {
   // Base scale from growth stage
   const growthScale = getGrowthScale(plant.growth_percentage)
@@ -57,7 +59,8 @@ function IsometricPlantComponent({
     // Dim: keep the garden legible while giving the selected plant the stage.
     focusState === 'dim' && 'opacity-35 saturate-50',
     // Urgent: red ring + bounce
-    focusState === 'urgent' && 'animate-bounce-subtle'
+    focusState === 'urgent' && 'animate-bounce-subtle',
+    cinematic && 'drop-shadow-[3px_-2px_3px_rgba(255,226,145,0.22)]'
   )
 
   return (

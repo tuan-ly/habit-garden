@@ -24,7 +24,7 @@ Avoid Framer Motion for many garden elements. It is acceptable for small UI tran
 - garden mode through `ModeToolbar`
 - edit mode through `useEditMode()` and `EditModeOverlay`
 - grid sizing and occupancy via `src/lib/utils/grid-positioning.ts`
-- decoration placement through inventory context
+- decoration placement and movement through inventory context
 - modal state through `GardenModals`
 - celebration state through `GardenCelebrationLayer`
 - sanctuary active-plant selection and the focused hero plant
@@ -32,6 +32,8 @@ Avoid Framer Motion for many garden elements. It is acceptable for small UI tran
 ## Grid Positioning
 
 Grid placement supports multi-cell plants and decorations. Use the helpers in `src/lib/utils/grid-positioning.ts`; do not hand-roll collision rules inside components.
+
+Decorations are first-class placeable entities: their `grid_size` defines a square 1×1, 2×2, 3×3… footprint, they reserve every covered cell, and they can be selected and moved directly on the garden. The edit catalog opens on demand; do not restore a persistent bottom decoration panel or generate decorative objects outside `placed_decorations`.
 
 Important concepts:
 

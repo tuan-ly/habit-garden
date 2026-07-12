@@ -18,6 +18,8 @@ interface DecorationImageProps {
   rotation?: DecorationRotation
   isGhost?: boolean
   className?: string
+  /** Exact rendered size for grid-scaled garden entities. */
+  pixelSize?: number
 }
 
 /**
@@ -29,21 +31,23 @@ export function DecorationImage({
   rotation = 0,
   isGhost = false,
   className,
+  pixelSize,
 }: DecorationImageProps) {
   const [imgError, setImgError] = useState(false)
   const sizeConfig = SIZE_CONFIG[size]
   const imagePath = decorationType.image_url
   const hasImage = !!imagePath && !imgError
 
-  const rotationStyle = rotation !== 0
-    ? { transform: `rotate(${rotation}deg)` }
-    : undefined
+  const rotationStyle = {
+    ...(rotation !== 0 ? { transform: `rotate(${rotation}deg)` } : {}),
+    ...(pixelSize ? { width: pixelSize, height: pixelSize } : {}),
+  }
 
   return (
     <div
       className={cn(
         'relative inline-flex items-center justify-center',
-        sizeConfig.className,
+        !pixelSize && sizeConfig.className,
         isGhost && 'opacity-50',
         className
       )}
@@ -53,11 +57,11 @@ export function DecorationImage({
         <Image
           src={imagePath}
           alt={decorationType.name}
-          width={sizeConfig.width}
-          height={sizeConfig.height}
+          width={pixelSize ?? sizeConfig.width}
+          height={pixelSize ?? sizeConfig.height}
           loading="lazy"
           onError={() => setImgError(true)}
-          className="object-contain"
+          className="h-full w-full object-contain"
         />
       ) : (
         <span
@@ -67,7 +71,9 @@ export function DecorationImage({
             size === 'md' && 'text-2xl',
             size === 'lg' && 'text-3xl',
             size === 'xl' && 'text-5xl',
+            pixelSize && 'text-[length:calc(var(--decoration-size)*0.52)]',
           )}
+          style={pixelSize ? { '--decoration-size': `${pixelSize}px` } as React.CSSProperties : undefined}
           role="img"
           aria-label={decorationType.name}
         >
