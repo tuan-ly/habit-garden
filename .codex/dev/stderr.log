@@ -1,0 +1,6 @@
+Decoration inventory decrement failed {
+  inventoryItemId: '92b99e2d-b2ad-404b-b601-b33f485266b1',
+  userId: '0ad7a180-c32f-4087-a38e-f7fb16e1e451',
+  code: '23514',
+  message: 'new row for relation "user_inventory" violates check constraint "user_inventory_quantity_check"'
+}

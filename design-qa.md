@@ -1,50 +1,65 @@
-# Design QA — Plant-on-tile Focus Transition
+# Design QA — Cinematic Sanctuary Garden
 
-## Evidence
+- Source visual truth: `D:\Code\habit-garden\.codex\design-qa\source-sanctuary-cinematic.png`
+- Implementation: `http://localhost:3000/garden`
+- Implementation screenshot: `.codex/design-qa/27-desktop-lighting-final.png`
+- Viewport: 1082 × 853 desktop; 390 × 844 mobile resilience check
+- State: authenticated Garden-first idle and focused `Chạy bộ` states
 
-- Source visual truth: `D:/Code/habit-garden/docs/design/references/soft-isometric-sanctuary.png`
-- Overview implementation: `D:/Code/habit-garden/docs/design-qa/plant-focus-overview-final.png`
-- Focus implementation: `D:/Code/habit-garden/docs/design-qa/plant-focus-open-final.png`
-- Action dialog: `D:/Code/habit-garden/docs/design-qa/plant-focus-action.png`
-- Return state: `D:/Code/habit-garden/docs/design-qa/plant-focus-action-return.png`
-- Alternate plant focus: `D:/Code/habit-garden/docs/design-qa/plant-focus-journal.png`
-- Full-view comparison: `D:/Code/habit-garden/docs/design-qa/plant-focus-source-vs-overview.jpg`
-- Interaction comparison: `D:/Code/habit-garden/docs/design-qa/plant-focus-overview-vs-focus.jpg`
-- Viewport: in-app Browser, 390 × 844 CSS pixels.
-- State: authenticated user, two plants, no activity mutation submitted during QA.
+## Full-view comparison evidence
 
-## Full-view comparison
+- Same-viewport side-by-side comparison: `.codex/design-qa/28-full-comparison-final.png`.
+- Mobile implementation capture: `.codex/design-qa/29-mobile-final.png`.
+- The source and desktop implementation were compared at 1082 × 853 in the same composite. The final pass preserves the source's sage–cream palette, isometric camera, softened land silhouette, cinematic depth and clustered micro-scenes.
 
-The overview keeps the selected Soft Isometric Sanctuary hierarchy: compact Journey/profile header, one progress ring, warm scenic field, isometric tile and connected three-action dock. The featured plant is no longer a fixed screen overlay; it is rendered from its real grid anchor with the shadow on the same tile plane. The focus state moves the garden camera instead of scaling a duplicate plant, preserving object continuity.
+## Focused-region evidence
 
-## Focused-region comparison
+- Desktop hero cactus bounds: `x=471, y=220, w=140, h=140` at 1082 × 853.
+- Desktop generated rock/lantern cluster: `x=328, y=431, w=147, h=147`.
+- Desktop generated pond cluster: `x=589, y=562, w=185, h=185`.
+- Mobile generated clusters remain fully within the 390 × 844 viewport.
+- Focus interaction opens the correct `Chạy bộ` dialog; dialog close control and action buttons remain present.
+- Browser console: no warnings or errors.
 
-- Typography: display and UI fonts, weight hierarchy and Vietnamese wrapping remain consistent with the source direction. Focus copy stays within the panel at 390 px.
-- Spacing/layout: plant remains clear above the compact bottom panel; all three care actions fit without scrolling; header remains visible.
-- Colors/tokens: cream, sage and forest-green surfaces match the existing sanctuary palette; dimming retains enough garden context.
-- Image quality: real plant PNG assets remain sharp through overview and 1.28× camera focus. No placeholder, CSS-drawn or emoji plant was introduced.
-- Copy/content: `Đang đến thăm`, growth context and `Chăm cây / 2 phút / Nghỉ` support the visit-care-return story without XP or guilt messaging.
+## Findings
+
+- No remaining P0, P1 or P2 visual defects.
+- [P3] The reference uses a denser baked painterly texture and a single-plant art-direction composition. The production implementation keeps dynamic multiple plants and its editing controls, so exact object density intentionally varies with user data.
+
+## Comparison history
+
+1. Initial DOM inspection found the garden hero too close to the header and the active-plant chip intercepting cactus clicks.
+2. Fixed by introducing a responsive sanctuary camera offset and hiding the redundant desktop chip.
+3. Post-fix DOM evidence places the cactus at the target visual band and verifies clicking it opens `Chạy bộ`, not `Journal`.
+4. Mobile inspection found both ambience sprites clipped by the viewport.
+5. Fixed with compact scene anchors and responsive sprite sizing; both sprites now fit within 390 × 844.
+6. Replaced rigid straight tile edges with an organic rounded diamond path while keeping the logical isometric grid unchanged.
+7. Added generated grass texture, dirt-face gradients, edge fringe and rear tufts to remove the flat slab appearance.
+8. Moved the pond inward, localized particles around focal points and refined contact shadow/rim light balance.
+
+## Required fidelity surfaces
+
+- Fonts and typography: existing production HUD and Vietnamese copy preserved and visually checked.
+- Spacing and layout: desktop and mobile bounds verified; hero, clusters and controls remain uncropped.
+- Colors and tokens: existing sage/cream tokens preserved with cinematic ground lighting and three readable depth layers.
+- Image quality: custom raster pond and rock/lantern assets and generated grass texture were inspected in context with clean transparent edges.
+- Copy and content: existing Vietnamese copy preserved.
 
 ## Primary interactions tested
 
-- Tap the featured cactus → camera focus and contextual panel.
-- Tap the off-axis Journal plant → camera pans to its grid position and uses Journal data.
-- Open `Chăm cây` → action dialog receives the focused plant; no save was submitted.
-- Close action dialog → focus panel exits, then camera returns to overview.
-- Enter/Space activates a plant tile; Escape closes focus.
-- X closes focus; empty tile close is wired through the sanctuary tile handler.
-- Runtime console: no new errors; historical dev-only LCP warnings were addressed by prioritizing the featured plant image.
+- Garden route loads authenticated data.
+- Clicking `Đến thăm Chạy bộ` opens dialog `Chạy bộ`.
+- Responsive controls remain inside the mobile viewport.
+- No browser console warnings or errors.
 
-## Findings and comparison history
+## Implementation checklist
 
-1. P1 — The featured plant was removed from the grid and duplicated at a fixed screen coordinate. Fixed by rendering every plant from its anchor tile and removing the fixed hero copy.
-2. P1 — `animate-pulse-glow` overrode the plant's inline scale transform. Fixed by moving pulse animation to the glow layer so growth, grid-size and camera scale compose correctly.
-3. P1 — Transparent neighboring tile hit areas intercepted taps on a rear plant. Fixed by elevating plant-anchor hit targets while retaining row/column depth ordering.
-4. P2 — A 1×1 plant appeared too small compared with a 2×2 plant in focus. Fixed by normalizing featured scale against `getPlantSizeScale()`.
-5. P2 — Native keyboard activation did not consistently trigger the sanctuary focus handler. Fixed with explicit Enter/Space handling and verified with Browser DOM state.
-6. P2 — Focus needed a predictable exit path. Added X, Escape, empty-tile exit and a staged panel-then-camera return.
-7. P3 — The overview label overlaps the upper plant silhouette slightly, functioning as the speech-bubble connection shown in the visual target. Accepted as intentional.
-
-No actionable P0, P1 or P2 issues remain.
+- [x] Cinematic ground zoning and focal earth.
+- [x] Directional plant shadows and warm rim light.
+- [x] Localized daytime fireflies.
+- [x] Raster ambience micro-scenes.
+- [x] Responsive scene placement.
+- [x] Approved in-app Browser screenshot capture.
+- [x] Side-by-side visual comparison and final P1/P2 polish pass.
 
 final result: passed

@@ -100,14 +100,22 @@ export async function placeDecoration(
     }
   }
 
-  // 4. Atomically decrement inventory FIRST (prevents double-place race)
-  const { error: decrError } = await supabase.rpc('atomic_inventory_decrement', {
-    p_inventory_id: invItem.id,
-    p_user_id: user.id,
-    p_amount: 1,
-  })
+  // quantity=1 cannot be updated to zero because the table enforces quantity > 0.
+  // For stacks, reserve one item first. For the last item, insert first and then
+  // delete the exact inventory row conditionally; a concurrent loser rolls back.
+  const isLastInventoryItem = invItem.quantity === 1
+  if (!isLastInventoryItem) {
+    const { error: decrError } = await supabase.rpc('atomic_inventory_decrement', {
+      p_inventory_id: invItem.id,
+      p_user_id: user.id,
+      p_amount: 1,
+    })
 
-  if (decrError) return { error: 'Failed to decrement inventory — item may already be placed' }
+    if (decrError) {
+      console.error('Decoration inventory decrement failed', decrError)
+      return { error: 'Failed to decrement inventory — item may already be placed' }
+    }
+  }
 
   // 5. Place the decoration
   const { data: placed, error: placeError } = await supabase
@@ -124,15 +132,39 @@ export async function placeDecoration(
     .single()
 
   if (placeError || !placed) {
-    // Rollback: re-add to inventory
-    await supabase.rpc('atomic_inventory_increment', {
-      p_user_id: user.id,
-      p_item_type: 'decoration',
-      p_decoration_type_id: invItem.decoration_type_id,
-      p_amount: 1,
-      p_acquired_via: 'craft',
-    })
+    if (!isLastInventoryItem) {
+      // Rollback the stack reservation.
+      await supabase.rpc('atomic_inventory_increment', {
+        p_user_id: user.id,
+        p_item_type: 'decoration',
+        p_decoration_type_id: invItem.decoration_type_id,
+        p_amount: 1,
+        p_acquired_via: 'craft',
+      })
+    }
     return { error: 'Failed to place decoration' }
+  }
+
+  if (isLastInventoryItem) {
+    const { data: removedInventory, error: removeError } = await supabase
+      .from('user_inventory')
+      .delete()
+      .eq('id', invItem.id)
+      .eq('user_id', user.id)
+      .eq('quantity', 1)
+      .select('id')
+      .maybeSingle()
+
+    if (removeError || !removedInventory) {
+      // Another request consumed the row, or deletion failed. Remove this
+      // placement so one inventory item can never create two decorations.
+      await supabase
+        .from('placed_decorations')
+        .delete()
+        .eq('id', placed.id)
+        .eq('user_id', user.id)
+      return { error: 'Failed to decrement inventory — item may already be placed' }
+    }
   }
 
   return { success: true, decorationId: placed.id }

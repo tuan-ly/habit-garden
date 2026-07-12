@@ -36,6 +36,9 @@ interface IsometricTileProps {
   isSelectedForMove?: boolean
   /** Preview plant to show faded on this tile (for move preview) */
   previewPlant?: PlantWithType
+  /** Decoration preview rendered independently from the tile's real content. */
+  previewOverlay?: React.ReactNode
+  previewOverlayGridSize?: number
   /** Shadow type: 'plant' for full shadow, 'small' for decoration shadow, 'none' (default) for no shadow */
   shadowType?: 'plant' | 'small' | 'none'
   cinematicShadows?: boolean
@@ -80,6 +83,8 @@ function IsometricTileComponent({
   showAddHint = false,
   isSelectedForMove = false,
   previewPlant,
+  previewOverlay,
+  previewOverlayGridSize = 1,
   shadowType = 'none',
   cinematicShadows = false,
 }: IsometricTileProps) {
@@ -103,6 +108,8 @@ function IsometricTileComponent({
   return (
     <button
       type="button"
+      data-grid-row={row}
+      data-grid-col={col}
       tabIndex={plant ? 0 : -1}
       aria-label={plant ? `Đến thăm ${plant.name}` : undefined}
       className={cn(
@@ -122,7 +129,10 @@ function IsometricTileComponent({
       onKeyDown={onKeyDown}
       onContextMenu={onContextMenu}
       onMouseEnter={onMouseEnter}
+      onMouseMove={onMouseEnter}
       onMouseLeave={onMouseLeave}
+      onPointerEnter={onMouseEnter}
+      onPointerMove={onMouseEnter}
     >
       {/* Invisible hit area - diamond shape matching isometric tile */}
       <svg
@@ -277,6 +287,22 @@ function IsometricTileComponent({
           }}
         >
           <IsometricPlant plant={previewPlant} />
+        </div>
+      )}
+
+      {previewOverlay && (
+        <div
+          className="absolute pointer-events-none flex flex-col items-center"
+          data-placement-ghost="true"
+          style={{
+            left: tileSize / 2,
+            top: tileHitHeight / 2 + getMergedAreaCenterOffset(previewOverlayGridSize, tileHitHeight),
+            transform: 'translate(-50%, -100%)',
+            transformOrigin: 'bottom center',
+            zIndex: 20,
+          }}
+        >
+          {previewOverlay}
         </div>
       )}
 

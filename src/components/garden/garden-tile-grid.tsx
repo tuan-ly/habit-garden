@@ -4,7 +4,8 @@ import { memo, useMemo } from 'react'
 import { IsometricTile } from './isometric-tile'
 import { IsometricPlant, type FocusState } from './isometric-plant'
 import { DecorationImage } from './decoration-image'
-import type { PlantWithType, PlacedDecorationWithType, WeatherType } from '@/types/database'
+import { PlacementGhost } from './edit-mode/placement-ghost'
+import type { DecorationRotation, DecorationType, PlantWithType, PlacedDecorationWithType, WeatherType } from '@/types/database'
 import type { MoveState } from './use-garden-interactions'
 import type { GardenMode } from './mode-toolbar'
 import { getPlantSizeScale } from '@/lib/utils/grid-positioning'
@@ -37,6 +38,13 @@ interface GardenTileGridProps {
   hideStatusIndicators?: boolean
   cinematic?: boolean
   selectedDecorationId?: string | null
+  placementGhost?: {
+    row: number
+    col: number
+    decorationType: DecorationType
+    rotation: DecorationRotation
+    isValid: boolean
+  } | null
 }
 
 export const GardenTileGrid = memo(function GardenTileGrid({
@@ -59,6 +67,7 @@ export const GardenTileGrid = memo(function GardenTileGrid({
   hideStatusIndicators = false,
   cinematic = false,
   selectedDecorationId,
+  placementGhost,
 }: GardenTileGridProps) {
   // Build a map from "row-col" -> decoration (anchor only) for O(1) lookup.
   // Memoized so we don't rebuild the Map on every render (only when decorations change).
@@ -97,6 +106,8 @@ export const GardenTileGrid = memo(function GardenTileGrid({
         const decoration = decorationAnchorMap.get(tileKey)
         const occupyingDecoration = decorationCellMap.get(tileKey)
         const decorationSelected = occupyingDecoration?.id === selectedDecorationId
+        const ghostAtTile = placementGhost?.row === row && placementGhost.col === col
+        const ghostSize = placementGhost?.decorationType.grid_size || 1
 
         return (
           <IsometricTile
@@ -108,7 +119,7 @@ export const GardenTileGrid = memo(function GardenTileGrid({
             isHovered={isHovered}
             isOccupiedByMultiCell={isOccupiedByMultiCell}
             isPartOfMultiCell={isPartOfMultiCell || (!!occupyingDecoration && occupyingDecoration.grid_size > 1)}
-            plantGridSize={plant?.grid_size || decoration?.grid_size || 1}
+            plantGridSize={plant?.grid_size || decoration?.grid_size || (ghostAtTile ? ghostSize : 1)}
             onClick={(e) => onTileClick(row, col, clickPlant, occupyingDecoration, e)}
             onKeyDown={(e) => {
               if (clickPlant && (e.key === 'Enter' || e.key === ' ')) {
@@ -127,6 +138,15 @@ export const GardenTileGrid = memo(function GardenTileGrid({
             previewPlant={isPreviewTile && moveState.selectedPlant ? moveState.selectedPlant : undefined}
             shadowType={plant && isAnchor ? 'plant' : decoration ? 'small' : 'none'}
             cinematicShadows={cinematic}
+            previewOverlayGridSize={ghostSize}
+            previewOverlay={ghostAtTile && placementGhost ? (
+              <PlacementGhost
+                decorationType={placementGhost.decorationType}
+                rotation={placementGhost.rotation}
+                isValid={placementGhost.isValid}
+                pixelSize={tileSize * (0.62 + ghostSize * 0.62)}
+              />
+            ) : null}
           >
             {plant && isAnchor && (
               <div className={isSelectedForMove ? 'opacity-40 scale-95 transition-all' : ''}>

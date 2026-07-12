@@ -630,6 +630,12 @@ export function IsometricGarden({
               hideStatusIndicators={sanctuaryMode}
               cinematic={sanctuaryMode}
               selectedDecorationId={editMode.selectedDecoration?.id}
+              placementGhost={editMode.selectedItem?.decoration_type && editMode.ghostPosition ? {
+                ...editMode.ghostPosition,
+                decorationType: editMode.selectedItem.decoration_type,
+                rotation: editMode.ghostRotation,
+                isValid: editMode.isGhostValid,
+              } : null}
             />
 
           </div>

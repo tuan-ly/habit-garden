@@ -315,20 +315,6 @@ export function getTierUnlockLevel(tier: PlantTier): number {
 // ============================================
 
 /**
- * Decoration types available in the garden
- */
-export type DecorationType =
-  | 'bush'
-  | 'rock'
-  | 'mushroom'
-  | 'flower-patch'
-  | 'lantern'
-  | 'fence-post'
-  | 'fence-corner'
-  | 'pond'
-  | 'fountain'
-
-/**
  * Level unlock information
  */
 export interface LevelUnlock {
@@ -360,31 +346,6 @@ export function getGardenSizeName(level: number): string {
   if (level >= 9) return 'Growing Estate'
   if (level >= 6) return "Gardener's Plot"
   return "Seedling's Patch"
-}
-
-/**
- * Get decorations unlocked at a given level
- *
- * Level 1:   Basic (bushes, rocks)
- * Level 5:   Mushrooms, flower patches
- * Level 8:   Lanterns (night glow effect)
- * Level 10:  Garden fence/border decorations
- * Level 12:  Ponds/water features
- */
-export function getUnlockedDecorations(level: number): DecorationType[] {
-  const decos: DecorationType[] = ['bush', 'rock']
-  if (level >= 5) decos.push('mushroom', 'flower-patch')
-  if (level >= 8) decos.push('lantern')
-  if (level >= 10) decos.push('fence-post', 'fence-corner')
-  if (level >= 12) decos.push('pond', 'fountain')
-  return decos
-}
-
-/**
- * Check if a specific decoration type is unlocked at the given level
- */
-export function isDecorationUnlocked(level: number, decoType: DecorationType): boolean {
-  return getUnlockedDecorations(level).includes(decoType)
 }
 
 /**
@@ -420,20 +381,6 @@ export function getLevelUnlocks(level: number): LevelUnlock[] {
   }
   if (level === 12) {
     unlocks.push({ type: 'garden', name: 'Unlimited Garden', icon: '🏰', description: 'Your garden has no boundaries!' })
-  }
-
-  // Decoration unlocks
-  if (level === 5) {
-    unlocks.push({ type: 'decoration', name: 'Mushrooms & Flowers', icon: '🍄', description: 'New garden decorations!' })
-  }
-  if (level === 8) {
-    unlocks.push({ type: 'decoration', name: 'Garden Lanterns', icon: '🏮', description: 'Light up your nights!' })
-  }
-  if (level === 10) {
-    unlocks.push({ type: 'decoration', name: 'Garden Fences', icon: '🪵', description: 'Border decorations unlocked!' })
-  }
-  if (level === 12) {
-    unlocks.push({ type: 'decoration', name: 'Water Features', icon: '💧', description: 'Ponds and fountains!' })
   }
 
   // Crafting & Workshop unlocks

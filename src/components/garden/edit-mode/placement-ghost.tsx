@@ -8,6 +8,7 @@ interface PlacementGhostProps {
   decorationType: DecorationType
   rotation: DecorationRotation
   isValid: boolean
+  pixelSize: number
   className?: string
 }
 
@@ -15,13 +16,14 @@ export function PlacementGhost({
   decorationType,
   rotation,
   isValid,
+  pixelSize,
   className,
 }: PlacementGhostProps) {
   return (
     <div
       className={cn(
-        'pointer-events-none transition-opacity duration-150',
-        isValid ? 'opacity-60' : 'opacity-30',
+        'relative pointer-events-none transition-[opacity,filter] duration-150',
+        isValid ? 'opacity-65 drop-shadow-[0_8px_8px_rgba(41,54,31,0.25)]' : 'opacity-35 grayscale-[0.35]',
         className
       )}
     >
@@ -30,6 +32,7 @@ export function PlacementGhost({
         size="lg"
         rotation={rotation}
         isGhost
+        pixelSize={pixelSize}
       />
       {!isValid && (
         <div className="absolute inset-0 flex items-center justify-center">

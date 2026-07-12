@@ -35,6 +35,12 @@ Grid placement supports multi-cell plants and decorations. Use the helpers in `s
 
 Decorations are first-class placeable entities: their `grid_size` defines a square 1×1, 2×2, 3×3… footprint, they reserve every covered cell, and they can be selected and moved directly on the garden. The edit catalog opens on demand; do not restore a persistent bottom decoration panel or generate decorative objects outside `placed_decorations`.
 
+The legacy level-generated ambient decoration system has been removed. Catalog rows in `decoration_types`, owned quantities in `user_inventory`, and positioned instances in `placed_decorations` are the only decoration sources of truth. Migration `20260712_expand_decoration_grid_footprints.sql` reconciles legacy placed footprints to their catalog size and deterministically moves an item to the nearest free anchor if an expansion would overlap a plant or another decoration. A database trigger prevents new placed rows from drifting from the catalog footprint.
+
+Decoration placement uses a **Placement Ghost Preview**: after selecting an inventory item, hovering or moving a pointer across a tile renders the real decoration asset at its final footprint, scale and rotation with partial opacity. Valid positions use a clear 65% preview; invalid positions are dimmed and marked. The preview is separate from real tile content so it can still explain collisions.
+
+The final inventory item must never be updated to quantity zero because `user_inventory.quantity` enforces `quantity > 0`. Server actions delete the exact row conditionally for quantity-one placement, and migration `20260712173649_fix_inventory_decrement_zero_quantity.sql` fixes the atomic RPC to follow the same delete-at-zero rule.
+
 Important concepts:
 
 - anchor cell - top-left cell for a multi-cell item.
