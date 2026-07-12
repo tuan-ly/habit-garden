@@ -108,6 +108,9 @@ export const GardenTileGrid = memo(function GardenTileGrid({
         const decorationSelected = occupyingDecoration?.id === selectedDecorationId
         const ghostAtTile = placementGhost?.row === row && placementGhost.col === col
         const ghostSize = placementGhost?.decorationType.grid_size || 1
+        const decorationPixelSize = decoration
+          ? tileSize * (0.62 + decoration.grid_size * 0.62)
+          : undefined
 
         return (
           <IsometricTile
@@ -138,6 +141,8 @@ export const GardenTileGrid = memo(function GardenTileGrid({
             previewPlant={isPreviewTile && moveState.selectedPlant ? moveState.selectedPlant : undefined}
             shadowType={plant && isAnchor ? 'plant' : decoration ? 'small' : 'none'}
             cinematicShadows={cinematic}
+            accessibleLabel={decoration ? `Chọn ${decoration.decoration_type.name}` : undefined}
+            decorationHitSize={decorationPixelSize}
             previewOverlayGridSize={ghostSize}
             previewOverlay={ghostAtTile && placementGhost ? (
               <PlacementGhost
@@ -169,7 +174,8 @@ export const GardenTileGrid = memo(function GardenTileGrid({
                   decorationType={decoration.decoration_type}
                   size={decoration.grid_size >= 2 ? 'xl' : 'lg'}
                   rotation={decoration.rotation}
-                  pixelSize={tileSize * (0.62 + decoration.grid_size * 0.62)}
+                  pixelSize={decorationPixelSize}
+                  grounded
                 />
               </div>
             )}

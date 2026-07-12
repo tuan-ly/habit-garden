@@ -241,11 +241,20 @@ export async function moveDecoration(
  */
 export async function pickUpDecoration(
   dto: PickUpDecorationDto
-): Promise<{ success: true } | { error: string }> {
+): Promise<{ success: true; inventoryItemId: string } | { error: string }> {
   const user = await getAuthUser()
   if (!user) return { error: 'Unauthorized' }
 
   const supabase = await createClient()
+
+  const { data: placed, error: placedError } = await supabase
+    .from('placed_decorations')
+    .select('id, user_id, decoration_type_id')
+    .eq('id', dto.placed_decoration_id)
+    .eq('user_id', user.id)
+    .single()
+
+  if (placedError || !placed) return { error: 'Decoration not found' }
 
   const { error } = await supabase.rpc('pickup_decoration', {
     p_user_id: user.id,
@@ -253,13 +262,29 @@ export async function pickUpDecoration(
   })
 
   if (error) {
+    console.error('Decoration pickup failed', error)
     const msg = error.message.toLowerCase()
     if (msg.includes('decoration_not_found')) return { error: 'Decoration not found' }
     if (msg.includes('not_owner')) return { error: 'Not your decoration' }
     if (msg.includes('unauthorized')) return { error: 'Unauthorized' }
     return { error: error.message }
   }
-  return { success: true }
+
+  const { data: inventoryItem, error: inventoryError } = await supabase
+    .from('user_inventory')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('item_type', 'decoration')
+    .eq('decoration_type_id', placed.decoration_type_id)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (inventoryError || !inventoryItem) {
+    return { error: 'Decoration was stored but inventory could not be refreshed' }
+  }
+
+  return { success: true, inventoryItemId: inventoryItem.id }
 }
 
 /**

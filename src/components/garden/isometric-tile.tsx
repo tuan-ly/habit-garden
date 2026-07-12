@@ -39,6 +39,9 @@ interface IsometricTileProps {
   /** Decoration preview rendered independently from the tile's real content. */
   previewOverlay?: React.ReactNode
   previewOverlayGridSize?: number
+  /** Enlarged click target for a decoration whose art extends above the tile. */
+  decorationHitSize?: number
+  accessibleLabel?: string
   /** Shadow type: 'plant' for full shadow, 'small' for decoration shadow, 'none' (default) for no shadow */
   shadowType?: 'plant' | 'small' | 'none'
   cinematicShadows?: boolean
@@ -85,6 +88,8 @@ function IsometricTileComponent({
   previewPlant,
   previewOverlay,
   previewOverlayGridSize = 1,
+  decorationHitSize,
+  accessibleLabel,
   shadowType = 'none',
   cinematicShadows = false,
 }: IsometricTileProps) {
@@ -110,11 +115,11 @@ function IsometricTileComponent({
       type="button"
       data-grid-row={row}
       data-grid-col={col}
-      tabIndex={plant ? 0 : -1}
-      aria-label={plant ? `Đến thăm ${plant.name}` : undefined}
+      tabIndex={plant || accessibleLabel ? 0 : -1}
+      aria-label={accessibleLabel || (plant ? `Đến thăm ${plant.name}` : undefined)}
       className={cn(
         'absolute cursor-pointer border-0 bg-transparent p-0 text-left focus-visible:outline-none',
-        plant && 'focus-visible:ring-2 focus-visible:ring-[#f6edb0] focus-visible:ring-offset-4 focus-visible:ring-offset-transparent'
+        (plant || accessibleLabel) && 'focus-visible:ring-2 focus-visible:ring-[#f6edb0] focus-visible:ring-offset-4 focus-visible:ring-offset-transparent'
       )}
       style={{
         left: tileCenterX,
@@ -123,7 +128,7 @@ function IsometricTileComponent({
         height: tileHitHeight,
         transform: 'translate(-50%, 0)', // Align from top-center
         // Plant anchors must stay above neighboring transparent tile hit areas.
-        zIndex: row + col + (plant ? 100 : 10),
+        zIndex: row + col + (plant || decorationHitSize ? 100 : 10),
       }}
       onClick={onClick}
       onKeyDown={onKeyDown}
@@ -156,6 +161,20 @@ function IsometricTileComponent({
           )}
         />
       </svg>
+
+      {decorationHitSize && (
+        <span
+          aria-hidden="true"
+          className="absolute left-1/2 pointer-events-auto"
+          data-decoration-hit-area="true"
+          style={{
+            bottom: tileHitHeight / 2,
+            width: decorationHitSize * 0.62,
+            height: decorationHitSize * 0.78,
+            transform: 'translateX(-50%)',
+          }}
+        />
+      )}
 
       {/* Simple hover highlight - scales for multi-cell plants */}
       {isHovered && !isOccupiedByMultiCell && !isPartOfMultiCell && (
@@ -237,7 +256,7 @@ function IsometricTileComponent({
           <div
             className="absolute pointer-events-none rounded-full"
             style={{
-              left: tileSize / 2 - 1,
+              left: tileSize / 2,
               top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight) + 1,
               width: tileSize * (shadowType === 'plant'
                 ? (0.50 + (plantGridSize - 1) * 0.34)

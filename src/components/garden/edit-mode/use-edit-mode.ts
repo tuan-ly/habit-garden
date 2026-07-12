@@ -9,7 +9,7 @@ import type {
 
 export type EditAction =
   | { type: 'place'; placedDecoId: string; inventoryItemId: string; row: number; col: number }
-  | { type: 'pickup'; placedDecoId: string; decoTypeId: string; row: number; col: number }
+  | { type: 'pickup'; placedDecoId: string; inventoryItemId: string; decoTypeId: string; row: number; col: number }
   | { type: 'move'; placedDecoId: string; fromRow: number; fromCol: number; toRow: number; toCol: number }
 
 export interface EditModeState {
@@ -20,7 +20,6 @@ export interface EditModeState {
   ghostRotation: DecorationRotation
   isGhostValid: boolean
   undoStack: EditAction[]
-  showGridLines: boolean
 }
 
 const MAX_UNDO = 20
@@ -35,7 +34,6 @@ export function useEditMode() {
   const [ghostRotation, setGhostRotation] = useState<DecorationRotation>(0)
   const [isGhostValid, setIsGhostValid] = useState(true)
   const [undoStack, setUndoStack] = useState<EditAction[]>([])
-  const [showGridLines, setShowGridLines] = useState(true)
 
   const enterEditMode = useCallback(() => {
     setIsActive(true)
@@ -102,10 +100,6 @@ export function useEditMode() {
     return action
   }, [])
 
-  const toggleGridLines = useCallback(() => {
-    setShowGridLines(prev => !prev)
-  }, [])
-
   return {
     // State
     isActive,
@@ -115,7 +109,6 @@ export function useEditMode() {
     ghostRotation,
     isGhostValid,
     undoStack,
-    showGridLines,
 
     // Actions
     enterEditMode,
@@ -130,6 +123,5 @@ export function useEditMode() {
     rotateGhost,
     pushUndo,
     popUndo,
-    toggleGridLines,
   }
 }

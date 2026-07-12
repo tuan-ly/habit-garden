@@ -39,6 +39,14 @@ The legacy level-generated ambient decoration system has been removed. Catalog r
 
 Decoration placement uses a **Placement Ghost Preview**: after selecting an inventory item, hovering or moving a pointer across a tile renders the real decoration asset at its final footprint, scale and rotation with partial opacity. Valid positions use a clear 65% preview; invalid positions are dimmed and marked. The preview is separate from real tile content so it can still explain collisions.
 
+Placed decoration art follows **Ground Anchoring**: image and emoji fallbacks are bottom-aligned and shifted to the contact point instead of visually centered inside a square canvas. Each decoration anchor also exposes a compact silhouette hit-area above its diamond and an accessible `Chọn <name>` label, so users can select the visible object rather than guessing its ground tile.
+
+Ground Anchoring is implemented as explicit **Sprite Anchor Point** metadata in `decoration-art-spec.ts`, not a shared pixel offset. `anchorX` and `anchorY` describe the artwork's actual ground-contact point in normalized source-canvas coordinates; the renderer maps that point to the tile/shadow center and scales around it. PNG anchors should be measured from alpha bounds, while emoji fallbacks use reviewed optical anchors. Ghost and placed renderers must both go through `DecorationImage grounded` so they cannot drift apart.
+
+`InventoryProvider` loads `placed_decorations` once after hydration and includes them in inventory refreshes. Do not rely only on mutation responses to populate placed state; otherwise decorations disappear and become unselectable after reload.
+
+Edit Mode uses one bottom **Edit Dock**. It contains labeled Undo and Done actions, plus Rotate and Store when an object is selected. Do not restore the duplicate top placement badges, dashed screen border, grid toggle, or second Done control; the ghost preview and ground footprint already explain placement.
+
 The final inventory item must never be updated to quantity zero because `user_inventory.quantity` enforces `quantity > 0`. Server actions delete the exact row conditionally for quantity-one placement, and migration `20260712173649_fix_inventory_decrement_zero_quantity.sql` fixes the atomic RPC to follow the same delete-at-zero rule.
 
 Important concepts:

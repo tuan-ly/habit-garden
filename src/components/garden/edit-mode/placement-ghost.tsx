@@ -33,6 +33,7 @@ export function PlacementGhost({
         rotation={rotation}
         isGhost
         pixelSize={pixelSize}
+        grounded
       />
       {!isValid && (
         <div className="absolute inset-0 flex items-center justify-center">

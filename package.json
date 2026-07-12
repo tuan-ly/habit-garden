@@ -9,6 +9,8 @@
     "start": "next start",
     "lint": "eslint",
     "generate-icons": "node scripts/generate-icons.mjs",
+    "assets:analyze": "node scripts/analyze-game-assets.mjs",
+    "assets:check": "node scripts/analyze-game-assets.mjs --check",
     "test": "vitest",
     "test:run": "vitest run",
     "test:ui": "vitest --ui",

@@ -488,7 +488,7 @@ export function IsometricGarden({
   return (
     <div className="relative w-full h-full flex flex-col select-none">
       {/* Mode toolbar */}
-      {!focusMode && (
+      {!focusMode && mode !== 'arrange' && (
         <ModeToolbar
           mode={mode}
           onModeChange={setModeWithReset}
@@ -656,20 +656,6 @@ export function IsometricGarden({
         </div>
       )}
 
-      {/* Decoration placement indicator */}
-      {mode === 'arrange' && editMode.selectedItem && !interactions.moveState.selectedPlant && (
-        <div className="absolute left-1/2 -translate-x-1/2 top-20 z-30 pointer-events-none">
-          <div className="px-4 py-2 bg-blue-600/90 backdrop-blur-md rounded-full text-xs text-white border border-blue-400/50 shadow-lg">
-            <span className="flex items-center gap-2">
-              <span>{editMode.selectedItem.decoration_type?.icon || '🎀'}</span>
-              <span>{inventory?.isPlacing ? 'Đang đặt' : 'Đặt'} {editMode.selectedItem.decoration_type?.name || 'vật trang trí'} ({editMode.selectedItem.decoration_type?.grid_size || 1}×{editMode.selectedItem.decoration_type?.grid_size || 1})</span>
-              <span className="text-blue-200">•</span>
-              <span>{inventory?.isPlacing ? 'Vui lòng chờ…' : 'Chạm vùng màu xanh'}</span>
-            </span>
-          </div>
-        </div>
-      )}
-
       {/* Info bar */}
       {!isTouchDevice && <PlantInfoBar plant={hoveredPlant} />}
 
@@ -725,14 +711,6 @@ export function IsometricGarden({
           }}
           onCloseFocus={handleSanctuaryFocusClose}
         />
-      )}
-
-      {mode === 'arrange' && editMode.selectedDecoration && (
-        <div className="pointer-events-none absolute left-1/2 top-20 z-30 -translate-x-1/2">
-          <div className="rounded-full border border-amber-300/70 bg-[#49693f]/92 px-4 py-2 text-xs text-white shadow-lg backdrop-blur-md">
-            Dời {editMode.selectedDecoration.decoration_type.name} · {editMode.selectedDecoration.grid_size}×{editMode.selectedDecoration.grid_size} · chạm tile đích
-          </div>
-        </div>
       )}
 
       {/* Decoration edit overlay (visible in arrange mode) */}

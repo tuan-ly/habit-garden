@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence } from 'framer-motion'
 import { useInventory } from '@/lib/context/inventory-context'
 import type { UseEditModeReturn } from './use-edit-mode'
 import { EditModeToolbar } from './edit-mode-toolbar'
@@ -10,6 +10,7 @@ import { DecorationImage } from '../decoration-image'
 import { Button } from '@/components/ui/button'
 import { PackageOpen, X } from 'lucide-react'
 import { useState } from 'react'
+import { toast } from 'sonner'
 
 interface EditModeOverlayProps {
   isActive: boolean
@@ -73,8 +74,7 @@ export function EditModeOverlay({
         await inventory.pickUpDecoration(action.placedDecoId)
         break
       case 'pickup':
-        // Re-placing after a pickup requires knowing where it was — refresh to sync
-        await inventory.refreshInventory()
+        await inventory.placeDecoration(action.inventoryItemId, action.row, action.col)
         break
       case 'move':
         await inventory.moveDecoration(action.placedDecoId, action.fromRow, action.fromCol)
@@ -87,6 +87,41 @@ export function EditModeOverlay({
     onDone()
   }, [editMode, onDone])
 
+  const handleRotate = useCallback(async () => {
+    if (editMode.selectedDecoration) {
+      const result = await inventory.rotateDecoration(editMode.selectedDecoration.id)
+      if (result.success) {
+        editMode.deselectDecoration()
+      } else {
+        toast.error('Chưa thể xoay vật trang trí', { description: result.error })
+      }
+      return
+    }
+    editMode.rotateGhost()
+  }, [editMode, inventory])
+
+  const handleStore = useCallback(async () => {
+    const selected = editMode.selectedDecoration
+    if (!selected) return
+    const result = await inventory.pickUpDecoration(selected.id)
+    if (result.success) {
+      if (result.inventoryItemId) {
+        editMode.pushUndo({
+          type: 'pickup',
+          placedDecoId: selected.id,
+          inventoryItemId: result.inventoryItemId,
+          decoTypeId: selected.decoration_type_id,
+          row: selected.grid_row,
+          col: selected.grid_col,
+        })
+      }
+      editMode.deselectDecoration()
+      toast.success(`Đã cất ${selected.decoration_type.name} vào kho`)
+    } else {
+      toast.error('Chưa thể cất vật trang trí', { description: result.error })
+    }
+  }, [editMode, inventory])
+
   if (!isActive) return null
 
   return (
@@ -96,11 +131,12 @@ export function EditModeOverlay({
           {/* Top toolbar */}
           <EditModeToolbar
             canUndo={editMode.undoStack.length > 0}
-            showGridLines={editMode.showGridLines}
             hasSelectedItem={!!editMode.selectedItem}
+            selectedDecorationName={editMode.selectedDecoration?.decoration_type.name}
+            isBusy={inventory.isLoading}
             onUndo={handleUndo}
-            onToggleGrid={editMode.toggleGridLines}
-            onRotate={editMode.rotateGhost}
+            onRotate={handleRotate}
+            onStore={handleStore}
             onDone={handleDone}
           />
 
@@ -156,13 +192,6 @@ export function EditModeOverlay({
             </div>
           )}
 
-          {/* Edit-mode border highlight */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 pointer-events-none z-10 bg-blue-500/5 border-4 border-dashed border-blue-300/30 rounded-lg"
-          />
         </>
       )}
     </AnimatePresence>

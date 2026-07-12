@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { DecorationType, DecorationRotation } from '@/types/database'
+import { getDecorationArtSpec, getGroundedArtTransform } from './decoration-art-spec'
 
 const SIZE_CONFIG = {
   sm:  { width: 32,  height: 32,  className: 'w-8 h-8' },
@@ -20,6 +21,8 @@ interface DecorationImageProps {
   className?: string
   /** Exact rendered size for grid-scaled garden entities. */
   pixelSize?: number
+  /** Bottom-anchor the visible art to the garden contact point. */
+  grounded?: boolean
 }
 
 /**
@@ -32,11 +35,14 @@ export function DecorationImage({
   isGhost = false,
   className,
   pixelSize,
+  grounded = false,
 }: DecorationImageProps) {
   const [imgError, setImgError] = useState(false)
   const sizeConfig = SIZE_CONFIG[size]
   const imagePath = decorationType.image_url
   const hasImage = !!imagePath && !imgError
+  const artSpec = getDecorationArtSpec(decorationType.slug, hasImage)
+  const groundedStyle = grounded ? getGroundedArtTransform(artSpec) : undefined
 
   const rotationStyle = {
     ...(rotation !== 0 ? { transform: `rotate(${rotation}deg)` } : {}),
@@ -62,18 +68,22 @@ export function DecorationImage({
           loading="lazy"
           onError={() => setImgError(true)}
           className="h-full w-full object-contain"
+          style={groundedStyle}
         />
       ) : (
         <span
           className={cn(
-            'select-none',
+            'flex h-full w-full select-none items-center justify-center leading-none',
             size === 'sm' && 'text-lg',
             size === 'md' && 'text-2xl',
             size === 'lg' && 'text-3xl',
             size === 'xl' && 'text-5xl',
             pixelSize && 'text-[length:calc(var(--decoration-size)*0.52)]',
           )}
-          style={pixelSize ? { '--decoration-size': `${pixelSize}px` } as React.CSSProperties : undefined}
+          style={{
+            ...(pixelSize ? { '--decoration-size': `${pixelSize}px` } as React.CSSProperties : {}),
+            ...groundedStyle,
+          }}
           role="img"
           aria-label={decorationType.name}
         >

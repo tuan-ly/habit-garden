@@ -7,6 +7,7 @@ import {
   useCallback,
   useMemo,
   useRef,
+  useEffect,
   type ReactNode,
 } from 'react'
 import type {
@@ -53,6 +54,10 @@ interface ActionResult {
   error?: string
 }
 
+interface PickupResult extends ActionResult {
+  inventoryItemId?: string
+}
+
 // ============================================
 // Context type
 // ============================================
@@ -81,7 +86,7 @@ interface InventoryContextType {
     col: number,
     rotation?: DecorationRotation
   ) => Promise<PlaceResult>
-  pickUpDecoration: (placedDecoId: string) => Promise<ActionResult>
+  pickUpDecoration: (placedDecoId: string) => Promise<PickupResult>
   moveDecoration: (placedDecoId: string, row: number, col: number) => Promise<ActionResult>
   rotateDecoration: (placedDecoId: string) => Promise<ActionResult>
 
@@ -139,6 +144,17 @@ export function InventoryProvider({
   const [recipesLoaded, setRecipesLoaded] = useState(false)
   // De-dupe concurrent loadRecipes calls — single in-flight promise wins
   const recipesInFlight = useRef<Promise<void> | null>(null)
+  const placedDecorationsLoaded = useRef(false)
+
+  // DashboardProviders cannot hydrate route-specific garden data. Load placed
+  // decorations once so they remain visible and selectable after a hard reload.
+  useEffect(() => {
+    if (placedDecorationsLoaded.current) return
+    placedDecorationsLoaded.current = true
+    void getPlacedDecorations().then((result) => {
+      if ('decorations' in result) setPlacedDecorations(result.decorations)
+    })
+  }, [])
 
   // Per-operation loading helpers
   const startOp = useCallback((op: string) => {
@@ -163,9 +179,10 @@ export function InventoryProvider({
   const refreshInventory = useCallback(async () => {
     startOp('refresh')
     try {
-      const [invResult, coinsResult] = await Promise.all([
+      const [invResult, coinsResult, placedResult] = await Promise.all([
         getUserInventory(),
         getCoinBalance(),
+        getPlacedDecorations(),
       ])
 
       if ('materials' in invResult) {
@@ -175,6 +192,9 @@ export function InventoryProvider({
 
       if ('coins' in coinsResult) {
         setCoins(coinsResult.coins)
+      }
+      if ('decorations' in placedResult) {
+        setPlacedDecorations(placedResult.decorations)
       }
     } finally {
       endOp('refresh')
@@ -323,7 +343,7 @@ export function InventoryProvider({
   // pickUpDecoration — remove from grid, return to inventory
   // -----------------------------------------------
   const pickUpDecoration = useCallback(
-    async (placedDecoId: string): Promise<ActionResult> => {
+    async (placedDecoId: string): Promise<PickupResult> => {
       startOp('pickup')
       try {
         const result = await pickUpDecorationAction({
@@ -342,7 +362,10 @@ export function InventoryProvider({
           setDecorations(invResult.decorations)
         }
 
-        return { success: true as boolean } as ActionResult
+        return {
+          success: true as boolean,
+          inventoryItemId: (result as { success: true; inventoryItemId: string }).inventoryItemId,
+        } as PickupResult
       } catch {
         return { success: false, error: 'Network error' }
       } finally {

@@ -622,7 +622,7 @@ export interface LinkGoalToIdentityDto {
 export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
 export type DecorationCategory = 'furniture' | 'nature' | 'lighting' | 'path' | 'water' | 'seasonal' | 'special'
 export type InventoryItemType = 'material' | 'decoration'
-export type AcquisitionMethod = 'harvest' | 'craft' | 'purchase' | 'reward' | 'gift'
+export type AcquisitionMethod = 'harvest' | 'craft' | 'purchase' | 'reward' | 'gift' | 'pickup'
 export type DecorationRotation = 0 | 90 | 180 | 270
 
 // Material definition (produced by mature plants)
