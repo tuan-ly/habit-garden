@@ -128,16 +128,16 @@ Every plant type exports exactly **5 stages** at identical canvas size.
 
 | # | Filename | % range | Narrative | Size (% of canvas height) |
 |---|---|---|---|---|
-| 1 | `seedling.png` | 0–15 | "Just sprouted" | ~10% — tiny sprout, 1-2 leaves, maybe 1 bud |
-| 2 | `sapling.png` | 15–35 | "Taking root" | ~25% — sparse foliage, species hint visible |
-| 3 | `juvenile.png` | 35–60 | "Growing strong" | ~45% — mid-size, species feature clear, half-developed |
-| 4 | `mature.png` | 60–90 | "Fully grown" | ~65% — full silhouette, dense foliage |
-| 5 | `bloom.png` | 90–100 | "Reward!" | ~75% — same silhouette + extra accent (petals, fruit, flowers) |
+| 1 | `01-seed.png` | 0–10 | "Just sprouted" | ~10% — tiny sprout, 1-2 leaves, maybe 1 bud |
+| 2 | `02-sprout.png` | 10–25 | "Taking root" | ~25% — sparse foliage, species hint visible |
+| 3 | `03-growing.png` | 25–75 | "Growing strong" | ~45% — mid-size, species feature clear, half-developed |
+| 4 | `04-blooming.png` | 75–99 | "Blooming" | ~65% — full silhouette, dense foliage |
+| 5 | `05-mature.png` | 100 | "Reward!" | ~75% — mature silhouette + extra accent (petals, fruit, flowers) |
 
-**Stage 4 is the payoff.** Design it to be visibly more rewarding than stage 3 — add bloom color, floating petals, extra accent dots.
+**Stage 5 is the payoff.** Design it to be visibly more rewarding than stage 4 — add mature silhouette, fruit, petals, or species-specific reward details.
 
 ### Stage generation strategy
-- **Mature (stage 4) is always generated FIRST** as the anchor
+- **Mature (stage 5) is always generated FIRST** as the anchor
 - Other stages derived from anchor via `/banana edit` or fresh generation with same style DNA
 - **Additive deltas** (seedling→sapling, mature→bloom): `/banana edit` works well
 - **Subtractive deltas** (mature→sapling, mature→juvenile): reframe as fresh generation, NOT edit (see Anchor Gravity Problem)
@@ -155,11 +155,11 @@ Every plant type exports exactly **5 stages** at identical canvas size.
 
 ### File naming
 ```
-public/plants/<type>/seedling.png
-public/plants/<type>/sapling.png
-public/plants/<type>/juvenile.png
-public/plants/<type>/mature.png
-public/plants/<type>/bloom.png
+public/plants/<type>/01-seed.png
+public/plants/<type>/02-sprout.png
+public/plants/<type>/03-growing.png
+public/plants/<type>/04-blooming.png
+public/plants/<type>/05-mature.png
 ```
 
 `<type>` = lowercase kebab-case (`cherry-blossom`, `money-tree`, `lemon-tree`)
@@ -274,6 +274,7 @@ Same style rules apply. Each category follows flat vector + two-tone shading + n
 | 2026-04-17 | v1.0 — initial art bible (paper-cut style, speculative) | — |
 | 2026-04-17 | v1.1 — light source moved top-right | — |
 | 2026-04-20 | **v2.0** — COMPLETE REWRITE based on proven cherry blossom workflow. Changed style from "Paper-Cut Biophilic" to "Flat Vector Biophilic". Removed outlines. Changed from 5 stages to 4. Updated palette to match Gemini-proven hex codes. Added prompt patterns (Triple Anchoring, Shape Semantic Collision, Anchor Gravity, Intent vs Element). Updated tooling from Midjourney to banana-claude/Gemini. | — |
+| 2026-07-13 | v2.1 — Đồng bộ canonical 5-stage filename với runtime và thêm Asset Contract pipeline. | Codex |
 
 ---
 
@@ -287,7 +288,7 @@ Shading:     Two-tone gradient per shape (light face / shadow face)
 Outline:     NONE — smooth bezier shapes only
 Shadow:      Ambient occlusion ellipse, #D4C9B0 @ 20%, offset lower-left
 Canvas:      1:1, 2K, cream #FBF5E6 background (removed in post)
-Stages:      seedling · sapling · juvenile · mature · bloom (5 stages)
+Stages:      01-seed · 02-sprout · 03-growing · 04-blooming · 05-mature
 Palette:     Warm limited — cream, brown, green + 1 accent family
 Tool:        banana-claude skill → Gemini (gemini-3.1-flash-image-preview)
 Pipeline:    Mature anchor first → derive stages via edit/generate

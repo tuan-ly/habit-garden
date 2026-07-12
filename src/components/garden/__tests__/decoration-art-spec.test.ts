@@ -5,9 +5,9 @@ describe('decoration art anchors', () => {
   it('uses measured alpha contact point for the sanctuary rock lantern', () => {
     const spec = getDecorationArtSpec('stone-lantern', true)
 
-    expect(spec.anchorX).toBeCloseTo(0.424)
-    expect(spec.anchorY).toBeCloseTo(0.762)
-    expect(getGroundedArtTransform(spec).transformOrigin).toBe('42.4% 76.2%')
+    expect(spec.anchorX).toBeCloseTo(0.3862)
+    expect(spec.anchorY).toBeCloseTo(0.7608)
+    expect(getGroundedArtTransform(spec).transformOrigin).toBe('38.62% 76.08%')
   })
 
   it('compensates emoji glyphs whose optical center sits to the right', () => {

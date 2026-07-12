@@ -4,6 +4,8 @@ import Image from 'next/image'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { PlantWithType, PlantStatus } from '@/types/database'
+import { getPlantAssetSpec } from '@/lib/assets/game-asset-contract'
+import { getGroundedArtTransform } from '@/components/garden/decoration-art-spec'
 
 // Growth stage thresholds matching plant-visual.tsx
 const GROWTH_STAGES = {
@@ -126,6 +128,9 @@ export function PlantImage({
     const sizeConfig = SIZE_CONFIG[size]
 
     const imagePath = getPlantImagePath(plant.plant_type.name, currentStage, isDead)
+    const folder = getPlantFolder(plant.plant_type.name)
+    const filename = imagePath.split('/').at(-1) ?? ''
+    const assetSpec = !isDead ? getPlantAssetSpec(folder, filename)?.display : undefined
     const icon = plant.plant_type.icon || '🌱'
 
     // Track image load errors for emoji fallback
@@ -169,6 +174,7 @@ export function PlantImage({
                         'transition-all duration-300 object-contain',
                         isDead && 'grayscale opacity-60'
                     )}
+                    style={alignBottom && assetSpec ? getGroundedArtTransform(assetSpec) : undefined}
                 />
             )}
 
