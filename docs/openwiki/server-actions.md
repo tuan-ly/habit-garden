@@ -25,6 +25,12 @@ Every write action should:
 
 RPCs use `SECURITY INVOKER`, an empty `search_path`, schema-qualified names, `auth.uid()` ownership checks, and authenticated-only execute grants.
 
+During additive migration rollout, `activity.ts` recognizes only the missing-function errors
+`PGRST202`/`42883` and temporarily delegates to `activity-legacy.ts`. The fallback keeps
+older databases functional without hiding authorization, validation, or other database
+errors. It must remain secondary to the atomic RPC and can be removed after every deployed
+environment exposes `record_activity_atomic(...)`.
+
 ## Important Files
 
 - `plants.ts` - plant reads, creation, watering, movement, lifecycle writes.

@@ -4,6 +4,39 @@ import { getAuthUser } from '@/lib/auth-cached'
 import { calculateRhythm } from '@/lib/plant-status'
 import { createClient } from '@/lib/supabase/server'
 import type { ActivityLog, PlantWithType } from '@/types/database'
+import { logActivityLegacy } from './activity-legacy'
+
+const legacyActivityResults = new Map<string, Promise<LogActivityResult>>()
+const LEGACY_RESULT_CACHE_LIMIT = 500
+
+function isMissingAtomicActivityRpc(code?: string): boolean {
+  return code === 'PGRST202' || code === '42883'
+}
+
+function runLegacyActivityOnce(
+  userId: string,
+  mutationId: string,
+  dto: LogActivityDto
+): Promise<LogActivityResult> {
+  const cacheKey = `${userId}:${mutationId}`
+  const existing = legacyActivityResults.get(cacheKey)
+  if (existing) return existing
+
+  const pending = logActivityLegacy(dto).then((result) => {
+    if (!result.success) legacyActivityResults.delete(cacheKey)
+    return { ...result, mutationId }
+  }).catch((error) => {
+    legacyActivityResults.delete(cacheKey)
+    throw error
+  })
+
+  legacyActivityResults.set(cacheKey, pending)
+  if (legacyActivityResults.size > LEGACY_RESULT_CACHE_LIMIT) {
+    const oldestKey = legacyActivityResults.keys().next().value
+    if (oldestKey) legacyActivityResults.delete(oldestKey)
+  }
+  return pending
+}
 
 export type MutationErrorCode =
   | 'UNAUTHENTICATED'
@@ -64,6 +97,23 @@ export async function logActivity(dto: LogActivityDto): Promise<LogActivityResul
   })
 
   if (error) {
+    if (isMissingAtomicActivityRpc(error.code)) {
+      console.warn(JSON.stringify({
+        event: 'rpc_compatibility_fallback', action: 'logActivity',
+        rpc: 'record_activity_atomic', code: error.code,
+      }))
+      const result = await runLegacyActivityOnce(user.id, mutationId, {
+        ...dto,
+        mutationId,
+      })
+      console.info(JSON.stringify({
+        event: 'server_action_duration', action: 'logActivity', mutationId,
+        durationMs: Math.round(performance.now() - startedAt), success: result.success,
+        code: result.code, compatibilityFallback: true,
+      }))
+      return result
+    }
+
     console.info(JSON.stringify({
       event: 'server_action_duration', action: 'logActivity', mutationId,
       durationMs: Math.round(performance.now() - startedAt), success: false,

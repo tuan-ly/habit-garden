@@ -51,6 +51,7 @@ interface UseGardenInteractionsOpts {
   onPlaceDecoration?: (inventoryItemId: string, row: number, col: number, rotation?: DecorationRotation) => Promise<{ success: boolean; decorationId?: string; error?: string }>
   onEditPushUndo?: (action: { type: 'place'; placedDecoId: string; inventoryItemId: string; row: number; col: number }) => void
   onEditDeselectItem?: () => void
+  onEditSelectItem?: (item: InventoryItemWithDetails) => void
   onEditPlacementError?: (error: string) => void
   onEditPlacementSuccess?: () => void
   editPlacementPending?: boolean
@@ -62,6 +63,7 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
     movePlant, recordActivity, welcomeBackPending, onWelcomeBackUsed,
     mode, didPan, resetDidPan, livingPlants,
     editSelectedItem, editGhostRotation, onPlaceDecoration, onEditPushUndo, onEditDeselectItem,
+    onEditSelectItem,
     onEditPlacementError, onEditPlacementSuccess, editPlacementPending = false,
     calmFeedback = false,
   } = opts
@@ -402,19 +404,24 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
   const handlePlaceDecoration = useCallback(
     async (row: number, col: number) => {
       if (!editSelectedItem || !onPlaceDecoration || editPlacementPending) return
+      const selectedItem = editSelectedItem
       const inventoryItemId = editSelectedItem.id
+      // The ghost represents an uncommitted intent. Clear it at click time so the
+      // optimistic placed decoration becomes the immediate visual response.
+      onEditDeselectItem?.()
       const result = await onPlaceDecoration(inventoryItemId, row, col, editGhostRotation)
       if (result.success && result.decorationId) {
         onEditPushUndo?.({ type: 'place', placedDecoId: result.decorationId, inventoryItemId, row, col })
-        onEditDeselectItem?.()
         onEditPlacementSuccess?.()
         return
       }
+      onEditSelectItem?.(selectedItem)
       onEditPlacementError?.(result.error || 'Không thể đặt vật trang trí')
     },
     [
       editSelectedItem, editGhostRotation, onPlaceDecoration, onEditPushUndo,
-      onEditDeselectItem, onEditPlacementError, onEditPlacementSuccess, editPlacementPending,
+      onEditDeselectItem, onEditSelectItem, onEditPlacementError, onEditPlacementSuccess,
+      editPlacementPending,
     ]
   )
 

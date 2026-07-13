@@ -301,15 +301,37 @@ export function InventoryProvider({
       col: number,
       rotation?: DecorationRotation
     ): Promise<PlaceResult> => {
+      const inventoryItem = decorations.find((item) => item.id === inventoryItemId)
+      const decorationType = inventoryItem?.decoration_type
+      if (!inventoryItem || !decorationType) {
+        return { success: false, error: 'Decoration not found in inventory' }
+      }
+
+      const optimisticId = `optimistic-${crypto.randomUUID()}`
+      const optimisticDecoration: PlacedDecorationWithType = {
+        id: optimisticId,
+        user_id: inventoryItem.user_id,
+        decoration_type_id: decorationType.id,
+        grid_row: row,
+        grid_col: col,
+        grid_size: decorationType.grid_size,
+        rotation: rotation ?? 0,
+        placed_at: new Date().toISOString(),
+        decoration_type: decorationType,
+      }
+
+      // Commit the user's intent to the UI before loading the server-action chunk
+      // or waiting for Supabase. The temporary id is reconciled on success.
+      setPlacedDecorations((prev) => [...prev, optimisticDecoration])
+      setDecorations((prev) =>
+        prev.flatMap((item) => {
+          if (item.id !== inventoryItemId) return [item]
+          return item.quantity > 1 ? [{ ...item, quantity: item.quantity - 1 }] : []
+        })
+      )
       startOp('place')
       try {
-        const [
-          { placeDecoration: placeDecorationAction, getPlacedDecorations },
-          { getUserInventory },
-        ] = await Promise.all([
-          import('@/lib/actions/decorations'),
-          import('@/lib/actions/inventory'),
-        ])
+        const { placeDecoration: placeDecorationAction } = await import('@/lib/actions/decorations')
         const result = await placeDecorationAction({
           inventory_item_id: inventoryItemId,
           grid_row: row,
@@ -318,32 +340,32 @@ export function InventoryProvider({
         })
 
         if (!('success' in result)) {
+          setPlacedDecorations((prev) => prev.filter((item) => item.id !== optimisticId))
+          setDecorations((prev) => {
+            const withoutOptimisticQuantity = prev.filter((item) => item.id !== inventoryItemId)
+            return [...withoutOptimisticQuantity, inventoryItem]
+          })
           return { success: false, error: (result as { error: string }).error }
         }
 
         const decorationId = (result as { success: true; decorationId: string }).decorationId
-
-        // Refresh inventory (quantity decremented) and placed decorations list
-        const [invResult, placedResult] = await Promise.all([
-          getUserInventory(),
-          getPlacedDecorations(),
-        ])
-
-        if ('decorations' in invResult) {
-          setDecorations(invResult.decorations)
-        }
-        if ('decorations' in placedResult) {
-          setPlacedDecorations(placedResult.decorations)
-        }
+        setPlacedDecorations((prev) =>
+          prev.map((item) => item.id === optimisticId ? { ...item, id: decorationId } : item)
+        )
 
         return { success: true as boolean, decorationId } as PlaceResult
       } catch {
+        setPlacedDecorations((prev) => prev.filter((item) => item.id !== optimisticId))
+        setDecorations((prev) => {
+          const withoutOptimisticQuantity = prev.filter((item) => item.id !== inventoryItemId)
+          return [...withoutOptimisticQuantity, inventoryItem]
+        })
         return { success: false, error: 'Network error' }
       } finally {
         endOp('place')
       }
     },
-    [startOp, endOp]
+    [decorations, startOp, endOp]
   )
 
   // -----------------------------------------------
@@ -394,6 +416,17 @@ export function InventoryProvider({
   // -----------------------------------------------
   const moveDecoration = useCallback(
     async (placedDecoId: string, row: number, col: number): Promise<ActionResult> => {
+      const previousDecoration = placedDecorations.find((decoration) => decoration.id === placedDecoId)
+      if (!previousDecoration) return { success: false, error: 'Decoration not found' }
+
+      const rollback = () => {
+        setPlacedDecorations((prev) =>
+          prev.map((decoration) =>
+            decoration.id === placedDecoId ? previousDecoration : decoration
+          )
+        )
+      }
+
       // Apply optimistic update immediately
       setPlacedDecorations((prev) =>
         prev.map((d) =>
@@ -402,7 +435,7 @@ export function InventoryProvider({
       )
 
       try {
-        const { moveDecoration: moveDecorationAction, getPlacedDecorations } = await import('@/lib/actions/decorations')
+        const { moveDecoration: moveDecorationAction } = await import('@/lib/actions/decorations')
         const result = await moveDecorationAction({
           placed_decoration_id: placedDecoId,
           grid_row: row,
@@ -410,20 +443,17 @@ export function InventoryProvider({
         })
 
         if (!('success' in result)) {
-          // Revert by re-fetching authoritative server state
-          const placedResult = await getPlacedDecorations()
-          if ('decorations' in placedResult) {
-            setPlacedDecorations(placedResult.decorations)
-          }
+          rollback()
           return { success: false, error: (result as { error: string }).error }
         }
 
         return { success: true as boolean } as ActionResult
       } catch {
+        rollback()
         return { success: false, error: 'Network error' }
       }
     },
-    []
+    [placedDecorations]
   )
 
   // -----------------------------------------------

@@ -28,6 +28,8 @@ This pattern solves the **Double Fetch Problem**: the page can render from serve
 - moving a plant on the grid
 - adding/removing/updating local plant state
 
+`InventoryProvider` applies the same rule to decoration placement and movement. A placement immediately appends a temporary `optimistic-*` decoration and decrements the local inventory stack, then replaces the temporary id with the server id. Movement updates the target entity immediately. Either mutation rolls back only its affected decoration/inventory item on failure; it must not wait for a full inventory or placed-decoration refetch before showing the committed position.
+
 On failure, the provider restores the entity snapshot and offers a retry using the same `mutationId`; this makes retries safe for XP, coins, achievements, and inventory rewards.
 
 The sanctuary action sequence is:

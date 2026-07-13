@@ -236,6 +236,7 @@ export function IsometricGarden({
     onPlaceDecoration: inventory?.placeDecoration,
     onEditPushUndo: editMode.pushUndo,
     onEditDeselectItem: editMode.deselectItem,
+    onEditSelectItem: editMode.selectItem,
     editPlacementPending: inventory?.isPlacing,
     onEditPlacementError: (error) => toast.error('Chưa thể đặt vật trang trí', {
       description: getPlacementErrorMessage(error),
@@ -315,6 +316,9 @@ export function IsometricGarden({
         return
       }
       if (!editMode.isGhostValid) return
+      // Clear the move ghost immediately. InventoryProvider has already made the
+      // position optimistic, so the real decoration can render at full opacity.
+      editMode.deselectDecoration()
       const result = await inventory?.moveDecoration(selected.id, row, col)
       if (result?.success) {
         editMode.pushUndo({
@@ -322,7 +326,9 @@ export function IsometricGarden({
           fromRow: selected.grid_row, fromCol: selected.grid_col,
           toRow: row, toCol: col,
         })
-        editMode.deselectDecoration()
+      } else {
+        editMode.selectDecoration(selected)
+        toast.error('Chưa thể di chuyển vật trang trí', { description: result?.error })
       }
       return
     }
