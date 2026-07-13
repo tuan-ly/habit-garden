@@ -31,8 +31,8 @@ export function getDecorationArtSpec(slug: string, hasImage: boolean): Decoratio
 }
 
 export function getGroundedArtTransform(spec: DecorationArtSpec): React.CSSProperties {
-  const translateX = (0.5 - spec.anchorX) * 100
-  const translateY = (1 - spec.anchorY) * 100
+  const translateX = Number(((0.5 - spec.anchorX) * 100).toFixed(4))
+  const translateY = Number(((1 - spec.anchorY) * 100).toFixed(4))
 
   return {
     transform: `translate(${translateX}%, ${translateY}%) scale(${spec.scale})`,

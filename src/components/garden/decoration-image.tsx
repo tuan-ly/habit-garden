@@ -45,7 +45,10 @@ export function DecorationImage({
   const groundedStyle = grounded ? getGroundedArtTransform(artSpec) : undefined
 
   const rotationStyle = {
-    ...(rotation !== 0 ? { transform: `rotate(${rotation}deg)` } : {}),
+    // Grounded isometric sprites need directional art to rotate around the
+    // world's vertical axis. CSS rotate() spins the screen plane and makes
+    // upright objects lie sideways, so keep single-variant garden art upright.
+    ...(!grounded && rotation !== 0 ? { transform: `rotate(${rotation}deg)` } : {}),
     ...(pixelSize ? { width: pixelSize, height: pixelSize } : {}),
   }
 
@@ -73,21 +76,27 @@ export function DecorationImage({
       ) : (
         <span
           className={cn(
-            'flex h-full w-full select-none items-center justify-center leading-none',
-            size === 'sm' && 'text-lg',
-            size === 'md' && 'text-2xl',
-            size === 'lg' && 'text-3xl',
-            size === 'xl' && 'text-5xl',
-            pixelSize && 'text-[length:calc(var(--decoration-size)*0.52)]',
+            'flex h-full w-full select-none justify-center leading-none',
+            grounded ? 'items-end' : 'items-center',
           )}
-          style={{
-            ...(pixelSize ? { '--decoration-size': `${pixelSize}px` } as React.CSSProperties : {}),
-            ...groundedStyle,
-          }}
+          style={pixelSize ? { '--decoration-size': `${pixelSize}px` } as React.CSSProperties : undefined}
           role="img"
           aria-label={decorationType.name}
         >
-          {decorationType.icon}
+          <span
+            data-decoration-emoji-glyph="true"
+            className={cn(
+              'inline-block',
+              size === 'sm' && 'text-lg',
+              size === 'md' && 'text-2xl',
+              size === 'lg' && 'text-3xl',
+              size === 'xl' && 'text-5xl',
+              pixelSize && 'text-[length:calc(var(--decoration-size)*0.52)]',
+            )}
+            style={groundedStyle}
+          >
+            {decorationType.icon}
+          </span>
         </span>
       )}
 
