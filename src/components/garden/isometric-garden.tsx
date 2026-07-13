@@ -453,6 +453,16 @@ export function IsometricGarden({
     return states
   }, [focusStates, sanctuaryMode, sanctuaryFocusedPlant, sanctuaryPlants])
 
+  const sanctuaryFocalArea = useMemo(() => sanctuaryFocusedPlant ? {
+    row: sanctuaryFocusedPlant.grid_row ?? 0,
+    col: sanctuaryFocusedPlant.grid_col ?? 0,
+    size: sanctuaryFocusedPlant.grid_size || 1,
+  } : null, [sanctuaryFocusedPlant])
+
+  const visibleTileClickHandler = sanctuaryMode && mode === 'interact'
+    ? handleSanctuaryTileClick
+    : handleGardenTileClick
+
   const gardenTransform = useMemo(() => {
     if (!sanctuaryMode || !sanctuaryFocusedPlant) {
       const sanctuaryIdleOffset = sanctuaryMode
@@ -617,11 +627,7 @@ export function IsometricGarden({
               timeOfDay={currentTimeOfDay}
               showGridLines={!sanctuaryMode || mode === 'arrange'}
               cinematic={sanctuaryMode}
-              focalArea={sanctuaryFocusedPlant ? {
-                row: sanctuaryFocusedPlant.grid_row ?? 0,
-                col: sanctuaryFocusedPlant.grid_col ?? 0,
-                size: sanctuaryFocusedPlant.grid_size || 1,
-              } : null}
+              focalArea={sanctuaryFocalArea}
             />
 
             {/* Ambient particles (canvas renderer) */}
@@ -647,9 +653,7 @@ export function IsometricGarden({
               focusStates={resolvedFocusStates}
               weather={weather}
               placedDecorations={gardenSettings.showDecorations ? placedDecorations : []}
-              onTileClick={sanctuaryMode && mode === 'interact'
-                ? (row, col, plant) => handleSanctuaryTileClick(row, col, plant)
-                : handleGardenTileClick}
+              onTileClick={visibleTileClickHandler}
               onTileHover={handleTileHover}
               onTileLeave={handleTileLeave}
               onContextMenu={interactions.handleContextMenu}

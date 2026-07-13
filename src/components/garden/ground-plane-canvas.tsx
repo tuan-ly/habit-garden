@@ -384,6 +384,9 @@ function GroundPlaneCanvasComponent({
     const leftY = diamondHeight / 2
     const organicRadius = cinematic ? Math.max(16, tileSize * 0.22) : 0
     const organicWobble = cinematic ? Math.max(3, tileSize * 0.032) : 0
+    const focalRow = focalArea?.row
+    const focalCol = focalArea?.col
+    const focalSize = focalArea?.size
 
     // Pre-generate grass details (memoized)
     const grassDetails = useMemo(
@@ -643,31 +646,6 @@ function GroundPlaneCanvasComponent({
         ctx.filter = 'none'
         ctx.restore()
 
-        // Cinematic focal zone: compressed earth grounds the active plant and
-        // prevents the hero from feeling pasted onto a uniform lawn.
-        if (cinematic && focalArea) {
-            const focalX = svgWidth / 2 + (focalArea.col - focalArea.row) * tileSize / 2
-            const focalY = (focalArea.col + focalArea.row) * tileSize / 4
-                + tileSize / 4
-                + (focalArea.size - 1) * tileSize / 4
-            const focalRadius = tileSize * (0.42 + (focalArea.size - 1) * 0.22)
-            ctx.save()
-            ctx.beginPath()
-            traceOrganicDiamond(ctx, topX, topY, rightX, rightY, bottomX, bottomY, leftX, leftY, organicRadius, organicWobble)
-            ctx.clip()
-            ctx.translate(focalX, focalY)
-            ctx.scale(1, 0.46)
-            const earth = ctx.createRadialGradient(0, 0, focalRadius * 0.08, 0, 0, focalRadius)
-            earth.addColorStop(0, 'rgba(126,94,53,0.30)')
-            earth.addColorStop(0.52, 'rgba(150,116,66,0.18)')
-            earth.addColorStop(1, 'rgba(150,116,66,0)')
-            ctx.fillStyle = earth
-            ctx.beginPath()
-            ctx.arc(0, 0, focalRadius, 0, Math.PI * 2)
-            ctx.fill()
-            ctx.restore()
-        }
-
         // PREMIUM: one continuous organic rim instead of four ruler-straight bevels.
         ctx.save()
         ctx.lineWidth = cinematic ? 2.2 : 1.5
@@ -889,7 +867,7 @@ function GroundPlaneCanvasComponent({
     }, [gridSize, tileSize, grassColor, grassDarkColor, dirtColor, dirtDarkColor, grassDetails,
         svgWidth, svgHeight, diamondWidth, diamondHeight, tileHeight,
         topX, topY, rightX, rightY, bottomX, bottomY, leftX, leftY,
-        weather, timeOfDay, cinematic, focalArea, organicRadius, organicWobble, grassTextureReady])
+        weather, timeOfDay, cinematic, organicRadius, organicWobble, grassTextureReady])
 
     // Main render effect - composites static canvas + dynamic overlays
     useEffect(() => {
@@ -903,6 +881,32 @@ function GroundPlaneCanvasComponent({
 
         // Draw cached static content
         ctx.drawImage(offscreenCanvasRef.current, 0, 0)
+
+        // Keep the focus marker out of the expensive static-ground pass. Focus
+        // changes now composite one small gradient instead of rebuilding every
+        // texture, noise grain, grass detail and blurred ground shape.
+        if (cinematic && focalRow !== undefined && focalCol !== undefined && focalSize !== undefined) {
+            const focalX = svgWidth / 2 + (focalCol - focalRow) * tileSize / 2
+            const focalY = (focalCol + focalRow) * tileSize / 4
+                + tileSize / 4
+                + (focalSize - 1) * tileSize / 4
+            const focalRadius = tileSize * (0.42 + (focalSize - 1) * 0.22)
+            ctx.save()
+            ctx.beginPath()
+            traceOrganicDiamond(ctx, topX, topY, rightX, rightY, bottomX, bottomY, leftX, leftY, organicRadius, organicWobble)
+            ctx.clip()
+            ctx.translate(focalX, focalY)
+            ctx.scale(1, 0.46)
+            const earth = ctx.createRadialGradient(0, 0, focalRadius * 0.08, 0, 0, focalRadius)
+            earth.addColorStop(0, 'rgba(126,94,53,0.30)')
+            earth.addColorStop(0.52, 'rgba(150,116,66,0.18)')
+            earth.addColorStop(1, 'rgba(150,116,66,0)')
+            ctx.fillStyle = earth
+            ctx.beginPath()
+            ctx.arc(0, 0, focalRadius, 0, Math.PI * 2)
+            ctx.fill()
+            ctx.restore()
+        }
 
         // Draw grid lines (barely visible — immersion-first)
         ctx.strokeStyle = 'rgba(255,255,255,0.035)'
@@ -973,7 +977,8 @@ function GroundPlaneCanvasComponent({
             ctx.stroke()
         }
     }, [gridLines, hoveredMultiCellArea, dragTargetCell, dragPlantSize, isDragTargetValid,
-        svgWidth, svgHeight, topX, tileSize])
+        svgWidth, svgHeight, topX, topY, rightX, rightY, bottomX, bottomY, leftX, leftY,
+        tileSize, cinematic, focalRow, focalCol, focalSize, organicRadius, organicWobble])
 
     return (
         <canvas
