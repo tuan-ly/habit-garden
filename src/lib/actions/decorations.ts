@@ -9,6 +9,7 @@ import type {
   PickUpDecorationDto,
   DecorationRotation,
   DecorationType,
+  InventoryItemWithDetails,
 } from '@/types/database'
 
 /**
@@ -241,7 +242,7 @@ export async function moveDecoration(
  */
 export async function pickUpDecoration(
   dto: PickUpDecorationDto
-): Promise<{ success: true; inventoryItemId: string } | { error: string }> {
+): Promise<{ success: true; inventoryItem: InventoryItemWithDetails } | { error: string }> {
   const user = await getAuthUser()
   if (!user) return { error: 'Unauthorized' }
 
@@ -272,7 +273,10 @@ export async function pickUpDecoration(
 
   const { data: inventoryItem, error: inventoryError } = await supabase
     .from('user_inventory')
-    .select('id')
+    .select(`
+      id, user_id, item_type, material_id, decoration_type_id, quantity, acquired_via, created_at, updated_at,
+      decoration_type:decoration_types(id, slug, name, description, icon, image_url, grid_size, category, rarity, unlock_level, coin_price, subscription_tier, is_craftable, created_at)
+    `)
     .eq('user_id', user.id)
     .eq('item_type', 'decoration')
     .eq('decoration_type_id', placed.decoration_type_id)
@@ -284,7 +288,10 @@ export async function pickUpDecoration(
     return { error: 'Decoration was stored but inventory could not be refreshed' }
   }
 
-  return { success: true, inventoryItemId: inventoryItem.id }
+  return {
+    success: true,
+    inventoryItem: inventoryItem as unknown as InventoryItemWithDetails,
+  }
 }
 
 /**

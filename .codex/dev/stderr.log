@@ -14275,3 +14275,117 @@ get_dashboard_bootstrap unavailable; using compatibility queries: PGRST202
 get_garden_snapshot unavailable; using compatibility queries: PGRST202
 get_garden_snapshot unavailable; using compatibility queries: PGRST202
 get_dashboard_bootstrap unavailable; using compatibility queries: PGRST202
+get_garden_snapshot unavailable; using compatibility queries: PGRST303
+get_dashboard_bootstrap unavailable; using compatibility queries: PGRST303
+⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+Error [AuthApiError]: Invalid Refresh Token: Already Used
+    at ignore-listed frames {
+  __isAuthError: true,
+  status: 400,
+  code: 'refresh_token_already_used'
+}
+Error [AuthApiError]: Invalid Refresh Token: Already Used
+    at ignore-listed frames {
+  __isAuthError: true,
+  status: 400,
+  code: 'refresh_token_already_used'
+}
+Error [AuthApiError]: Invalid Refresh Token: Already Used
+    at ignore-listed frames {
+  __isAuthError: true,
+  status: 400,
+  code: 'refresh_token_already_used'
+}
+Error [AuthApiError]: Invalid Refresh Token: Already Used
+    at ignore-listed frames {
+  __isAuthError: true,
+  status: 400,
+  code: 'refresh_token_already_used'
+}
+get_dashboard_bootstrap unavailable; using compatibility queries: PGRST303
+get_garden_snapshot unavailable; using compatibility queries: PGRST303
+Error [AuthApiError]: Invalid Refresh Token: Already Used
+    at ignore-listed frames {
+  __isAuthError: true,
+  status: 400,
+  code: 'refresh_token_already_used'
+}
+Error [AuthApiError]: Invalid Refresh Token: Already Used
+    at ignore-listed frames {
+  __isAuthError: true,
+  status: 400,
+  code: 'refresh_token_already_used'
+}
+Error [AuthApiError]: Invalid Refresh Token: Already Used
+    at ignore-listed frames {
+  __isAuthError: true,
+  status: 400,
+  code: 'refresh_token_already_used'
+}
+Error [AuthApiError]: Invalid Refresh Token: Already Used
+    at ignore-listed frames {
+  __isAuthError: true,
+  status: 400,
+  code: 'refresh_token_already_used'
+}
+get_dashboard_bootstrap unavailable; using compatibility queries: PGRST202
+get_garden_snapshot unavailable; using compatibility queries: PGRST202
+get_garden_snapshot unavailable; using compatibility queries: PGRST202
+get_dashboard_bootstrap unavailable; using compatibility queries: PGRST202
+get_garden_snapshot unavailable; using compatibility queries: PGRST202
+get_dashboard_bootstrap unavailable; using compatibility queries: PGRST202
+get_garden_snapshot unavailable; using compatibility queries: PGRST202
+get_dashboard_bootstrap unavailable; using compatibility queries: PGRST202
+Error [AuthApiError]: Invalid Refresh Token: Already Used
+    at ignore-listed frames {
+  __isAuthError: true,
+  status: 400,
+  code: 'refresh_token_already_used'
+}
+Error [AuthApiError]: Invalid Refresh Token: Already Used
+    at ignore-listed frames {
+  __isAuthError: true,
+  status: 400,
+  code: 'refresh_token_already_used'
+}
+get_garden_snapshot unavailable; using compatibility queries: PGRST202
+get_dashboard_bootstrap unavailable; using compatibility queries: PGRST202
+get_garden_snapshot unavailable; using compatibility queries: PGRST202
+get_dashboard_bootstrap unavailable; using compatibility queries: PGRST202
+get_garden_snapshot unavailable; using compatibility queries: PGRST202
+get_dashboard_bootstrap unavailable; using compatibility queries: PGRST202
+get_garden_snapshot unavailable; using compatibility queries: PGRST202
+get_dashboard_bootstrap unavailable; using compatibility queries: PGRST202
+get_garden_snapshot unavailable; using compatibility queries: PGRST202
+get_dashboard_bootstrap unavailable; using compatibility queries: PGRST202
+get_dashboard_bootstrap unavailable; using compatibility queries: PGRST202
+get_garden_snapshot unavailable; using compatibility queries: PGRST202
+Error [AuthApiError]: Invalid Refresh Token: Already Used
+    at ignore-listed frames {
+  __isAuthError: true,
+  status: 400,
+  code: 'refresh_token_already_used'
+}
+Error [AuthApiError]: Invalid Refresh Token: Already Used
+    at ignore-listed frames {
+  __isAuthError: true,
+  status: 400,
+  code: 'refresh_token_already_used'
+}
+get_dashboard_bootstrap unavailable; using compatibility queries: PGRST202
+get_garden_snapshot unavailable; using compatibility queries: PGRST202
+get_dashboard_bootstrap unavailable; using compatibility queries: PGRST202
+get_garden_snapshot unavailable; using compatibility queries: PGRST202
+Error [AuthApiError]: Invalid Refresh Token: Already Used
+    at ignore-listed frames {
+  __isAuthError: true,
+  status: 400,
+  code: 'refresh_token_already_used'
+}
+Error [AuthApiError]: Invalid Refresh Token: Already Used
+    at ignore-listed frames {
+  __isAuthError: true,
+  status: 400,
+  code: 'refresh_token_already_used'
+}

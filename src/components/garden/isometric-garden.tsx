@@ -384,7 +384,10 @@ export function IsometricGarden({
     setSanctuaryFocusClosing(true)
     focusExitTimerRef.current = setTimeout(() => {
       setSanctuaryFocusedPlantId(null)
-      setSanctuaryFocusClosing(false)
+      // Keep the camera transition enabled until it has returned to idle.
+      focusExitTimerRef.current = setTimeout(() => {
+        setSanctuaryFocusClosing(false)
+      }, 650)
     }, 280)
   }, [sanctuaryFocusedPlantId, sanctuaryFocusClosing])
 
@@ -596,13 +599,16 @@ export function IsometricGarden({
         >
           <div
             ref={gardenContainerRef}
-            className="relative flex-shrink-0 transition-[transform] duration-[600ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:duration-150"
+            className="relative flex-shrink-0 transition-[transform] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:duration-150"
             style={{
               width: containerWidth,
               height: containerHeight,
               transform: gardenTransform,
               transformOrigin: 'center center',
               willChange: 'transform',
+              // Direct manipulation and grid resizing must track state
+              // immediately. Only focus camera moves use cinematic easing.
+              transitionDuration: sanctuaryFocusedPlant || sanctuaryFocusClosing ? '600ms' : '0ms',
             }}
           >
             {/* Ground plane (canvas renderer) */}
@@ -685,22 +691,8 @@ export function IsometricGarden({
         </div>
       </div>
 
-      {/* Move mode indicator */}
-      {interactions.moveState.selectedPlant && (
-        <div className="absolute left-1/2 -translate-x-1/2 top-20 z-30 pointer-events-none">
-          <div className="px-4 py-2 bg-emerald-600/90 backdrop-blur-md rounded-full text-xs text-white border border-emerald-400/50 shadow-lg">
-            <span className="flex items-center gap-2">
-              <span>🌱</span>
-              <span>Moving {interactions.moveState.selectedPlant.name}</span>
-              <span className="text-emerald-200">•</span>
-              <span>Select a spot to place</span>
-            </span>
-          </div>
-        </div>
-      )}
-
       {/* Info bar */}
-      {!isTouchDevice && <PlantInfoBar plant={hoveredPlant} />}
+      {mode === 'interact' && !isTouchDevice && <PlantInfoBar plant={hoveredPlant} />}
 
       {/* Screen-reader plant list (a11y for non-visual users) */}
       <ul className="sr-only" aria-label="Plants in your garden">
@@ -764,6 +756,8 @@ export function IsometricGarden({
           occupiedCells={occupiedCellsSet}
           onDone={() => setModeWithReset('interact')}
           editMode={editMode}
+          movingPlantName={interactions.moveState.selectedPlant?.name}
+          onCancelPlantMove={interactions.resetMoveState}
         />
       )}
 

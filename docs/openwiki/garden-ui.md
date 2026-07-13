@@ -41,13 +41,15 @@ Decoration placement uses a **Placement Ghost Preview**: after selecting an inve
 
 Clicking a valid destination commits the ghost immediately through **Optimistic UI**: clear the selection/ghost at click time and render the real decoration at full opacity while the server mutation runs. Placement uses a temporary client id until the server id arrives; movement changes the existing entity in place. Restore the previous item and selection if the mutation fails.
 
+Storing a placed decoration follows the same rule: clear its selection and remove it from the garden before awaiting the server action. The action returns the canonical inventory item so `InventoryProvider` can reconcile the affected stack without refetching the full inventory; restore the same placed entity and selection if the mutation fails.
+
 Placed decoration art follows **Ground Anchoring**: image and emoji fallbacks are bottom-aligned and shifted to the contact point instead of visually centered inside a square canvas. Each decoration anchor also exposes a compact silhouette hit-area above its diamond and an accessible `Chọn <name>` label, so users can select the visible object rather than guessing its ground tile.
 
 Ground Anchoring is implemented as explicit **Sprite Anchor Point** metadata in `decoration-art-spec.ts`, not a shared pixel offset. `anchorX` and `anchorY` describe the artwork's actual ground-contact point in normalized source-canvas coordinates; the renderer maps that point to the tile/shadow center and scales around it. PNG anchors should be measured from alpha bounds, while emoji fallbacks use reviewed optical anchors. Ghost and placed renderers must both go through `DecorationImage grounded` so they cannot drift apart.
 
 `InventoryProvider` loads `placed_decorations` once after hydration and includes them in inventory refreshes. Do not rely only on mutation responses to populate placed state; otherwise decorations disappear and become unselectable after reload.
 
-Edit Mode uses one bottom **Edit Dock**. It contains labeled Undo and Done actions, plus Rotate and Store when an object is selected. Do not restore the duplicate top placement badges, dashed screen border, grid toggle, or second Done control; the ghost preview and ground footprint already explain placement.
+Edit Mode uses one bottom **Edit Dock**. It contains labeled Undo and Done actions, plus Rotate and Store when an object is selected. Plant movement also uses this dock for the selected plant name, placement instruction, and Cancel action. The top plant info bar is interact-mode-only, following a **State-Driven Context Slot** rule: garden information and arrangement guidance never compete for the same attention area. Do not restore duplicate top placement badges, the dashed screen border, grid toggle, or a second Done control; the ghost preview and ground footprint already explain placement.
 
 The final inventory item must never be updated to quantity zero because `user_inventory.quantity` enforces `quantity > 0`. Server actions delete the exact row conditionally for quantity-one placement, and migration `20260712173649_fix_inventory_decrement_zero_quantity.sql` fixes the atomic RPC to follow the same delete-at-zero rule.
 

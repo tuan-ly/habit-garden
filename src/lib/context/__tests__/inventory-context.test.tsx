@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   getCoinBalance: vi.fn(),
   getPlacedDecorations: vi.fn(),
   placeDecoration: vi.fn(),
+  pickUpDecoration: vi.fn(),
   moveDecoration: vi.fn(),
 }))
 
@@ -33,6 +34,7 @@ vi.mock('@/lib/actions/coins', () => ({
 vi.mock('@/lib/actions/decorations', () => ({
   getPlacedDecorations: mocks.getPlacedDecorations,
   placeDecoration: mocks.placeDecoration,
+  pickUpDecoration: mocks.pickUpDecoration,
   moveDecoration: mocks.moveDecoration,
 }))
 
@@ -104,6 +106,7 @@ function renderProvider(node: React.ReactNode) {
 
 describe('InventoryProvider optimistic decoration mutations', () => {
   beforeEach(() => {
+    vi.clearAllMocks()
     mocks.getUserInventory.mockResolvedValue({ materials: [], decorations: [inventoryItem] })
     mocks.getCoinBalance.mockResolvedValue({ coins: 0 })
     mocks.getPlacedDecorations.mockResolvedValue({ decorations: [] })
@@ -160,5 +163,53 @@ describe('InventoryProvider optimistic decoration mutations', () => {
 
     expect(context.placedDecorations[0]).toMatchObject({ grid_row: 1, grid_col: 1 })
     expect(mocks.getPlacedDecorations).not.toHaveBeenCalled()
+  })
+
+  it('removes a picked-up decoration immediately and reconciles the canonical inventory item', async () => {
+    const canonicalInventoryItem = { ...inventoryItem, quantity: 2 }
+    const pending = deferred<{ success: true; inventoryItem: InventoryItemWithDetails }>()
+    mocks.pickUpDecoration.mockReturnValue(pending.promise)
+    renderProvider(
+      <InventoryProvider initialPlacedDecorations={[placedDecoration]}>
+        <ContextProbe />
+      </InventoryProvider>
+    )
+
+    let resultPromise!: ReturnType<typeof context.pickUpDecoration>
+    act(() => {
+      resultPromise = context.pickUpDecoration(placedDecoration.id)
+    })
+
+    expect(context.placedDecorations).toHaveLength(0)
+    expect(context.decorations).toHaveLength(0)
+
+    pending.resolve({ success: true, inventoryItem: canonicalInventoryItem })
+    await act(async () => { await resultPromise })
+
+    expect(context.decorations).toEqual([canonicalInventoryItem])
+    expect(mocks.getUserInventory).not.toHaveBeenCalled()
+  })
+
+  it('restores a picked-up decoration when the server mutation fails', async () => {
+    const pending = deferred<{ error: string }>()
+    mocks.pickUpDecoration.mockReturnValue(pending.promise)
+    renderProvider(
+      <InventoryProvider initialPlacedDecorations={[placedDecoration]}>
+        <ContextProbe />
+      </InventoryProvider>
+    )
+
+    let resultPromise!: ReturnType<typeof context.pickUpDecoration>
+    act(() => {
+      resultPromise = context.pickUpDecoration(placedDecoration.id)
+    })
+
+    expect(context.placedDecorations).toHaveLength(0)
+
+    pending.resolve({ error: 'Decoration pickup failed' })
+    await act(async () => { await resultPromise })
+
+    expect(context.placedDecorations).toEqual([placedDecoration])
+    expect(context.decorations).toHaveLength(0)
   })
 })

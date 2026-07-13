@@ -20,12 +20,16 @@ interface EditModeOverlayProps {
   onTileClick?: (row: number, col: number) => void
   onDecorationClick?: (decoration: PlacedDecorationWithType) => void
   editMode: UseEditModeReturn
+  movingPlantName?: string
+  onCancelPlantMove?: () => void
 }
 
 export function EditModeOverlay({
   isActive,
   onDone,
   editMode,
+  movingPlantName,
+  onCancelPlantMove,
 }: EditModeOverlayProps) {
   const inventory = useInventory()
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -101,6 +105,7 @@ export function EditModeOverlay({
   const handleStore = useCallback(async () => {
     const selected = editMode.selectedDecoration
     if (!selected) return
+    editMode.deselectDecoration()
     const result = await inventory.pickUpDecoration(selected.id)
     if (result.success) {
       if (result.inventoryItemId) {
@@ -113,9 +118,9 @@ export function EditModeOverlay({
           col: selected.grid_col,
         })
       }
-      editMode.deselectDecoration()
       toast.success(`Đã cất ${selected.decoration_type.name} vào kho`)
     } else {
+      editMode.selectDecoration(selected)
       toast.error('Chưa thể cất vật trang trí', { description: result.error })
     }
   }, [editMode, inventory])
@@ -131,23 +136,27 @@ export function EditModeOverlay({
             canUndo={editMode.undoStack.length > 0}
             hasSelectedItem={!!editMode.selectedItem}
             selectedDecorationName={editMode.selectedDecoration?.decoration_type.name}
+            movingPlantName={movingPlantName}
             isBusy={inventory.isLoading}
             onUndo={handleUndo}
             onRotate={handleRotate}
             onStore={handleStore}
             onDone={handleDone}
+            onCancelPlantMove={onCancelPlantMove}
           />
 
           {/* The catalog is opened on demand so the garden remains the editing surface. */}
-          <Button
-            type="button"
-            onClick={handleOpenCatalog}
-            disabled={isCatalogLoading}
-            className="absolute bottom-24 left-4 z-50 h-12 gap-2 rounded-full bg-[#fffaf0]/95 px-4 text-[#49693f] shadow-xl ring-1 ring-white/70 hover:bg-white"
-          >
-            <PackageOpen className="h-5 w-5" />
-            {isCatalogLoading ? 'Đang mở kho…' : 'Thêm vật trang trí'}
-          </Button>
+          {!movingPlantName && (
+            <Button
+              type="button"
+              onClick={handleOpenCatalog}
+              disabled={isCatalogLoading}
+              className="absolute bottom-24 left-4 z-50 h-12 gap-2 rounded-full bg-[#fffaf0]/95 px-4 text-[#49693f] shadow-xl ring-1 ring-white/70 hover:bg-white"
+            >
+              <PackageOpen className="h-5 w-5" />
+              {isCatalogLoading ? 'Đang mở kho…' : 'Thêm vật trang trí'}
+            </Button>
+          )}
 
           {pickerOpen && (
             <div className="absolute inset-0 z-[60] flex justify-end bg-[#20351f]/20 backdrop-blur-[2px]" onClick={() => setPickerOpen(false)}>

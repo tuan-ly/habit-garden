@@ -373,42 +373,56 @@ export function InventoryProvider({
   // -----------------------------------------------
   const pickUpDecoration = useCallback(
     async (placedDecoId: string): Promise<PickupResult> => {
+      const placedDecoration = placedDecorations.find((item) => item.id === placedDecoId)
+      if (!placedDecoration) return { success: false, error: 'Decoration not found' }
+
+      const previousIndex = placedDecorations.findIndex((item) => item.id === placedDecoId)
+      const rollback = () => {
+        setPlacedDecorations((prev) => {
+          if (prev.some((item) => item.id === placedDecoId)) return prev
+          const insertAt = Math.min(previousIndex, prev.length)
+          return [
+            ...prev.slice(0, insertAt),
+            placedDecoration,
+            ...prev.slice(insertAt),
+          ]
+        })
+      }
+
+      // Commit the pickup intent before loading the server-action chunk or
+      // waiting for Supabase. Re-add the same entity if the mutation fails.
+      setPlacedDecorations((prev) => prev.filter((item) => item.id !== placedDecoId))
       startOp('pickup')
       try {
-        const [
-          { pickUpDecoration: pickUpDecorationAction },
-          { getUserInventory },
-        ] = await Promise.all([
-          import('@/lib/actions/decorations'),
-          import('@/lib/actions/inventory'),
-        ])
+        const { pickUpDecoration: pickUpDecorationAction } = await import('@/lib/actions/decorations')
         const result = await pickUpDecorationAction({
           placed_decoration_id: placedDecoId,
         })
 
         if (!('success' in result)) {
+          rollback()
           return { success: false, error: (result as { error: string }).error }
         }
 
-        // Optimistically remove from placed list; refresh inventory
-        setPlacedDecorations((prev) => prev.filter((d) => d.id !== placedDecoId))
-
-        const invResult = await getUserInventory()
-        if ('decorations' in invResult) {
-          setDecorations(invResult.decorations)
-        }
+        const inventoryItem = result.inventoryItem
+        setDecorations((prev) => {
+          const existingIndex = prev.findIndex((item) => item.id === inventoryItem.id)
+          if (existingIndex === -1) return [...prev, inventoryItem]
+          return prev.map((item) => item.id === inventoryItem.id ? inventoryItem : item)
+        })
 
         return {
           success: true as boolean,
-          inventoryItemId: (result as { success: true; inventoryItemId: string }).inventoryItemId,
+          inventoryItemId: inventoryItem.id,
         } as PickupResult
       } catch {
+        rollback()
         return { success: false, error: 'Network error' }
       } finally {
         endOp('pickup')
       }
     },
-    [startOp, endOp]
+    [placedDecorations, startOp, endOp]
   )
 
   // -----------------------------------------------
