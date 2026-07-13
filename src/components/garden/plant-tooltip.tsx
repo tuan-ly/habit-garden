@@ -2,6 +2,7 @@
 
 import type { PlantWithType } from '@/types/database'
 import { cn } from '@/lib/utils'
+import { Droplets, Flame, Leaf, MousePointer2 } from 'lucide-react'
 
 interface PlantTooltipProps {
   plant: PlantWithType
@@ -45,139 +46,97 @@ interface PlantInfoBarProps {
   plant: PlantWithType | null
 }
 
-// Get gradient based on plant type
-function getPlantGradient(plantTypeId: string): string {
-  const gradients: Record<string, string> = {
-    'cactus': 'from-emerald-500 to-green-600',
-    'rose': 'from-pink-500 to-rose-600',
-    'bonsai': 'from-green-600 to-emerald-700',
-    'bamboo': 'from-lime-500 to-green-600',
-    'lotus': 'from-pink-400 to-fuchsia-500',
-    'cherry-blossom': 'from-pink-300 to-rose-400',
-    'fruit-tree': 'from-orange-400 to-red-500',
-  }
-  // Try to match by id containing the key
-  for (const [key, value] of Object.entries(gradients)) {
-    if (plantTypeId.toLowerCase().includes(key)) {
-      return value
-    }
-  }
-  return 'from-green-500 to-emerald-600'
-}
-
 export function PlantInfoBar({ plant }: PlantInfoBarProps) {
   // No plant hovered — render nothing (avoid placeholder-looking UI)
   if (!plant) {
     return null
   }
 
-  const gradient = getPlantGradient(plant.plant_type.id)
   const moisturePercent = plant.current_moisture
   const growthPercent = Math.round(plant.growth_percentage)
   const isThirsty = moisturePercent < 30 && plant.status !== 'dead'
 
   return (
-    <div className="absolute left-1/2 -translate-x-1/2 top-16 z-20 pointer-events-none">
-      <div className={cn(
-        "relative overflow-hidden rounded-2xl shadow-2xl",
-        "bg-slate-900/95 border-2 border-slate-700/50",
-        "animate-in fade-in zoom-in-95 duration-200"
-      )}>
-        {/* Gradient accent bar */}
-        <div className={cn("h-1 bg-linear-to-r", gradient)} />
-
-        <div className="flex items-center gap-5 px-5 py-3">
-          {/* Plant icon with glow */}
-          <div className="relative">
-            <div className={cn(
-              "absolute inset-0 blur-xl opacity-50 bg-linear-to-r",
-              gradient
-            )} />
-            <span className="relative text-4xl drop-shadow-lg">{plant.plant_type.icon}</span>
+    <div className="pointer-events-none absolute left-1/2 top-16 z-20 -translate-x-1/2 px-4">
+      <div className="animate-in fade-in zoom-in-95 overflow-hidden rounded-[1.5rem] border border-white/70 bg-[#fffaf0]/92 shadow-[0_18px_50px_rgba(64,82,47,0.18)] backdrop-blur-xl duration-200">
+        <div className="flex items-center gap-4 px-4 py-3 text-[#355239]">
+          <div className="grid size-12 shrink-0 place-items-center rounded-2xl border border-[#dbe5cd] bg-[#edf3df] shadow-inner">
+            <span className="text-3xl drop-shadow-sm">{plant.plant_type.icon}</span>
           </div>
 
           {/* Plant name */}
           <div className="min-w-0">
-            <div className="font-bold text-white text-lg leading-tight">
+            <div className="max-w-36 truncate text-base font-bold leading-tight">
               {plant.name}
             </div>
-            <div className="text-xs text-slate-400 font-medium">
+            <div className="mt-0.5 text-xs font-medium text-[#71806c]">
               {plant.plant_type.name}
             </div>
           </div>
 
-          {/* Divider */}
-          <div className="w-px h-10 bg-slate-700" />
+          <div className="h-9 w-px bg-[#d9dfce]" />
 
           {/* Stats */}
-          <div className="flex items-center gap-4">
-            {/* Moisture */}
-            <div className="text-center">
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="text-lg">💧</span>
+          <div className="flex items-center gap-3">
+            <div className="min-w-20">
+              <div className="mb-1.5 flex items-center gap-1.5">
+                <Droplets className="size-4 text-[#4b91a0]" aria-hidden="true" />
                 <span className={cn(
-                  "text-xl font-bold tabular-nums",
-                  moisturePercent >= 70 ? 'text-emerald-400' :
-                  moisturePercent >= 40 ? 'text-amber-400' :
-                  moisturePercent >= 20 ? 'text-orange-400' : 'text-red-400'
+                  "text-sm font-bold tabular-nums",
+                  moisturePercent >= 70 ? 'text-[#3d7b72]' :
+                  moisturePercent >= 40 ? 'text-[#9a742d]' :
+                  moisturePercent >= 20 ? 'text-[#ae693b]' : 'text-[#a85448]'
                 )}>
                   {moisturePercent}%
                 </span>
               </div>
-              <div className="w-16 h-2 bg-slate-700 rounded-full overflow-hidden">
+              <div className="h-1.5 w-20 overflow-hidden rounded-full bg-[#dfe7d6]">
                 <div
                   className={cn(
                     "h-full rounded-full transition-all",
-                    moisturePercent >= 70 ? 'bg-emerald-500' :
-                    moisturePercent >= 40 ? 'bg-amber-500' :
-                    moisturePercent >= 20 ? 'bg-orange-500' : 'bg-red-500'
+                    moisturePercent >= 70 ? 'bg-[#66a092]' :
+                    moisturePercent >= 40 ? 'bg-[#d1a64c]' :
+                    moisturePercent >= 20 ? 'bg-[#d98a52]' : 'bg-[#c86d61]'
                   )}
                   style={{ width: `${moisturePercent}%` }}
                 />
               </div>
             </div>
 
-            {/* Growth */}
-            <div className="text-center">
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="text-lg">🌱</span>
-                <span className="text-xl font-bold tabular-nums text-green-400">
+            <div className="min-w-20">
+              <div className="mb-1.5 flex items-center gap-1.5">
+                <Leaf className="size-4 text-[#70915b]" aria-hidden="true" />
+                <span className="text-sm font-bold tabular-nums text-[#557744]">
                   {growthPercent}%
                 </span>
               </div>
-              <div className="w-16 h-2 bg-slate-700 rounded-full overflow-hidden">
+              <div className="h-1.5 w-20 overflow-hidden rounded-full bg-[#dfe7d6]">
                 <div
-                  className="h-full bg-linear-to-r from-green-400 to-emerald-500 rounded-full transition-all"
+                  className="h-full rounded-full bg-[#86a96e] transition-all"
                   style={{ width: `${growthPercent}%` }}
                 />
               </div>
             </div>
 
-            {/* Streak */}
             {plant.current_streak > 0 && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-900/50 rounded-xl border border-orange-500/30">
-                <span className="text-base">🔥</span>
-                <span className="font-bold text-orange-400">{plant.current_streak}</span>
+              <div className="flex items-center gap-1.5 rounded-full border border-[#ecd9b8] bg-[#fbedd4] px-2.5 py-1.5">
+                <Flame className="size-3.5 text-[#b86b37]" aria-hidden="true" />
+                <span className="text-sm font-bold text-[#94532f]">{plant.current_streak}</span>
               </div>
             )}
           </div>
 
           {/* Warning badge */}
           {isThirsty && (
-            <>
-              <div className="w-px h-10 bg-slate-700" />
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-900/50 rounded-xl border border-red-500/30 animate-pulse">
-                <span>⚠️</span>
-                <span className="text-sm font-bold text-red-400">Thirsty!</span>
-              </div>
-            </>
+            <div className="rounded-full border border-[#e8c6b9] bg-[#fae4d8] px-2.5 py-1.5 text-xs font-semibold text-[#985848]">
+              Cần chăm
+            </div>
           )}
 
-          {/* Click hint */}
-          <div className="w-px h-10 bg-slate-700" />
-          <div className="text-xs text-slate-500 font-medium flex items-center gap-1">
-            <span>Click</span>
-            <span className="text-slate-400">→</span>
+          <div className="h-9 w-px bg-[#d9dfce]" />
+          <div className="flex items-center gap-1.5 text-xs font-medium text-[#71806c]">
+            <MousePointer2 className="size-3.5" aria-hidden="true" />
+            <span>Chạm để xem</span>
           </div>
         </div>
       </div>

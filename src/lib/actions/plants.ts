@@ -19,6 +19,7 @@ import {
 import {
   checkSlotAvailability,
   canPlantTier,
+  PLANT_CREATION_GATES_ENABLED,
 } from '@/lib/progression-system'
 import { getDevPlantBypass } from '@/lib/actions/dev'
 
@@ -252,7 +253,7 @@ export async function createPlant(dto: CreatePlantDto): Promise<{ success: boole
 
   // Validate slot availability
   const devBypass = await getDevPlantBypass()
-  if (profile && !devBypass) {
+  if (PLANT_CREATION_GATES_ENABLED && profile && !devBypass) {
     const slotCheck = checkSlotAvailability(profile as Profile, livingPlants.length)
     if (!slotCheck.hasSlot) {
       return { success: false, error: slotCheck.message || 'No plant slots available. Level up to unlock more!' }

@@ -6,6 +6,15 @@
 
 import type { Profile, PlantTier, UserPhase } from '@/types/database'
 
+/**
+ * Temporary visual-testing switch.
+ *
+ * Keep the progression rules below intact so the product decision can be
+ * revisited without reconstructing the mature-plant, streak, slot, and tier
+ * requirements. Authentication and placement validation still run.
+ */
+export const PLANT_CREATION_GATES_ENABLED = false
+
 // ============================================
 // Types
 // ============================================
