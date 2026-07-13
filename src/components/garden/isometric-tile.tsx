@@ -34,6 +34,8 @@ interface IsometricTileProps {
   showAddHint?: boolean
   /** True if this plant is selected for moving (show "lifted" effect) */
   isSelectedForMove?: boolean
+  /** Keep placeable objects at their authored size while arranging them. */
+  disableContentHoverScale?: boolean
   /** Preview plant to show faded on this tile (for move preview) */
   previewPlant?: PlantWithType
   /** Decoration preview rendered independently from the tile's real content. */
@@ -65,6 +67,14 @@ function getMergedAreaCenterOffset(plantGridSize: number, tileHitHeight: number)
   return (plantGridSize - 1) * tileHitHeight / 2
 }
 
+export function getTileContentScale(
+  isHovered: boolean,
+  isSelectedForMove: boolean,
+  disableContentHoverScale: boolean
+): number {
+  return isHovered && !isSelectedForMove && !disableContentHoverScale ? 1.2 : 1
+}
+
 function IsometricTileComponent({
   row,
   col,
@@ -85,6 +95,7 @@ function IsometricTileComponent({
   hideBadge = false,
   showAddHint = false,
   isSelectedForMove = false,
+  disableContentHoverScale = false,
   previewPlant,
   previewOverlay,
   previewOverlayGridSize = 1,
@@ -286,7 +297,7 @@ function IsometricTileComponent({
           style={{
             left: tileSize / 2,
             top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight) ,
-            transform: `translate(-50%, -100%) scale(${isHovered && !isSelectedForMove ? 1.20 : 1})`,
+            transform: `translate(-50%, -100%) scale(${getTileContentScale(isHovered, isSelectedForMove, disableContentHoverScale)})`,
             transformOrigin: 'bottom center',
           }}
         >

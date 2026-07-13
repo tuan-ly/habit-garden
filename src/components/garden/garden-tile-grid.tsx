@@ -47,6 +47,17 @@ interface GardenTileGridProps {
   } | null
 }
 
+export function shouldRenderPlacementGhost(ghostAtTile: boolean, decorationSelected: boolean): boolean {
+  return ghostAtTile && !decorationSelected
+}
+
+export function isPlantSelectedForMove(
+  plantId: string | undefined,
+  selectedPlantId: string | undefined
+): boolean {
+  return plantId !== undefined && selectedPlantId === plantId
+}
+
 export const GardenTileGrid = memo(function GardenTileGrid({
   tiles,
   gridSize,
@@ -99,7 +110,7 @@ export const GardenTileGrid = memo(function GardenTileGrid({
         const isHovered = hoveredTile === tileKey
         const clickPlant = isOccupiedByMultiCell ? plant : (isAnchor ? plant : undefined)
         const isPartOfMultiCell = plant !== undefined && (plant.grid_size || 1) > 1
-        const isSelectedForMove = moveState.selectedPlant?.id === plant?.id
+        const isSelectedForMove = isPlantSelectedForMove(plant?.id, moveState.selectedPlant?.id)
         const isPreviewTile = moveState.previewCell?.row === row && moveState.previewCell?.col === col
 
         // Check if a decoration is anchored at this tile
@@ -138,13 +149,14 @@ export const GardenTileGrid = memo(function GardenTileGrid({
             hideBadge={hidePlantBadges || isSelectedForMove}
             showAddHint={mode === 'arrange' && !moveState.selectedPlant}
             isSelectedForMove={isSelectedForMove}
+            disableContentHoverScale={mode === 'arrange' && !!decoration}
             previewPlant={isPreviewTile && moveState.selectedPlant ? moveState.selectedPlant : undefined}
             shadowType={plant && isAnchor ? 'plant' : decoration ? 'small' : 'none'}
             cinematicShadows={cinematic}
             accessibleLabel={decoration ? `Chọn ${decoration.decoration_type.name}` : undefined}
             decorationHitSize={decorationPixelSize}
             previewOverlayGridSize={ghostSize}
-            previewOverlay={ghostAtTile && placementGhost ? (
+            previewOverlay={placementGhost && shouldRenderPlacementGhost(ghostAtTile, decorationSelected) ? (
               <PlacementGhost
                 decorationType={placementGhost.decorationType}
                 rotation={placementGhost.rotation}
