@@ -61,12 +61,14 @@ export const GardenCelebrationLayer = memo(function GardenCelebrationLayer({
       )}
 
       {/* Level up modal */}
-      <LevelUpModal
-        open={!sanctuaryMode && !!levelUpData}
-        onOpenChange={(open) => { if (!open) onLevelUpClose() }}
-        newLevel={levelUpData?.newLevel ?? 1}
-        oldLevel={levelUpData?.oldLevel}
-      />
+      {!sanctuaryMode && levelUpData && (
+        <LevelUpModal
+          open
+          onOpenChange={(open) => { if (!open) onLevelUpClose() }}
+          newLevel={levelUpData.newLevel}
+          oldLevel={levelUpData.oldLevel}
+        />
+      )}
 
       {/* Achievement unlock notifications */}
       {!sanctuaryMode && pendingAchievements.length > 0 && (
@@ -77,12 +79,14 @@ export const GardenCelebrationLayer = memo(function GardenCelebrationLayer({
       )}
 
       {/* Harvest material notification */}
-      <HarvestDialog
-        open={!sanctuaryMode && !!harvestData}
-        onClose={onHarvestClose}
-        plantName={harvestData?.plantName ?? ''}
-        material={harvestData?.material ?? null}
-      />
+      {!sanctuaryMode && harvestData && (
+        <HarvestDialog
+          open
+          onClose={onHarvestClose}
+          plantName={harvestData.plantName}
+          material={harvestData.material}
+        />
+      )}
     </>
   )
 })

@@ -76,6 +76,7 @@ export function SanctuaryGardenChrome({
       <header className="pointer-events-auto absolute inset-x-0 top-0 flex items-start justify-between px-4 pt-[max(1rem,env(safe-area-inset-top))] sm:px-6">
         <Link
           href="/overview"
+          prefetch={false}
           className="group flex min-h-12 items-center gap-2 rounded-full border border-white/65 bg-[#fffaf0]/88 px-3.5 text-sm font-semibold text-[#49693f] shadow-[0_10px_30px_rgba(41,69,38,0.13)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#789a68]"
           aria-label="Mở hành trình"
         >
@@ -102,6 +103,7 @@ export function SanctuaryGardenChrome({
 
         <Link
           href="/profile"
+          prefetch={false}
           className="rounded-full bg-[#fffaf0]/90 p-1.5 shadow-[0_10px_30px_rgba(41,69,38,0.13)] ring-1 ring-white/70 backdrop-blur-xl transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#789a68]"
           aria-label="Mở hồ sơ"
         >

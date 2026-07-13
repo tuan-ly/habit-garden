@@ -1,18 +1,15 @@
 'use client'
 
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
+import { useState, useMemo, useEffect, useCallback, useRef, useSyncExternalStore } from 'react'
+import dynamic from 'next/dynamic'
 import { type FocusState } from './isometric-plant'
 import { PlantInfoBar } from './plant-tooltip'
 import { GroundPlaneCanvas, type MultiCellArea } from './ground-plane-canvas'
-import { AmbientParticlesCanvas } from './ambient-particles-canvas'
 import { ZoomControls } from './zoom-controls'
 import { ModeToolbar, type GardenMode } from './mode-toolbar'
-import { EditModeOverlay } from './edit-mode/edit-mode-overlay'
 import { useEditMode } from './edit-mode/use-edit-mode'
 import { getTimeOfDay, type TimeOfDay, defaultTheme } from './themes'
 import { GardenTileGrid } from './garden-tile-grid'
-import { GardenModals } from './garden-modals'
-import { GardenCelebrationLayer } from './garden-celebration-layer'
 import { useGardenInteractions } from './use-garden-interactions'
 import { SanctuaryGardenChrome } from './sanctuary-garden-chrome'
 import { usePlants } from '@/lib/context/plants-context'
@@ -46,6 +43,23 @@ interface IsometricGardenProps {
 }
 
 const DEFAULT_TILE_SIZE = 140
+const subscribeToHardware = () => () => undefined
+const EditModeOverlay = dynamic(
+  () => import('./edit-mode/edit-mode-overlay').then((module) => ({ default: module.EditModeOverlay })),
+  { ssr: false }
+)
+const GardenCelebrationLayer = dynamic(
+  () => import('./garden-celebration-layer').then((module) => ({ default: module.GardenCelebrationLayer })),
+  { ssr: false }
+)
+const AmbientParticlesCanvas = dynamic(
+  () => import(/* webpackChunkName: "garden-effects" */ './ambient-particles-canvas').then((module) => ({ default: module.AmbientParticlesCanvas })),
+  { ssr: false }
+)
+const GardenModals = dynamic(
+  () => import('./garden-modals').then((module) => ({ default: module.GardenModals })),
+  { ssr: false }
+)
 
 function getPlacementErrorMessage(error: string): string {
   const normalized = error.toLowerCase()
@@ -77,8 +91,13 @@ export function IsometricGarden({
   sanctuaryMode = false,
   welcomeBackDays = 0,
 }: IsometricGardenProps) {
-  const { plants, movePlant, updatePlant, isSyncing } = usePlants()
+  const { plants, movePlant, recordActivity, isPlantPending } = usePlants()
   const gardenSettings = useGardenSettingsOptional()
+  const isLowPowerDevice = useSyncExternalStore(
+    subscribeToHardware,
+    () => (navigator.hardwareConcurrency ?? 8) <= 4,
+    () => false
+  )
   const inventory = useInventoryOptional()
   const editMode = useEditMode()
   const placedDecorations = useMemo(
@@ -210,7 +229,7 @@ export function IsometricGarden({
 
   // Interactions hook
   const interactions = useGardenInteractions({
-    movePlant, updatePlant, welcomeBackPending, onWelcomeBackUsed,
+    movePlant, recordActivity, welcomeBackPending, onWelcomeBackUsed,
     mode, didPan, resetDidPan, livingPlants,
     editSelectedItem: editMode.selectedItem,
     editGhostRotation: editMode.ghostRotation,
@@ -602,7 +621,7 @@ export function IsometricGarden({
             />
 
             {/* Ambient particles (canvas renderer) */}
-            {gardenSettings.showParticles && (
+            {gardenSettings.showParticles && !gardenSettings.reducedMotion && !isLowPowerDevice && (
               <AmbientParticlesCanvas
                 weather={gardenSettings.showWeatherEffects ? weather : null}
                 timeOfDay={currentTimeOfDay}
@@ -688,7 +707,7 @@ export function IsometricGarden({
       </ul>
 
       {/* Modals */}
-      <GardenModals
+      {(interactions.wateringModalOpen || interactions.addDialogOpen || interactions.sheetOpen) && <GardenModals
         wateringPlant={interactions.wateringPlant}
         wateringModalOpen={interactions.wateringModalOpen}
         onWateringOpenChange={sanctuaryMode ? handleWateringOpenChange : interactions.setWateringModalOpen}
@@ -707,7 +726,7 @@ export function IsometricGarden({
         isWateredToday={interactions.isWateredToday}
         wateringInitialMode={interactions.wateringInitialMode}
         sanctuaryMode={sanctuaryMode}
-      />
+      />}
 
       {sanctuaryMode && (
         <SanctuaryGardenChrome
@@ -717,7 +736,7 @@ export function IsometricGarden({
           focusClosing={sanctuaryFocusClosing}
           completedCount={sanctuaryCompleted.length}
           totalCount={sanctuaryPlants.length}
-          isSyncing={isSyncing}
+          isSyncing={sanctuaryDisplayPlant ? isPlantPending(sanctuaryDisplayPlant.id) : false}
           welcomeBackDays={welcomeBackDays}
           onPrimaryAction={() => handleSanctuaryAction('log')}
           onTinyAction={() => handleSanctuaryAction('log')}
@@ -730,9 +749,9 @@ export function IsometricGarden({
       )}
 
       {/* Decoration edit overlay (visible in arrange mode) */}
-      {inventory && (
+      {inventory && mode === 'arrange' && (
         <EditModeOverlay
-          isActive={mode === 'arrange'}
+          isActive
           gridSize={gridSize}
           occupiedCells={occupiedCellsSet}
           onDone={() => setModeWithReset('interact')}
@@ -741,18 +760,23 @@ export function IsometricGarden({
       )}
 
       {/* Celebrations */}
-      <GardenCelebrationLayer
-        celebration={interactions.celebration}
-        onCelebrationComplete={handleCelebrationComplete}
-        levelUpData={interactions.levelUpData}
-        onLevelUpClose={handleLevelUpClose}
-        pendingAchievements={interactions.pendingAchievements}
-        onAchievementsComplete={handleAchievementsComplete}
-        harvestData={interactions.harvestData}
-        onHarvestClose={handleHarvestClose}
-        showCelebrations={gardenSettings.showCelebrations}
-        sanctuaryMode={sanctuaryMode}
-      />
+      {(interactions.celebration?.active
+        || interactions.levelUpData
+        || interactions.pendingAchievements.length > 0
+        || interactions.harvestData) && (
+        <GardenCelebrationLayer
+          celebration={interactions.celebration}
+          onCelebrationComplete={handleCelebrationComplete}
+          levelUpData={interactions.levelUpData}
+          onLevelUpClose={handleLevelUpClose}
+          pendingAchievements={interactions.pendingAchievements}
+          onAchievementsComplete={handleAchievementsComplete}
+          harvestData={interactions.harvestData}
+          onHarvestClose={handleHarvestClose}
+          showCelebrations={gardenSettings.showCelebrations}
+          sanctuaryMode={sanctuaryMode}
+        />
+      )}
     </div>
   )
 }

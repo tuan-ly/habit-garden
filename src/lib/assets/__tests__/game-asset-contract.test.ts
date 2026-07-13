@@ -6,7 +6,7 @@ describe('game asset contract', () => {
     const asset = getDecorationAssetSpec('stone-lantern')
     expect(asset?.kind).toBe('decoration')
     expect(asset?.display.anchorY).toBeGreaterThan(0.7)
-    expect(asset?.analysis.transparent).toBe(true)
+    expect(asset?.path).toBe('/garden/decorations/sanctuary-rock-lantern.png')
   })
 
   it('loads every plant stage by canonical runtime filename', () => {

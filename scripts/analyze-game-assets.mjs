@@ -4,6 +4,7 @@ import sharp from 'sharp'
 
 const root = process.cwd()
 const output = path.join(root, 'src/generated/game-asset-manifest.json')
+const runtimeOutput = path.join(root, 'src/generated/game-asset-runtime-manifest.json')
 const alphaThreshold = 12
 const canonicalStages = ['01-seed.png', '02-sprout.png', '03-growing.png', '04-blooming.png', '05-mature.png']
 const decorationSources = {
@@ -107,8 +108,16 @@ assets.sort((a, b) => a.id.localeCompare(b.id))
 const result = { schemaVersion: 1, generatedAt: new Date().toISOString(), assets }
 await mkdir(path.dirname(output), { recursive: true })
 await writeFile(output, `${JSON.stringify(result, null, 2)}\n`, 'utf8')
+const runtimeResult = {
+  schemaVersion: result.schemaVersion,
+  assets: assets.map(({ id, kind, slug, variant, path: assetPath, display }) => ({
+    id, kind, slug, variant, path: assetPath, display,
+  })),
+}
+await writeFile(runtimeOutput, `${JSON.stringify(runtimeResult)}\n`, 'utf8')
 const errors = assets.flatMap((asset) => asset.checks.filter((check) => check.level === 'error'))
 const warnings = assets.flatMap((asset) => asset.checks.filter((check) => check.level === 'warning'))
 console.log(`Analyzed ${assets.length} assets → ${path.relative(root, output)}`)
+console.log(`Runtime manifest → ${path.relative(root, runtimeOutput)}`)
 console.log(`${errors.length} errors, ${warnings.length} warnings`)
 if (process.argv.includes('--check') && errors.length) process.exitCode = 1

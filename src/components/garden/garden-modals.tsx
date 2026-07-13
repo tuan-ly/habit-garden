@@ -78,7 +78,7 @@ export const GardenModals = memo(function GardenModals({
 
   return (
     <>
-      {sanctuaryMode ? (
+      {wateringModalOpen && wateringPlant && (sanctuaryMode ? (
         <SanctuaryActionDialog
           key={wateringPlant?.id ?? 'sanctuary-action'}
           plant={wateringPlant}
@@ -108,17 +108,19 @@ export const GardenModals = memo(function GardenModals({
           daysLeftInPeriod={getDaysLeftInPeriod(wateringPlant?.goal?.period_end)}
           initialMode={wateringInitialMode}
         />
-      )}
+      ))}
 
       {/* Add plant dialog */}
-      <AddPlantDialog
-        plantTypes={plantTypes}
-        open={addDialogOpen}
-        onOpenChange={handleAddDialogOpenChange}
-        gridPosition={gridPosition}
-      />
+      {addDialogOpen && (
+        <AddPlantDialog
+          plantTypes={plantTypes}
+          open={addDialogOpen}
+          onOpenChange={handleAddDialogOpenChange}
+          gridPosition={gridPosition}
+        />
+      )}
 
-      {sanctuaryMode ? (
+      {sheetOpen && selectedPlant && (sanctuaryMode ? (
         <SanctuaryPlantDetailSheet
           plant={selectedPlant}
           open={sheetOpen}
@@ -130,7 +132,7 @@ export const GardenModals = memo(function GardenModals({
           open={sheetOpen}
           onOpenChange={onSheetOpenChange}
         />
-      )}
+      ))}
     </>
   )
 })

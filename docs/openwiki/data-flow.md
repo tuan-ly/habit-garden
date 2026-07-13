@@ -2,16 +2,17 @@
 
 ## Dashboard Hydration
 
-The dashboard layout fetches user/profile/shared data on the server and passes it into client providers. `DashboardDataProvider` exposes stable initial data such as user, profile, and plant types.
+The dashboard layout authenticates once, then calls `get_dashboard_bootstrap()` for profile, today's mood, and plant types in one database request. `DashboardDataProvider` exposes the result to client providers.
 
 This pattern solves the **Double Fetch Problem**: the page can render from server data, then client contexts reuse that state instead of immediately asking Supabase for the same records.
 
 ## Garden Page
 
-`src/app/(dashboard)/garden/page.tsx` calls `getPlants()` and `getTodayWeather()`, then renders:
+`src/app/(dashboard)/garden/page.tsx` hydrates plants and placed decorations from the cached `get_garden_snapshot()` read model, then renders:
 
 ```tsx
 <PlantsProvider initialPlants={plants}>
+  <GardenSnapshotHydrator placedDecorations={placedDecorations} />
   <GardenView weather={weather.type} />
 </PlantsProvider>
 ```
@@ -20,14 +21,14 @@ This pattern solves the **Double Fetch Problem**: the page can render from serve
 
 ## Optimistic Updates
 
-`PlantsProvider` uses `useOptimistic()` with a reducer for:
+`PlantsProvider` is the plant mutation boundary. Activity intents receive a `mutationId`, update only the target entity immediately, and reconcile with the canonical plant/goal returned by the RPC.
 
 - watering a plant
 - logging a goal
 - moving a plant on the grid
 - adding/removing/updating local plant state
 
-Server actions remain the source of truth. Optimistic updates give immediate UI feedback, then `serverPlants` is updated after the action succeeds.
+On failure, the provider restores the entity snapshot and offers a retry using the same `mutationId`; this makes retries safe for XP, coins, achievements, and inventory rewards.
 
 The sanctuary action sequence is:
 
@@ -41,9 +42,9 @@ The three entry paths reuse existing mutation boundaries:
 
 ## Mutation Pattern
 
-Client component -> context helper or direct server action -> `src/lib/actions/[feature].ts` -> Supabase -> result -> optimistic context or `revalidatePath()`.
+Client component -> context helper -> compatibility server action -> atomic Supabase RPC -> canonical result -> reconcile or entity rollback.
 
-Use context helpers when the UI needs local optimistic behavior. Use direct server action calls for simpler forms where a normal result/revalidation is enough.
+User-facing mutations must not call `revalidatePath()` or `router.refresh()`. Single-row preference/profile writes may use `update(...).select(...)`; multi-write/reward flows belong in an atomic RPC.
 
 ## Cross-Feature Data
 

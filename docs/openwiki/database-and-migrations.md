@@ -1,5 +1,16 @@
 # Database And Migrations
 
+## Dashboard Performance Read Models
+
+Migration `20260713061331_dashboard_performance_read_models_and_activity_rpc.sql` is additive and introduces:
+
+- `get_dashboard_bootstrap()` for dashboard shell hydration
+- `get_garden_snapshot()` for plants, goals, period logs, and placed decorations
+- `record_activity_atomic(...)` plus `mutation_receipts` idempotency
+- composite indexes for goal, mood, and activity hot paths
+
+Keep these contracts backward-compatible. Previous application artifacts may ignore the new table/functions during rollback; do not remove legacy columns in the same release.
+
 ## Sources
 
 - Handwritten TypeScript domain/database types: `src/types/database.ts`.

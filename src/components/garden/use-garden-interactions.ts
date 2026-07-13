@@ -8,7 +8,7 @@ import {
   showWaterToast,
 } from '@/components/plants/water-toast'
 import { isToday } from '@/lib/utils'
-import { logActivity } from '@/lib/actions/activity'
+import type { LogActivityDto, LogActivityResult } from '@/lib/actions/activity'
 import { validatePlantMove } from '@/lib/utils/grid-positioning'
 import { applyGoalLogToPeriod } from '@/lib/goal-progress'
 import type { PlantWithType, InventoryItemWithDetails, DecorationRotation } from '@/types/database'
@@ -35,7 +35,10 @@ export interface MoveState {
 
 interface UseGardenInteractionsOpts {
   movePlant: (id: string, row: number, col: number) => Promise<{ success: boolean }>
-  updatePlant: (id: string, updates: Partial<PlantWithType>) => void
+  recordActivity: (
+    dto: Omit<LogActivityDto, 'mutationId'>,
+    optimisticUpdates: Partial<PlantWithType>
+  ) => Promise<LogActivityResult>
   welcomeBackPending: boolean
   onWelcomeBackUsed?: () => void
   mode: GardenMode
@@ -56,7 +59,7 @@ interface UseGardenInteractionsOpts {
 
 export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
   const {
-    movePlant, updatePlant, welcomeBackPending, onWelcomeBackUsed,
+    movePlant, recordActivity, welcomeBackPending, onWelcomeBackUsed,
     mode, didPan, resetDidPan, livingPlants,
     editSelectedItem, editGhostRotation, onPlaceDecoration, onEditPushUndo, onEditDeselectItem,
     onEditPlacementError, onEditPlacementSuccess, editPlacementPending = false,
@@ -161,7 +164,7 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
       const baseGrowth = 100 / (plant.plant_type?.maturity_days || 30)
       const newGrowth = Math.min(100, plant.growth_percentage + baseGrowth)
 
-      updatePlant(plant.id, {
+      const optimisticUpdates = {
         current_moisture: newMoisture,
         growth_percentage: newGrowth,
         current_streak: newStreak,
@@ -169,15 +172,15 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
         total_waterings: plant.total_waterings + 1,
         last_watered_at: new Date().toISOString(),
         status: newGrowth >= 100 ? 'mature' : plant.status,
-      })
+      }
 
       try {
-        const result = await logActivity({
+        const result = await recordActivity({
           plant_id: plant.id,
           activity_type: 'watering',
           notes,
           is_welcome_back: welcomeBackPending,
-        })
+        }, optimisticUpdates)
 
         if (!result.success) {
           setCelebration(null)
@@ -202,7 +205,7 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
         setTimeout(() => actionCooldown.current.delete(plant.id), 500)
       }
     },
-    [wateringPlant, updatePlant, welcomeBackPending, onWelcomeBackUsed, handleServerResult, calmFeedback]
+    [wateringPlant, recordActivity, welcomeBackPending, onWelcomeBackUsed, handleServerResult, calmFeedback]
   )
 
   // Log + water confirm (from modal "I did it" action)
@@ -264,16 +267,14 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
         optimisticUpdates.today_log_count = (plant.today_log_count || 0) + 1
       }
 
-      updatePlant(plant.id, optimisticUpdates)
-
       try {
-        const result = await logActivity({
+        const result = await recordActivity({
           plant_id: plant.id,
           activity_type: hasGoal && value !== undefined ? 'progress' : 'completed',
           value: hasGoal ? value : undefined,
           notes,
           is_welcome_back: welcomeBackPending,
-        })
+        }, optimisticUpdates)
 
         if (!result.success) {
           setCelebration(null)
@@ -319,7 +320,7 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
         setTimeout(() => actionCooldown.current.delete(plant.id), 500)
       }
     },
-    [wateringPlant, isWateredToday, updatePlant, welcomeBackPending, onWelcomeBackUsed, handleServerResult, calmFeedback]
+    [wateringPlant, isWateredToday, recordActivity, welcomeBackPending, onWelcomeBackUsed, handleServerResult, calmFeedback]
   )
 
   // Plant tap (single = water modal, double = detail sheet)

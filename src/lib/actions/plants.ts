@@ -1,7 +1,6 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
 import type { CreatePlantDto, PlantWithType, PlantType, Difficulty, WeatherType, PlantGoalInfo, TodayGoalLog, GoalMode, PlantTier, Profile, Goal } from '@/types/database'
 import { getAuthUser } from '@/lib/auth-cached'
 import { getTodayWeather, calculateWeatherXp } from '@/lib/weather-system'
@@ -22,43 +21,96 @@ import {
   PLANT_CREATION_GATES_ENABLED,
 } from '@/lib/progression-system'
 import { getDevPlantBypass } from '@/lib/actions/dev'
+import { cache } from 'react'
+import type { PlacedDecorationWithType } from '@/types/database'
+
+interface GardenReadModel {
+  plants: PlantWithType[]
+  goals: Goal[]
+  goal_logs: Array<{
+    id: string
+    goal_id: string
+    plant_id: string
+    value: number
+    notes: string | null
+    logged_at: string
+    logged_date: string
+  }>
+  placed_decorations: PlacedDecorationWithType[]
+}
+
+let warnedAboutGardenSnapshotFallback = false
+
+async function loadLegacyGardenReadModel(userId: string): Promise<GardenReadModel> {
+  const supabase = await createClient()
+  const [
+    { data: plants, error: plantsError },
+    { data: placedDecorations },
+  ] = await Promise.all([
+    supabase
+      .from('plants')
+      .select('*, plant_type:plant_types(*)')
+      .eq('user_id', userId)
+      .order('position', { ascending: true }),
+    supabase
+      .from('placed_decorations')
+      .select('*, decoration_type:decoration_types(*)')
+      .eq('user_id', userId)
+      .order('placed_at', { ascending: true }),
+  ])
+
+  if (plantsError) {
+    console.error('Legacy garden plants query failed:', plantsError)
+    return { plants: [], goals: [], goal_logs: [], placed_decorations: [] }
+  }
+
+  const plantIds = (plants ?? []).map((plant) => plant.id)
+  if (plantIds.length === 0) {
+    return {
+      plants: [], goals: [], goal_logs: [],
+      placed_decorations: (placedDecorations ?? []) as unknown as PlacedDecorationWithType[],
+    }
+  }
+
+  const since = new Date()
+  since.setDate(since.getDate() - 35)
+  const [{ data: goals }, { data: goalLogs }] = await Promise.all([
+    supabase.from('goals').select('*').in('plant_id', plantIds).eq('season_status', 'active'),
+    supabase.from('goal_logs').select('*').in('plant_id', plantIds).gte('logged_at', since.toISOString()),
+  ])
+
+  return {
+    plants: (plants ?? []) as unknown as PlantWithType[],
+    goals: (goals ?? []) as Goal[],
+    goal_logs: (goalLogs ?? []) as GardenReadModel['goal_logs'],
+    placed_decorations: (placedDecorations ?? []) as unknown as PlacedDecorationWithType[],
+  }
+}
+
+const loadGardenReadModel = cache(async (): Promise<GardenReadModel | null> => {
+  const user = await getAuthUser()
+  if (!user) return null
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('get_garden_snapshot')
+  if (error) {
+    if (!warnedAboutGardenSnapshotFallback) {
+      warnedAboutGardenSnapshotFallback = true
+      console.warn('get_garden_snapshot unavailable; using compatibility queries:', error.code)
+    }
+    return loadLegacyGardenReadModel(user.id)
+  }
+  return data as unknown as GardenReadModel
+})
 
 export async function getPlants(): Promise<PlantWithType[]> {
-  const supabase = await createClient()
-
   const user = await getAuthUser()
   if (!user) return []
 
   const today = new Date().toISOString().split('T')[0]
+  const snapshot = await loadGardenReadModel()
+  const plantsData = snapshot?.plants ?? []
 
-  // Fetch plants with plant_type (explicit columns for performance)
-  const { data: plantsData, error } = await supabase
-    .from('plants')
-    .select(`
-      id, user_id, plant_type_id, name, habit_description, started_at,
-      current_moisture, growth_percentage, total_waterings,
-      current_streak, longest_streak, last_watered_at, status, matured_at,
-      died_at, death_reason, goal_mode, reminder_time, reminder_enabled, adaptive_mode,
-      position, grid_size, grid_row, grid_col, growth_blocked,
-      why_i_started, maturity_level, visual_stage, grace_period_days,
-      days_this_week, days_this_month, consistency_percentage,
-      easy_mode, tiny_seed, created_at, updated_at,
-      plant_type:plant_types(
-        id, name, name_vi, icon, description, description_vi,
-        maturity_days, frequency_type, frequency_target,
-        moisture_decay_rate, moisture_boost, special_effect,
-        category, difficulty, is_premium, tier, tier_unlock_level, created_at
-      )
-    `)
-    .eq('user_id', user.id)
-    .order('position', { ascending: true })
-
-  if (error) {
-    console.error('Error fetching plants:', error.message, error.details, error.hint, error.code)
-    return []
-  }
-
-  if (!plantsData || plantsData.length === 0) {
+  if (plantsData.length === 0) {
     return []
   }
 
@@ -71,22 +123,7 @@ export async function getPlants(): Promise<PlantWithType[]> {
   const todayLogsMap = new Map<string, TodayGoalLog[]>()
 
   if (plantIdsWithGoal.length > 0) {
-    const { data: goalsData, error: goalsError } = await supabase
-      .from('goals')
-      .select(`
-        id, plant_id, goal_mode, tracking_metric, unit,
-        target_value, current_value, weekly_targets, started_at,
-        duration_weeks, frequency, frequency_target, period_start_day,
-        season_status
-      `)
-      .in('plant_id', plantIdsWithGoal)
-      .eq('season_status', 'active')
-
-    if (goalsError) {
-      console.error('Error fetching active goals:', goalsError)
-    }
-
-    const goals = (goalsData || []) as Goal[]
+    const goals = (snapshot?.goals ?? []).filter((goal) => plantIdsWithGoal.includes(goal.plant_id))
     const periodInfoByGoal = new Map<string, ReturnType<typeof getPeriodInfo>>()
 
     for (const goal of goals) {
@@ -100,12 +137,10 @@ export async function getPlants(): Promise<PlantWithType[]> {
       }, null)
 
     const goalLogs = earliestPeriodStart && goals.length > 0
-      ? (await supabase
-          .from('goal_logs')
-          .select('id, goal_id, plant_id, value, notes, logged_at, logged_date')
-          .in('goal_id', goals.map(goal => goal.id))
-          .gte('logged_at', earliestPeriodStart.toISOString())
-          .order('logged_at', { ascending: false })).data || []
+      ? (snapshot?.goal_logs ?? []).filter((log) =>
+          goals.some((goal) => goal.id === log.goal_id)
+          && new Date(log.logged_at) >= earliestPeriodStart
+        )
       : []
 
     const logsByGoal = new Map<string, typeof goalLogs>()
@@ -385,7 +420,6 @@ export async function createPlant(dto: CreatePlantDto): Promise<{ success: boole
     return { success: false, error: error?.message || 'Failed to create plant' }
   }
 
-  revalidatePath('/garden')
   return { success: true, plant: newPlant as PlantWithType }
 }
 
@@ -408,7 +442,6 @@ export async function deletePlant(plantId: string): Promise<{ success: boolean; 
     return { success: false, error: error.message }
   }
 
-  revalidatePath('/garden')
   return { success: true }
 }
 
@@ -672,7 +705,6 @@ export async function waterPlant(
   // Check for new achievements
   const newAchievements = await checkAndUnlockAchievements(user.id)
 
-  revalidatePath('/garden')
   return {
     success: true,
     xpEarned: totalXp,
@@ -761,7 +793,6 @@ export async function resolveGrowthConflict(plantId: string): Promise<{ success:
     return { success: false, error: 'Failed to update plant size' }
   }
 
-  revalidatePath('/garden')
   return { success: true }
 }
 
@@ -1122,6 +1153,11 @@ type MoodLogForWeather = {
   mood_level: number | null
 }
 
+/** Garden route hydration reuses the same cached database snapshot as getPlants(). */
+export async function getGardenPlacedDecorations(): Promise<PlacedDecorationWithType[]> {
+  return (await loadGardenReadModel())?.placed_decorations ?? []
+}
+
 function isMoodLevel(level: number): level is MoodLevel {
   return Number.isInteger(level) && level >= 1 && level <= 5
 }
@@ -1407,7 +1443,6 @@ export async function updatePlantPosition(
     return { success: false, error: error.message }
   }
 
-  revalidatePath('/garden')
   return { success: true }
 }
 
@@ -1591,7 +1626,6 @@ export async function expandPlantSize(
     return { success: false, error: updateError.message }
   }
 
-  revalidatePath('/garden')
   return { success: true, relocatedPlants: relocatedPlantIds }
 }
 

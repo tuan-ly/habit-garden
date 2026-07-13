@@ -17,6 +17,7 @@ import { logGoalValue as logGoalValueAction } from '@/lib/actions/goals'
 import { validatePlantMove } from '@/lib/utils/grid-positioning'
 import { applyGoalLogToPeriod } from '@/lib/goal-progress'
 import { toast } from 'sonner'
+import { logActivity, type LogActivityDto, type LogActivityResult } from '@/lib/actions/activity'
 
 // Types for optimistic updates
 type OptimisticAction =
@@ -54,6 +55,11 @@ interface PlantsContextType {
   plants: PlantWithType[]
   isPending: boolean
   isSyncing: boolean
+  isPlantPending: (plantId: string) => boolean
+  recordActivity: (
+    dto: Omit<LogActivityDto, 'mutationId'>,
+    optimisticUpdates: Partial<PlantWithType>
+  ) => Promise<LogActivityResult>
   waterPlant: (
     plantId: string,
     options?: { notes?: string; difficulty?: 'easy' | 'medium' | 'hard' }
@@ -211,6 +217,7 @@ export function PlantsProvider({
   const [serverPlants, setServerPlants] = useState(initialPlants)
   const [isPending, startTransition] = useTransition()
   const [isSyncing, setIsSyncing] = useState(false)
+  const [pendingPlantIds, setPendingPlantIds] = useState<Set<string>>(new Set())
 
   // Sync when RSC refetches new initialPlants (e.g. after dev panel edits)
   useEffect(() => {
@@ -221,6 +228,72 @@ export function PlantsProvider({
   const [optimisticPlants, addOptimisticUpdate] = useOptimistic(
     serverPlants,
     plantsReducer
+  )
+
+  const recordActivity = useCallback(async (
+    dto: Omit<LogActivityDto, 'mutationId'>,
+    optimisticUpdates: Partial<PlantWithType>
+  ): Promise<LogActivityResult> => {
+    const snapshot = serverPlants.find((plant) => plant.id === dto.plant_id)
+    if (!snapshot) return { success: false, code: 'NOT_FOUND', error: 'Plant not found' }
+
+    const mutationId = crypto.randomUUID()
+    const execute = async (isRetry = false): Promise<LogActivityResult> => {
+      if (!isRetry) {
+        setServerPlants((plants) => plants.map((plant) =>
+          plant.id === dto.plant_id ? { ...plant, ...optimisticUpdates } : plant
+        ))
+      }
+      setPendingPlantIds((ids) => new Set(ids).add(dto.plant_id))
+
+      try {
+        const result = await logActivity({ ...dto, mutationId })
+        if (!result.success) throw new Error(result.error || result.code || 'Mutation failed')
+
+        setServerPlants((plants) => plants.map((plant) => {
+          if (plant.id !== dto.plant_id) return plant
+          return {
+            ...plant,
+            ...(result.plant ?? {}),
+            goal: result.goal
+              ? { ...(plant.goal ?? {}), ...result.goal }
+              : plant.goal,
+          } as PlantWithType
+        }))
+        return result
+      } catch (error) {
+        setServerPlants((plants) => plants.map((plant) =>
+          plant.id === dto.plant_id ? snapshot : plant
+        ))
+        const message = error instanceof Error ? error.message : 'Network error'
+        toast.error('Chưa thể đồng bộ thay đổi', {
+          description: message,
+          action: {
+            label: 'Thử lại',
+            onClick: () => {
+              setServerPlants((plants) => plants.map((plant) =>
+                plant.id === dto.plant_id ? { ...snapshot, ...optimisticUpdates } : plant
+              ))
+              void execute(true)
+            },
+          },
+        })
+        return { success: false, mutationId, code: 'DATABASE_ERROR', error: message }
+      } finally {
+        setPendingPlantIds((ids) => {
+          const next = new Set(ids)
+          next.delete(dto.plant_id)
+          return next
+        })
+      }
+    }
+
+    return execute()
+  }, [serverPlants])
+
+  const isPlantPending = useCallback(
+    (plantId: string) => pendingPlantIds.has(plantId),
+    [pendingPlantIds]
   )
 
   // Water a plant with optimistic update
@@ -513,6 +586,8 @@ export function PlantsProvider({
       plants: optimisticPlants,
       isPending,
       isSyncing,
+      isPlantPending,
+      recordActivity,
       waterPlant,
       logGoal,
       movePlant,
@@ -522,7 +597,7 @@ export function PlantsProvider({
       refreshPlants,
       getPlant,
     }),
-    [optimisticPlants, isPending, isSyncing, waterPlant, logGoal, movePlant, addPlant, removePlant, updatePlant, refreshPlants, getPlant]
+    [optimisticPlants, isPending, isSyncing, isPlantPending, recordActivity, waterPlant, logGoal, movePlant, addPlant, removePlant, updatePlant, refreshPlants, getPlant]
   )
 
   return (

@@ -284,7 +284,7 @@ function AmbientParticlesCanvasComponent({
         const animate = (timestamp: number) => {
             // Fix 3: skip if tab not visible
             if (document.hidden) {
-                rafRef.current = requestAnimationFrame(animate)
+                rafRef.current = 0
                 return
             }
 
@@ -549,10 +549,14 @@ function AmbientParticlesCanvasComponent({
 
         // Fix 3: pause/resume on visibility change
         const handleVisibilityChange = () => {
-            if (!document.hidden) {
+            if (document.hidden) {
+                cancelAnimationFrame(rafRef.current)
+                rafRef.current = 0
+            } else if (!rafRef.current) {
                 // Reset timing so delta doesn't spike after a long hidden period
                 lastTimeRef.current = 0
                 lastRenderTimeRef.current = 0
+                rafRef.current = requestAnimationFrame(animate)
             }
         }
         document.addEventListener('visibilitychange', handleVisibilityChange)

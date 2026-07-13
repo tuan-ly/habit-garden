@@ -15,8 +15,15 @@ Every write action should:
 3. return unauthorized/not-authenticated when missing
 4. verify ownership for user-owned records
 5. query explicit columns
-6. check and return errors
-7. perform side effects such as XP, coins, achievements, or revalidation deliberately
+6. use a `mutationId` for non-repeatable reward/economy writes
+7. return stable error codes and canonical entity snapshots
+8. avoid route revalidation for user-facing mutations
+
+## Atomic Activity Boundary
+
+`activity.ts` is a compatibility wrapper around `record_activity_atomic(...)`. The RPC locks the owned plant/profile rows and writes activity, goal progress, plant state, XP, coins, material harvest, and achievements in one transaction. `mutation_receipts` stores the canonical result so a retry with the same UUID cannot duplicate rewards.
+
+RPCs use `SECURITY INVOKER`, an empty `search_path`, schema-qualified names, `auth.uid()` ownership checks, and authenticated-only execute grants.
 
 ## Important Files
 

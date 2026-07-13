@@ -1,7 +1,6 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
 import type { Goal, GoalLog, CreateGoalDto, LogGoalDto, PlantStatus, PlantType } from '@/types/database'
 import { getAuthUser } from '@/lib/auth-cached'
 import { generateProgressionPlan, type ProgressionType as ProgType } from '@/lib/progression'
@@ -138,7 +137,6 @@ export async function createGoal(dto: CreateGoalDto): Promise<{ success: boolean
     .update({ goal_mode: dto.goal_mode })
     .eq('id', dto.plant_id)
 
-  revalidatePath('/garden')
   return { success: true, goal: goal as Goal }
 }
 
@@ -444,7 +442,6 @@ export async function logGoalValue(dto: LogGoalDto): Promise<{
       .eq('id', user.id)
   }
 
-  revalidatePath('/garden')
   return {
     success: true,
     xpEarned: totalXp,
@@ -829,6 +826,5 @@ export async function modifyGoal(dto: {
     return { success: false, error: error.message }
   }
 
-  revalidatePath('/garden')
   return { success: true, goal: goal as Goal }
 }

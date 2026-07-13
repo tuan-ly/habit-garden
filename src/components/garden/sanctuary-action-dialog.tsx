@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { PlantImage } from '@/components/plants/plant-image'
 import type { WateringActionMode } from '@/components/plants/gentle-watering-modal'
 import type { PlantWithType } from '@/types/database'
-import { ArrowLeft, Check, Leaf, Loader2, Moon, Sprout } from 'lucide-react'
+import { ArrowLeft, Check, Leaf, Moon, Sprout } from 'lucide-react'
 
 interface SanctuaryActionDialogProps {
   plant: PlantWithType | null
@@ -32,7 +32,6 @@ export function SanctuaryActionDialog({
   const [selectedMode, setSelectedMode] = useState<WateringActionMode | null>(null)
   const [value, setValue] = useState('')
   const [notes, setNotes] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const mode = selectedMode ?? initialMode
   const hasGoal = !!plant?.goal_mode
 
@@ -41,26 +40,23 @@ export function SanctuaryActionDialog({
       setSelectedMode(null)
       setValue('')
       setNotes('')
-      setIsSubmitting(false)
     }
     onOpenChange(nextOpen)
   }
 
-  const submitCompleted = async () => {
-    if (!plant || isSubmitting) return
+  const submitCompleted = () => {
+    if (!plant) return
     const numericValue = value.trim() ? Number(value) : undefined
     if (hasGoal && (numericValue === undefined || Number.isNaN(numericValue))) return
 
-    setIsSubmitting(true)
-    await onLogAndWater(numericValue, notes.trim() || undefined, 10)
     closeAndReset(false)
+    void onLogAndWater(numericValue, notes.trim() || undefined, 10)
   }
 
-  const submitRest = async () => {
-    if (!plant || isSubmitting) return
-    setIsSubmitting(true)
-    await onWater(notes.trim() || undefined, 0)
+  const submitRest = () => {
+    if (!plant) return
     closeAndReset(false)
+    void onWater(notes.trim() || undefined, 0)
   }
 
   return (
@@ -173,10 +169,10 @@ export function SanctuaryActionDialog({
                   <Button
                     type="button"
                     onClick={submitCompleted}
-                    disabled={isSubmitting || (hasGoal && !value.trim())}
+                    disabled={hasGoal && !value.trim()}
                     className="h-14 w-full rounded-full bg-[#5f854f] text-base font-bold text-white shadow-[0_12px_26px_rgba(69,105,57,0.25)] hover:bg-[#4c713e]"
                   >
-                    {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Leaf className="h-5 w-5 fill-white/20" />}
+                    <Leaf className="h-5 w-5 fill-white/20" />
                     Ghi nhận và chăm cây
                   </Button>
                 </div>
@@ -205,10 +201,9 @@ export function SanctuaryActionDialog({
                   <Button
                     type="button"
                     onClick={submitRest}
-                    disabled={isSubmitting}
                     className="h-14 w-full rounded-full bg-[#667b68] text-base font-bold text-white hover:bg-[#516454]"
                   >
-                    {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Moon className="h-5 w-5" />}
+                    <Moon className="h-5 w-5" />
                     Cho cây một ngày yên
                   </Button>
                 </div>

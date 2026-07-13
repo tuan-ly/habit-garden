@@ -1,7 +1,6 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
 import type {
   Identity,
   IdentityWithGoals,
@@ -126,7 +125,6 @@ export async function createIdentity(dto: CreateIdentityDto): Promise<{
     return { success: false, error: error.message }
   }
 
-  revalidatePath('/identity')
   return { success: true, identity: data as Identity }
 }
 
@@ -199,7 +197,6 @@ export async function updateIdentity(
     return { success: false, error: error.message }
   }
 
-  revalidatePath('/identity')
   return { success: true, identity: data as Identity }
 }
 
@@ -237,7 +234,6 @@ export async function deleteIdentity(identityId: string): Promise<{
     return { success: false, error: error.message }
   }
 
-  revalidatePath('/identity')
   return { success: true }
 }
 
@@ -300,8 +296,6 @@ export async function linkGoalToIdentity(
     return { success: false, error: error.message }
   }
 
-  revalidatePath('/identity')
-  revalidatePath('/garden')
   return { success: true }
 }
 
@@ -349,8 +343,6 @@ export async function unlinkGoalFromIdentity(goalId: string): Promise<{
     return { success: false, error: error.message }
   }
 
-  revalidatePath('/identity')
-  revalidatePath('/garden')
   return { success: true }
 }
 

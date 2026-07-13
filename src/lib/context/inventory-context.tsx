@@ -7,7 +7,6 @@ import {
   useCallback,
   useMemo,
   useRef,
-  useEffect,
   type ReactNode,
 } from 'react'
 import type {
@@ -16,17 +15,6 @@ import type {
   RecipeWithDetails,
   DecorationRotation,
 } from '@/types/database'
-import { getUserInventory } from '@/lib/actions/inventory'
-import { getRecipes, craftDecoration as craftDecorationAction } from '@/lib/actions/crafting'
-import {
-  getPlacedDecorations,
-  placeDecoration as placeDecorationAction,
-  pickUpDecoration as pickUpDecorationAction,
-  moveDecoration as moveDecorationAction,
-  rotateDecoration as rotateDecorationAction,
-  purchaseDecoration as purchaseDecorationAction,
-} from '@/lib/actions/decorations'
-import { getCoinBalance } from '@/lib/actions/coins'
 
 // ============================================
 // Return types
@@ -89,6 +77,7 @@ interface InventoryContextType {
   pickUpDecoration: (placedDecoId: string) => Promise<PickupResult>
   moveDecoration: (placedDecoId: string, row: number, col: number) => Promise<ActionResult>
   rotateDecoration: (placedDecoId: string) => Promise<ActionResult>
+  hydratePlacedDecorations: (decorations: PlacedDecorationWithType[]) => void
 
   // Helpers
   getMaterialCount: (materialSlug: string) => number
@@ -144,16 +133,8 @@ export function InventoryProvider({
   const [recipesLoaded, setRecipesLoaded] = useState(false)
   // De-dupe concurrent loadRecipes calls — single in-flight promise wins
   const recipesInFlight = useRef<Promise<void> | null>(null)
-  const placedDecorationsLoaded = useRef(false)
-
-  // DashboardProviders cannot hydrate route-specific garden data. Load placed
-  // decorations once so they remain visible and selectable after a hard reload.
-  useEffect(() => {
-    if (placedDecorationsLoaded.current) return
-    placedDecorationsLoaded.current = true
-    void getPlacedDecorations().then((result) => {
-      if ('decorations' in result) setPlacedDecorations(result.decorations)
-    })
+  const hydratePlacedDecorations = useCallback((next: PlacedDecorationWithType[]) => {
+    setPlacedDecorations(next)
   }, [])
 
   // Per-operation loading helpers
@@ -179,6 +160,11 @@ export function InventoryProvider({
   const refreshInventory = useCallback(async () => {
     startOp('refresh')
     try {
+      const [{ getUserInventory }, { getCoinBalance }, { getPlacedDecorations }] = await Promise.all([
+        import('@/lib/actions/inventory'),
+        import('@/lib/actions/coins'),
+        import('@/lib/actions/decorations'),
+      ])
       const [invResult, coinsResult, placedResult] = await Promise.all([
         getUserInventory(),
         getCoinBalance(),
@@ -211,6 +197,7 @@ export function InventoryProvider({
     startOp('recipes')
     const p = (async () => {
       try {
+        const { getRecipes } = await import('@/lib/actions/crafting')
         const result = await getRecipes()
         if ('recipes' in result) {
           setRecipes(result.recipes)
@@ -232,6 +219,10 @@ export function InventoryProvider({
     async (recipeId: string): Promise<CraftResult> => {
       startOp('craft')
       try {
+        const [{ craftDecoration: craftDecorationAction }, { getUserInventory }] = await Promise.all([
+          import('@/lib/actions/crafting'),
+          import('@/lib/actions/inventory'),
+        ])
         const result = await craftDecorationAction(recipeId)
 
         if (!('success' in result)) {
@@ -262,6 +253,15 @@ export function InventoryProvider({
     async (decoTypeId: string): Promise<PurchaseResult> => {
       startOp('purchase')
       try {
+        const [
+          { purchaseDecoration: purchaseDecorationAction },
+          { getUserInventory },
+          { getCoinBalance },
+        ] = await Promise.all([
+          import('@/lib/actions/decorations'),
+          import('@/lib/actions/inventory'),
+          import('@/lib/actions/coins'),
+        ])
         const result = await purchaseDecorationAction(decoTypeId)
 
         if (!('success' in result)) {
@@ -303,6 +303,13 @@ export function InventoryProvider({
     ): Promise<PlaceResult> => {
       startOp('place')
       try {
+        const [
+          { placeDecoration: placeDecorationAction, getPlacedDecorations },
+          { getUserInventory },
+        ] = await Promise.all([
+          import('@/lib/actions/decorations'),
+          import('@/lib/actions/inventory'),
+        ])
         const result = await placeDecorationAction({
           inventory_item_id: inventoryItemId,
           grid_row: row,
@@ -346,6 +353,13 @@ export function InventoryProvider({
     async (placedDecoId: string): Promise<PickupResult> => {
       startOp('pickup')
       try {
+        const [
+          { pickUpDecoration: pickUpDecorationAction },
+          { getUserInventory },
+        ] = await Promise.all([
+          import('@/lib/actions/decorations'),
+          import('@/lib/actions/inventory'),
+        ])
         const result = await pickUpDecorationAction({
           placed_decoration_id: placedDecoId,
         })
@@ -388,6 +402,7 @@ export function InventoryProvider({
       )
 
       try {
+        const { moveDecoration: moveDecorationAction, getPlacedDecorations } = await import('@/lib/actions/decorations')
         const result = await moveDecorationAction({
           placed_decoration_id: placedDecoId,
           grid_row: row,
@@ -429,6 +444,7 @@ export function InventoryProvider({
       )
 
       try {
+        const { rotateDecoration: rotateDecorationAction, getPlacedDecorations } = await import('@/lib/actions/decorations')
         const result = await rotateDecorationAction(placedDecoId)
 
         if (!('success' in result)) {
@@ -497,6 +513,7 @@ export function InventoryProvider({
       pickUpDecoration,
       moveDecoration,
       rotateDecoration,
+      hydratePlacedDecorations,
       getMaterialCount,
       canAfford,
     }),
@@ -519,6 +536,7 @@ export function InventoryProvider({
       pickUpDecoration,
       moveDecoration,
       rotateDecoration,
+      hydratePlacedDecorations,
       getMaterialCount,
       canAfford,
     ]

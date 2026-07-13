@@ -1,7 +1,6 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
 import type { Goal, GoalLog, GoalAdjustment, AdjustmentType } from '@/types/database'
 import { getAuthUser } from '@/lib/auth-cached'
 import {
@@ -266,7 +265,6 @@ export async function applyAdjustment(
     return { success: false, error: adjustmentError.message }
   }
 
-  revalidatePath('/garden')
   return { success: true }
 }
 
@@ -310,7 +308,6 @@ export async function rejectAdjustment(adjustmentId: string): Promise<{ success:
     return { success: false, error: error.message }
   }
 
-  revalidatePath('/garden')
   return { success: true }
 }
 
@@ -477,7 +474,6 @@ export async function activateRecoveryWeek(goalId: string): Promise<{ success: b
     }
   }
 
-  revalidatePath('/garden')
   return { success: true }
 }
 
@@ -521,6 +517,5 @@ export async function updateAdaptiveMode(
     return { success: false, error: error.message }
   }
 
-  revalidatePath('/garden')
   return { success: true }
 }

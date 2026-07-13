@@ -1,17 +1,23 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import Image from 'next/image'
+import dynamic from 'next/dynamic'
 import { IsometricGarden } from './isometric-garden'
-import { WeatherEffects } from './weather-effects'
 import { usePlants } from '@/lib/context/plants-context'
 import { useMood } from '@/lib/context/mood-context'
 import { usePlantTypes, useProfile } from '@/lib/context/dashboard-data-context'
 import { useDevOverride } from '@/components/dev/dev-debug-context'
+import { useGardenSettingsOptional } from '@/lib/context/garden-settings-context'
 import type { WeatherType } from '@/types/database'
 
 const LAST_VISIT_KEY = 'habit-garden-last-visit'
 const ABSENCE_THRESHOLD_DAYS = 3
+const subscribeToHardware = () => () => undefined
+const WeatherEffects = dynamic(
+  () => import(/* webpackChunkName: "garden-effects" */ './weather-effects').then((module) => ({ default: module.WeatherEffects })),
+  { ssr: false }
+)
 
 interface GardenViewProps {
   weather?: WeatherType | null
@@ -43,6 +49,12 @@ export function GardenView({ weather }: GardenViewProps) {
   const { plants } = usePlants()
   const { mood } = useMood()
   const plantTypes = usePlantTypes()
+  const gardenSettings = useGardenSettingsOptional()
+  const isLowPowerDevice = useSyncExternalStore(
+    subscribeToHardware,
+    () => (navigator.hardwareConcurrency ?? 8) <= 4,
+    () => false
+  )
   const { profile } = useProfile()
   const effectiveLevel = useDevOverride('level', profile?.level ?? 1)
   const [welcomeBackDays, setWelcomeBackDays] = useState(0)
@@ -99,7 +111,7 @@ export function GardenView({ weather }: GardenViewProps) {
         }}
       />
 
-      {displayWeather !== 'sunny' && (
+      {displayWeather !== 'sunny' && gardenSettings.showWeatherEffects && !gardenSettings.reducedMotion && !isLowPowerDevice && (
         <div className="absolute inset-0 z-10 pointer-events-none opacity-55">
           <WeatherEffects weather={displayWeather} />
         </div>

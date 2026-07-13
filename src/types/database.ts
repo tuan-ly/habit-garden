@@ -757,3 +757,29 @@ export interface MoveDecorationDto {
 export interface PickUpDecorationDto {
   placed_decoration_id: string
 }
+
+// =====================================================
+// Dashboard performance RPC contracts
+// =====================================================
+
+export type MutationErrorCode =
+  | 'UNAUTHENTICATED'
+  | 'FORBIDDEN'
+  | 'NOT_FOUND'
+  | 'ALREADY_APPLIED'
+  | 'CONFLICT'
+  | 'VALIDATION_ERROR'
+  | 'DATABASE_ERROR'
+
+export interface DashboardBootstrapReadModel {
+  profile: Profile | null
+  mood: number | null
+  plant_types: PlantType[]
+}
+
+export interface GardenSnapshotReadModel {
+  plants: PlantWithType[]
+  goals: Goal[]
+  goal_logs: GoalLog[]
+  placed_decorations: PlacedDecorationWithType[]
+}

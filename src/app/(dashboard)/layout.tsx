@@ -2,10 +2,8 @@ import { redirect } from 'next/navigation'
 import { Toaster } from '@/components/ui/sonner'
 import { GameNav } from '@/components/game-ui/game-nav'
 import { DashboardProviders } from './providers'
-import { getTodayMood } from '@/lib/actions/mood'
-import { getProfile } from '@/lib/actions/profile'
-import { getPlantTypes } from '@/lib/actions/plants'
 import { getAuthUser } from '@/lib/auth-cached'
+import { getDashboardBootstrap } from '@/lib/actions/dashboard-bootstrap'
 import { TimezoneSync } from '@/components/timezone-sync'
 import { ClientModals } from './client-modals'
 
@@ -21,13 +19,8 @@ export default async function DashboardLayout({
     redirect('/login')
   }
 
-  // Fetch mood, profile, and plant types in parallel
-  // All three internally call getAuthUser() which is deduped by React cache()
-  const [initialMood, profile, plantTypes] = await Promise.all([
-    getTodayMood(),
-    getProfile(),
-    getPlantTypes(),
-  ])
+  // One read-model request replaces the three shell queries.
+  const { mood: initialMood, profile, plantTypes } = await getDashboardBootstrap()
   const userTimezone = profile?.timezone ?? null
 
   return (
