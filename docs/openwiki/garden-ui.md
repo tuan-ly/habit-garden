@@ -63,7 +63,7 @@ Important concepts:
 The production `/garden` route is now **Garden-first**:
 
 - no separate Today dashboard or competing mode toggle
-- one automatically suggested plant receives the visual focus
+- one automatically suggested plant is named in the action UI while the idle garden keeps every plant at its natural visual weight
 - action dock offers `Đã làm`, `2 phút`, and `Nghỉ` with equal reachability
 - the primary metric is plants cared for today (`x/y`)
 - XP, streaks, achievements, store and stats are not primary Garden-home motivation
@@ -76,7 +76,7 @@ Legacy list/focus/edit primitives still exist for compatibility and garden arran
 - `useGardenInteractions()` performs existing optimistic mutations and can open a selected action mode directly.
 - In sanctuary mode, `GardenCelebrationLayer` renders `SanctuaryGardenReaction`; XP-first overlays are suppressed.
 - Mood is no longer a proactive blocking modal. Onboarding is the only automatic entry modal.
-- The plant remains the visual focal point before and after an action.
+- The idle garden remains visually balanced before and after an action; stronger focus is reserved for a plant the user explicitly opens.
 - Use real plant/background assets; do not replace them with emoji or placeholder drawings.
 
 ## Plant Focus Interaction

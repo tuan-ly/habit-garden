@@ -12,6 +12,7 @@ import { getTimeOfDay, type TimeOfDay, defaultTheme } from './themes'
 import { GardenTileGrid } from './garden-tile-grid'
 import { useGardenInteractions } from './use-garden-interactions'
 import { SanctuaryGardenChrome } from './sanctuary-garden-chrome'
+import { selectSanctuaryActivePlant } from './sanctuary-plant-selection'
 import { usePlants } from '@/lib/context/plants-context'
 import { useGardenSettingsOptional } from '@/lib/context/garden-settings-context'
 import { useInventoryOptional } from '@/lib/context/inventory-context'
@@ -360,11 +361,8 @@ export function IsometricGarden({
     [sanctuaryPlants, interactions]
   )
   const sanctuaryActivePlant = useMemo(() => {
-    const due = sanctuaryPlants
-      .filter((plant) => !interactions.isWateredToday(plant))
-      .sort((a, b) => a.current_moisture - b.current_moisture)
-    return due[0] ?? sanctuaryCompleted[0] ?? sanctuaryPlants[0] ?? null
-  }, [sanctuaryPlants, sanctuaryCompleted, interactions])
+    return selectSanctuaryActivePlant(sanctuaryPlants, interactions.isWateredToday)
+  }, [sanctuaryPlants, interactions.isWateredToday])
   const sanctuaryFocusedPlant = useMemo(
     () => sanctuaryPlants.find((plant) => plant.id === sanctuaryFocusedPlantId) ?? null,
     [sanctuaryPlants, sanctuaryFocusedPlantId]
@@ -443,17 +441,17 @@ export function IsometricGarden({
   )
 
   const resolvedFocusStates = useMemo(() => {
-    if (!sanctuaryMode || !sanctuaryActivePlant) return focusStates
+    if (!sanctuaryMode) return focusStates
     const states = new Map<string, FocusState>()
     for (const plant of sanctuaryPlants) {
       if (sanctuaryFocusedPlant) {
         states.set(plant.id, plant.id === sanctuaryFocusedPlant.id ? 'highlight' : 'dim')
       } else {
-        states.set(plant.id, plant.id === sanctuaryActivePlant.id ? 'highlight' : 'normal')
+        states.set(plant.id, 'normal')
       }
     }
     return states
-  }, [focusStates, sanctuaryMode, sanctuaryActivePlant, sanctuaryFocusedPlant, sanctuaryPlants])
+  }, [focusStates, sanctuaryMode, sanctuaryFocusedPlant, sanctuaryPlants])
 
   const gardenTransform = useMemo(() => {
     if (!sanctuaryMode || !sanctuaryFocusedPlant) {
@@ -619,10 +617,10 @@ export function IsometricGarden({
               timeOfDay={currentTimeOfDay}
               showGridLines={!sanctuaryMode || mode === 'arrange'}
               cinematic={sanctuaryMode}
-              focalArea={sanctuaryActivePlant ? {
-                row: sanctuaryActivePlant.grid_row ?? 0,
-                col: sanctuaryActivePlant.grid_col ?? 0,
-                size: sanctuaryActivePlant.grid_size || 1,
+              focalArea={sanctuaryFocusedPlant ? {
+                row: sanctuaryFocusedPlant.grid_row ?? 0,
+                col: sanctuaryFocusedPlant.grid_col ?? 0,
+                size: sanctuaryFocusedPlant.grid_size || 1,
               } : null}
             />
 
@@ -656,7 +654,7 @@ export function IsometricGarden({
               onTileLeave={handleTileLeave}
               onContextMenu={interactions.handleContextMenu}
               hidePlantBadges={sanctuaryMode}
-              featuredPlantId={sanctuaryMode ? sanctuaryDisplayPlant?.id : null}
+              featuredPlantId={sanctuaryMode ? sanctuaryFocusedPlant?.id : null}
               hideStatusIndicators={sanctuaryMode}
               cinematic={sanctuaryMode}
               selectedDecorationId={selectedPlacedDecoration?.id}
