@@ -90,9 +90,7 @@ export function EditModeOverlay({
   const handleRotate = useCallback(async () => {
     if (editMode.selectedDecoration) {
       const result = await inventory.rotateDecoration(editMode.selectedDecoration.id)
-      if (result.success) {
-        editMode.deselectDecoration()
-      } else {
+      if (!result.success) {
         toast.error('Chưa thể xoay vật trang trí', { description: result.error })
       }
       return

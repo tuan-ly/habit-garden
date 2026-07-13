@@ -85,6 +85,11 @@ export function IsometricGarden({
     () => inventory?.placedDecorations ?? [],
     [inventory?.placedDecorations]
   )
+  const selectedPlacedDecoration = useMemo(() => {
+    if (!editMode.selectedDecoration) return null
+    return placedDecorations.find((decoration) => decoration.id === editMode.selectedDecoration?.id)
+      ?? editMode.selectedDecoration
+  }, [editMode.selectedDecoration, placedDecorations])
 
   // Zoom and pan
   const {
@@ -629,13 +634,24 @@ export function IsometricGarden({
               featuredPlantId={sanctuaryMode ? sanctuaryDisplayPlant?.id : null}
               hideStatusIndicators={sanctuaryMode}
               cinematic={sanctuaryMode}
-              selectedDecorationId={editMode.selectedDecoration?.id}
-              placementGhost={editMode.selectedItem?.decoration_type && editMode.ghostPosition ? {
-                ...editMode.ghostPosition,
-                decorationType: editMode.selectedItem.decoration_type,
-                rotation: editMode.ghostRotation,
-                isValid: editMode.isGhostValid,
-              } : null}
+              selectedDecorationId={selectedPlacedDecoration?.id}
+              placementGhost={editMode.ghostPosition
+                ? editMode.selectedItem?.decoration_type
+                  ? {
+                      ...editMode.ghostPosition,
+                      decorationType: editMode.selectedItem.decoration_type,
+                      rotation: editMode.ghostRotation,
+                      isValid: editMode.isGhostValid,
+                    }
+                  : selectedPlacedDecoration
+                    ? {
+                        ...editMode.ghostPosition,
+                        decorationType: selectedPlacedDecoration.decoration_type,
+                        rotation: selectedPlacedDecoration.rotation,
+                        isValid: editMode.isGhostValid,
+                      }
+                    : null
+                : null}
             />
 
           </div>
