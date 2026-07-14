@@ -454,54 +454,99 @@ function getFaceBounds(face: LivingEmbankmentFace) {
     }
 }
 
-function drawLivingEmbankmentFace(
+function traceLivingEmbankmentMass(
     ctx: CanvasRenderingContext2D,
-    face: LivingEmbankmentFace,
-    baseGradient: CanvasGradient,
-    texture: HTMLImageElement | null,
-    lightOverlay: string,
-    textureSide: 'left' | 'right'
+    left: LivingEmbankmentFace,
+    right: LivingEmbankmentFace
 ) {
+    traceLivingEmbankmentFace(ctx, left)
+    traceLivingEmbankmentFace(ctx, right)
+}
+
+function getLivingEmbankmentBounds(left: LivingEmbankmentFace, right: LivingEmbankmentFace) {
+    const points = [...left.top, ...left.bottom, ...right.top, ...right.bottom]
+    const xs = points.map((point) => point.x)
+    const ys = points.map((point) => point.y)
+    const x = Math.min(...xs)
+    const y = Math.min(...ys)
+
+    return {
+        x,
+        y,
+        width: Math.max(...xs) - x,
+        height: Math.max(...ys) - y,
+    }
+}
+
+function strokeLivingEmbankmentBottom(
+    ctx: CanvasRenderingContext2D,
+    face: LivingEmbankmentFace
+) {
+    const reversedBottom = [...face.bottom].reverse()
+    const bounds = getFaceBounds(face)
+
+    ctx.beginPath()
+    ctx.moveTo(reversedBottom[0].x, reversedBottom[0].y)
+    appendOrganicBottomPolyline(ctx, reversedBottom, Math.min(18, bounds.height * 0.14))
+    ctx.stroke()
+}
+
+function drawLivingEmbankmentMass(
+    ctx: CanvasRenderingContext2D,
+    left: LivingEmbankmentFace,
+    right: LivingEmbankmentFace,
+    texture: HTMLImageElement | null,
+    dirtHighlight: number
+) {
+    const bounds = getLivingEmbankmentBounds(left, right)
+    const baseGradient = ctx.createLinearGradient(0, bounds.y, 0, bounds.y + bounds.height)
+    baseGradient.addColorStop(0, '#87694C')
+    baseGradient.addColorStop(0.52, '#6B4F3B')
+    baseGradient.addColorStop(1, '#49362D')
+
     ctx.save()
     ctx.beginPath()
-    traceLivingEmbankmentFace(ctx, face)
+    traceLivingEmbankmentMass(ctx, left, right)
     ctx.fillStyle = baseGradient
     ctx.fill()
 
+    ctx.beginPath()
+    traceLivingEmbankmentMass(ctx, left, right)
+    ctx.clip()
+
     if (texture) {
-        const bounds = getFaceBounds(face)
-        ctx.clip()
-        ctx.globalAlpha = 0.88
-        // Exactly one image sample per face. Geometry supplies the silhouette;
-        // the decoded bitmap supplies strata, roots and embedded stones.
-        const sourceWidth = texture.naturalWidth / 2
-        const sourceX = textureSide === 'left' ? 0 : sourceWidth
+        ctx.globalAlpha = 0.84
+        // One continuous sample spans the complete earth mass. Keeping texture
+        // coordinates shared across both faces removes the exact center-axis
+        // split without flattening the floating-island silhouette.
         ctx.drawImage(
             texture,
-            sourceX,
             0,
-            sourceWidth,
+            0,
+            texture.naturalWidth,
             texture.naturalHeight,
             bounds.x,
             bounds.y,
             bounds.width,
             bounds.height
         )
-        ctx.globalAlpha = 1
-        ctx.fillStyle = lightOverlay
-        ctx.fillRect(bounds.x, bounds.y, bounds.width, bounds.height)
     }
+
+    ctx.globalAlpha = 1
+    const directionalLight = ctx.createLinearGradient(bounds.x, 0, bounds.x + bounds.width, 0)
+    directionalLight.addColorStop(0, 'rgba(38, 54, 52, 0.24)')
+    directionalLight.addColorStop(0.42, 'rgba(38, 54, 52, 0.07)')
+    directionalLight.addColorStop(0.58, 'rgba(245, 207, 145, 0.02)')
+    directionalLight.addColorStop(1, `rgba(245, 207, 145, ${0.08 + dirtHighlight * 0.2})`)
+    ctx.fillStyle = directionalLight
+    ctx.fillRect(bounds.x, bounds.y, bounds.width, bounds.height)
     ctx.restore()
 
     ctx.save()
-    ctx.beginPath()
-    const reversedBottom = [...face.bottom].reverse()
-    ctx.moveTo(reversedBottom[0].x, reversedBottom[0].y)
-    const bounds = getFaceBounds(face)
-    appendOrganicBottomPolyline(ctx, reversedBottom, Math.min(18, bounds.height * 0.14))
     ctx.strokeStyle = 'rgba(55, 38, 29, 0.28)'
     ctx.lineWidth = 1.3
-    ctx.stroke()
+    strokeLivingEmbankmentBottom(ctx, left)
+    strokeLivingEmbankmentBottom(ctx, right)
     ctx.restore()
 }
 
@@ -542,40 +587,101 @@ function drawLivingEdgeSegments(
     }
 }
 
-function drawLivingFrontSeamBlend(
+function cubicPoint(
+    start: GroundPoint,
+    controlA: GroundPoint,
+    controlB: GroundPoint,
+    end: GroundPoint,
+    t: number
+): GroundPoint {
+    const inverse = 1 - t
+    return {
+        x: inverse ** 3 * start.x
+            + 3 * inverse ** 2 * t * controlA.x
+            + 3 * inverse * t ** 2 * controlB.x
+            + t ** 3 * end.x,
+        y: inverse ** 3 * start.y
+            + 3 * inverse ** 2 * t * controlA.y
+            + 3 * inverse * t ** 2 * controlB.y
+            + t ** 3 * end.y,
+    }
+}
+
+function drawSanctuaryPath(
     ctx: CanvasRenderingContext2D,
-    top: GroundPoint,
-    bottom: GroundPoint,
+    diamondWidth: number,
+    diamondHeight: number,
     tileSize: number
 ) {
-    const feather = tileSize * 0.095
-    const seamGradient = ctx.createLinearGradient(
-        top.x - feather,
-        0,
-        top.x + feather,
-        0
-    )
-    seamGradient.addColorStop(0, 'rgba(104, 78, 58, 0)')
-    seamGradient.addColorStop(0.25, 'rgba(104, 78, 58, 0.18)')
-    seamGradient.addColorStop(0.5, 'rgba(104, 78, 58, 0.68)')
-    seamGradient.addColorStop(0.75, 'rgba(104, 78, 58, 0.18)')
-    seamGradient.addColorStop(1, 'rgba(104, 78, 58, 0)')
+    const centerX = diamondWidth / 2
+    // Enter through the lower-right edge instead of the front vertex. This
+    // keeps the worn path from recreating the center-axis seam it replaces.
+    const start = { x: centerX + tileSize * 0.44, y: diamondHeight - tileSize * 0.26 }
+    const controlA = { x: centerX + tileSize * 0.8, y: diamondHeight - tileSize * 0.78 }
+    const controlB = { x: centerX + tileSize * 0.5, y: diamondHeight * 0.65 }
+    const end = { x: centerX - tileSize * 0.34, y: diamondHeight * 0.54 }
+
+    const tracePath = () => {
+        ctx.beginPath()
+        ctx.moveTo(start.x, start.y)
+        ctx.bezierCurveTo(controlA.x, controlA.y, controlB.x, controlB.y, end.x, end.y)
+    }
 
     ctx.save()
-    ctx.filter = `blur(${Math.max(2, tileSize * 0.022)}px)`
-    ctx.strokeStyle = seamGradient
-    ctx.lineWidth = Math.max(12, tileSize * 0.16)
     ctx.lineCap = 'round'
-    ctx.beginPath()
-    ctx.moveTo(top.x, top.y + tileSize * 0.025)
-    ctx.quadraticCurveTo(
-        top.x - tileSize * 0.012,
-        (top.y + bottom.y) / 2,
-        bottom.x,
-        bottom.y - tileSize * 0.025
-    )
+    ctx.lineJoin = 'round'
+    ctx.filter = `blur(${Math.max(2, tileSize * 0.025)}px)`
+    ctx.strokeStyle = 'rgba(229, 210, 143, 0.075)'
+    ctx.lineWidth = Math.max(14, tileSize * 0.16)
+    tracePath()
     ctx.stroke()
+    ctx.filter = 'none'
+    ctx.strokeStyle = 'rgba(191, 166, 101, 0.09)'
+    ctx.lineWidth = Math.max(7, tileSize * 0.068)
+    tracePath()
+    ctx.stroke()
+
+    const stoneStops = [0.12, 0.28, 0.46, 0.65, 0.83]
+    for (let index = 0; index < stoneStops.length; index++) {
+        const point = cubicPoint(start, controlA, controlB, end, stoneStops[index])
+        ctx.fillStyle = index % 2
+            ? 'rgba(137, 120, 79, 0.1)'
+            : 'rgba(235, 220, 165, 0.12)'
+        ctx.beginPath()
+        ctx.ellipse(
+            point.x + (index % 2 ? -tileSize * 0.012 : tileSize * 0.008),
+            point.y,
+            tileSize * (0.034 + (index % 3) * 0.004),
+            tileSize * 0.014,
+            -0.08 + index * 0.045,
+            0,
+            Math.PI * 2
+        )
+        ctx.fill()
+    }
     ctx.restore()
+}
+
+function drawSanctuaryCornerAccents(
+    ctx: CanvasRenderingContext2D,
+    diamondWidth: number,
+    diamondHeight: number,
+    tileSize: number
+) {
+    const left = { x: tileSize * 0.48, y: diamondHeight / 2 - tileSize * 0.055 }
+    const right = { x: diamondWidth - tileSize * 0.52, y: diamondHeight / 2 - tileSize * 0.035 }
+
+    drawGrass(ctx, left.x - tileSize * 0.08, left.y + tileSize * 0.025, 0.78)
+    drawGrass(ctx, left.x, left.y, 0.96)
+    drawGrass(ctx, left.x + tileSize * 0.075, left.y + tileSize * 0.02, 0.68)
+    drawFlower(ctx, left.x - tileSize * 0.025, left.y - tileSize * 0.035, 0.74, '#F3E8BE')
+    drawFlower(ctx, left.x + tileSize * 0.065, left.y - tileSize * 0.015, 0.58, '#E6CF8E')
+
+    drawGrass(ctx, right.x - tileSize * 0.07, right.y + tileSize * 0.02, 0.66)
+    drawGrass(ctx, right.x, right.y, 0.92)
+    drawGrass(ctx, right.x + tileSize * 0.075, right.y + tileSize * 0.03, 0.82)
+    drawFlower(ctx, right.x - tileSize * 0.055, right.y - tileSize * 0.018, 0.62, '#E8D69E')
+    drawFlower(ctx, right.x + tileSize * 0.025, right.y - tileSize * 0.04, 0.76, '#F4EDCF')
 }
 
 function GroundPlaneCanvasComponent({
@@ -768,7 +874,7 @@ function GroundPlaneCanvasComponent({
         const light = getLightingProfile(weather, timeOfDay)
         if (cinematic && timeOfDay === 'day') {
             light.vignetteHighlight = Math.max(light.vignetteHighlight, 0.38)
-            light.vignetteShadow = Math.max(light.vignetteShadow, 0.37)
+            light.vignetteShadow = Math.max(light.vignetteShadow, 0.26)
             light.bevelHighlight = Math.max(light.bevelHighlight, 0.24)
             light.dirtHighlight = Math.max(light.dirtHighlight, 0.42)
         }
@@ -798,58 +904,23 @@ function GroundPlaneCanvasComponent({
         // grass plane so the top reads as turf growing over soil, not a board
         // attached beneath it. Stats Garden keeps its legacy renderer below.
         if (cinematic && embankmentGeometry) {
-            const leftSoil = ctx.createLinearGradient(
-                0,
-                embankmentGeometry.left.top[0].y,
-                0,
-                embankmentGeometry.frontBottom.y
-            )
-            leftSoil.addColorStop(0, '#745B43')
-            leftSoil.addColorStop(0.52, '#604836')
-            leftSoil.addColorStop(1, '#49362D')
-
-            const rightSoil = ctx.createLinearGradient(
-                0,
-                embankmentGeometry.right.top[0].y,
-                0,
-                embankmentGeometry.frontBottom.y
-            )
-            rightSoil.addColorStop(0, '#9A7955')
-            rightSoil.addColorStop(0.5, '#7E5E43')
-            rightSoil.addColorStop(1, '#5B4133')
-
-            drawLivingEmbankmentFace(
+            drawLivingEmbankmentMass(
                 ctx,
                 embankmentGeometry.left,
-                leftSoil,
-                soilFaceTextureRef.current,
-                'rgba(46, 61, 57, 0.18)',
-                'left'
-            )
-            drawLivingEmbankmentFace(
-                ctx,
                 embankmentGeometry.right,
-                rightSoil,
                 soilFaceTextureRef.current,
-                `rgba(245, 207, 145, ${0.06 + light.dirtHighlight * 0.18})`,
-                'right'
-            )
-            drawLivingFrontSeamBlend(
-                ctx,
-                embankmentGeometry.frontTop,
-                embankmentGeometry.frontBottom,
-                tileSize
+                light.dirtHighlight
             )
         }
 
         // Draw grass surface with warm sage gradient — sun from UPPER-RIGHT
         // Light hits the right/top side, shadow falls toward lower-left
         const gradient = ctx.createLinearGradient(svgWidth * 0.85, 0, svgWidth * 0.15, diamondHeight)
-        gradient.addColorStop(0, cinematic ? '#C4D184' : '#B8D2A8')
-        gradient.addColorStop(0.2, cinematic ? '#A4B879' : grassColor)
-        gradient.addColorStop(0.45, cinematic ? '#879C66' : '#B0C8A0')
-        gradient.addColorStop(0.7, cinematic ? '#687F57' : grassDarkColor)
-        gradient.addColorStop(1, cinematic ? '#42583D' : '#758F68')
+        gradient.addColorStop(0, cinematic ? '#CCD98A' : '#B8D2A8')
+        gradient.addColorStop(0.2, cinematic ? '#AFC27B' : grassColor)
+        gradient.addColorStop(0.45, cinematic ? '#93A76A' : '#B0C8A0')
+        gradient.addColorStop(0.7, cinematic ? '#75895B' : grassDarkColor)
+        gradient.addColorStop(1, cinematic ? '#536A45' : '#758F68')
 
         ctx.fillStyle = gradient
         ctx.beginPath()
@@ -864,7 +935,7 @@ function GroundPlaneCanvasComponent({
             ctx.beginPath()
             traceOrganicDiamond(ctx, topX, topY, rightX, rightY, bottomX, bottomY, leftX, leftY, organicRadius, organicWobble)
             ctx.clip()
-            ctx.globalAlpha = 0.42
+            ctx.globalAlpha = 0.32
             ctx.globalCompositeOperation = 'multiply'
             ctx.drawImage(grassTextureRef.current, 0, 0, svgWidth, diamondHeight)
             ctx.restore()
@@ -968,6 +1039,15 @@ function GroundPlaneCanvasComponent({
         ctx.filter = 'none'
         ctx.restore()
 
+        if (cinematic) {
+            ctx.save()
+            ctx.beginPath()
+            traceOrganicDiamond(ctx, topX, topY, rightX, rightY, bottomX, bottomY, leftX, leftY, organicRadius, organicWobble)
+            ctx.clip()
+            drawSanctuaryPath(ctx, diamondWidth, diamondHeight, tileSize)
+            ctx.restore()
+        }
+
         // PREMIUM: one continuous organic rim instead of four ruler-straight bevels.
         ctx.save()
         ctx.lineWidth = cinematic ? 2.2 : 1.5
@@ -986,6 +1066,10 @@ function GroundPlaneCanvasComponent({
             } else if (detail.type === 'clover') {
                 drawClover(ctx, detail.x, detail.y, detail.scale)
             }
+        }
+
+        if (cinematic) {
+            drawSanctuaryCornerAccents(ctx, diamondWidth, diamondHeight, tileSize)
         }
 
         // Soil faces use vertical tonal falloff so the island reads as earth,

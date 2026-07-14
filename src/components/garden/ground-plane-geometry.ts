@@ -18,8 +18,12 @@ export interface LivingEmbankmentGeometry {
   canvasHeight: number
 }
 
-export const LIVING_EMBANKMENT_SIDE_DEPTH_RATIO = 0.56
-export const LIVING_EMBANKMENT_FRONT_DEPTH_RATIO = 0.82
+// Keep the soil bank present enough to sell the floating-island silhouette,
+// but subordinate it to the plantable garden surface. The previous 0.56/0.82
+// bank made the earth mass compete with the garden and amplified the front
+// face join at the exact visual center.
+export const LIVING_EMBANKMENT_SIDE_DEPTH_RATIO = 0.42
+export const LIVING_EMBANKMENT_FRONT_DEPTH_RATIO = 0.6
 export const LIVING_EMBANKMENT_MAX_WOBBLE_RATIO = 0.025
 export const LIVING_EMBANKMENT_SAMPLE_COUNT = 9
 export const LIVING_EMBANKMENT_SHADOW_BLEED_RATIO = 0.56

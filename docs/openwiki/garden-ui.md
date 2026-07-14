@@ -17,7 +17,9 @@ Avoid Framer Motion for many garden elements. It is acceptable for small UI tran
 
 Garden camera transforms follow **Direct Manipulation**: pan, wheel/pinch zoom, and grid-size changes must update without a CSS transition. Cinematic easing is reserved for explicit plant-focus camera moves. Static canvas materials should reuse small deterministic texture tiles instead of regenerating pixel-density noise whenever the grid changes size.
 
-Sanctuary terrain uses **Hybrid Procedural Terrain**: `ground-plane-geometry.ts` owns deterministic responsive face samples and shared visual height, while `GroundPlaneCanvas` clips decoded, lighting-neutral soil/edge materials into those faces. The cinematic bank uses `0.56 × tileSize` side depth and `0.82 × tileSize` front depth; Stats Garden does not use this path. Material assets must trigger at most one static offscreen redraw after decode, and pan/zoom/focus must only composite or transform existing output.
+Sanctuary terrain uses **Hybrid Procedural Terrain**: `ground-plane-geometry.ts` owns deterministic responsive face samples and shared visual height, while `GroundPlaneCanvas` clips decoded, lighting-neutral soil/edge materials into those faces. The cinematic bank uses `0.42 × tileSize` side depth and `0.60 × tileSize` front depth so the earth mass stays subordinate to the plantable surface; Stats Garden does not use this path. Both soil faces share one continuous texture sample and a smooth directional-light overlay, so the front geometry remains sealed without drawing a dark center seam. Material assets must trigger at most one static offscreen redraw after decode, and pan/zoom/focus must only composite or transform existing output.
+
+The sanctuary surface includes deterministic **Non-occupying Terrain Inlays**: one low-contrast curved wear path enters off-center, and two sparse grass/flower clusters soften the left and right edge caps. These are part of the ground material, never inventory decorations: they do not reserve cells, participate in collision, create selection targets or replace `placed_decorations`.
 
 ## Isometric Garden Responsibilities
 

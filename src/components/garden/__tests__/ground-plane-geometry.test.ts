@@ -63,6 +63,14 @@ describe('Living Embankment geometry', () => {
     }
   })
 
+  it.each(CASES)('keeps the soil bank visually subordinate to the garden surface for $gridSize×$gridSize', ({ gridSize, tileSize }) => {
+    const geometry = createLivingEmbankmentGeometry(gridSize, tileSize)
+
+    expect(geometry.sideDepth).toBeLessThanOrEqual(tileSize * 0.45)
+    expect(geometry.frontDepth).toBeLessThanOrEqual(tileSize * 0.62)
+    expect(geometry.frontDepth - geometry.sideDepth).toBeLessThanOrEqual(tileSize * 0.2)
+  })
+
   it.each(CASES)('supports both rounded grass caps without a floating overhang for $gridSize×$gridSize', ({ gridSize, tileSize }) => {
     const geometry = createLivingEmbankmentGeometry(gridSize, tileSize)
     const width = gridSize * tileSize

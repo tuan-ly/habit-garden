@@ -143,3 +143,60 @@ final result: passed
 - Console: no runtime error surface appeared in the reviewed Storybook state.
 
 final result: passed
+
+---
+
+# Design QA — First Seed Sanctuary terrain
+
+- Source visual truth: `C:\Users\TUAN LY\.codex\generated_images\019f5e41-9d5a-7ec0-a728-338b6493cbd6\exec-0b48e336-ec48-4e85-b9ff-64ccb204863e.png`
+- Implementation screenshot: `D:\Code\habit-garden\tmpclaude-design-qa\final.png`
+- Full-view comparison: `D:\Code\habit-garden\tmpclaude-design-qa\comparison.png`
+- Focused comparison: `D:\Code\habit-garden\tmpclaude-design-qa\focused-comparison.png`
+- Responsive evidence: `D:\Code\habit-garden\tmpclaude-design-qa\mobile.png`
+- Viewport: desktop 1280×720; mobile 390×844
+- State: Storybook `Garden/Living Embankment`, sunny day, cinematic terrain; desktop grid 7 at zoom 0.85, mobile grid 3 at zoom 0.82
+
+## Findings
+
+- No actionable P0/P1/P2 findings remain.
+- The front soil mass uses continuous texture and smooth directional lighting; no hard vertical center seam is visible.
+- The curved worn path enters off-center and remains lower contrast than the plantable surface.
+- The earth bank is visibly thinner while the floating-island silhouette remains legible.
+- Left/right edge accents are intentionally sparse and do not read as inventory decorations.
+
+## Required fidelity surfaces
+
+- Fonts and typography: not applicable; the target and terrain story contain no text.
+- Spacing and layout rhythm: passed. Island scale, diamond footprint, horizon and negative-space balance remain stable. Mobile has no clipping or horizontal overflow.
+- Colors and visual tokens: passed. Warm sage/golden-hour hierarchy is preserved; production terrain remains slightly calmer than the concept so dynamic plants retain priority.
+- Image quality and asset fidelity: passed. Existing decoded grass, soil-face, soil-edge and background assets are retained; no placeholder or code-drawn substitute replaces a required raster asset. Procedural path and edge flora extend the existing Canvas-First terrain system.
+- Copy and content: not applicable. The concept seedling is deliberately not baked into terrain because production plants remain data-driven grid entities.
+
+## Comparison history
+
+### Iteration 1
+
+- Finding [P1]: the old front-seam blend painted a dark strip on the exact center axis.
+- Finding [P2]: the `0.56/0.82` soil depth competed with the garden surface.
+- Finding [P2]: the first path pass stayed too close to the center axis and was too bright.
+- Fixes: replaced per-face texture samples with one continuous earth-mass sample; removed `drawLivingFrontSeamBlend`; changed depth ratios to `0.42/0.60`; moved the path entry to the lower-right edge and softened its strokes.
+
+### Iteration 2
+
+- Evidence: `iteration-2.png` after decoded materials loaded.
+- Finding [P2]: surface remained darker than the selected direction and the two corner accents were too small at the full viewport.
+- Fixes: brightened cinematic grass stops, reduced texture multiply opacity from 0.42 to 0.32 and enlarged the two deterministic edge clusters.
+
+### Final pass
+
+- Evidence: `final.png`, `comparison.png` and `focused-comparison.png`.
+- Center face is continuous, path is off-axis, soil depth is subordinate and terrain remains open for data-driven plants/decorations.
+- Mobile 390×844 renders the complete island without clipping.
+- Browser console warnings/errors: none.
+- Primary interactions: none in this canvas-only Storybook fixture; placement/focus behavior was not changed.
+
+## Follow-up polish
+
+- [P3] Revisit path contrast only after observing a populated production garden; the current value intentionally avoids competing with plants.
+
+final result: passed
