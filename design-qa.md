@@ -200,3 +200,32 @@ final result: passed
 - [P3] Revisit path contrast only after observing a populated production garden; the current value intentionally avoids competing with plants.
 
 final result: passed
+
+---
+
+# Design QA — Living Embankment edge junction correction (2026-07-14)
+
+- Source visual truth: `C:/Users/TUAN LY/AppData/Local/Packages/MicrosoftWindows.Client.Core_cw5n1h2txyewy/TempState/ScreenClip/{6AAEC752-3921-479A-BB83-8F6B3FC1C2D9}.png`
+- Implementation screenshot: unavailable; the Codex in-app Browser runtime failed to initialize.
+- Intended viewport/state: terrain-only sunny sanctuary crop, centered front cap.
+
+## Evidence and findings
+
+- Source evidence shows a P1 doubled soil-edge sprite at the front cap and a P2 two-lobed bottom contour where separately rendered faces meet.
+- Fix applied: the soil mass now uses one closed silhouette, its bottom outline uses one continuous rounded path, and both edge-texture halves sample the same curve with matched center pixels and correct downward normals.
+- Full-view comparison: blocked because no browser-rendered implementation screenshot could be captured.
+- Focused-region comparison: blocked for the same reason; this task specifically requires a close crop of the center cap.
+- Fonts, typography and copy: not applicable to this terrain-only change.
+- Spacing/layout, colors/tokens and source raster assets: intentionally unchanged.
+- Automated evidence: 24 geometry tests, file-scoped ESLint and TypeScript `--noEmit` pass.
+
+## Comparison history
+
+1. Source inspection identified independent face paths and per-side sprite strips crossing at the center junction.
+2. The renderer was changed to a continuous mass/bottom contour and tangent-aligned texture sampling.
+3. Post-fix browser comparison remains blocked by the unavailable in-app Browser runtime.
+4. User follow-up source: `C:/Users/TUAN LY/AppData/Local/Packages/MicrosoftWindows.Client.Core_cw5n1h2txyewy/TempState/ScreenClip/{4E4ABA76-611D-442E-A6FD-D9D9FE26FC1A}.png` showed the continuous junction, but exposed a P2 oversized earth mass and insufficient face separation.
+5. Refinement: reduced side/front depth from `0.42/0.60` to `0.32/0.46 × tileSize`, reduced depth wobble for monotonic contour flow, and added broad asymmetric intersection shading instead of a hard seam.
+6. Automated post-fix evidence: all 24 geometry tests, ESLint and TypeScript `--noEmit` pass. Browser-rendered comparison remains unavailable.
+
+final result: blocked

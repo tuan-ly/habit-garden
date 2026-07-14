@@ -405,6 +405,76 @@ function appendOrganicBottomPolyline(ctx: CanvasRenderingContext2D, points: Grou
     }
 }
 
+function sampleQuadraticCurve(
+    samples: GroundPoint[],
+    start: GroundPoint,
+    control: GroundPoint,
+    end: GroundPoint,
+    steps = 5
+) {
+    for (let step = 1; step <= steps; step++) {
+        const t = step / steps
+        const inverse = 1 - t
+        samples.push({
+            x: inverse * inverse * start.x + 2 * inverse * t * control.x + t * t * end.x,
+            y: inverse * inverse * start.y + 2 * inverse * t * control.y + t * t * end.y,
+        })
+    }
+}
+
+/**
+ * Samples the exact rounded top contour used by the soil face. Keeping this
+ * contour shared by the face mask and edge material prevents straight sprite
+ * strips from crossing at the front cap.
+ */
+function getLivingEmbankmentTopSamples(face: LivingEmbankmentFace) {
+    const cap = face.top[0]
+    const shoulder = face.top[1]
+    const samples: GroundPoint[] = [cap]
+    let current = cap
+
+    const capControl = { x: cap.x, y: (cap.y + shoulder.y) / 2 }
+    sampleQuadraticCurve(samples, current, capControl, shoulder)
+    current = shoulder
+
+    const middle = face.top.slice(1, -1)
+    for (let index = 1; index < middle.length - 1; index++) {
+        const control = middle[index]
+        const next = middle[index + 1]
+        const end = { x: (control.x + next.x) / 2, y: (control.y + next.y) / 2 }
+        sampleQuadraticCurve(samples, current, control, end)
+        current = end
+    }
+
+    const penultimate = middle[middle.length - 2]
+    const frontShoulder = middle[middle.length - 1]
+    sampleQuadraticCurve(samples, current, penultimate, frontShoulder)
+    current = frontShoulder
+
+    const frontCap = face.top[face.top.length - 1]
+    const frontControl = {
+        x: (frontShoulder.x + frontCap.x) / 2,
+        y: frontCap.y,
+    }
+    sampleQuadraticCurve(samples, current, frontControl, frontCap, 7)
+
+    return samples
+}
+
+function appendSmoothPolyline(ctx: CanvasRenderingContext2D, points: GroundPoint[]) {
+    if (points.length < 2) return
+
+    for (let index = 1; index < points.length - 1; index++) {
+        const point = points[index]
+        const next = points[index + 1]
+        ctx.quadraticCurveTo(point.x, point.y, (point.x + next.x) / 2, (point.y + next.y) / 2)
+    }
+
+    const penultimate = points[points.length - 2]
+    const last = points[points.length - 1]
+    ctx.quadraticCurveTo(penultimate.x, penultimate.y, last.x, last.y)
+}
+
 function traceLivingEmbankmentFace(ctx: CanvasRenderingContext2D, face: LivingEmbankmentFace) {
     ctx.moveTo(face.top[0].x, face.top[0].y)
     const cap = face.top[0]
@@ -459,8 +529,41 @@ function traceLivingEmbankmentMass(
     left: LivingEmbankmentFace,
     right: LivingEmbankmentFace
 ) {
-    traceLivingEmbankmentFace(ctx, left)
-    traceLivingEmbankmentFace(ctx, right)
+    const leftTop = getLivingEmbankmentTopSamples(left)
+    const rightTop = getLivingEmbankmentTopSamples(right).reverse()
+    const rightBounds = getFaceBounds(right)
+    const leftBounds = getFaceBounds(left)
+    const rightOuterTop = right.top[0]
+    const rightOuterBottom = right.bottom[0]
+    const leftOuterBottom = left.bottom[0]
+    const leftOuterTop = left.top[0]
+
+    ctx.moveTo(leftTop[0].x, leftTop[0].y)
+    for (const point of leftTop.slice(1)) ctx.lineTo(point.x, point.y)
+    for (const point of rightTop.slice(1)) ctx.lineTo(point.x, point.y)
+
+    const rightOutwardSign = Math.sign(rightOuterTop.x - rightOuterBottom.x) || 1
+    ctx.quadraticCurveTo(
+        rightOuterTop.x + rightOutwardSign * Math.min(14, rightBounds.height * 0.1),
+        (rightOuterTop.y + rightOuterBottom.y) / 2,
+        rightOuterBottom.x,
+        rightOuterBottom.y
+    )
+
+    const bottomContour = [
+        ...right.bottom,
+        ...[...left.bottom].reverse().slice(1),
+    ]
+    appendSmoothPolyline(ctx, bottomContour)
+
+    const leftOutwardSign = Math.sign(leftOuterTop.x - leftOuterBottom.x) || 1
+    ctx.quadraticCurveTo(
+        leftOuterTop.x + leftOutwardSign * Math.min(14, leftBounds.height * 0.1),
+        (leftOuterTop.y + leftOuterBottom.y) / 2,
+        leftOuterTop.x,
+        leftOuterTop.y
+    )
+    ctx.closePath()
 }
 
 function getLivingEmbankmentBounds(left: LivingEmbankmentFace, right: LivingEmbankmentFace) {
@@ -480,14 +583,17 @@ function getLivingEmbankmentBounds(left: LivingEmbankmentFace, right: LivingEmba
 
 function strokeLivingEmbankmentBottom(
     ctx: CanvasRenderingContext2D,
-    face: LivingEmbankmentFace
+    left: LivingEmbankmentFace,
+    right: LivingEmbankmentFace
 ) {
-    const reversedBottom = [...face.bottom].reverse()
-    const bounds = getFaceBounds(face)
+    const bottomContour = [
+        ...right.bottom,
+        ...[...left.bottom].reverse().slice(1),
+    ]
 
     ctx.beginPath()
-    ctx.moveTo(reversedBottom[0].x, reversedBottom[0].y)
-    appendOrganicBottomPolyline(ctx, reversedBottom, Math.min(18, bounds.height * 0.14))
+    ctx.moveTo(bottomContour[0].x, bottomContour[0].y)
+    appendSmoothPolyline(ctx, bottomContour)
     ctx.stroke()
 }
 
@@ -499,6 +605,8 @@ function drawLivingEmbankmentMass(
     dirtHighlight: number
 ) {
     const bounds = getLivingEmbankmentBounds(left, right)
+    const frontTop = left.top[left.top.length - 1]
+    const frontBottom = left.bottom[left.bottom.length - 1]
     const baseGradient = ctx.createLinearGradient(0, bounds.y, 0, bounds.y + bounds.height)
     baseGradient.addColorStop(0, '#87694C')
     baseGradient.addColorStop(0.52, '#6B4F3B')
@@ -540,51 +648,111 @@ function drawLivingEmbankmentMass(
     directionalLight.addColorStop(1, `rgba(245, 207, 145, ${0.08 + dirtHighlight * 0.2})`)
     ctx.fillStyle = directionalLight
     ctx.fillRect(bounds.x, bounds.y, bounds.width, bounds.height)
+
+    // Soft face intersection: enough asymmetric occlusion to explain that the
+    // left and right soil planes meet here, but feathered broadly so it never
+    // becomes the hard center seam removed by the continuous mass renderer.
+    const intersectionFeather = Math.max(18, bounds.width * 0.045)
+    const intersectionLight = ctx.createLinearGradient(
+        frontTop.x - intersectionFeather,
+        0,
+        frontTop.x + intersectionFeather,
+        0
+    )
+    intersectionLight.addColorStop(0, 'rgba(48, 34, 28, 0)')
+    intersectionLight.addColorStop(0.42, 'rgba(48, 34, 28, 0.035)')
+    intersectionLight.addColorStop(0.5, 'rgba(48, 34, 28, 0.11)')
+    intersectionLight.addColorStop(0.58, 'rgba(235, 194, 130, 0.025)')
+    intersectionLight.addColorStop(1, 'rgba(235, 194, 130, 0)')
+    ctx.save()
+    ctx.filter = `blur(${Math.max(1.5, bounds.height * 0.018)}px)`
+    ctx.fillStyle = intersectionLight
+    ctx.fillRect(
+        frontTop.x - intersectionFeather,
+        frontTop.y + 2,
+        intersectionFeather * 2,
+        Math.max(0, frontBottom.y - frontTop.y - 2)
+    )
+    ctx.restore()
     ctx.restore()
 
     ctx.save()
     ctx.strokeStyle = 'rgba(55, 38, 29, 0.28)'
     ctx.lineWidth = 1.3
-    strokeLivingEmbankmentBottom(ctx, left)
-    strokeLivingEmbankmentBottom(ctx, right)
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+    strokeLivingEmbankmentBottom(ctx, left, right)
     ctx.restore()
 }
 
-function drawLivingEdgeSegments(
+function drawTexturedEdgePolyline(
     ctx: CanvasRenderingContext2D,
     texture: HTMLImageElement,
     points: GroundPoint[],
     tileSize: number,
-    sourceOffset: number
+    mirrorSource: boolean
 ) {
-    const sourceWidth = texture.naturalWidth / 4
     const edgeHeight = Math.max(24, tileSize * 0.22)
+    const topBleed = tileSize * 0.055
+    const lengths = points.slice(1).map((point, index) => {
+        const previous = points[index]
+        return Math.hypot(point.x - previous.x, point.y - previous.y)
+    })
+    const totalLength = lengths.reduce((sum, length) => sum + length, 0)
+    let traveled = 0
 
-    for (let segment = 0; segment < 4; segment++) {
-        const start = points[segment * 2]
-        const end = points[(segment + 1) * 2]
+    for (let segment = 0; segment < lengths.length; segment++) {
+        const start = points[segment]
+        const end = points[segment + 1]
         const dx = end.x - start.x
         const dy = end.y - start.y
-        const length = Math.hypot(dx, dy)
-        const sourceIndex = (segment + sourceOffset) % 4
-        const joinOverlap = segment === 3 ? tileSize * 0.035 : 1
+        const length = lengths[segment]
+        const startRatio = traveled / totalLength
+        const endRatio = (traveled + length) / totalLength
+        const sourceX = mirrorSource
+            ? texture.naturalWidth * (1 - endRatio)
+            : texture.naturalWidth * startRatio
+        const sourceWidth = texture.naturalWidth * (endRatio - startRatio)
+        const joinOverlap = 0.8
 
         ctx.save()
         ctx.translate(start.x, start.y)
         ctx.rotate(Math.atan2(dy, dx))
+        if (mirrorSource) {
+            ctx.translate(length, 0)
+            ctx.scale(-1, 1)
+        }
         ctx.drawImage(
             texture,
-            sourceIndex * sourceWidth,
+            sourceX,
             0,
             sourceWidth,
             texture.naturalHeight,
             0,
-            -tileSize * 0.055,
+            -topBleed,
             length + joinOverlap,
             edgeHeight
         )
         ctx.restore()
+        traveled += length
     }
+}
+
+function drawLivingEdge(
+    ctx: CanvasRenderingContext2D,
+    texture: HTMLImageElement,
+    left: LivingEmbankmentFace,
+    right: LivingEmbankmentFace,
+    tileSize: number
+) {
+    const leftPoints = getLivingEmbankmentTopSamples(left)
+    const rightPoints = getLivingEmbankmentTopSamples(right).reverse()
+
+    // Both halves meet on the same final texture pixels at the front cap.
+    // Mirroring the right sample also keeps its positive normal pointing down
+    // into the soil instead of up across the grass surface.
+    drawTexturedEdgePolyline(ctx, texture, leftPoints, tileSize, false)
+    drawTexturedEdgePolyline(ctx, texture, rightPoints, tileSize, true)
 }
 
 function cubicPoint(
@@ -1291,19 +1459,12 @@ function GroundPlaneCanvasComponent({
 
         if (cinematic && embankmentGeometry && soilEdgeTextureRef.current) {
             ctx.save()
-            drawLivingEdgeSegments(
+            drawLivingEdge(
                 ctx,
                 soilEdgeTextureRef.current,
-                embankmentGeometry.left.top,
-                tileSize,
-                0
-            )
-            drawLivingEdgeSegments(
-                ctx,
-                soilEdgeTextureRef.current,
-                embankmentGeometry.right.top,
-                tileSize,
-                2
+                embankmentGeometry.left,
+                embankmentGeometry.right,
+                tileSize
             )
             ctx.restore()
         }

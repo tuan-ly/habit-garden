@@ -19,16 +19,16 @@ export interface LivingEmbankmentGeometry {
 }
 
 // Keep the soil bank present enough to sell the floating-island silhouette,
-// but subordinate it to the plantable garden surface. The previous 0.56/0.82
-// bank made the earth mass compete with the garden and amplified the front
-// face join at the exact visual center.
-export const LIVING_EMBANKMENT_SIDE_DEPTH_RATIO = 0.42
-export const LIVING_EMBANKMENT_FRONT_DEPTH_RATIO = 0.6
+// but subordinate it to the plantable garden surface. A shallow 0.32/0.46
+// profile preserves the two-face read without letting the earth mass dominate
+// the garden or magnify the front junction.
+export const LIVING_EMBANKMENT_SIDE_DEPTH_RATIO = 0.32
+export const LIVING_EMBANKMENT_FRONT_DEPTH_RATIO = 0.46
 export const LIVING_EMBANKMENT_MAX_WOBBLE_RATIO = 0.025
 export const LIVING_EMBANKMENT_SAMPLE_COUNT = 9
 export const LIVING_EMBANKMENT_SHADOW_BLEED_RATIO = 0.56
 
-const DEPTH_WOBBLE_PROFILE = [0, 0.01, -0.008, 0.014, -0.006, 0.012, -0.004, 0.008, 0] as const
+const DEPTH_WOBBLE_PROFILE = [0, 0.006, -0.004, 0.008, -0.003, 0.007, -0.002, 0.004, 0] as const
 
 function interpolate(start: GroundPoint, end: GroundPoint, t: number): GroundPoint {
   return {
