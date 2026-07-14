@@ -415,7 +415,15 @@ function traceLivingEmbankmentFace(ctx: CanvasRenderingContext2D, face: LivingEm
         shoulder.x,
         shoulder.y
     )
-    appendQuadraticPolyline(ctx, face.top.slice(1))
+    appendQuadraticPolyline(ctx, face.top.slice(1, -1))
+    const frontShoulder = face.top[face.top.length - 2]
+    const frontCap = face.top[face.top.length - 1]
+    ctx.quadraticCurveTo(
+        (frontShoulder.x + frontCap.x) / 2,
+        frontCap.y,
+        frontCap.x,
+        frontCap.y
+    )
     const reversedBottom = [...face.bottom].reverse()
     ctx.lineTo(reversedBottom[0].x, reversedBottom[0].y)
     const bounds = getFaceBounds(face)
@@ -451,7 +459,8 @@ function drawLivingEmbankmentFace(
     face: LivingEmbankmentFace,
     baseGradient: CanvasGradient,
     texture: HTMLImageElement | null,
-    lightOverlay: string
+    lightOverlay: string,
+    textureSide: 'left' | 'right'
 ) {
     ctx.save()
     ctx.beginPath()
@@ -465,7 +474,19 @@ function drawLivingEmbankmentFace(
         ctx.globalAlpha = 0.88
         // Exactly one image sample per face. Geometry supplies the silhouette;
         // the decoded bitmap supplies strata, roots and embedded stones.
-        ctx.drawImage(texture, bounds.x, bounds.y, bounds.width, bounds.height)
+        const sourceWidth = texture.naturalWidth / 2
+        const sourceX = textureSide === 'left' ? 0 : sourceWidth
+        ctx.drawImage(
+            texture,
+            sourceX,
+            0,
+            sourceWidth,
+            texture.naturalHeight,
+            bounds.x,
+            bounds.y,
+            bounds.width,
+            bounds.height
+        )
         ctx.globalAlpha = 1
         ctx.fillStyle = lightOverlay
         ctx.fillRect(bounds.x, bounds.y, bounds.width, bounds.height)
@@ -501,6 +522,7 @@ function drawLivingEdgeSegments(
         const dy = end.y - start.y
         const length = Math.hypot(dx, dy)
         const sourceIndex = (segment + sourceOffset) % 4
+        const joinOverlap = segment === 3 ? tileSize * 0.035 : 1
 
         ctx.save()
         ctx.translate(start.x, start.y)
@@ -513,7 +535,7 @@ function drawLivingEdgeSegments(
             texture.naturalHeight,
             0,
             -tileSize * 0.055,
-            length + 1,
+            length + joinOverlap,
             edgeHeight
         )
         ctx.restore()
@@ -526,19 +548,23 @@ function drawLivingFrontSeamBlend(
     bottom: GroundPoint,
     tileSize: number
 ) {
+    const feather = tileSize * 0.095
     const seamGradient = ctx.createLinearGradient(
-        top.x - tileSize * 0.045,
+        top.x - feather,
         0,
-        top.x + tileSize * 0.045,
+        top.x + feather,
         0
     )
-    seamGradient.addColorStop(0, 'rgba(66, 52, 42, 0.52)')
-    seamGradient.addColorStop(0.48, 'rgba(105, 78, 56, 0.34)')
-    seamGradient.addColorStop(1, 'rgba(133, 95, 62, 0.42)')
+    seamGradient.addColorStop(0, 'rgba(104, 78, 58, 0)')
+    seamGradient.addColorStop(0.25, 'rgba(104, 78, 58, 0.18)')
+    seamGradient.addColorStop(0.5, 'rgba(104, 78, 58, 0.68)')
+    seamGradient.addColorStop(0.75, 'rgba(104, 78, 58, 0.18)')
+    seamGradient.addColorStop(1, 'rgba(104, 78, 58, 0)')
 
     ctx.save()
+    ctx.filter = `blur(${Math.max(2, tileSize * 0.022)}px)`
     ctx.strokeStyle = seamGradient
-    ctx.lineWidth = Math.max(4, tileSize * 0.055)
+    ctx.lineWidth = Math.max(12, tileSize * 0.16)
     ctx.lineCap = 'round'
     ctx.beginPath()
     ctx.moveTo(top.x, top.y + tileSize * 0.025)
@@ -797,14 +823,16 @@ function GroundPlaneCanvasComponent({
                 embankmentGeometry.left,
                 leftSoil,
                 soilFaceTextureRef.current,
-                'rgba(46, 61, 57, 0.18)'
+                'rgba(46, 61, 57, 0.18)',
+                'left'
             )
             drawLivingEmbankmentFace(
                 ctx,
                 embankmentGeometry.right,
                 rightSoil,
                 soilFaceTextureRef.current,
-                `rgba(245, 207, 145, ${0.06 + light.dirtHighlight * 0.18})`
+                `rgba(245, 207, 145, ${0.06 + light.dirtHighlight * 0.18})`,
+                'right'
             )
             drawLivingFrontSeamBlend(
                 ctx,

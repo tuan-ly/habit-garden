@@ -36,6 +36,7 @@ function interpolate(start: GroundPoint, end: GroundPoint, t: number): GroundPoi
 function sampleFace(
   cap: GroundPoint,
   shoulder: GroundPoint,
+  frontShoulder: GroundPoint,
   front: GroundPoint,
   tileSize: number,
   sideSign: -1 | 1
@@ -45,12 +46,18 @@ function sampleFace(
 
   for (let index = 0; index < LIVING_EMBANKMENT_SAMPLE_COUNT; index++) {
     const t = index / (LIVING_EMBANKMENT_SAMPLE_COUNT - 1)
-    // The first sample sits at the true extreme of the rounded grass cap.
-    // The remaining eight follow the visible front edge from its shoulder to
-    // the shared front point, so the turf never floats beyond the soil face.
-    const edgeT = index === 0 ? 0 : (index - 1) / (LIVING_EMBANKMENT_SAMPLE_COUNT - 2)
-    const base = index === 0 ? cap : interpolate(shoulder, front, edgeT)
-    const edgeWobble = index === 0
+    // The endpoint samples sit at the true extremes of the two rounded grass
+    // caps. The seven samples between them follow the visible straight edge,
+    // including both shoulders, so neither corner can expose the background.
+    const isOuterCap = index === 0
+    const isFrontCap = index === LIVING_EMBANKMENT_SAMPLE_COUNT - 1
+    const edgeT = (index - 1) / (LIVING_EMBANKMENT_SAMPLE_COUNT - 3)
+    const base = isOuterCap
+      ? cap
+      : isFrontCap
+        ? front
+        : interpolate(shoulder, frontShoulder, edgeT)
+    const edgeWobble = isOuterCap || isFrontCap
       ? 0
       : Math.sin(edgeT * Math.PI) * Math.sin(edgeT * Math.PI * 2) * tileSize * 0.012 * sideSign
     const topPoint = { x: base.x, y: base.y + edgeWobble }
@@ -88,13 +95,15 @@ export function createLivingEmbankmentGeometry(
   const organicRadius = Math.max(16, tileSize * 0.22)
   const sideInset = organicRadius * 1.12
   const sideInsetY = organicRadius * 0.48
-  const frontTop = { x: width / 2, y: diamondHeight }
+  const frontTop = { x: width / 2, y: diamondHeight - sideInsetY / 2 }
   const leftCap = { x: sideInset / 2, y: diamondHeight / 2 }
   const rightCap = { x: width - sideInset / 2, y: diamondHeight / 2 }
   const leftShoulder = { x: sideInset, y: diamondHeight / 2 + sideInsetY }
   const rightShoulder = { x: width - sideInset, y: diamondHeight / 2 + sideInsetY }
-  const left = sampleFace(leftCap, leftShoulder, frontTop, tileSize, 1)
-  const right = sampleFace(rightCap, rightShoulder, frontTop, tileSize, -1)
+  const leftFrontShoulder = { x: width / 2 - organicRadius, y: diamondHeight - sideInsetY }
+  const rightFrontShoulder = { x: width / 2 + organicRadius, y: diamondHeight - sideInsetY }
+  const left = sampleFace(leftCap, leftShoulder, leftFrontShoulder, frontTop, tileSize, 1)
+  const right = sampleFace(rightCap, rightShoulder, rightFrontShoulder, frontTop, tileSize, -1)
   const sideDepth = tileSize * LIVING_EMBANKMENT_SIDE_DEPTH_RATIO
   const frontDepth = getLivingEmbankmentDepth(tileSize)
   const frontBottom = { x: frontTop.x, y: frontTop.y + frontDepth }

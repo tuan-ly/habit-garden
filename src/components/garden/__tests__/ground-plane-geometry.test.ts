@@ -76,6 +76,24 @@ describe('Living Embankment geometry', () => {
     expect(geometry.right.top[1].x).toBeLessThan(geometry.right.top[0].x)
   })
 
+  it.each(CASES)('meets the rounded front cap without exposing a center wedge for $gridSize×$gridSize', ({ gridSize, tileSize }) => {
+    const geometry = createLivingEmbankmentGeometry(gridSize, tileSize)
+    const width = gridSize * tileSize
+    const diamondHeight = gridSize * (tileSize / 2)
+    const organicRadius = Math.max(16, tileSize * 0.22)
+    const capRise = organicRadius * 0.48 / 2
+
+    expect(geometry.frontTop).toEqual({ x: width / 2, y: diamondHeight - capRise })
+    expect(geometry.left.top.at(-2)).toEqual({
+      x: width / 2 - organicRadius,
+      y: diamondHeight - capRise * 2,
+    })
+    expect(geometry.right.top.at(-2)).toEqual({
+      x: width / 2 + organicRadius,
+      y: diamondHeight - capRise * 2,
+    })
+  })
+
   it.each(CASES)('keeps every sampled path point inside its canvas for $gridSize×$gridSize', ({ gridSize, tileSize }) => {
     const geometry = createLivingEmbankmentGeometry(gridSize, tileSize)
     const width = gridSize * tileSize

@@ -124,3 +124,22 @@ passed
 - Console: no errors observed in the reviewed Storybook desktop state.
 
 final result: passed
+
+### Center-seam correction — 2026-07-14
+
+- Source visual truth: `C:/Users/TUAN LY/AppData/Local/Packages/MicrosoftWindows.Client.Core_cw5n1h2txyewy/TempState/ScreenClip/{E9487B38-9FF2-409B-883F-190BA427F8A8}.png`.
+- Implementation screenshot: `.codex/qa/living-embankment-center-seam-pass7.png` at 1280×720, sunny day, 5×5 terrain-only Storybook fixture.
+- Full-view comparison: `.codex/qa/living-embankment-center-seam-comparison-pass7.png`.
+- Focused implementation evidence: `.codex/qa/living-embankment-center-seam-focus-pass7.png`.
+- Responsive coverage: the front-cap invariant passes for 3×3, 5×5, 7×7, and dynamic geometry; the preceding 390×844 fixture remains valid because the correction is expressed entirely as `tileSize` ratios.
+
+**Findings**
+
+- Earlier P1: the soil faces ended at the quadratic curve's control point instead of its rendered front extreme, exposing a white triangular wedge directly below the grass corner.
+- Fix: both faces now approach dedicated front shoulders and meet at the actual rounded cap point with a horizontal tangent. The two texture halves share the source midpoint, the fringe segments overlap at the miter, and a soft center bridge feathers the face-lighting transition.
+- Post-fix: the grass, edge fringe, and soil silhouette converge at one continuous point. No background leak, doubled fringe, or unsupported top lip remains.
+- Material fidelity: passed; rock, root, moss, and stratum detail continue across the corner without a new animated or per-pixel rendering pass.
+- Fonts/copy/icons: not applicable to this terrain-only correction.
+- Console: no runtime error surface appeared in the reviewed Storybook state.
+
+final result: passed
