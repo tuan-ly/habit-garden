@@ -11,6 +11,10 @@ describe('decoration movement visuals', () => {
     expect(getTileContentScale(true, false, false)).toBe(1.2)
   })
 
+  it('keeps focused garden content at its authored focus size', () => {
+    expect(getTileContentScale(true, false, true)).toBe(1)
+  })
+
   it('does not duplicate the selected decoration at its original anchor', () => {
     expect(shouldRenderPlacementGhost(true, true)).toBe(false)
   })

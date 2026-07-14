@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useCallback, useRef, useSyncExternalStore
 import dynamic from 'next/dynamic'
 import { type FocusState } from './isometric-plant'
 import { PlantInfoBar } from './plant-tooltip'
+import { getPlantFocusTargetYOffset } from './plant-focus-frame'
 import { GroundPlaneCanvas, type MultiCellArea } from './ground-plane-canvas'
 import { getGroundPlaneHeight } from './ground-plane-geometry'
 import { ZoomControls } from './zoom-controls'
@@ -255,6 +256,10 @@ export function IsometricGarden({
 
   // Tile hover (manages hoveredTile state here in orchestrator)
   const handleTileHover = useCallback((row: number, col: number) => {
+    if (sanctuaryFocusedPlantId) {
+      setHoveredTile(null)
+      return
+    }
     const plant = occupiedCells.get(`${row}-${col}`)
     if (plant && (plant.grid_size || 1) > 1) {
       setHoveredTile(`${plant.grid_row || 0}-${plant.grid_col || 0}`)
@@ -281,7 +286,7 @@ export function IsometricGarden({
         gridSize
       ))
     }
-  }, [occupiedCells, interactions, editMode, livingPlants, placedDecorations, gridSize])
+  }, [sanctuaryFocusedPlantId, occupiedCells, interactions, editMode, livingPlants, placedDecorations, gridSize])
 
   const handleTileLeave = useCallback(() => {
     setHoveredTile(null)
@@ -377,6 +382,7 @@ export function IsometricGarden({
     if (focusExitTimerRef.current) clearTimeout(focusExitTimerRef.current)
     if (focusReturnTimerRef.current) clearTimeout(focusReturnTimerRef.current)
     setSanctuaryFocusClosing(false)
+    setHoveredTile(null)
     setSanctuaryFocusedPlantId(plant.id)
   }, [])
 
@@ -487,7 +493,7 @@ export function IsometricGarden({
       + tileSize / 4
       + (plantGridSize - 1) * tileSize / 4
     const focusScale = Math.min(maxZoom, Math.max(zoom, viewportSize.width < 640 ? 1.28 : 1.18))
-    const targetYOffset = viewportSize.width < 640 ? -66 : -36
+    const targetYOffset = getPlantFocusTargetYOffset(viewportSize.width, viewportSize.height)
     const translateX = -(plantAnchorX - containerWidth / 2) * focusScale
     const translateY = targetYOffset - (plantAnchorY - containerHeight / 2) * focusScale
 
@@ -666,6 +672,7 @@ export function IsometricGarden({
               onContextMenu={interactions.handleContextMenu}
               hidePlantBadges={sanctuaryMode}
               featuredPlantId={sanctuaryMode ? sanctuaryFocusedPlant?.id : null}
+              focusFrameClosing={sanctuaryFocusClosing}
               hideStatusIndicators={sanctuaryMode}
               cinematic={sanctuaryMode}
               selectedDecorationId={selectedPlacedDecoration?.id}
@@ -693,7 +700,9 @@ export function IsometricGarden({
       </div>
 
       {/* Info bar */}
-      {mode === 'interact' && !isTouchDevice && <PlantInfoBar plant={hoveredPlant} />}
+      {mode === 'interact' && !isTouchDevice && (
+        <PlantInfoBar plant={hoveredPlant} suppressed={Boolean(sanctuaryFocusedPlant)} />
+      )}
 
       {/* Screen-reader plant list (a11y for non-visual users) */}
       <ul className="sr-only" aria-label="Plants in your garden">

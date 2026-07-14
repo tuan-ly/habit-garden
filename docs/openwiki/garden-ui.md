@@ -100,6 +100,8 @@ Trong sanctuary mode, chạm plant sẽ chạy luồng `overview → focus → c
 - tile plant là button có accessible name `Đến thăm <tên plant>` và hỗ trợ Enter/Space
 - animation phải tôn trọng `prefers-reduced-motion`
 
+Plant focus follows **Exclusive Focus State**: while a focused plant is open, hover information and hover enlargement are suppressed across the garden. The selected plant receives one world-space **Focus Frame** anchored to its tile behind the sprite; the frame travels with the cinematic camera, adapts to the plant footprint, and never replaces or detaches the plant from the grid. The focus camera uses a responsive positive vertical offset so the frame sits below the top HUD and remains visually grouped with the bottom information panel.
+
 ## UX Constraints
 
 The chosen direction is **Soft Isometric Sanctuary**: warm golden-hour light, sage/cream surfaces, generous organic radii and calm motion. Visible UI must not use death, critical-state, guilt or streak-loss messaging as primary motivation.

@@ -9,6 +9,7 @@ import type { DecorationRotation, DecorationType, PlantWithType, PlacedDecoratio
 import type { MoveState } from './use-garden-interactions'
 import type { GardenMode } from './mode-toolbar'
 import { getPlantSizeScale } from '@/lib/utils/grid-positioning'
+import { PlantFocusFrame } from './plant-focus-frame'
 
 interface TileData {
   row: number
@@ -35,6 +36,7 @@ interface GardenTileGridProps {
   onContextMenu: (e: React.MouseEvent, plant?: PlantWithType) => void
   hidePlantBadges?: boolean
   featuredPlantId?: string | null
+  focusFrameClosing?: boolean
   hideStatusIndicators?: boolean
   cinematic?: boolean
   selectedDecorationId?: string | null
@@ -75,6 +77,7 @@ export const GardenTileGrid = memo(function GardenTileGrid({
   onContextMenu,
   hidePlantBadges = false,
   featuredPlantId,
+  focusFrameClosing = false,
   hideStatusIndicators = false,
   cinematic = false,
   selectedDecorationId,
@@ -122,6 +125,7 @@ export const GardenTileGrid = memo(function GardenTileGrid({
         const decorationPixelSize = decoration
           ? tileSize * (0.62 + decoration.grid_size * 0.62)
           : undefined
+        const isFeaturedPlant = plant?.id === featuredPlantId
 
         return (
           <IsometricTile
@@ -149,7 +153,7 @@ export const GardenTileGrid = memo(function GardenTileGrid({
             hideBadge={hidePlantBadges || isSelectedForMove}
             showAddHint={mode === 'arrange' && !moveState.selectedPlant}
             isSelectedForMove={isSelectedForMove}
-            disableContentHoverScale={mode === 'arrange' && !!decoration}
+            disableContentHoverScale={Boolean(featuredPlantId) || (mode === 'arrange' && !!decoration)}
             previewPlant={isPreviewTile && moveState.selectedPlant ? moveState.selectedPlant : undefined}
             shadowType={plant && isAnchor ? 'plant' : decoration ? 'small' : 'none'}
             cinematicShadows={cinematic}
@@ -166,19 +170,28 @@ export const GardenTileGrid = memo(function GardenTileGrid({
             ) : null}
           >
             {plant && isAnchor && (
-              <div className={isSelectedForMove ? 'opacity-40 scale-95 transition-all' : ''}>
-                <IsometricPlant
-                  plant={plant}
-                  weather={weather}
-                  scale={plant.id === featuredPlantId
-                    ? (cinematic ? 3.4 : 1.9) / getPlantSizeScale(plant.grid_size || 1)
-                    : 1}
-                  focusState={focusStates?.get(plant.id)}
-                  hideStatusIndicators={hideStatusIndicators}
-                  priority={plant.id === featuredPlantId}
-                  cinematic={cinematic}
-                />
-              </div>
+              <>
+                {isFeaturedPlant && (
+                  <PlantFocusFrame
+                    tileSize={tileSize}
+                    gridSize={plant.grid_size || 1}
+                    closing={focusFrameClosing}
+                  />
+                )}
+                <div className={isSelectedForMove ? 'relative z-10 opacity-40 scale-95 transition-all' : 'relative z-10'}>
+                  <IsometricPlant
+                    plant={plant}
+                    weather={weather}
+                    scale={isFeaturedPlant
+                      ? (cinematic ? 3.4 : 1.9) / getPlantSizeScale(plant.grid_size || 1)
+                      : 1}
+                    focusState={focusStates?.get(plant.id)}
+                    hideStatusIndicators={hideStatusIndicators}
+                    priority={isFeaturedPlant}
+                    cinematic={cinematic}
+                  />
+                </div>
+              </>
             )}
             {decoration && !plant && (
               <div className={decorationSelected ? 'rounded-full opacity-55 ring-4 ring-[#f7d477]/80 transition' : 'transition'}>

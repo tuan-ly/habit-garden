@@ -44,11 +44,12 @@ export function PlantTooltip({ plant }: PlantTooltipProps) {
 // Positioned as fixed element above the garden area
 interface PlantInfoBarProps {
   plant: PlantWithType | null
+  suppressed?: boolean
 }
 
-export function PlantInfoBar({ plant }: PlantInfoBarProps) {
+export function PlantInfoBar({ plant, suppressed = false }: PlantInfoBarProps) {
   // No plant hovered — render nothing (avoid placeholder-looking UI)
-  if (!plant) {
+  if (!plant || suppressed) {
     return null
   }
 
