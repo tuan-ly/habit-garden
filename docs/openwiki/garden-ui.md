@@ -15,6 +15,10 @@ The garden follows a **Canvas-First Rendering** rule: use canvas for high-volume
 
 Avoid Framer Motion for many garden elements. It is acceptable for small UI transitions and modal-level polish.
 
+Garden camera transforms follow **Direct Manipulation**: pan, wheel/pinch zoom, and grid-size changes must update without a CSS transition. Cinematic easing is reserved for explicit plant-focus camera moves. Static canvas materials should reuse small deterministic texture tiles instead of regenerating pixel-density noise whenever the grid changes size.
+
+Sanctuary terrain uses **Hybrid Procedural Terrain**: `ground-plane-geometry.ts` owns deterministic responsive face samples and shared visual height, while `GroundPlaneCanvas` clips decoded, lighting-neutral soil/edge materials into those faces. The cinematic bank uses `0.56 × tileSize` side depth and `0.82 × tileSize` front depth; Stats Garden does not use this path. Material assets must trigger at most one static offscreen redraw after decode, and pan/zoom/focus must only composite or transform existing output.
+
 ## Isometric Garden Responsibilities
 
 `IsometricGarden` owns or coordinates:

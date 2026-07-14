@@ -3,6 +3,12 @@
 import { useRef, useEffect, useMemo, useState, memo } from 'react'
 import type { WeatherType } from '@/types/database'
 import type { TimeOfDay } from './themes'
+import {
+    createLivingEmbankmentGeometry,
+    getGroundPlaneHeight,
+    type GroundPoint,
+    type LivingEmbankmentFace,
+} from './ground-plane-geometry'
 
 export interface MultiCellArea {
     row: number
@@ -310,6 +316,18 @@ function drawClover(ctx: CanvasRenderingContext2D, x: number, y: number, scale: 
     ctx.restore()
 }
 
+function loadDecodedImage(src: string): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+        const image = new Image()
+        image.decoding = 'async'
+        image.onload = () => {
+            void image.decode().catch(() => undefined).finally(() => resolve(image))
+        }
+        image.onerror = () => reject(new Error(`Failed to load garden material: ${src}`))
+        image.src = src
+    })
+}
+
 /**
  * Trace the visible grass silhouette without changing the logical diamond/grid.
  * Rounded tips and tiny deterministic bends keep the island organic while
@@ -360,6 +378,180 @@ function traceOrganicDiamond(
     ctx.closePath()
 }
 
+function appendQuadraticPolyline(ctx: CanvasRenderingContext2D, points: GroundPoint[]) {
+    if (points.length < 2) return
+    for (let index = 1; index < points.length - 1; index++) {
+        const point = points[index]
+        const next = points[index + 1]
+        ctx.quadraticCurveTo(point.x, point.y, (point.x + next.x) / 2, (point.y + next.y) / 2)
+    }
+    const penultimate = points[points.length - 2]
+    const last = points[points.length - 1]
+    ctx.quadraticCurveTo(penultimate.x, penultimate.y, last.x, last.y)
+}
+
+function appendOrganicBottomPolyline(ctx: CanvasRenderingContext2D, points: GroundPoint[], amplitude: number) {
+    const curveProfile = [0.7, -0.18, 0.9, 0.12, 0.78, -0.12, 0.58, 0.22]
+    for (let index = 1; index < points.length; index++) {
+        const previous = points[index - 1]
+        const point = points[index]
+        const profile = curveProfile[index - 1] ?? 0
+        ctx.quadraticCurveTo(
+            (previous.x + point.x) / 2,
+            (previous.y + point.y) / 2 + amplitude * profile,
+            point.x,
+            point.y
+        )
+    }
+}
+
+function traceLivingEmbankmentFace(ctx: CanvasRenderingContext2D, face: LivingEmbankmentFace) {
+    ctx.moveTo(face.top[0].x, face.top[0].y)
+    const cap = face.top[0]
+    const shoulder = face.top[1]
+    ctx.quadraticCurveTo(
+        cap.x,
+        (cap.y + shoulder.y) / 2,
+        shoulder.x,
+        shoulder.y
+    )
+    appendQuadraticPolyline(ctx, face.top.slice(1))
+    const reversedBottom = [...face.bottom].reverse()
+    ctx.lineTo(reversedBottom[0].x, reversedBottom[0].y)
+    const bounds = getFaceBounds(face)
+    appendOrganicBottomPolyline(ctx, reversedBottom, Math.min(18, bounds.height * 0.14))
+    const outerTop = face.top[0]
+    const outerBottom = face.bottom[0]
+    const outwardSign = Math.sign(outerTop.x - outerBottom.x) || 1
+    ctx.quadraticCurveTo(
+        outerTop.x + outwardSign * Math.min(14, bounds.height * 0.1),
+        (outerTop.y + outerBottom.y) / 2,
+        outerTop.x,
+        outerTop.y
+    )
+    ctx.closePath()
+}
+
+function getFaceBounds(face: LivingEmbankmentFace) {
+    const points = [...face.top, ...face.bottom]
+    const xs = points.map((point) => point.x)
+    const ys = points.map((point) => point.y)
+    const x = Math.min(...xs)
+    const y = Math.min(...ys)
+    return {
+        x,
+        y,
+        width: Math.max(...xs) - x,
+        height: Math.max(...ys) - y,
+    }
+}
+
+function drawLivingEmbankmentFace(
+    ctx: CanvasRenderingContext2D,
+    face: LivingEmbankmentFace,
+    baseGradient: CanvasGradient,
+    texture: HTMLImageElement | null,
+    lightOverlay: string
+) {
+    ctx.save()
+    ctx.beginPath()
+    traceLivingEmbankmentFace(ctx, face)
+    ctx.fillStyle = baseGradient
+    ctx.fill()
+
+    if (texture) {
+        const bounds = getFaceBounds(face)
+        ctx.clip()
+        ctx.globalAlpha = 0.88
+        // Exactly one image sample per face. Geometry supplies the silhouette;
+        // the decoded bitmap supplies strata, roots and embedded stones.
+        ctx.drawImage(texture, bounds.x, bounds.y, bounds.width, bounds.height)
+        ctx.globalAlpha = 1
+        ctx.fillStyle = lightOverlay
+        ctx.fillRect(bounds.x, bounds.y, bounds.width, bounds.height)
+    }
+    ctx.restore()
+
+    ctx.save()
+    ctx.beginPath()
+    const reversedBottom = [...face.bottom].reverse()
+    ctx.moveTo(reversedBottom[0].x, reversedBottom[0].y)
+    const bounds = getFaceBounds(face)
+    appendOrganicBottomPolyline(ctx, reversedBottom, Math.min(18, bounds.height * 0.14))
+    ctx.strokeStyle = 'rgba(55, 38, 29, 0.28)'
+    ctx.lineWidth = 1.3
+    ctx.stroke()
+    ctx.restore()
+}
+
+function drawLivingEdgeSegments(
+    ctx: CanvasRenderingContext2D,
+    texture: HTMLImageElement,
+    points: GroundPoint[],
+    tileSize: number,
+    sourceOffset: number
+) {
+    const sourceWidth = texture.naturalWidth / 4
+    const edgeHeight = Math.max(24, tileSize * 0.22)
+
+    for (let segment = 0; segment < 4; segment++) {
+        const start = points[segment * 2]
+        const end = points[(segment + 1) * 2]
+        const dx = end.x - start.x
+        const dy = end.y - start.y
+        const length = Math.hypot(dx, dy)
+        const sourceIndex = (segment + sourceOffset) % 4
+
+        ctx.save()
+        ctx.translate(start.x, start.y)
+        ctx.rotate(Math.atan2(dy, dx))
+        ctx.drawImage(
+            texture,
+            sourceIndex * sourceWidth,
+            0,
+            sourceWidth,
+            texture.naturalHeight,
+            0,
+            -tileSize * 0.055,
+            length + 1,
+            edgeHeight
+        )
+        ctx.restore()
+    }
+}
+
+function drawLivingFrontSeamBlend(
+    ctx: CanvasRenderingContext2D,
+    top: GroundPoint,
+    bottom: GroundPoint,
+    tileSize: number
+) {
+    const seamGradient = ctx.createLinearGradient(
+        top.x - tileSize * 0.045,
+        0,
+        top.x + tileSize * 0.045,
+        0
+    )
+    seamGradient.addColorStop(0, 'rgba(66, 52, 42, 0.52)')
+    seamGradient.addColorStop(0.48, 'rgba(105, 78, 56, 0.34)')
+    seamGradient.addColorStop(1, 'rgba(133, 95, 62, 0.42)')
+
+    ctx.save()
+    ctx.strokeStyle = seamGradient
+    ctx.lineWidth = Math.max(4, tileSize * 0.055)
+    ctx.lineCap = 'round'
+    ctx.beginPath()
+    ctx.moveTo(top.x, top.y + tileSize * 0.025)
+    ctx.quadraticCurveTo(
+        top.x - tileSize * 0.012,
+        (top.y + bottom.y) / 2,
+        bottom.x,
+        bottom.y - tileSize * 0.025
+    )
+    ctx.stroke()
+    ctx.restore()
+}
+
 function GroundPlaneCanvasComponent({
     gridSize,
     tileSize,
@@ -381,34 +573,54 @@ function GroundPlaneCanvasComponent({
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null)
     const grassTextureRef = useRef<HTMLImageElement | null>(null)
-    const [grassTextureReady, setGrassTextureReady] = useState(false)
+    const soilFaceTextureRef = useRef<HTMLImageElement | null>(null)
+    const soilEdgeTextureRef = useRef<HTMLImageElement | null>(null)
+    const [materialRevision, setMaterialRevision] = useState(0)
 
     useEffect(() => {
         if (!cinematic) {
             grassTextureRef.current = null
+            soilFaceTextureRef.current = null
+            soilEdgeTextureRef.current = null
             return
         }
 
         let cancelled = false
-        const texture = new Image()
-        texture.decoding = 'async'
-        texture.src = '/garden/textures/sanctuary-grass.webp'
-        texture.onload = () => {
+        const sources = [
+            '/garden/textures/sanctuary-grass.webp',
+            '/garden/textures/sanctuary-soil-face.webp',
+            '/garden/textures/sanctuary-soil-edge.webp',
+        ]
+
+        void Promise.allSettled(sources.map(loadDecodedImage)).then((results) => {
             if (cancelled) return
-            grassTextureRef.current = texture
-            setGrassTextureReady(true)
-        }
+            grassTextureRef.current = results[0].status === 'fulfilled' ? results[0].value : null
+            soilFaceTextureRef.current = results[1].status === 'fulfilled' ? results[1].value : null
+            soilEdgeTextureRef.current = results[2].status === 'fulfilled' ? results[2].value : null
+            // One revision after every material has either decoded or failed keeps
+            // the expensive static pass to exactly one asset-ready redraw.
+            setMaterialRevision((revision) => revision + 1)
+        })
+
         return () => {
             cancelled = true
         }
     }, [cinematic])
 
-    const tileHeight = tileSize * (cinematic ? 0.18 : 0.35)
+    const embankmentGeometry = useMemo(
+        () => cinematic ? createLivingEmbankmentGeometry(gridSize, tileSize) : null,
+        [cinematic, gridSize, tileSize]
+    )
+    const tileHeight = cinematic
+        ? embankmentGeometry?.frontDepth ?? tileSize * 0.82
+        : tileSize * 0.35
 
     const diamondWidth = gridSize * tileSize
     const diamondHeight = gridSize * (tileSize / 2)
     const svgWidth = diamondWidth
-    const svgHeight = diamondHeight + tileHeight + 300 // Extra space for shadow to prevent clipping
+    const svgHeight = cinematic
+        ? getGroundPlaneHeight(gridSize, tileSize, true)
+        : diamondHeight + tileHeight + 300
 
     // Diamond corner points
     const topX = svgWidth / 2
@@ -540,9 +752,67 @@ function GroundPlaneCanvasComponent({
         ctx.filter = 'blur(24px)'
         ctx.fillStyle = 'rgba(124, 94, 72, 0.22)'
         ctx.beginPath()
-        ctx.ellipse(bottomX, bottomY + tileHeight + 20, diamondWidth * 0.42, diamondHeight * 0.13, 0, 0, Math.PI * 2)
+        const shadowDepth = cinematic ? embankmentGeometry?.frontDepth ?? tileHeight : tileHeight
+        const shadowRadiusY = cinematic
+            ? Math.min(diamondHeight * 0.13, tileSize * 0.26)
+            : diamondHeight * 0.13
+        ctx.ellipse(
+            bottomX,
+            bottomY + shadowDepth + (cinematic ? tileSize * 0.08 : 20),
+            diamondWidth * 0.42,
+            shadowRadiusY,
+            0,
+            0,
+            Math.PI * 2
+        )
         ctx.fill()
         ctx.restore()
+
+        // Sanctuary-only Living Embankment. Draw the earth mass before the
+        // grass plane so the top reads as turf growing over soil, not a board
+        // attached beneath it. Stats Garden keeps its legacy renderer below.
+        if (cinematic && embankmentGeometry) {
+            const leftSoil = ctx.createLinearGradient(
+                0,
+                embankmentGeometry.left.top[0].y,
+                0,
+                embankmentGeometry.frontBottom.y
+            )
+            leftSoil.addColorStop(0, '#745B43')
+            leftSoil.addColorStop(0.52, '#604836')
+            leftSoil.addColorStop(1, '#49362D')
+
+            const rightSoil = ctx.createLinearGradient(
+                0,
+                embankmentGeometry.right.top[0].y,
+                0,
+                embankmentGeometry.frontBottom.y
+            )
+            rightSoil.addColorStop(0, '#9A7955')
+            rightSoil.addColorStop(0.5, '#7E5E43')
+            rightSoil.addColorStop(1, '#5B4133')
+
+            drawLivingEmbankmentFace(
+                ctx,
+                embankmentGeometry.left,
+                leftSoil,
+                soilFaceTextureRef.current,
+                'rgba(46, 61, 57, 0.18)'
+            )
+            drawLivingEmbankmentFace(
+                ctx,
+                embankmentGeometry.right,
+                rightSoil,
+                soilFaceTextureRef.current,
+                `rgba(245, 207, 145, ${0.06 + light.dirtHighlight * 0.18})`
+            )
+            drawLivingFrontSeamBlend(
+                ctx,
+                embankmentGeometry.frontTop,
+                embankmentGeometry.frontBottom,
+                tileSize
+            )
+        }
 
         // Draw grass surface with warm sage gradient — sun from UPPER-RIGHT
         // Light hits the right/top side, shadow falls toward lower-left
@@ -561,7 +831,7 @@ function GroundPlaneCanvasComponent({
         // A low-opacity real material texture supplies the painterly fibers
         // that procedural gradients cannot reproduce. Lighting and grid math
         // remain fully dynamic in canvas.
-        if (cinematic && grassTextureReady && grassTextureRef.current) {
+        if (cinematic && grassTextureRef.current) {
             ctx.save()
             ctx.beginPath()
             traceOrganicDiamond(ctx, topX, topY, rightX, rightY, bottomX, bottomY, leftX, leftY, organicRadius, organicWobble)
@@ -692,6 +962,7 @@ function GroundPlaneCanvasComponent({
 
         // Soil faces use vertical tonal falloff so the island reads as earth,
         // not a flat extruded board.
+        if (!cinematic) {
         const leftSoil = ctx.createLinearGradient(0, leftY, 0, leftY + tileHeight)
         leftSoil.addColorStop(0, cinematic ? '#796249' : dirtDarkColor)
         leftSoil.addColorStop(0.55, cinematic ? '#684F3D' : dirtDarkColor)
@@ -754,6 +1025,7 @@ function GroundPlaneCanvasComponent({
             }
             ctx.restore()
         }
+        }
 
         if (cinematic) {
             // A few tufts sit directly on the rear silhouette so the grass
@@ -772,6 +1044,7 @@ function GroundPlaneCanvasComponent({
             }
         }
 
+        if (!cinematic) {
         const rightSoil = ctx.createLinearGradient(0, rightY, 0, rightY + tileHeight)
         rightSoil.addColorStop(0, cinematic ? '#91785A' : dirtColor)
         rightSoil.addColorStop(0.5, cinematic ? '#7C614A' : dirtColor)
@@ -835,6 +1108,7 @@ function GroundPlaneCanvasComponent({
 
         ctx.setLineDash([])
         ctx.globalAlpha = 1
+        }
 
         if (cinematic) {
             // One shared grass-to-earth seam visually welds the top plane to
@@ -903,21 +1177,46 @@ function GroundPlaneCanvasComponent({
             ctx.restore()
         }
 
-        // Global weather/night tint — overlay on top of grass surface only (not dirt)
+        if (cinematic && embankmentGeometry && soilEdgeTextureRef.current) {
+            ctx.save()
+            drawLivingEdgeSegments(
+                ctx,
+                soilEdgeTextureRef.current,
+                embankmentGeometry.left.top,
+                tileSize,
+                0
+            )
+            drawLivingEdgeSegments(
+                ctx,
+                soilEdgeTextureRef.current,
+                embankmentGeometry.right.top,
+                tileSize,
+                2
+            )
+            ctx.restore()
+        }
+
+        // Runtime weather/night tint covers the complete material stack. The
+        // bitmap assets stay lighting-neutral and are never regenerated.
         if (light.globalTint) {
             ctx.save()
             ctx.beginPath()
+            if (cinematic && embankmentGeometry) {
+                traceLivingEmbankmentFace(ctx, embankmentGeometry.left)
+                traceLivingEmbankmentFace(ctx, embankmentGeometry.right)
+            }
             traceOrganicDiamond(ctx, topX, topY, rightX, rightY, bottomX, bottomY, leftX, leftY, organicRadius, organicWobble)
             ctx.clip()
             ctx.fillStyle = light.globalTint
-            ctx.fillRect(0, 0, svgWidth, diamondHeight)
+            ctx.fillRect(0, 0, svgWidth, svgHeight)
             ctx.restore()
         }
 
     }, [gridSize, tileSize, grassColor, grassDarkColor, dirtColor, dirtDarkColor, grassDetails,
         svgWidth, svgHeight, diamondWidth, diamondHeight, tileHeight,
         topX, topY, rightX, rightY, bottomX, bottomY, leftX, leftY,
-        weather, timeOfDay, cinematic, organicRadius, organicWobble, grassTextureReady])
+        weather, timeOfDay, cinematic, organicRadius, organicWobble,
+        embankmentGeometry, materialRevision])
 
     // Main render effect - composites static canvas + dynamic overlays
     useEffect(() => {
@@ -1029,7 +1328,7 @@ function GroundPlaneCanvasComponent({
     }, [gridLines, hoveredMultiCellArea, dragTargetCell, dragPlantSize, isDragTargetValid,
         svgWidth, svgHeight, topX, topY, rightX, rightY, bottomX, bottomY, leftX, leftY,
         tileSize, cinematic, focalRow, focalCol, focalSize, organicRadius, organicWobble,
-        grassTextureReady])
+        materialRevision])
 
     return (
         <canvas

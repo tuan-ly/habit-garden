@@ -3,8 +3,8 @@
 > Single source of truth for visual style. Every plant, decoration, and tile asset MUST follow this doc.
 > If you want to deviate, update this doc first — never inline-special-case.
 
-**Version**: 2.0
-**Last updated**: 2026-04-20
+**Version**: 2.2
+**Last updated**: 2026-07-14
 **Style name**: **Flat Vector Biophilic Isometric**
 
 ---
@@ -119,6 +119,19 @@ This is a **soft gradient split**, NOT cel-shading with hard edges, and NOT flat
 - No anime style, no Studio Ghibli painted look
 - No isometric ground tile baked into asset
 - No backgrounds in PNG — cream canvas only (bg removed in post-processing for transparent)
+
+### Environment material exception: Living Embankment
+
+**Living Embankment** — a Sanctuary-only terrain treatment where responsive canvas geometry carries a thick, organic earth bank while neutral bitmap materials provide soil strata, roots, embedded stones, moss, and grass overhang.
+
+- Scope: Garden Sanctuary (`cinematic=true`) only. Stats Garden keeps the standard flat ground treatment.
+- Geometry remains procedural and deterministic: side depth `0.56 × tileSize`, front depth `0.82 × tileSize`, nine samples per visible face, and a shared front seam.
+- The bottom silhouette is softly smoothed; it must never read as a straight extruded board or expose hard polygon corners.
+- `sanctuary-soil-face.webp` contains lighting-neutral earth material. `sanctuary-soil-edge.webp` contains transparent overhang, moss, and root tips.
+- Runtime keeps the Art Bible light direction: the right face receives a restrained warm lift; the left face remains cooler and darker.
+- Weather and night color are runtime overlays. Never bake directional sunlight, moonlight, rain tint, or cast shadows into terrain textures.
+- Rocks, roots, and moss in these textures are material detail only; they are not decorations and never occupy grid cells.
+- Static order: shadow → soil faces/material/light → grass plane → edge material/fringe → weather tint.
 
 ---
 
@@ -275,6 +288,7 @@ Same style rules apply. Each category follows flat vector + two-tone shading + n
 | 2026-04-17 | v1.1 — light source moved top-right | — |
 | 2026-04-20 | **v2.0** — COMPLETE REWRITE based on proven cherry blossom workflow. Changed style from "Paper-Cut Biophilic" to "Flat Vector Biophilic". Removed outlines. Changed from 5 stages to 4. Updated palette to match Gemini-proven hex codes. Added prompt patterns (Triple Anchoring, Shape Semantic Collision, Anchor Gravity, Intent vs Element). Updated tooling from Midjourney to banana-claude/Gemini. | — |
 | 2026-07-13 | v2.1 — Đồng bộ canonical 5-stage filename với runtime và thêm Asset Contract pipeline. | Codex |
+| 2026-07-14 | v2.2 — Thêm Living Embankment như ngoại lệ environment material cho Garden Sanctuary. | Codex |
 
 ---
 

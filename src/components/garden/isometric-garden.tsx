@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import { type FocusState } from './isometric-plant'
 import { PlantInfoBar } from './plant-tooltip'
 import { GroundPlaneCanvas, type MultiCellArea } from './ground-plane-canvas'
+import { getGroundPlaneHeight } from './ground-plane-geometry'
 import { ZoomControls } from './zoom-controls'
 import { ModeToolbar, type GardenMode } from './mode-toolbar'
 import { useEditMode } from './edit-mode/use-edit-mode'
@@ -219,7 +220,7 @@ export function IsometricGarden({
   }, [gridSize, occupiedCells])
 
   const containerWidth = gridSize * tileSize
-  const containerHeight = gridSize * (tileSize / 2) + tileSize * 0.3
+  const containerHeight = getGroundPlaneHeight(gridSize, tileSize, sanctuaryMode)
 
   const visibleTileKeys = useVisibleTiles({
     gridSize, tileSize, zoom, panOffset,
