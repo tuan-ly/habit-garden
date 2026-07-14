@@ -6,6 +6,7 @@ import type { TimeOfDay } from './themes'
 import {
     createLivingEmbankmentGeometry,
     getGroundPlaneHeight,
+    LIVING_EMBANKMENT_FRONT_DEPTH_RATIO,
     type GroundPoint,
     type LivingEmbankmentFace,
 } from './ground-plane-geometry'
@@ -475,6 +476,18 @@ function appendSmoothPolyline(ctx: CanvasRenderingContext2D, points: GroundPoint
     ctx.quadraticCurveTo(penultimate.x, penultimate.y, last.x, last.y)
 }
 
+function appendJoinedBottomContour(
+    ctx: CanvasRenderingContext2D,
+    left: LivingEmbankmentFace,
+    right: LivingEmbankmentFace
+) {
+    // Resolve both sides at the shared front-bottom point. Smoothing the whole
+    // array in one pass rounds past that point and makes two planes look like
+    // one inflated sheet; two curve runs preserve a controlled, rounded cusp.
+    appendSmoothPolyline(ctx, right.bottom)
+    appendSmoothPolyline(ctx, [...left.bottom].reverse())
+}
+
 function traceLivingEmbankmentFace(ctx: CanvasRenderingContext2D, face: LivingEmbankmentFace) {
     ctx.moveTo(face.top[0].x, face.top[0].y)
     const cap = face.top[0]
@@ -550,11 +563,7 @@ function traceLivingEmbankmentMass(
         rightOuterBottom.y
     )
 
-    const bottomContour = [
-        ...right.bottom,
-        ...[...left.bottom].reverse().slice(1),
-    ]
-    appendSmoothPolyline(ctx, bottomContour)
+    appendJoinedBottomContour(ctx, left, right)
 
     const leftOutwardSign = Math.sign(leftOuterTop.x - leftOuterBottom.x) || 1
     ctx.quadraticCurveTo(
@@ -586,14 +595,9 @@ function strokeLivingEmbankmentBottom(
     left: LivingEmbankmentFace,
     right: LivingEmbankmentFace
 ) {
-    const bottomContour = [
-        ...right.bottom,
-        ...[...left.bottom].reverse().slice(1),
-    ]
-
     ctx.beginPath()
-    ctx.moveTo(bottomContour[0].x, bottomContour[0].y)
-    appendSmoothPolyline(ctx, bottomContour)
+    ctx.moveTo(right.bottom[0].x, right.bottom[0].y)
+    appendJoinedBottomContour(ctx, left, right)
     ctx.stroke()
 }
 
@@ -649,30 +653,45 @@ function drawLivingEmbankmentMass(
     ctx.fillStyle = directionalLight
     ctx.fillRect(bounds.x, bounds.y, bounds.width, bounds.height)
 
-    // Soft face intersection: enough asymmetric occlusion to explain that the
-    // left and right soil planes meet here, but feathered broadly so it never
-    // becomes the hard center seam removed by the continuous mass renderer.
-    const intersectionFeather = Math.max(18, bounds.width * 0.045)
-    const intersectionLight = ctx.createLinearGradient(
-        frontTop.x - intersectionFeather,
-        0,
-        frontTop.x + intersectionFeather,
-        0
-    )
-    intersectionLight.addColorStop(0, 'rgba(48, 34, 28, 0)')
-    intersectionLight.addColorStop(0.42, 'rgba(48, 34, 28, 0.035)')
-    intersectionLight.addColorStop(0.5, 'rgba(48, 34, 28, 0.11)')
-    intersectionLight.addColorStop(0.58, 'rgba(235, 194, 130, 0.025)')
-    intersectionLight.addColorStop(1, 'rgba(235, 194, 130, 0)')
+    // Plane junction: a slightly bowed ambient-occlusion crease terminates at
+    // the same geometric cusp as the bottom silhouette. A faint warm bevel on
+    // its right side sells the light direction without drawing a hard divider.
+    const frontDepth = Math.max(1, frontBottom.y - frontTop.y)
+    const estimatedTileSize = frontDepth / LIVING_EMBANKMENT_FRONT_DEPTH_RATIO
+    const creaseStartY = frontTop.y + estimatedTileSize * 0.055
+    const creaseEndY = frontBottom.y - estimatedTileSize * 0.018
+    const creaseBend = estimatedTileSize * 0.018
+
     ctx.save()
-    ctx.filter = `blur(${Math.max(1.5, bounds.height * 0.018)}px)`
-    ctx.fillStyle = intersectionLight
-    ctx.fillRect(
-        frontTop.x - intersectionFeather,
-        frontTop.y + 2,
-        intersectionFeather * 2,
-        Math.max(0, frontBottom.y - frontTop.y - 2)
+    ctx.filter = `blur(${Math.max(1.2, estimatedTileSize * 0.012)}px)`
+    ctx.strokeStyle = 'rgba(47, 33, 27, 0.17)'
+    ctx.lineWidth = Math.max(5, estimatedTileSize * 0.052)
+    ctx.lineCap = 'round'
+    ctx.beginPath()
+    ctx.moveTo(frontTop.x, creaseStartY)
+    ctx.quadraticCurveTo(
+        frontTop.x - creaseBend,
+        (creaseStartY + creaseEndY) / 2,
+        frontBottom.x,
+        creaseEndY
     )
+    ctx.stroke()
+    ctx.restore()
+
+    ctx.save()
+    ctx.filter = `blur(${Math.max(0.8, estimatedTileSize * 0.007)}px)`
+    ctx.strokeStyle = 'rgba(239, 201, 143, 0.075)'
+    ctx.lineWidth = Math.max(1.5, estimatedTileSize * 0.014)
+    ctx.lineCap = 'round'
+    ctx.beginPath()
+    ctx.moveTo(frontTop.x + estimatedTileSize * 0.018, creaseStartY + 1)
+    ctx.quadraticCurveTo(
+        frontTop.x - creaseBend + estimatedTileSize * 0.024,
+        (creaseStartY + creaseEndY) / 2,
+        frontBottom.x + estimatedTileSize * 0.012,
+        creaseEndY - 1
+    )
+    ctx.stroke()
     ctx.restore()
     ctx.restore()
 

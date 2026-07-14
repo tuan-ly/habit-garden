@@ -227,5 +227,8 @@ final result: passed
 4. User follow-up source: `C:/Users/TUAN LY/AppData/Local/Packages/MicrosoftWindows.Client.Core_cw5n1h2txyewy/TempState/ScreenClip/{4E4ABA76-611D-442E-A6FD-D9D9FE26FC1A}.png` showed the continuous junction, but exposed a P2 oversized earth mass and insufficient face separation.
 5. Refinement: reduced side/front depth from `0.42/0.60` to `0.32/0.46 × tileSize`, reduced depth wobble for monotonic contour flow, and added broad asymmetric intersection shading instead of a hard seam.
 6. Automated post-fix evidence: all 24 geometry tests, ESLint and TypeScript `--noEmit` pass. Browser-rendered comparison remains unavailable.
+7. User feedback: broad shading still did not make the center read as a physical junction between two soil planes.
+8. Refinement: the bottom contour now resolves both face curves at the exact shared `frontBottom` cusp. A slightly bowed, feathered occlusion crease connects `frontTop` to that cusp, with a restrained warm bevel on the lit side.
+9. Post-fix automated evidence: all 24 geometry tests, file-scoped ESLint and TypeScript `--noEmit` pass. Visual comparison remains blocked because the in-app Browser runtime cannot initialize.
 
 final result: blocked
