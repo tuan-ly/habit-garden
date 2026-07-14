@@ -91,6 +91,8 @@ Legacy list/focus/edit primitives still exist for compatibility and garden arran
 
 Garden dùng **Spatial Anchoring**: plant luôn được render từ anchor cell của chính nó, gốc cây và bóng đổ cùng nằm trên mặt tile. Không tách plant “hero” khỏi grid để render lại ở tọa độ màn hình cố định.
 
+Plant shadows follow **Shadow Consistency**: every plant uses one compact contact shadow plus, in cinematic mode, one soft lower-left cast shadow for the upper-right light source. Both layers scale with the plant's growth stage and footprint so a seedling never carries the visual weight of a mature plant.
+
 Trong sanctuary mode, chạm plant sẽ chạy luồng `overview → focus → care → reaction → return`:
 
 - camera pan và zoom theo `grid_row`, `grid_col`, `grid_size` của plant được chọn

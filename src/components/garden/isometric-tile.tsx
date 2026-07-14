@@ -75,6 +75,16 @@ export function getTileContentScale(
   return isHovered && !isSelectedForMove && !disableContentHoverScale ? 1.2 : 1
 }
 
+/** Keep the footprint shadow proportional to the visible growth stage. */
+export function getPlantShadowScale(growthPercentage: number): number {
+  if (growthPercentage < 10) return 0.46
+  if (growthPercentage < 25) return 0.58
+  if (growthPercentage < 50) return 0.72
+  if (growthPercentage < 75) return 0.86
+  if (growthPercentage < 100) return 0.95
+  return 1
+}
+
 function IsometricTileComponent({
   row,
   col,
@@ -120,6 +130,7 @@ function IsometricTileComponent({
   const tileCenterY = (col + row) * (tileSize / 4)
 
   const tileHitHeight = tileSize / 2
+  const plantShadowScale = getPlantShadowScale(plant?.growth_percentage ?? 100)
 
   return (
     <button
@@ -237,49 +248,33 @@ function IsometricTileComponent({
             <div
               className="absolute pointer-events-none rounded-full"
               style={{
-                left: tileSize / 2 - tileSize * 0.28,
-                top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight) + tileSize * 0.12,
-                width: tileSize * (1.18 + (plantGridSize - 1) * 0.52),
-                height: tileSize * (0.16 + (plantGridSize - 1) * 0.09),
-                transform: 'translate(-50%, -50%) rotate(22deg)',
-                background: 'linear-gradient(90deg, rgba(42,36,22,0), rgba(42,36,22,0.25) 58%, rgba(42,36,22,0.40))',
-                filter: 'blur(6px)',
-                transformOrigin: 'right center',
-              }}
-            />
-          )}
-          {/* Soft AO halo — wide diffuse glow that grounds the object */}
-          {shadowType === 'plant' && (
-            <div
-              className="absolute pointer-events-none rounded-full"
-              style={{
-                left: tileSize / 2 - 2,
-                top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight) + 2,
-                width: tileSize * (0.62 + (plantGridSize - 1) * 0.38),
-                height: tileSize * (0.26 + (plantGridSize - 1) * 0.16),
-                transform: 'translate(-50%, -50%)',
-                background: 'radial-gradient(ellipse at 48% 50%, rgba(20,15,8,0.32) 0%, rgba(20,15,8,0.10) 60%, transparent 100%)',
+                left: tileSize / 2 - tileSize * 0.24 * plantShadowScale,
+                top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight) + tileSize * 0.09,
+                width: tileSize * (0.88 + (plantGridSize - 1) * 0.44) * plantShadowScale,
+                height: tileSize * (0.12 + (plantGridSize - 1) * 0.07) * plantShadowScale,
+                transform: 'translate(-50%, -50%) rotate(20deg)',
+                background: 'radial-gradient(ellipse at 78% 50%, rgba(35,30,19,0.28) 0%, rgba(35,30,19,0.13) 42%, transparent 78%)',
                 filter: 'blur(5px)',
               }}
             />
           )}
-          {/* Core shadow ellipse — tighter, darker, slightly offset lower-left for upper-right light */}
+          {/* Contact shadow — compact and centered under the object. */}
           <div
             className="absolute pointer-events-none rounded-full"
             style={{
               left: tileSize / 2,
               top: tileHitHeight / 2 + getMergedAreaCenterOffset(plantGridSize, tileHitHeight) + 1,
               width: tileSize * (shadowType === 'plant'
-                ? (0.50 + (plantGridSize - 1) * 0.34)
+                ? (0.42 + (plantGridSize - 1) * 0.30) * plantShadowScale
                 : (0.32 + (plantGridSize - 1) * 0.24)),
               height: tileSize * (shadowType === 'plant'
-                ? (0.20 + (plantGridSize - 1) * 0.13)
+                ? (0.14 + (plantGridSize - 1) * 0.10) * plantShadowScale
                 : (0.13 + (plantGridSize - 1) * 0.09)),
               transform: 'translate(-50%, -50%)',
               background: shadowType === 'plant'
-                ? 'radial-gradient(ellipse at 42% 55%, rgba(15,10,5,0.45) 0%, rgba(15,10,5,0.15) 55%, transparent 100%)'
+                ? 'radial-gradient(ellipse, rgba(20,15,8,0.34) 0%, rgba(20,15,8,0.12) 52%, transparent 100%)'
                 : 'radial-gradient(ellipse at 42% 55%, rgba(15,10,5,0.30) 0%, rgba(15,10,5,0.08) 55%, transparent 100%)',
-              filter: 'blur(2px)',
+              filter: shadowType === 'plant' ? 'blur(3px)' : 'blur(2px)',
             }}
           />
         </>

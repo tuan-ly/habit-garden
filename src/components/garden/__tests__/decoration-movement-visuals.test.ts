@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { isPlantSelectedForMove, shouldRenderPlacementGhost } from '../garden-tile-grid'
-import { getTileContentScale } from '../isometric-tile'
+import { getPlantShadowScale, getTileContentScale } from '../isometric-tile'
 
 describe('decoration movement visuals', () => {
   it('keeps arranged decoration content at its authored size', () => {
@@ -30,5 +30,18 @@ describe('decoration movement visuals', () => {
   it('marks only the matching plant as selected for movement', () => {
     expect(isPlantSelectedForMove('plant-1', 'plant-1')).toBe(true)
     expect(isPlantSelectedForMove('plant-2', 'plant-1')).toBe(false)
+  })
+})
+
+describe('plant shadow scale', () => {
+  it('keeps young plant shadows smaller than mature plant shadows', () => {
+    expect(getPlantShadowScale(5)).toBe(0.46)
+    expect(getPlantShadowScale(20)).toBe(0.58)
+    expect(getPlantShadowScale(100)).toBe(1)
+  })
+
+  it('grows monotonically across growth stages', () => {
+    const stages = [0, 10, 25, 50, 75, 100].map(getPlantShadowScale)
+    expect(stages).toEqual([...stages].sort((a, b) => a - b))
   })
 })

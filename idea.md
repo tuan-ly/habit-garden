@@ -1,4 +1,4 @@
-Thêm vật trang trí: thay vì là 1 nút trên màn hình thì chúng ta tạo nó thành 1 object trên garden tile. Nhấn vào object đó để kích hoạt edit mode. Object đó có thể là một người giữ vườn, một linh vật,...
+Thêm vật trang trí: thay vì là 1 nút trên màn hình thì chúng ta tạo nó thành 1 object trên garden tile. Nhấn vào object đó để kích hoạt edit mode. Object đó có thể là một người giữ vườn, một linh vật, một tấm bảng ghi tên khu vườn của bạn...
 
 ![alt text]({5BCDF833-3749-472E-8FD6-7302FA0CAAED}.png)
 
@@ -10,4 +10,6 @@ Khi focus cần cho cảm giác như plant card với cây đang focus
 
 - Các offset dimention x,y cho từng plant
 
-- có khả năng cho khách hàng tạo ảnh và theme, việc set offset giúp họ 
+- có khả năng cho khách hàng tạo ảnh và theme, việc set offset giúp họ
+
+- phần bóng cây lộn xộn
