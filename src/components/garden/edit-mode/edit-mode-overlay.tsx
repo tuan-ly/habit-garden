@@ -3,7 +3,7 @@
 import { useCallback, useEffect } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { useInventory } from '@/lib/context/inventory-context'
-import type { UseEditModeReturn } from './use-edit-mode'
+import { findInitialGhostPlacement, type UseEditModeReturn } from './use-edit-mode'
 import { EditModeToolbar } from './edit-mode-toolbar'
 import type { InventoryItemWithDetails, PlacedDecorationWithType } from '@/types/database'
 import { DecorationImage } from '../decoration-image'
@@ -26,6 +26,8 @@ interface EditModeOverlayProps {
 
 export function EditModeOverlay({
   isActive,
+  gridSize,
+  occupiedCells,
   onDone,
   editMode,
   movingPlantName,
@@ -64,9 +66,18 @@ export function EditModeOverlay({
         editMode.deselectItem()
       } else {
         editMode.selectItem(item)
+        const initialPlacement = findInitialGhostPlacement(
+          gridSize,
+          item.decoration_type?.grid_size ?? 1,
+          occupiedCells
+        )
+        if (initialPlacement) {
+          editMode.setGhostPosition(initialPlacement.position)
+          editMode.setIsGhostValid(initialPlacement.isValid)
+        }
       }
     },
-    [editMode]
+    [editMode, gridSize, occupiedCells]
   )
 
   const handleUndo = useCallback(async () => {

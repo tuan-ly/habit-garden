@@ -5,8 +5,24 @@ import {
   shouldRenderPlacementGhost,
 } from '../garden-tile-grid'
 import { getPlantShadowScale, getTileContentScale } from '../isometric-tile'
+import { findInitialGhostPlacement } from '../edit-mode/use-edit-mode'
 
 describe('decoration movement visuals', () => {
+  it('shows a newly selected inventory decoration at the free anchor nearest the garden centre', () => {
+    const placement = findInitialGhostPlacement(5, 2, new Set(['1-1', '1-2', '2-1', '2-2']))
+
+    expect(placement).toEqual({ position: { row: 1, col: 3 }, isValid: true })
+  })
+
+  it('still shows an invalid ghost when no anchor is free', () => {
+    const occupiedCells = new Set(Array.from({ length: 4 }, (_, index) => `${Math.floor(index / 2)}-${index % 2}`))
+
+    expect(findInitialGhostPlacement(2, 1, occupiedCells)).toEqual({
+      position: { row: 0, col: 0 },
+      isValid: false,
+    })
+  })
+
   it('keeps arranged decoration content at its authored size', () => {
     expect(getTileContentScale(true, false, true)).toBe(1)
   })

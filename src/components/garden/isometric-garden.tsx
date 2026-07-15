@@ -24,6 +24,7 @@ import type { PlantWithType, PlantType, WeatherType } from '@/types/database'
 import {
   calculateRequiredGridSize,
   buildOccupiedCellsMap,
+  buildOccupiedCellsMapCombined,
   isAnchorCell,
   decorationsAsGridItems, canPlacePlantAt,
 } from '@/lib/utils/grid-positioning'
@@ -215,7 +216,10 @@ export function IsometricGarden({
   )
   const gridSize = useMemo(() => calculateRequiredGridSize(allGridItems, minimumGridSize), [allGridItems, minimumGridSize])
   const occupiedCells = useMemo(() => buildOccupiedCellsMap(livingPlants), [livingPlants])
-  const occupiedCellsSet = useMemo(() => new Set(occupiedCells.keys()), [occupiedCells])
+  const occupiedCellsSet = useMemo(
+    () => buildOccupiedCellsMapCombined(livingPlants, placedDecorations).allOccupied,
+    [livingPlants, placedDecorations]
+  )
 
   const multiCellAreas: MultiCellArea[] = useMemo(() => {
     return [...livingPlants, ...placedDecorations]
