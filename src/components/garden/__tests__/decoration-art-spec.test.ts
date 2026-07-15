@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { getDecorationArtSpec, getGroundedArtTransform } from '../decoration-art-spec'
+import { getDecorationAssetSpec, resolveGameAssetDisplay } from '@/lib/assets/game-asset-contract'
 
 describe('decoration art anchors', () => {
   it('uses measured alpha contact point for the sanctuary rock lantern', () => {
-    const spec = getDecorationArtSpec('stone-lantern', true)
+    const spec = getDecorationArtSpec('stone-lantern', true, 2)
+    const asset = getDecorationAssetSpec('stone-lantern')!
+    const expected = resolveGameAssetDisplay(asset, 2)
 
-    expect(spec.anchorX).toBeCloseTo(0.3862)
-    expect(spec.anchorY).toBeCloseTo(0.7608)
-    expect(getGroundedArtTransform(spec).transformOrigin).toBe('38.62% 76.08%')
+    expect(spec).toEqual(expected)
+    expect(getGroundedArtTransform(spec).transformOrigin).toBe(`${expected.anchorX * 100}% ${expected.anchorY * 100}%`)
   })
 
   it('compensates emoji glyphs whose optical center sits to the right', () => {

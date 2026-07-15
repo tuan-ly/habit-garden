@@ -1,4 +1,8 @@
-import { getDecorationAssetSpec, type GameAssetDisplaySpec } from '@/lib/assets/game-asset-contract'
+import {
+  getDecorationAssetSpec,
+  resolveGameAssetDisplay,
+  type GameAssetDisplaySpec,
+} from '@/lib/assets/game-asset-contract'
 export { getGroundedArtTransform } from '@/lib/assets/game-asset-display'
 
 export interface DecorationArtSpec extends GameAssetDisplaySpec {
@@ -31,7 +35,10 @@ const DEFAULT_EMOJI_SPEC: DecorationArtSpec = {
   offsetY: 0,
 }
 
-export function getDecorationArtSpec(slug: string, hasImage: boolean): DecorationArtSpec {
-  if (hasImage) return getDecorationAssetSpec(slug)?.display ?? DEFAULT_IMAGE_SPEC
+export function getDecorationArtSpec(slug: string, hasImage: boolean, footprint = 1): DecorationArtSpec {
+  if (hasImage) {
+    const asset = getDecorationAssetSpec(slug)
+    return asset ? resolveGameAssetDisplay(asset, footprint) : DEFAULT_IMAGE_SPEC
+  }
   return EMOJI_ART_SPECS[slug] ?? DEFAULT_EMOJI_SPEC
 }

@@ -1,6 +1,6 @@
 import type { PlantWithType, PlacedDecorationWithType } from '@/types/database'
 import type { GameAssetDisplaySpec, NormalizedBounds } from '@/lib/assets/game-asset-contract'
-import { getDecorationAssetSpec } from '@/lib/assets/game-asset-contract'
+import { getDecorationAssetSpec, resolveGameAssetDisplay } from '@/lib/assets/game-asset-contract'
 import { getPlantAssetEntry } from '@/lib/assets/plant-asset-identity'
 import {
   GARDEN_PLANT_ART_BOX_SIZE,
@@ -155,7 +155,7 @@ export function calculateGardenVisualBounds({
       contactX: contact.x,
       contactY: contact.y,
       sourceBounds: asset?.analysis.bounds ?? FULL_SOURCE_BOUNDS,
-      display: asset?.display ?? DEFAULT_DISPLAY,
+      display: asset ? resolveGameAssetDisplay(asset, footprint) : DEFAULT_DISPLAY,
       boxSize: GARDEN_PLANT_ART_BOX_SIZE,
       renderScale: getPlantGrowthScale(plant.growth_percentage) * getPlantSizeScale(footprint),
       tileSize,
@@ -177,7 +177,7 @@ export function calculateGardenVisualBounds({
       contactX: contact.x,
       contactY: contact.y,
       sourceBounds: asset?.analysis.bounds ?? FULL_SOURCE_BOUNDS,
-      display: asset?.display ?? DEFAULT_DECORATION_DISPLAY,
+      display: asset ? resolveGameAssetDisplay(asset, footprint) : DEFAULT_DECORATION_DISPLAY,
       boxSize: getDecorationPixelSize(tileSize, footprint),
       tileSize,
     }))

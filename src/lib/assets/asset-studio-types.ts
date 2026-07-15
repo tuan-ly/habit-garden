@@ -1,6 +1,7 @@
 import type {
   GameAssetDisplaySpec,
   GameAssetEntry,
+  FootprintKey,
   NormalizedBounds,
 } from './game-asset-contract'
 
@@ -24,14 +25,29 @@ export interface GameAssetStudioEntry extends GameAssetEntry {
   checks: AssetCheck[]
 }
 
-export interface GameAssetOverride {
+export interface ReviewedDisplayOverride {
   display: Partial<GameAssetDisplaySpec>
   reason: string
 }
 
+export interface GameAssetOverride {
+  base?: ReviewedDisplayOverride
+  profiles?: Partial<Record<FootprintKey, ReviewedDisplayOverride>>
+}
+
 export interface GameAssetOverrideDocument {
-  schemaVersion: 1
+  schemaVersion: 2
   assets: Record<string, GameAssetOverride>
+}
+
+export interface DecorationCatalogEntry {
+  canonicalFootprint: number
+  reason: string
+}
+
+export interface GameAssetCatalogDocument {
+  schemaVersion: 1
+  decorations: Record<string, DecorationCatalogEntry>
 }
 
 export interface ImportedAssetAnalysis {

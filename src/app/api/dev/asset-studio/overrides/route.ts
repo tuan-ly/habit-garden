@@ -1,13 +1,47 @@
 import { NextResponse } from 'next/server'
 import { mutateGameAssetOverride } from '@/lib/assets/server/game-asset-pipeline.mjs'
-import type { GameAssetOverride } from '@/lib/assets/asset-studio-types'
+import type { ReviewedDisplayOverride } from '@/lib/assets/asset-studio-types'
 
-async function readMutation(request: Request): Promise<{ assetId: string; override?: GameAssetOverride }> {
-  const body = await request.json() as { assetId?: unknown; override?: unknown }
+async function readMutation(request: Request): Promise<{
+  assetId: string
+  footprint?: number
+  override?: ReviewedDisplayOverride
+  canonicalFootprint?: number
+  reason: string
+  resetProfile: boolean
+  resetAll: boolean
+}> {
+  const body = await request.json() as {
+    assetId?: unknown
+    footprint?: unknown
+    display?: unknown
+    reason?: unknown
+    canonicalFootprint?: unknown
+    resetProfile?: unknown
+    resetAll?: unknown
+  }
   if (typeof body.assetId !== 'string' || body.assetId.length < 3) {
     throw new Error('A valid assetId is required.')
   }
-  return { assetId: body.assetId, override: body.override as GameAssetOverride | undefined }
+  const resetAll = body.resetAll === true
+  if (!resetAll && (!Number.isInteger(body.footprint) || Number(body.footprint) < 1)) {
+    throw new Error('A positive footprint is required.')
+  }
+  const hasDisplay = body.display && typeof body.display === 'object' && Object.keys(body.display).length > 0
+  return {
+    assetId: body.assetId,
+    footprint: resetAll ? undefined : Number(body.footprint),
+    override: hasDisplay ? {
+      display: body.display as ReviewedDisplayOverride['display'],
+      reason: String(body.reason ?? ''),
+    } : undefined,
+    canonicalFootprint: body.canonicalFootprint === undefined
+      ? undefined
+      : Number(body.canonicalFootprint),
+    reason: String(body.reason ?? ''),
+    resetProfile: body.resetProfile === true,
+    resetAll,
+  }
 }
 
 async function handle(request: Request, remove: boolean) {
@@ -16,10 +50,15 @@ async function handle(request: Request, remove: boolean) {
   }
   try {
     const body = await readMutation(request)
-    if (!remove && !body.override) throw new Error('Override payload is required.')
+    if (!remove && !body.override && !body.resetProfile && body.canonicalFootprint === undefined) {
+      throw new Error('A display override or canonical footprint is required.')
+    }
     const result = await mutateGameAssetOverride(process.cwd(), {
       assetId: body.assetId,
-      override: remove ? null : body.override!,
+      footprint: body.footprint,
+      override: remove || body.resetProfile ? null : body.override,
+      canonicalFootprint: remove ? undefined : body.canonicalFootprint,
+      catalogReason: body.reason,
     })
     return NextResponse.json(result)
   } catch (error) {

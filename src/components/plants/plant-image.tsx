@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { PlantWithType } from '@/types/database'
 import { getGroundedArtTransform } from '@/lib/assets/game-asset-display'
+import { resolveGameAssetDisplay } from '@/lib/assets/game-asset-contract'
 import {
     GROWTH_STAGES,
     getGrowthStage,
@@ -52,7 +53,10 @@ export function PlantImage({
     const sizeConfig = SIZE_CONFIG[size]
 
     const imagePath = getPlantImagePath(plant.plant_type.name, currentStage, isDead)
-    const assetSpec = getPlantAssetEntry(plant)?.display
+    const assetEntry = getPlantAssetEntry(plant)
+    const assetSpec = assetEntry
+        ? resolveGameAssetDisplay(assetEntry, plant.grid_size || 1)
+        : undefined
     const icon = plant.plant_type.icon || '🌱'
 
     // Track image load errors for emoji fallback

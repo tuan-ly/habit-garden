@@ -1,6 +1,6 @@
 # Asset Calibration Studio + Camera Safe Area — MVP Spec
 
-**Status:** Implemented  
+**Status:** Implemented — footprint-aware v2
 **Date:** 2026-07-15  
 **Direction:** B — calibration metadata and camera safety before pixel editing
 
@@ -29,6 +29,7 @@ The repository already analyzes PNG alpha bounds and generates `anchorX`, `ancho
 - Existing manifest-backed plant stages and decorations.
 - Import a local PNG for temporary preview and analysis.
 - Edit `anchorX`, `anchorY`, `scale`, `offsetX`, and `offsetY`.
+- Store reviewed display profiles per footprint and edit canonical decoration footprint through a code-first catalog migration.
 - Preview through the production plant/decoration rendering path.
 - Five scene presets and three viewport presets.
 - Overlays for alpha bounds, anchor, tile footprint, shadow center, and safe frame.
@@ -39,7 +40,7 @@ The repository already analyzes PNG alpha bounds and generates `anchorX`, `ancho
 ### Out of scope
 
 - Background removal, inpainting, recoloring, relighting, or other pixel editing.
-- Uploading assets to Supabase or storing calibration in the database.
+- Uploading assets to Supabase or writing directly to a linked database.
 - Production-user access to the studio.
 - Replacing the current asset generation pipeline or Art Direction Gate.
 - Automatic artistic approval; style and projection remain human-reviewed.
@@ -59,17 +60,13 @@ flowchart LR
 | Live preview | Real garden renderer, draggable anchor handle, safe frame | Make calibration visible and direct |
 | Inspector | Numeric inputs, sliders, auto values, reset, warnings, save | Produce a deliberate, auditable override |
 
-The inspector shows the automatic value beside each effective draft field and reports the number of changed override fields. Reset removes the override rather than copying analyzer values into the override file.
+The inspector shows the base value beside each effective footprint draft and reports the number of changed profile fields. Reset profile removes only the selected footprint; reset all is a separate confirmed action.
 
-## 5. Scene presets
+## 5. Bench and sandbox
 
-1. **Alpha Inspection** — checkerboard/neutral surface with alpha bounds and canvas edges.
-2. **Sanctuary Center** — current golden-hour background with the asset on a center tile.
-3. **Edge Stress** — place the current asset near the upper-left garden edge with the safe frame visible.
-4. **Neighbor Scale** — place the asset beside reviewed 1×1 and 2×2 reference objects.
-5. **Mobile Sanctuary** — real mobile HUD insets, edit dock, and the narrowest supported garden composition.
+**Calibration Bench** tightly frames the complete `N×N` footprint on a neutral checker/ground surface. The anchor cell, alpha bounds, contact point and production shadow remain inspectable; editor magnification `Fit/100/150/250%` scales the whole logical scene and is never saved.
 
-Viewport presets are `390×844`, `768×1024`, and `1440×900`. Preview zoom presets are `100%`, `150%`, and `250%`.
+**Production Sandbox** is a collapsed final-check surface using the real sanctuary background and ground canvas. Reviewers can click a tile or choose Center, Edge and Corner, show neighbor references, and switch between `390×844`, `768×1024`, and `1440×900` logical viewports. The full viewport is rendered at production pixels before an outer fit transform is applied.
 
 ## 6. Calibration model
 
@@ -92,6 +89,14 @@ interface GameAssetDisplaySpec {
   offsetX: number // tile-relative projected X
   offsetY: number // tile-relative projected Y
 }
+
+type FootprintKey = `${number}`
+
+interface GameAssetEntry {
+  display: GameAssetDisplaySpec
+  displayByFootprint?: Record<FootprintKey, GameAssetDisplaySpec>
+  canonicalFootprint?: number
+}
 ```
 
 Recommended editor ranges:
@@ -106,19 +111,22 @@ Anchor dragging changes only `anchorX/Y`. Moving the object relative to its corr
 
 ## 7. Override data contract
 
-Automatic analysis remains generated. Human review is stored separately at `config/game-asset-overrides.json`:
+Automatic analysis remains generated. Human review is stored separately at `config/game-asset-overrides.json` schema v2. Existing v1 entries migrate losslessly to `base`; new exact profiles live under `profiles[N]` and fall back to base when absent.
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "assets": {
     "plant:cactus:05-mature": {
-      "display": {
-        "scale": 0.94,
-        "offsetX": 0.02,
-        "offsetY": 0
-      },
-      "reason": "Keep the mature silhouette balanced against the reviewed 1×1 reference."
+      "profiles": {
+        "2": {
+          "display": {
+            "scale": 0.94,
+            "offsetX": 0.02
+          },
+          "reason": "Balance the mature silhouette in its 2×2 footprint."
+        }
+      }
     }
   }
 }
@@ -126,12 +134,12 @@ Automatic analysis remains generated. Human review is stored separately at `conf
 
 Rules:
 
-- Keys use the existing stable manifest asset ID, including plant stage.
+- Keys use the existing stable manifest asset ID, including plant stage; footprint profiles use positive integer string keys.
 - `display` is partial; omitted fields keep analyzer values.
 - `reason` is required for a saved manual override.
 - The generated manifest is never edited directly.
-- The analyzer deep-merges `auto display → reviewed display → defaults for new fields`.
-- Removing an override restores automatic behavior on the next analysis run.
+- The analyzer deep-merges `auto display → base override → exact footprint profile → defaults`.
+- Removing one profile restores base/automatic behavior for that footprint; reset all removes the whole asset override.
 
 ## 8. Save and review flow
 
@@ -182,7 +190,7 @@ The safe-area function must be pure and deterministic so it can be unit-tested w
 ## 10. Guardrails
 
 - Route returns `notFound()` outside development unless a future explicit admin gate is designed.
-- Saving uses a development-only server boundary and never Supabase.
+- Saving uses a development-only server boundary and never connects to Supabase. Canonical decoration footprint changes create a migration file for later application.
 - Placed and placement-ghost previews consume the same effective display spec.
 - Camera safety cannot mutate asset metadata.
 - Asset offset cannot mutate grid occupancy or collision geometry.

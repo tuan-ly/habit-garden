@@ -56,7 +56,7 @@ Chọn mô hình hai lớp vì phân tích ảnh giải quyết **rendering cons
 
 Renderer đọc manifest qua `game-asset-contract.ts`; không hard-code anchor PNG trong component. Reviewed metadata nằm ở `config/game-asset-overrides.json`, merge theo `auto analysis → reviewed override → defaults`, rồi sinh đồng thời full/runtime manifest. `stone-lantern` và `koi-pond` là hai scale override đã migrate khỏi analyzer.
 
-`offsetX/Y × tileSize` được đặt ở wrapper ngoài asset scale, growth scale và footprint scale. Offset vì vậy chỉ sửa vị trí hiển thị; nó không thay shadow, occupancy hay collision.
+`offsetX/Y × tileSize` được đặt ở wrapper ngoài asset scale, growth scale và footprint scale. Offset vì vậy chỉ sửa vị trí hiển thị; nó không thay shadow, occupancy hay collision. Runtime resolve visual metadata theo `exact footprint profile → base override → auto analysis → defaults`; profile không bao giờ thay thế progression hoặc collision footprint.
 
 ## 5. Ship checklist
 
@@ -80,7 +80,7 @@ Manifest là generated file nhưng được commit cùng asset để build luôn
 
 ## 7. Calibration Studio và camera safety
 
-**Asset Calibration Studio** tại `/dev/asset-studio` là route development-only, không dùng Supabase. Studio hỗ trợ search/tab/stage, năm scene preset, ba viewport, ba mức zoom, placed/ghost preview, overlay bounds/anchor/footprint/shadow/safe frame, PNG preview và save/reset atomic. PNG import chưa có canonical ID chỉ được preview.
+**Asset Calibration Studio** tại `/dev/asset-studio` là route development-only, không kết nối Supabase. **Calibration Bench** hiển thị đầy đủ footprint, growth scale và logical tile production; editor zoom phóng cả scene nên không làm lệch tỷ lệ asset/tile. **Production Sandbox** dùng ground plane/camera-safe-area production, cho đặt thử center/edge/corner ở ba viewport. Visual override schema v2 lưu `base` và `profiles[N]`; decoration canonical footprint nằm trong `config/game-asset-catalog.json` và khi đổi sẽ tạo migration reconciliation source-controlled.
 
 **Camera Safe Area** fit idle sanctuary theo actual container từ `ResizeObserver` và **Visual Scene Bounds** = ground plane ∪ plant silhouettes ∪ decoration silhouettes ∪ shadows. Mobile dùng inset `16/16/256/120`; desktop dùng `32/32/112/144`. Base fit tối đa `1`, còn user zoom là multiplier riêng; focus camera và non-sanctuary transform giữ nguyên.
 

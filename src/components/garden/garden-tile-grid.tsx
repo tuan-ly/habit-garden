@@ -61,6 +61,13 @@ export function isPlantSelectedForMove(
   return plantId !== undefined && selectedPlantId === plantId
 }
 
+export function shouldDisableContentHoverScale(
+  featuredPlantId: string | null | undefined,
+  hasDecoration: boolean
+): boolean {
+  return Boolean(featuredPlantId) || hasDecoration
+}
+
 export const GardenTileGrid = memo(function GardenTileGrid({
   tiles,
   gridSize,
@@ -154,7 +161,7 @@ export const GardenTileGrid = memo(function GardenTileGrid({
             hideBadge={hidePlantBadges || isSelectedForMove}
             showAddHint={mode === 'arrange' && !moveState.selectedPlant}
             isSelectedForMove={isSelectedForMove}
-            disableContentHoverScale={Boolean(featuredPlantId) || (mode === 'arrange' && !!decoration)}
+            disableContentHoverScale={shouldDisableContentHoverScale(featuredPlantId, Boolean(decoration))}
             previewPlant={isPreviewTile && moveState.selectedPlant ? moveState.selectedPlant : undefined}
             shadowType={plant && isAnchor ? 'plant' : decoration ? 'small' : 'none'}
             cinematicShadows={cinematic}

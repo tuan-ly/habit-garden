@@ -45,7 +45,7 @@ export function DecorationImage({
   const sizeConfig = SIZE_CONFIG[size]
   const imagePath = decorationType.image_url
   const hasImage = !!imagePath && !imgError
-  const artSpec = getDecorationArtSpec(decorationType.slug, hasImage)
+  const artSpec = getDecorationArtSpec(decorationType.slug, hasImage, decorationType.grid_size)
   const groundedStyle = grounded ? getGroundedArtTransform(artSpec) : undefined
   const offsetStyle = grounded ? getTileOffsetTransform(artSpec, tileSize) : undefined
 

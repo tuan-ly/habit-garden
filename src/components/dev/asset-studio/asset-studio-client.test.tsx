@@ -26,11 +26,23 @@ const asset: GameAssetStudioEntry = {
   checks: [{ code: 'transparent-background', level: 'pass', message: 'Có nền trong suốt.' }],
 }
 
+const decoration: GameAssetStudioEntry = {
+  ...asset,
+  id: 'decoration:stone-lantern:default',
+  kind: 'decoration',
+  slug: 'stone-lantern',
+  variant: 'default',
+  path: '/garden/decorations/sanctuary-rock-lantern.png',
+  canonicalFootprint: 2,
+}
+
 describe('AssetStudioClient', () => {
   let container: HTMLDivElement
   let root: Root
 
   beforeEach(() => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
+    Element.prototype.scrollIntoView = vi.fn()
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
@@ -70,5 +82,49 @@ describe('AssetStudioClient', () => {
     await act(async () => firstSwitch.click())
     expect(firstSwitch.dataset.state).toBe('unchecked')
     expect(container.querySelector<HTMLInputElement>('#field-anchorX')?.valueAsNumber).toBe(0.5)
+  })
+
+  it('renders every occupied footprint cell and keeps editor zoom outside the asset ratio', async () => {
+    await act(async () => root.render(<AssetStudioClient initialAssets={[asset]} initialOverrides={{}} />))
+    const three = [...container.querySelectorAll('button')].find((button) => button.textContent?.trim() === '3×3')!
+    await act(async () => three.click())
+    expect(container.querySelectorAll('[data-testid="footprint-cell"]')).toHaveLength(9)
+
+    const art = container.querySelector<HTMLElement>('[data-testid="asset-offset-wrapper"]')!
+    const artWidth = art.style.width
+    const zoom = container.querySelector<HTMLButtonElement>('[aria-label="Editor zoom"]')!
+    await act(async () => zoom.click())
+    const option = [...document.querySelectorAll<HTMLElement>('[role="option"]')].find((item) => item.textContent === '250%')!
+    await act(async () => option.click())
+    expect(container.querySelector<HTMLElement>('[data-testid="asset-offset-wrapper"]')?.style.width).toBe(artWidth)
+  })
+
+  it('keeps the production sandbox collapsed until the final-check preview is requested', async () => {
+    await act(async () => root.render(<AssetStudioClient initialAssets={[asset]} initialOverrides={{}} />))
+    const details = container.querySelector('details')!
+    expect(details.open).toBe(false)
+    const summary = [...container.querySelectorAll('summary')].find((item) => item.textContent?.includes('Production Sandbox'))!
+    await act(async () => summary.click())
+    expect(details.open).toBe(true)
+  })
+
+  it('nudges tile-relative offsets from the keyboard', async () => {
+    await act(async () => root.render(<AssetStudioClient initialAssets={[asset]} initialOverrides={{}} />))
+    const art = container.querySelector<HTMLElement>('[aria-label^="Di chuyển"]')!
+    await act(async () => art.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })))
+    expect(container.querySelector<HTMLInputElement>('#field-offsetX')?.valueAsNumber).toBe(0.01)
+  })
+
+  it('drafts a canonical decoration footprint separately from visual progression', async () => {
+    await act(async () => root.render(<AssetStudioClient
+      initialAssets={[decoration]}
+      initialOverrides={{}}
+      initialCatalog={{ schemaVersion: 1, decorations: { 'stone-lantern': { canonicalFootprint: 2, reason: 'Production catalog' } } }}
+    />))
+    const three = [...container.querySelectorAll('button')].find((button) => button.textContent?.trim() === '3×3')!
+    await act(async () => three.click())
+    const canonical = [...container.querySelectorAll('button')].find((button) => button.textContent?.includes('Đặt làm canonical'))!
+    await act(async () => canonical.click())
+    expect(container.textContent).toContain('Canonical3×3')
   })
 })

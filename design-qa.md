@@ -232,3 +232,39 @@ final result: passed
 9. Post-fix automated evidence: all 24 geometry tests, file-scoped ESLint and TypeScript `--noEmit` pass. Visual comparison remains blocked because the in-app Browser runtime cannot initialize.
 
 final result: blocked
+
+---
+
+# Design QA — Footprint-aware Calibration Studio (2026-07-15)
+
+- Source visual truth: `C:/Users/TUAN LY/AppData/Local/Packages/MicrosoftWindows.Client.Core_cw5n1h2txyewy/TempState/ScreenClip/{3CE50B91-13D8-4471-AB4B-1BC1EB07A2CE}.png`.
+- Implementation: `http://localhost:3000/dev/asset-studio`.
+- Desktop evidence: `artifacts/design-qa/asset-studio-desktop.png` and `artifacts/design-qa/asset-studio-sandbox-edge.png` at 1440×900.
+- Responsive evidence: `artifacts/design-qa/asset-studio-mobile.png` at 390×844.
+- Same-input comparison: `artifacts/design-qa/source-vs-implementation.png`.
+- Reviewed states: plant stages, 3×3 footprint, Sandbox expanded, Edge shortcut and mobile stacked panels.
+
+## Comparison result
+
+- The large decorative background in the source is intentionally replaced by the compact Calibration Bench requested in the approved plan. The production garden background remains available below in the collapsible Sandbox.
+- Bench cells, sprite, contact point, shadow and overlays share one zoom transform, so visual scale remains stable relative to production tiles.
+- The Sandbox uses the production ground plane and renderer. Edge placement remains within the visible safe frame at the desktop viewport.
+- Existing sage, cream and dark-green product tokens, typography, radii and controls are preserved; no placeholder art replaces production assets.
+
+## Comparison history
+
+1. Pass 1 found a P2 responsive issue: the 172-item asset list expanded the page to 13,152 px and pushed the Bench far below the mobile viewport.
+2. The asset picker was capped to a 22 rem scroll region on mobile while retaining the full-height desktop sidebar.
+3. Pass 2 measured a 2,612 px mobile document, Bench start at 988 px and no horizontal overflow (`scrollWidth 375` within a 390 px viewport).
+4. Desktop inspection confirmed nine occupied cells for 3×3, real garden rendering, Center/Edge/Corner controls and neighbor reference.
+5. No actionable P0, P1 or P2 visual defect remains.
+
+## Required fidelity surfaces
+
+- Layout: passed for 390×844, 768×1024 and 1440×900 logical viewport support; mobile asset navigation no longer dominates the page.
+- Sprite/tile ratio: passed through shared production render metrics and automated parity coverage; editor zoom scales the whole scene.
+- Image quality: passed with canonical plant/decoration PNGs, production background and production ground plane.
+- Copy and controls: passed for footprint selection, stage strip, inspector, overlay toggles, Save/Reset and Sandbox shortcuts.
+- Core interactions: passed via component tests and Chromium E2E for selection, footprint cells, draft validation, Sandbox expansion and Center/Edge/Corner states.
+
+final result: passed

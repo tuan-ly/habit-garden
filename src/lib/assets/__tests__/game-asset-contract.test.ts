@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { getDecorationAssetSpec, getPlantAssetSpec } from '../game-asset-contract'
+import { getDecorationAssetSpec, getPlantAssetSpec, resolveGameAssetDisplay } from '../game-asset-contract'
 
 describe('game asset contract', () => {
   it('loads measured decoration grounding data', () => {
     const asset = getDecorationAssetSpec('stone-lantern')
     expect(asset?.kind).toBe('decoration')
-    expect(asset?.display.anchorY).toBeGreaterThan(0.7)
+    expect(asset?.canonicalFootprint).toBe(2)
+    expect(resolveGameAssetDisplay(asset!, 2).anchorY).toBeGreaterThan(0)
+    expect(resolveGameAssetDisplay(asset!, 2).anchorY).toBeLessThanOrEqual(1)
     expect(asset?.path).toBe('/garden/decorations/sanctuary-rock-lantern.png')
   })
 

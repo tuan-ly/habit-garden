@@ -47,6 +47,12 @@ The migration history includes:
 - atomic economy/crafting/purchase/pickup functions
 - RLS/auth.uid performance optimization and foreign key indexes
 
+## Decoration Footprint Calibration
+
+`config/game-asset-catalog.json` is the repository-side desired catalog for manifest-backed decoration footprints. Asset Studio saves remain code-first: changing a canonical footprint stages the catalog, manifests and a timestamped SQL migration together; it never writes to a linked Supabase project.
+
+The generated migration takes an advisory transaction lock, updates `decoration_types.grid_size`, then reconciles every matching `placed_decorations` row. Expansion searches the nearest non-negative collision-free anchor and aborts the transaction when no location is found; shrinkage keeps the same anchor. The existing placement trigger continues copying the canonical catalog footprint for future rows.
+
 ## Performance Notes
 
 Prefer explicit selects and batched reads. `getPlants()` is an example of composing a garden-specific read model with plants, plant types, active goals, and current-period logs to avoid client-side request fan-out.

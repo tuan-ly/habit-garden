@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { isPlantSelectedForMove, shouldRenderPlacementGhost } from '../garden-tile-grid'
+import {
+  isPlantSelectedForMove,
+  shouldDisableContentHoverScale,
+  shouldRenderPlacementGhost,
+} from '../garden-tile-grid'
 import { getPlantShadowScale, getTileContentScale } from '../isometric-tile'
 
 describe('decoration movement visuals', () => {
@@ -9,6 +13,14 @@ describe('decoration movement visuals', () => {
 
   it('preserves the existing hover affordance for normal plant content', () => {
     expect(getTileContentScale(true, false, false)).toBe(1.2)
+  })
+
+  it('disables hover enlargement for decorations in every garden mode', () => {
+    expect(shouldDisableContentHoverScale(null, true)).toBe(true)
+  })
+
+  it('keeps hover enlargement enabled for plants outside focused state', () => {
+    expect(shouldDisableContentHoverScale(null, false)).toBe(false)
   })
 
   it('keeps focused garden content at its authored focus size', () => {

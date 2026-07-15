@@ -3,12 +3,14 @@ import { describe, expect, it } from 'vitest'
 import { DecorationImage } from '../decoration-image'
 import { PlacementGhost } from '../edit-mode/placement-ghost'
 import type { DecorationType } from '@/types/database'
+import { getDecorationArtSpec, getGroundedArtTransform } from '../decoration-art-spec'
 
 const emojiDecoration = {
   slug: 'paper-lantern',
   name: 'Paper Lantern',
   icon: '🏮',
   image_url: null,
+  grid_size: 1,
 } as DecorationType
 
 const stoneLantern = {
@@ -16,6 +18,7 @@ const stoneLantern = {
   slug: 'stone-lantern',
   name: 'Stone Lantern',
   image_url: '/garden/decorations/sanctuary-rock-lantern.png',
+  grid_size: 2,
 } as DecorationType
 
 describe('DecorationImage emoji grounding', () => {
@@ -61,7 +64,7 @@ describe('DecorationImage emoji grounding', () => {
       <PlacementGhost decorationType={stoneLantern} rotation={0} isValid pixelSize={124} tileSize={100} />
     )
 
-    const reviewedTransform = 'translate(11.38%, 23.92%) scale(1.08)'
+    const reviewedTransform = getGroundedArtTransform(getDecorationArtSpec('stone-lantern', true, 2)).transform
     expect(placed).toContain(reviewedTransform)
     expect(ghost).toContain(reviewedTransform)
   })

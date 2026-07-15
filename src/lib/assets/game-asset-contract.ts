@@ -1,6 +1,7 @@
 import manifest from '@/generated/game-asset-runtime-manifest.json'
 
 export type GameAssetKind = 'plant' | 'decoration'
+export type FootprintKey = `${number}`
 
 export interface GameAssetDisplaySpec {
   anchorX: number
@@ -24,9 +25,23 @@ export interface GameAssetEntry {
   variant: string
   path: string
   display: GameAssetDisplaySpec
+  displayByFootprint?: Record<FootprintKey, GameAssetDisplaySpec>
+  canonicalFootprint?: number
   analysis: {
     bounds: NormalizedBounds
   }
+}
+
+export function toFootprintKey(footprint: number): FootprintKey {
+  return String(Math.max(1, Math.floor(footprint))) as FootprintKey
+}
+
+/** Resolve the reviewed profile without baking footprint scale into display metadata. */
+export function resolveGameAssetDisplay(
+  entry: Pick<GameAssetEntry, 'display' | 'displayByFootprint'>,
+  footprint: number
+): GameAssetDisplaySpec {
+  return entry.displayByFootprint?.[toFootprintKey(footprint)] ?? entry.display
 }
 
 const entries = manifest.assets as GameAssetEntry[]

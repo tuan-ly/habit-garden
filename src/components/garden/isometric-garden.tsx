@@ -36,6 +36,7 @@ import {
   fitVisualBoundsToSafeArea,
   getSanctuarySafeInsets,
 } from '@/lib/garden/camera-safe-area'
+import { getGardenTileSize } from '@/lib/assets/game-asset-render-metrics'
 
 interface IsometricGardenProps {
   plantTypes: PlantType[]
@@ -77,14 +78,6 @@ function getPlacementErrorMessage(error: string): string {
   if (normalized.includes('grid position')) return 'Vị trí này nằm ngoài khu vườn.'
   if (normalized.includes('network')) return 'Mất kết nối khi đặt vật trang trí. Hãy thử lại.'
   return error
-}
-
-function getClientTileSize(): number {
-  if (typeof window === 'undefined') return DEFAULT_TILE_SIZE
-  const width = window.innerWidth
-  if (width < 640) return 100
-  if (width < 1024) return 120
-  return 140
 }
 
 export function IsometricGarden({
@@ -151,7 +144,7 @@ export function IsometricGarden({
   // Device info + resize
   useEffect(() => {
     const updateDeviceInfo = () => {
-      setTileSize(sanctuaryMode && window.innerWidth < 640 ? 132 : getClientTileSize())
+      setTileSize(getGardenTileSize(window.innerWidth, sanctuaryMode))
       setViewportSize({ width: window.innerWidth, height: window.innerHeight })
       setIsTouchDevice(window.matchMedia('(pointer: coarse)').matches)
     }

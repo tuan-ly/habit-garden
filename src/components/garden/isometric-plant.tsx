@@ -8,6 +8,7 @@ import { getPlantSizeScale } from '@/lib/utils/grid-positioning'
 import { getPlantGrowthScale } from '@/lib/assets/game-asset-render-metrics'
 import { getPlantAssetEntry } from '@/lib/assets/plant-asset-identity'
 import { getTileOffsetTransform } from '@/lib/assets/game-asset-display'
+import { resolveGameAssetDisplay } from '@/lib/assets/game-asset-contract'
 
 export type FocusState = 'normal' | 'highlight' | 'dim' | 'urgent'
 
@@ -46,7 +47,8 @@ function IsometricPlantComponent({
 
   // Combine all scale factors
   const finalScale = scale * growthScale * gridSizeScale
-  const assetSpec = getPlantAssetEntry(plant)?.display
+  const assetEntry = getPlantAssetEntry(plant)
+  const assetSpec = assetEntry ? resolveGameAssetDisplay(assetEntry, gridSize) : undefined
   const offsetStyle = assetSpec ? getTileOffsetTransform(assetSpec, tileSize) : undefined
 
   // Focus state visual classes

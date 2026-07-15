@@ -1,17 +1,35 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "assets": {
     "decoration:koi-pond:default": {
-      "display": {
-        "scale": 1.04
-      },
-      "reason": "Reviewed against the sanctuary ground plane and nearby 2×2 scenery."
+      "base": {
+        "display": {
+          "anchorX": 0.528,
+          "anchorY": 0.552,
+          "scale": 0.5
+        },
+        "reason": "Reviewed against the sanctuary ground plane and nearby 2×2 scenery."
+      }
     },
     "decoration:stone-lantern:default": {
-      "display": {
-        "scale": 1.08
+      "base": {
+        "display": {
+          "anchorX": 0.528,
+          "anchorY": 0.584,
+          "scale": 0.69
+        },
+        "reason": "Reviewed against the sanctuary ground plane and nearby 2×2 scenery."
       },
-      "reason": "Reviewed optical scale keeps the lantern readable beside sanctuary rocks."
+      "profiles": {
+        "2": {
+          "display": {
+            "scale": 0.75,
+            "offsetX": 0.013,
+            "offsetY": 0.026
+          },
+          "reason": "Cho nó lệch xuống dưới một chút"
+        }
+      }
     }
   }
 }

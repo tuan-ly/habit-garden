@@ -1,6 +1,6 @@
 {
-  "schemaVersion": 1,
-  "generatedAt": "2026-07-15T03:18:16.795Z",
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-15T15:15:55.466Z",
   "assets": [
     {
       "id": "decoration:koi-pond:default",
@@ -16,9 +16,9 @@
         "offsetY": 0
       },
       "display": {
-        "anchorX": 0.4843,
-        "anchorY": 0.76,
-        "scale": 1.04,
+        "anchorX": 0.528,
+        "anchorY": 0.552,
+        "scale": 0.5,
         "offsetX": 0,
         "offsetY": 0
       },
@@ -55,7 +55,9 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {},
+      "canonicalFootprint": 3
     },
     {
       "id": "decoration:stone-lantern:default",
@@ -71,9 +73,9 @@
         "offsetY": 0
       },
       "display": {
-        "anchorX": 0.3862,
-        "anchorY": 0.7608,
-        "scale": 1.08,
+        "anchorX": 0.528,
+        "anchorY": 0.584,
+        "scale": 0.69,
         "offsetX": 0,
         "offsetY": 0
       },
@@ -110,7 +112,17 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {
+        "2": {
+          "anchorX": 0.528,
+          "anchorY": 0.584,
+          "scale": 0.75,
+          "offsetX": 0.013,
+          "offsetY": 0.026
+        }
+      },
+      "canonicalFootprint": 2
     },
     {
       "id": "plant:bamboo:01-seed",
@@ -165,7 +177,8 @@
           "level": "warning",
           "message": "Padding dọc lớn; asset có thể hiển thị quá nhỏ."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:bamboo:02-sprout",
@@ -220,7 +233,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:bamboo:03-growing",
@@ -275,7 +289,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:bamboo:04-blooming",
@@ -330,7 +345,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:bamboo:05-mature",
@@ -385,7 +401,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:banyan:01-seed",
@@ -440,7 +457,8 @@
           "level": "warning",
           "message": "Padding dọc lớn; asset có thể hiển thị quá nhỏ."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:banyan:02-sprout",
@@ -495,7 +513,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:banyan:03-growing",
@@ -550,7 +569,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:banyan:04-blooming",
@@ -605,7 +625,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:banyan:05-mature",
@@ -660,7 +681,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:bodhi-tree:01-seed",
@@ -715,7 +737,8 @@
           "level": "warning",
           "message": "Padding dọc lớn; asset có thể hiển thị quá nhỏ."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:bodhi-tree:02-sprout",
@@ -770,7 +793,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:bodhi-tree:03-growing",
@@ -825,7 +849,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:bodhi-tree:04-blooming",
@@ -880,7 +905,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:bodhi-tree:05-mature",
@@ -935,7 +961,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:bonsai:01-seed",
@@ -990,7 +1017,8 @@
           "level": "warning",
           "message": "Padding dọc lớn; asset có thể hiển thị quá nhỏ."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:bonsai:02-sprout",
@@ -1045,7 +1073,8 @@
           "level": "warning",
           "message": "Padding dọc lớn; asset có thể hiển thị quá nhỏ."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:bonsai:03-growing",
@@ -1100,7 +1129,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:bonsai:04-blooming",
@@ -1155,7 +1185,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:bonsai:05-mature",
@@ -1210,7 +1241,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:bush:01-seed",
@@ -1265,7 +1297,8 @@
           "level": "warning",
           "message": "Padding dọc lớn; asset có thể hiển thị quá nhỏ."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:bush:02-sprout",
@@ -1320,7 +1353,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:bush:03-growing",
@@ -1375,7 +1409,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:bush:04-blooming",
@@ -1430,7 +1465,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:bush:05-mature",
@@ -1485,7 +1521,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:cactus:01-seed",
@@ -1540,7 +1577,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:cactus:02-sprout",
@@ -1595,7 +1633,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:cactus:03-growing",
@@ -1650,7 +1689,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:cactus:04-blooming",
@@ -1705,7 +1745,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:cactus:05-mature",
@@ -1760,7 +1801,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:cherry-blossom:01-seed",
@@ -1815,7 +1857,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:cherry-blossom:02-sprout",
@@ -1870,7 +1913,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:cherry-blossom:03-growing",
@@ -1925,7 +1969,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:cherry-blossom:04-blooming",
@@ -1980,7 +2025,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:cherry-blossom:05-mature",
@@ -2035,7 +2081,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:christmas-tree:01-seed",
@@ -2090,7 +2137,8 @@
           "level": "warning",
           "message": "Padding dọc lớn; asset có thể hiển thị quá nhỏ."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:christmas-tree:02-sprout",
@@ -2145,7 +2193,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:christmas-tree:03-growing",
@@ -2200,7 +2249,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:christmas-tree:04-blooming",
@@ -2255,7 +2305,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:christmas-tree:05-mature",
@@ -2310,7 +2361,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:clover:01-seed",
@@ -2365,7 +2417,8 @@
           "level": "warning",
           "message": "Padding dọc lớn; asset có thể hiển thị quá nhỏ."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:clover:02-sprout",
@@ -2420,7 +2473,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:clover:03-growing",
@@ -2475,7 +2529,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:clover:04-blooming",
@@ -2530,7 +2585,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:clover:05-mature",
@@ -2585,7 +2641,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:daisy:01-seed",
@@ -2640,7 +2697,8 @@
           "level": "warning",
           "message": "Padding dọc lớn; asset có thể hiển thị quá nhỏ."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:daisy:02-sprout",
@@ -2695,7 +2753,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:daisy:03-growing",
@@ -2750,7 +2809,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:daisy:04-blooming",
@@ -2805,7 +2865,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:daisy:05-mature",
@@ -2860,7 +2921,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:dandelion:01-seed",
@@ -2915,7 +2977,8 @@
           "level": "warning",
           "message": "Padding dọc lớn; asset có thể hiển thị quá nhỏ."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:dandelion:02-sprout",
@@ -2970,7 +3033,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:dandelion:03-growing",
@@ -3025,7 +3089,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:dandelion:04-blooming",
@@ -3080,7 +3145,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:dandelion:05-mature",
@@ -3135,7 +3201,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:flower:01-seed",
@@ -3190,7 +3257,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:flower:02-sprout",
@@ -3245,7 +3313,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:flower:03-growing",
@@ -3300,7 +3369,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:flower:04-blooming",
@@ -3355,7 +3425,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:flower:05-mature",
@@ -3410,7 +3481,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:generic:01-seed",
@@ -3465,7 +3537,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:generic:02-sprout",
@@ -3520,7 +3593,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:generic:03-growing",
@@ -3575,7 +3649,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:generic:04-blooming",
@@ -3630,7 +3705,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:generic:05-mature",
@@ -3685,7 +3761,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:golden-lotus:01-seed",
@@ -3740,7 +3817,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:golden-lotus:02-sprout",
@@ -3795,7 +3873,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:golden-lotus:03-growing",
@@ -3850,7 +3929,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:golden-lotus:04-blooming",
@@ -3905,7 +3985,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:golden-lotus:05-mature",
@@ -3960,7 +4041,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:lavender:01-seed",
@@ -4015,7 +4097,8 @@
           "level": "warning",
           "message": "Padding dọc lớn; asset có thể hiển thị quá nhỏ."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:lavender:02-sprout",
@@ -4070,7 +4153,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:lavender:03-growing",
@@ -4125,7 +4209,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:lavender:04-blooming",
@@ -4180,7 +4265,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:lavender:05-mature",
@@ -4235,7 +4321,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:lotus:01-seed",
@@ -4290,7 +4377,8 @@
           "level": "warning",
           "message": "Padding dọc lớn; asset có thể hiển thị quá nhỏ."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:lotus:02-sprout",
@@ -4345,7 +4433,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:lotus:03-growing",
@@ -4400,7 +4489,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:lotus:04-blooming",
@@ -4455,7 +4545,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:lotus:05-mature",
@@ -4510,7 +4601,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:magic-beanstalk:01-seed",
@@ -4565,7 +4657,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:magic-beanstalk:02-sprout",
@@ -4620,7 +4713,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:magic-beanstalk:03-growing",
@@ -4675,7 +4769,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:magic-beanstalk:04-blooming",
@@ -4730,7 +4825,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:magic-beanstalk:05-mature",
@@ -4785,7 +4881,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:mint:01-seed",
@@ -4840,7 +4937,8 @@
           "level": "warning",
           "message": "Padding dọc lớn; asset có thể hiển thị quá nhỏ."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:mint:02-sprout",
@@ -4895,7 +4993,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:mint:03-growing",
@@ -4950,7 +5049,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:mint:04-blooming",
@@ -5005,7 +5105,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:mint:05-mature",
@@ -5060,7 +5161,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:money-tree:01-seed",
@@ -5115,7 +5217,8 @@
           "level": "warning",
           "message": "Padding dọc lớn; asset có thể hiển thị quá nhỏ."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:money-tree:02-sprout",
@@ -5170,7 +5273,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:money-tree:03-growing",
@@ -5225,7 +5329,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:money-tree:04-blooming",
@@ -5280,7 +5385,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:money-tree:05-mature",
@@ -5335,7 +5441,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:mushroom:01-seed",
@@ -5390,7 +5497,8 @@
           "level": "warning",
           "message": "Padding dọc lớn; asset có thể hiển thị quá nhỏ."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:mushroom:02-sprout",
@@ -5445,7 +5553,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:mushroom:03-growing",
@@ -5500,7 +5609,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:mushroom:04-blooming",
@@ -5555,7 +5665,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:mushroom:05-mature",
@@ -5610,7 +5721,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:orchid:01-seed",
@@ -5665,7 +5777,8 @@
           "level": "warning",
           "message": "Padding dọc lớn; asset có thể hiển thị quá nhỏ."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:orchid:02-sprout",
@@ -5720,7 +5833,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:orchid:03-growing",
@@ -5775,7 +5889,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:orchid:04-blooming",
@@ -5830,7 +5945,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:orchid:05-mature",
@@ -5885,7 +6001,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:peach-blossom:01-seed",
@@ -5940,7 +6057,8 @@
           "level": "warning",
           "message": "Padding dọc lớn; asset có thể hiển thị quá nhỏ."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:peach-blossom:02-sprout",
@@ -5995,7 +6113,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:peach-blossom:03-growing",
@@ -6050,7 +6169,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:peach-blossom:04-blooming",
@@ -6105,7 +6225,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:peach-blossom:05-mature",
@@ -6160,7 +6281,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:peony:01-seed",
@@ -6215,7 +6337,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:peony:02-sprout",
@@ -6270,7 +6393,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:peony:03-growing",
@@ -6325,7 +6449,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:peony:04-blooming",
@@ -6380,7 +6505,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:peony:05-mature",
@@ -6435,7 +6561,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:phoenix-flower:01-seed",
@@ -6490,7 +6617,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:phoenix-flower:02-sprout",
@@ -6545,7 +6673,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:phoenix-flower:03-growing",
@@ -6600,7 +6729,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:phoenix-flower:04-blooming",
@@ -6655,7 +6785,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:phoenix-flower:05-mature",
@@ -6710,7 +6841,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:pine:01-seed",
@@ -6765,7 +6897,8 @@
           "level": "warning",
           "message": "Padding dọc lớn; asset có thể hiển thị quá nhỏ."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:pine:02-sprout",
@@ -6820,7 +6953,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:pine:03-growing",
@@ -6875,7 +7009,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:pine:04-blooming",
@@ -6930,7 +7065,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:pine:05-mature",
@@ -6985,7 +7121,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:pumpkin:01-seed",
@@ -7040,7 +7177,8 @@
           "level": "warning",
           "message": "Padding dọc lớn; asset có thể hiển thị quá nhỏ."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:pumpkin:02-sprout",
@@ -7095,7 +7233,8 @@
           "level": "warning",
           "message": "Padding dọc lớn; asset có thể hiển thị quá nhỏ."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:pumpkin:03-growing",
@@ -7150,7 +7289,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:pumpkin:04-blooming",
@@ -7205,7 +7345,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:pumpkin:05-mature",
@@ -7260,7 +7401,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:rose:01-seed",
@@ -7315,7 +7457,8 @@
           "level": "warning",
           "message": "Padding dọc lớn; asset có thể hiển thị quá nhỏ."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:rose:02-sprout",
@@ -7370,7 +7513,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:rose:03-growing",
@@ -7425,7 +7569,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:rose:04-blooming",
@@ -7480,7 +7625,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:rose:05-mature",
@@ -7535,7 +7681,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:succulent:01-seed",
@@ -7590,7 +7737,8 @@
           "level": "warning",
           "message": "Padding dọc lớn; asset có thể hiển thị quá nhỏ."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:succulent:02-sprout",
@@ -7645,7 +7793,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:succulent:03-growing",
@@ -7700,7 +7849,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:succulent:04-blooming",
@@ -7755,7 +7905,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:succulent:05-mature",
@@ -7810,7 +7961,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:sunflower:01-seed",
@@ -7865,7 +8017,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:sunflower:02-sprout",
@@ -7920,7 +8073,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:sunflower:03-growing",
@@ -7975,7 +8129,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:sunflower:04-blooming",
@@ -8030,7 +8185,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:sunflower:05-mature",
@@ -8085,7 +8241,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:tomato:01-seed",
@@ -8140,7 +8297,8 @@
           "level": "warning",
           "message": "Padding dọc lớn; asset có thể hiển thị quá nhỏ."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:tomato:02-sprout",
@@ -8195,7 +8353,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:tomato:03-growing",
@@ -8250,7 +8409,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:tomato:04-blooming",
@@ -8305,7 +8465,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:tomato:05-mature",
@@ -8360,7 +8521,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:tulip:01-seed",
@@ -8415,7 +8577,8 @@
           "level": "warning",
           "message": "Padding dọc lớn; asset có thể hiển thị quá nhỏ."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:tulip:02-sprout",
@@ -8470,7 +8633,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:tulip:03-growing",
@@ -8525,7 +8689,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:tulip:04-blooming",
@@ -8580,7 +8745,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:tulip:05-mature",
@@ -8635,7 +8801,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:vegetable:01-seed",
@@ -8690,7 +8857,8 @@
           "level": "warning",
           "message": "Padding dọc lớn; asset có thể hiển thị quá nhỏ."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:vegetable:02-sprout",
@@ -8745,7 +8913,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:vegetable:03-growing",
@@ -8800,7 +8969,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:vegetable:04-blooming",
@@ -8855,7 +9025,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:vegetable:05-mature",
@@ -8910,7 +9081,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:world-tree:01-seed",
@@ -8965,7 +9137,8 @@
           "level": "warning",
           "message": "Padding dọc lớn; asset có thể hiển thị quá nhỏ."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:world-tree:02-sprout",
@@ -9020,7 +9193,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:world-tree:03-growing",
@@ -9075,7 +9249,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:world-tree:04-blooming",
@@ -9130,7 +9305,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:world-tree:05-mature",
@@ -9185,7 +9361,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:yellow-apricot:01-seed",
@@ -9240,7 +9417,8 @@
           "level": "warning",
           "message": "Padding dọc lớn; asset có thể hiển thị quá nhỏ."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:yellow-apricot:02-sprout",
@@ -9295,7 +9473,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:yellow-apricot:03-growing",
@@ -9350,7 +9529,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:yellow-apricot:04-blooming",
@@ -9405,7 +9585,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     },
     {
       "id": "plant:yellow-apricot:05-mature",
@@ -9460,7 +9641,8 @@
           "level": "pass",
           "message": "Tỷ lệ silhouette/canvas hợp lý."
         }
-      ]
+      ],
+      "displayByFootprint": {}
     }
   ]
 }
