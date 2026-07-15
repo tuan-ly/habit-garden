@@ -37,7 +37,7 @@ Chọn mô hình hai lớp vì phân tích ảnh giải quyết **rendering cons
 2. **Generate** — dùng prompt theo Art Bible; plant bắt đầu từ mature anchor.
 3. **Post-process** — xóa watermark/nền, crop vuông, resize/optimize; không tự căn object bằng padding giả.
 4. **Machine Gate** — chạy `npm run assets:analyze`. Script đo alpha bounds, coverage, centroid, ground contact và sinh `src/generated/game-asset-manifest.json`.
-5. **Metadata Review** — mở preview trong garden; chỉ override `scale` hoặc anchor khi điểm chạm alpha bị bóng/particle đánh lừa. Override phải có lý do.
+5. **Metadata Review** — mở `/dev/asset-studio`; chỉnh anchor, scale hoặc tile-relative offset khi alpha analysis không đủ. Override phải có lý do và chỉ lưu field khác auto value.
 6. **Art Direction Gate** — duyệt checklist ánh sáng, projection, palette, outline, silhouette, stage progression.
 7. **Runtime QA** — kiểm tra 100%/zoom lớn, ghost placement, rotation, chọn/di chuyển/cất kho, mobile và desktop.
 8. **Ship** — `npm run assets:check`, test và build phải đạt; lỗi legacy phải được ghi nhận, không âm thầm bỏ qua.
@@ -51,9 +51,12 @@ Chọn mô hình hai lớp vì phân tích ảnh giải quyết **rendering cons
 | `analysis.centroid` | alpha-weighted | chẩn đoán lệch thị giác |
 | `display.anchorX/Y` | bottom contact band | đặt đúng chân vật thể lên tile |
 | `display.scale` | default + reviewed override | cân tỷ lệ giữa các asset |
+| `display.offsetX/Y` | reviewed override, mặc định `0` | nudge theo tile size ở wrapper ngoài, không bị scale |
 | `gridSize` | catalog/domain metadata | chiếm tile và collision |
 
-Renderer đọc manifest qua `game-asset-contract.ts`; không hard-code anchor PNG trong component.
+Renderer đọc manifest qua `game-asset-contract.ts`; không hard-code anchor PNG trong component. Reviewed metadata nằm ở `config/game-asset-overrides.json`, merge theo `auto analysis → reviewed override → defaults`, rồi sinh đồng thời full/runtime manifest. `stone-lantern` và `koi-pond` là hai scale override đã migrate khỏi analyzer.
+
+`offsetX/Y × tileSize` được đặt ở wrapper ngoài asset scale, growth scale và footprint scale. Offset vì vậy chỉ sửa vị trí hiển thị; nó không thay shadow, occupancy hay collision.
 
 ## 5. Ship checklist
 
@@ -74,3 +77,13 @@ npm run assets:check    # CI gate; fail nếu có lỗi kỹ thuật
 ```
 
 Manifest là generated file nhưng được commit cùng asset để build luôn tái lập được. Mỗi lần thay PNG phải chạy lại analyzer.
+
+## 7. Calibration Studio và camera safety
+
+**Asset Calibration Studio** tại `/dev/asset-studio` là route development-only, không dùng Supabase. Studio hỗ trợ search/tab/stage, năm scene preset, ba viewport, ba mức zoom, placed/ghost preview, overlay bounds/anchor/footprint/shadow/safe frame, PNG preview và save/reset atomic. PNG import chưa có canonical ID chỉ được preview.
+
+**Camera Safe Area** fit idle sanctuary theo actual container từ `ResizeObserver` và **Visual Scene Bounds** = ground plane ∪ plant silhouettes ∪ decoration silhouettes ∪ shadows. Mobile dùng inset `16/16/256/120`; desktop dùng `32/32/112/144`. Base fit tối đa `1`, còn user zoom là multiplier riêng; focus camera và non-sanctuary transform giữ nguyên.
+
+`npm run assets:check` hiện giữ gate nghiêm và báo 11 PNG legacy có nền opaque (`flower`, `sunflower`, `cherry-blossom:02-sprout`). Đây là source-art debt cần sửa ảnh, không được giảm cấp hoặc che lỗi trong analyzer.
+
+Spec MVP: [Asset Calibration Studio + Camera Safe Area](./design/asset-calibration-studio-spec.md).

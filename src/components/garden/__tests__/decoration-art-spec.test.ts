@@ -22,6 +22,9 @@ describe('decoration art anchors', () => {
       expect(spec.anchorX).toBeLessThan(1)
       expect(spec.anchorY).toBeGreaterThan(0)
       expect(spec.anchorY).toBeLessThanOrEqual(1)
+      expect(spec.scale).toBe(1)
+      expect(spec.offsetX).toBe(0)
+      expect(spec.offsetY).toBe(0)
     }
   })
 })

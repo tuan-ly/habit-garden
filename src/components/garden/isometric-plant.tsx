@@ -5,6 +5,9 @@ import { PlantVisual } from '@/components/plants/plant-visual'
 import type { PlantWithType, WeatherType } from '@/types/database'
 import { cn } from '@/lib/utils'
 import { getPlantSizeScale } from '@/lib/utils/grid-positioning'
+import { getPlantGrowthScale } from '@/lib/assets/game-asset-render-metrics'
+import { getPlantAssetEntry } from '@/lib/assets/plant-asset-identity'
+import { getTileOffsetTransform } from '@/lib/assets/game-asset-display'
 
 export type FocusState = 'normal' | 'highlight' | 'dim' | 'urgent'
 
@@ -19,16 +22,7 @@ interface IsometricPlantProps {
   hideStatusIndicators?: boolean
   priority?: boolean
   cinematic?: boolean
-}
-
-// Map growth percentage to a visual scale (base scale)
-function getGrowthScale(growthPercentage: number): number {
-  if (growthPercentage < 10) return 0.72 // Seed
-  if (growthPercentage < 25) return 0.84 // Sprout
-  if (growthPercentage < 50) return 0.96 // Early growing
-  if (growthPercentage < 75) return 1.08 // Mid growing
-  if (growthPercentage < 100) return 1.14 // Late growing/blooming
-  return 1.2 // Mature
+  tileSize?: number
 }
 
 function IsometricPlantComponent({
@@ -41,9 +35,10 @@ function IsometricPlantComponent({
   hideStatusIndicators = false,
   priority = false,
   cinematic = false,
+  tileSize = 0,
 }: IsometricPlantProps) {
   // Base scale from growth stage
-  const growthScale = getGrowthScale(plant.growth_percentage)
+  const growthScale = getPlantGrowthScale(plant.growth_percentage)
 
   // Multi-cell size multiplier (1x1→1.0x, 2x2→1.8x, 3x3→2.5x, etc.)
   const gridSize = plant.grid_size || 1
@@ -51,6 +46,8 @@ function IsometricPlantComponent({
 
   // Combine all scale factors
   const finalScale = scale * growthScale * gridSizeScale
+  const assetSpec = getPlantAssetEntry(plant)?.display
+  const offsetStyle = assetSpec ? getTileOffsetTransform(assetSpec, tileSize) : undefined
 
   // Focus state visual classes
   const focusClasses = cn(
@@ -64,18 +61,20 @@ function IsometricPlantComponent({
   )
 
   return (
-    <div
-      className={cn(
-        'relative transition-all duration-300 ease-out',
-        focusClasses,
-        className
-      )}
-      style={{
-        // Scale the whole container from bottom center
-        transform: `scale(${finalScale}) translateY(-1px)`,
-        transformOrigin: 'bottom center',
-      }}
-    >
+    <div className="relative" style={offsetStyle} data-asset-offset-wrapper="true">
+      <div
+        className={cn(
+          'relative transition-all duration-300 ease-out',
+          focusClasses,
+          className
+        )}
+        style={{
+          // Asset placement offset lives on the outer wrapper so this scale
+          // cannot magnify the reviewed tile-relative nudge.
+          transform: `scale(${finalScale}) translateY(-1px)`,
+          transformOrigin: 'bottom center',
+        }}
+      >
       {/* Urgent glow ring */}
       {focusState === 'urgent' && (
         <div className="absolute inset-0 -m-2 rounded-full bg-red-500/20 animate-ping pointer-events-none" />
@@ -115,6 +114,7 @@ function IsometricPlantComponent({
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

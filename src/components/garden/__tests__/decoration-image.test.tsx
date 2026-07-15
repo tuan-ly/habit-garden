@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { DecorationImage } from '../decoration-image'
+import { PlacementGhost } from '../edit-mode/placement-ghost'
 import type { DecorationType } from '@/types/database'
 
 const emojiDecoration = {
@@ -8,6 +9,13 @@ const emojiDecoration = {
   name: 'Paper Lantern',
   icon: '🏮',
   image_url: null,
+} as DecorationType
+
+const stoneLantern = {
+  ...emojiDecoration,
+  slug: 'stone-lantern',
+  name: 'Stone Lantern',
+  image_url: '/garden/decorations/sanctuary-rock-lantern.png',
 } as DecorationType
 
 describe('DecorationImage emoji grounding', () => {
@@ -43,5 +51,18 @@ describe('DecorationImage emoji grounding', () => {
     )
 
     expect(html).toContain('rotate(270deg)')
+  })
+
+  it('uses the same reviewed transform for placed and placement-ghost art', () => {
+    const placed = renderToStaticMarkup(
+      <DecorationImage decorationType={stoneLantern} pixelSize={124} tileSize={100} grounded />
+    )
+    const ghost = renderToStaticMarkup(
+      <PlacementGhost decorationType={stoneLantern} rotation={0} isValid pixelSize={124} tileSize={100} />
+    )
+
+    const reviewedTransform = 'translate(11.38%, 23.92%) scale(1.08)'
+    expect(placed).toContain(reviewedTransform)
+    expect(ghost).toContain(reviewedTransform)
   })
 })

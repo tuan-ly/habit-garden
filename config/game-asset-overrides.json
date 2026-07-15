@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "assets": {
+    "decoration:koi-pond:default": {
+      "display": {
+        "scale": 1.04
+      },
+      "reason": "Reviewed against the sanctuary ground plane and nearby 2×2 scenery."
+    },
+    "decoration:stone-lantern:default": {
+      "display": {
+        "scale": 1.08
+      },
+      "reason": "Reviewed optical scale keeps the lantern readable beside sanctuary rocks."
+    }
+  }
+}

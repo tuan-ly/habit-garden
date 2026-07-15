@@ -311,7 +311,7 @@ function IsometricTileComponent({
             transformOrigin: 'bottom center',
           }}
         >
-          <IsometricPlant plant={previewPlant} />
+          <IsometricPlant plant={previewPlant} tileSize={tileSize} />
         </div>
       )}
 

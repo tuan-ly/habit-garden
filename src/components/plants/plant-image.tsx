@@ -3,20 +3,18 @@
 import Image from 'next/image'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
-import type { PlantWithType, PlantStatus } from '@/types/database'
-import { getPlantAssetSpec } from '@/lib/assets/game-asset-contract'
-import { getGroundedArtTransform } from '@/components/garden/decoration-art-spec'
+import type { PlantWithType } from '@/types/database'
+import { getGroundedArtTransform } from '@/lib/assets/game-asset-display'
+import {
+    GROWTH_STAGES,
+    getGrowthStage,
+    getPlantAssetEntry,
+    getPlantFolder,
+    getPlantImagePath,
+    type GrowthStage,
+} from '@/lib/assets/plant-asset-identity'
 
-// Growth stage thresholds matching plant-visual.tsx
-const GROWTH_STAGES = {
-    seed: { min: 0, max: 10 },
-    sprout: { min: 10, max: 25 },
-    growing: { min: 25, max: 75 },
-    blooming: { min: 75, max: 100 },
-    mature: { min: 100, max: Infinity },
-} as const
-
-export type GrowthStage = keyof typeof GROWTH_STAGES
+export type { GrowthStage }
 
 // Size configurations - pixel dimensions for <img> + classNames for container
 // width/height = intrinsic bitmap size requested from Next.js image optimizer
@@ -40,80 +38,6 @@ interface PlantImageProps {
     priority?: boolean
 }
 
-function getGrowthStage(growthPercentage: number, status: PlantStatus): GrowthStage {
-    if (status === 'mature') return 'mature'
-    if (status === 'dead') return 'seed' // Dead plants show withered version
-
-    if (growthPercentage < GROWTH_STAGES.seed.max) return 'seed'
-    if (growthPercentage < GROWTH_STAGES.sprout.max) return 'sprout'
-    if (growthPercentage < GROWTH_STAGES.growing.max) return 'growing'
-    if (growthPercentage < GROWTH_STAGES.blooming.max) return 'blooming'
-    return 'mature'
-}
-
-// Map plant type names to folder names
-function getPlantFolder(plantTypeName: string): string {
-    const PLANT_TYPE_FOLDERS: Record<string, string> = {
-        'generic': 'generic',
-        'sunflower': 'sunflower',
-        'cherry blossom': 'cherry-blossom',
-        'cherry': 'cherry-blossom',
-        'sakura': 'cherry-blossom',
-        'cactus': 'cactus',
-        'bonsai': 'bonsai',
-        'lotus': 'lotus',
-        'rose': 'rose',
-        'bamboo': 'bamboo',
-        'dandelion': 'dandelion',
-        'succulent': 'succulent',
-        'mushroom': 'mushroom',
-        'clover': 'clover',
-        'vegetable': 'vegetable',
-        'bush': 'bush',
-        'daisy': 'daisy',
-        'mint': 'mint',
-        'lavender': 'lavender',
-        'tomato': 'tomato',
-        'orchid': 'orchid',
-        'tulip': 'tulip',
-        'peony': 'peony',
-        'pine': 'pine',
-        'banyan': 'banyan',
-        'bodhi tree': 'bodhi-tree',
-        'bodhi': 'bodhi-tree',
-        'golden lotus': 'golden-lotus',
-        'money tree': 'money-tree',
-        'magic beanstalk': 'magic-beanstalk',
-        'phoenix flower': 'phoenix-flower',
-        'world tree': 'world-tree',
-        'yellow apricot': 'yellow-apricot',
-        'peach blossom': 'peach-blossom',
-        'pumpkin': 'pumpkin',
-        'christmas tree': 'christmas-tree',
-    }
-    const normalizedName = plantTypeName.toLowerCase().trim()
-    return PLANT_TYPE_FOLDERS[normalizedName] || 'generic'
-}
-
-// Map clean stage names to numbered file prefixes
-const STAGE_FILE_PREFIX: Record<GrowthStage, string> = {
-    seed: '01-seed',
-    sprout: '02-sprout',
-    growing: '03-growing',
-    blooming: '04-blooming',
-    mature: '05-mature',
-}
-
-function getPlantImagePath(plantTypeName: string, stage: GrowthStage, isDead: boolean): string {
-    const folder = getPlantFolder(plantTypeName)
-
-    if (isDead) {
-        return `/plants/${folder}/dead.png`
-    }
-
-    return `/plants/${folder}/${STAGE_FILE_PREFIX[stage]}.png`
-}
-
 export function PlantImage({
     plant,
     size = 'md',
@@ -128,9 +52,7 @@ export function PlantImage({
     const sizeConfig = SIZE_CONFIG[size]
 
     const imagePath = getPlantImagePath(plant.plant_type.name, currentStage, isDead)
-    const folder = getPlantFolder(plant.plant_type.name)
-    const filename = imagePath.split('/').at(-1) ?? ''
-    const assetSpec = !isDead ? getPlantAssetSpec(folder, filename)?.display : undefined
+    const assetSpec = getPlantAssetEntry(plant)?.display
     const icon = plant.plant_type.icon || '🌱'
 
     // Track image load errors for emoji fallback

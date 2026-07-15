@@ -9,6 +9,7 @@ interface PlacementGhostProps {
   rotation: DecorationRotation
   isValid: boolean
   pixelSize: number
+  tileSize: number
   className?: string
 }
 
@@ -17,6 +18,7 @@ export function PlacementGhost({
   rotation,
   isValid,
   pixelSize,
+  tileSize,
   className,
 }: PlacementGhostProps) {
   return (
@@ -33,6 +35,7 @@ export function PlacementGhost({
         rotation={rotation}
         isGhost
         pixelSize={pixelSize}
+        tileSize={tileSize}
         grounded
       />
       {!isValid && (

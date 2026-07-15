@@ -6,6 +6,15 @@ export interface GameAssetDisplaySpec {
   anchorX: number
   anchorY: number
   scale: number
+  offsetX: number
+  offsetY: number
+}
+
+export interface NormalizedBounds {
+  left: number
+  top: number
+  right: number
+  bottom: number
 }
 
 export interface GameAssetEntry {
@@ -15,6 +24,9 @@ export interface GameAssetEntry {
   variant: string
   path: string
   display: GameAssetDisplaySpec
+  analysis: {
+    bounds: NormalizedBounds
+  }
 }
 
 const entries = manifest.assets as GameAssetEntry[]

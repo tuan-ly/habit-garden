@@ -9,6 +9,7 @@ import type { DecorationRotation, DecorationType, PlantWithType, PlacedDecoratio
 import type { MoveState } from './use-garden-interactions'
 import type { GardenMode } from './mode-toolbar'
 import { getPlantSizeScale } from '@/lib/utils/grid-positioning'
+import { getDecorationPixelSize } from '@/lib/assets/game-asset-render-metrics'
 import { PlantFocusFrame } from './plant-focus-frame'
 
 interface TileData {
@@ -123,7 +124,7 @@ export const GardenTileGrid = memo(function GardenTileGrid({
         const ghostAtTile = placementGhost?.row === row && placementGhost.col === col
         const ghostSize = placementGhost?.decorationType.grid_size || 1
         const decorationPixelSize = decoration
-          ? tileSize * (0.62 + decoration.grid_size * 0.62)
+          ? getDecorationPixelSize(tileSize, decoration.grid_size)
           : undefined
         const isFeaturedPlant = plant?.id === featuredPlantId
 
@@ -165,7 +166,8 @@ export const GardenTileGrid = memo(function GardenTileGrid({
                 decorationType={placementGhost.decorationType}
                 rotation={placementGhost.rotation}
                 isValid={placementGhost.isValid}
-                pixelSize={tileSize * (0.62 + ghostSize * 0.62)}
+                pixelSize={getDecorationPixelSize(tileSize, ghostSize)}
+                tileSize={tileSize}
               />
             ) : null}
           >
@@ -189,6 +191,7 @@ export const GardenTileGrid = memo(function GardenTileGrid({
                     hideStatusIndicators={hideStatusIndicators}
                     priority={isFeaturedPlant}
                     cinematic={cinematic}
+                    tileSize={tileSize}
                   />
                 </div>
               </>
@@ -200,6 +203,7 @@ export const GardenTileGrid = memo(function GardenTileGrid({
                   size={decoration.grid_size >= 2 ? 'xl' : 'lg'}
                   rotation={decoration.rotation}
                   pixelSize={decorationPixelSize}
+                  tileSize={tileSize}
                   grounded
                 />
               </div>

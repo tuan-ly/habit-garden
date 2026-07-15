@@ -31,6 +31,11 @@ import {
   getGardenSize,
 } from '@/lib/progression-system'
 import { toast } from 'sonner'
+import {
+  calculateGardenVisualBounds,
+  fitVisualBoundsToSafeArea,
+  getSanctuarySafeInsets,
+} from '@/lib/garden/camera-safe-area'
 
 interface IsometricGardenProps {
   plantTypes: PlantType[]
@@ -155,6 +160,24 @@ export function IsometricGarden({
     return () => window.removeEventListener('resize', updateDeviceInfo)
   }, [sanctuaryMode])
 
+  // The garden may render inside the calibration studio or another bounded
+  // surface, so camera fitting must follow the real container rather than the
+  // browser window.
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container || typeof ResizeObserver === 'undefined') return
+    const updateViewport = () => {
+      const rect = container.getBoundingClientRect()
+      if (rect.width > 0 && rect.height > 0) {
+        setViewportSize({ width: rect.width, height: rect.height })
+      }
+    }
+    updateViewport()
+    const observer = new ResizeObserver(updateViewport)
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [])
+
   // Prevent browser zoom and text selection within garden container
   useEffect(() => {
     const container = scrollContainerRef.current
@@ -222,6 +245,28 @@ export function IsometricGarden({
 
   const containerWidth = gridSize * tileSize
   const containerHeight = getGroundPlaneHeight(gridSize, tileSize, sanctuaryMode)
+  const visualSceneBounds = useMemo(() => calculateGardenVisualBounds({
+    gridSize,
+    tileSize,
+    containerHeight,
+    plants: livingPlants,
+    decorations: gardenSettings.showDecorations ? placedDecorations : [],
+  }), [
+    gridSize,
+    tileSize,
+    containerHeight,
+    livingPlants,
+    gardenSettings.showDecorations,
+    placedDecorations,
+  ])
+  const sanctuaryCameraFit = useMemo(() => fitVisualBoundsToSafeArea({
+    viewportWidth: viewportSize.width,
+    viewportHeight: viewportSize.height,
+    containerWidth,
+    containerHeight,
+    sceneBounds: visualSceneBounds,
+    insets: getSanctuarySafeInsets(viewportSize.width),
+  }), [viewportSize.width, viewportSize.height, containerWidth, containerHeight, visualSceneBounds])
 
   const visibleTileKeys = useVisibleTiles({
     gridSize, tileSize, zoom, panOffset,
@@ -474,15 +519,22 @@ export function IsometricGarden({
     : handleGardenTileClick
 
   const gardenTransform = useMemo(() => {
-    if (!sanctuaryMode || !sanctuaryFocusedPlant) {
-      const sanctuaryIdleOffset = sanctuaryMode
-        ? Math.min(132, Math.max(82, viewportSize.height * 0.16))
-        : 0
-      const sanctuaryFitScale = sanctuaryMode && viewportSize.width >= 640
-        ? Math.min(1, Math.max(0.5, (viewportSize.width - 64) / containerWidth))
-        : 1
-      const displayScale = zoom * sanctuaryFitScale
-      return `translateY(${sanctuaryIdleOffset}px) scale(${displayScale}) translate(${panOffset.x / displayScale}px, ${panOffset.y / displayScale}px)`
+    if (!sanctuaryMode) {
+      return `scale(${zoom}) translate(${panOffset.x / zoom}px, ${panOffset.y / zoom}px)`
+    }
+
+    if (!sanctuaryFocusedPlant) {
+      const displayScale = zoom * sanctuaryCameraFit.baseScale
+      const sceneCenterX = (visualSceneBounds.left + visualSceneBounds.right) / 2
+      const sceneCenterY = (visualSceneBounds.top + visualSceneBounds.bottom) / 2
+      const scaleDelta = displayScale - sanctuaryCameraFit.baseScale
+      const translateX = sanctuaryCameraFit.translateX
+        - (sceneCenterX - containerWidth / 2) * scaleDelta
+        + panOffset.x
+      const translateY = sanctuaryCameraFit.translateY
+        - (sceneCenterY - containerHeight / 2) * scaleDelta
+        + panOffset.y
+      return `translate(-50%, -50%) translate(${translateX}px, ${translateY}px) scale(${displayScale})`
     }
 
     const row = sanctuaryFocusedPlant.grid_row ?? 0
@@ -497,7 +549,7 @@ export function IsometricGarden({
     const translateX = -(plantAnchorX - containerWidth / 2) * focusScale
     const translateY = targetYOffset - (plantAnchorY - containerHeight / 2) * focusScale
 
-    return `translate(${translateX}px, ${translateY}px) scale(${focusScale})`
+    return `translate(-50%, -50%) translate(${translateX}px, ${translateY}px) scale(${focusScale})`
   }, [
     sanctuaryMode,
     sanctuaryFocusedPlant,
@@ -510,6 +562,8 @@ export function IsometricGarden({
     maxZoom,
     viewportSize.width,
     viewportSize.height,
+    sanctuaryCameraFit,
+    visualSceneBounds,
   ])
 
   // Stable callbacks for modals
@@ -600,13 +654,15 @@ export function IsometricGarden({
       >
         <div
           className={sanctuaryMode
-            ? 'flex h-full w-full items-center justify-center px-2 pb-36 pt-64 sm:pb-44 sm:pt-28'
+            ? 'relative h-full w-full'
             : 'flex h-full w-full items-end justify-center'}
           style={sanctuaryMode ? undefined : { paddingBottom: '16px' }}
         >
           <div
             ref={gardenContainerRef}
-            className="relative flex-shrink-0 transition-[transform] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:duration-150"
+            className={sanctuaryMode
+              ? 'absolute left-1/2 top-1/2 flex-shrink-0 transition-[transform] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:duration-150'
+              : 'relative flex-shrink-0 transition-[transform] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:duration-150'}
             style={{
               width: containerWidth,
               height: containerHeight,
