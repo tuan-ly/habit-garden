@@ -12,6 +12,7 @@ import { ModeToolbar, type GardenMode } from './mode-toolbar'
 import { useEditMode } from './edit-mode/use-edit-mode'
 import { getTimeOfDay, type TimeOfDay, defaultTheme } from './themes'
 import { GardenTileGrid } from './garden-tile-grid'
+import { DecorationPlacementGhostLayer } from './edit-mode/decoration-placement-ghost-layer'
 import { useGardenInteractions } from './use-garden-interactions'
 import { SanctuaryGardenChrome } from './sanctuary-garden-chrome'
 import { selectSanctuaryActivePlant } from './sanctuary-plant-selection'
@@ -111,6 +112,33 @@ export function IsometricGarden({
     return placedDecorations.find((decoration) => decoration.id === editMode.selectedDecoration?.id)
       ?? editMode.selectedDecoration
   }, [editMode.selectedDecoration, placedDecorations])
+  const activeDecorationGhost = useMemo(() => {
+    if (!editMode.ghostPosition) return null
+    const inventoryType = editMode.selectedItem?.decoration_type
+    if (inventoryType) {
+      return {
+        ...editMode.ghostPosition,
+        decorationType: inventoryType,
+        rotation: editMode.ghostRotation,
+        isValid: editMode.isGhostValid,
+      }
+    }
+    if (selectedPlacedDecoration) {
+      return {
+        ...editMode.ghostPosition,
+        decorationType: selectedPlacedDecoration.decoration_type,
+        rotation: selectedPlacedDecoration.rotation,
+        isValid: editMode.isGhostValid,
+      }
+    }
+    return null
+  }, [
+    editMode.ghostPosition,
+    editMode.ghostRotation,
+    editMode.isGhostValid,
+    editMode.selectedItem,
+    selectedPlacedDecoration,
+  ])
 
   // Zoom and pan
   const {
@@ -729,24 +757,16 @@ export function IsometricGarden({
               hideStatusIndicators={sanctuaryMode}
               cinematic={sanctuaryMode}
               selectedDecorationId={selectedPlacedDecoration?.id}
-              placementGhost={editMode.ghostPosition
-                ? editMode.selectedItem?.decoration_type
-                  ? {
-                      ...editMode.ghostPosition,
-                      decorationType: editMode.selectedItem.decoration_type,
-                      rotation: editMode.ghostRotation,
-                      isValid: editMode.isGhostValid,
-                    }
-                  : selectedPlacedDecoration
-                    ? {
-                        ...editMode.ghostPosition,
-                        decorationType: selectedPlacedDecoration.decoration_type,
-                        rotation: selectedPlacedDecoration.rotation,
-                        isValid: editMode.isGhostValid,
-                      }
-                    : null
-                : null}
+              decorationPlacementActive={Boolean(editMode.selectedItem || selectedPlacedDecoration)}
             />
+
+            {activeDecorationGhost && (
+              <DecorationPlacementGhostLayer
+                {...activeDecorationGhost}
+                gridSize={gridSize}
+                tileSize={tileSize}
+              />
+            )}
 
           </div>
         </div>

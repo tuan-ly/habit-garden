@@ -2,10 +2,11 @@ import { describe, expect, it } from 'vitest'
 import {
   isPlantSelectedForMove,
   shouldDisableContentHoverScale,
-  shouldRenderPlacementGhost,
+  shouldShowPlantAddHint,
 } from '../garden-tile-grid'
 import { getPlantShadowScale, getTileContentScale } from '../isometric-tile'
 import { findInitialGhostPlacement } from '../edit-mode/use-edit-mode'
+import { getDecorationGhostWorldPosition } from '../edit-mode/decoration-placement-ghost-layer'
 
 describe('decoration movement visuals', () => {
   it('shows a newly selected inventory decoration at the free anchor nearest the garden centre', () => {
@@ -21,6 +22,15 @@ describe('decoration movement visuals', () => {
       position: { row: 0, col: 0 },
       isValid: false,
     })
+  })
+
+  it('hides the plant add hint while placing a decoration', () => {
+    expect(shouldShowPlantAddHint('arrange', false, true)).toBe(false)
+  })
+
+  it('shows the plant add hint only when arrange mode has no active placement', () => {
+    expect(shouldShowPlantAddHint('arrange', false, false)).toBe(true)
+    expect(shouldShowPlantAddHint('interact', false, false)).toBe(false)
   })
 
   it('keeps arranged decoration content at its authored size', () => {
@@ -43,12 +53,14 @@ describe('decoration movement visuals', () => {
     expect(getTileContentScale(true, false, true)).toBe(1)
   })
 
-  it('does not duplicate the selected decoration at its original anchor', () => {
-    expect(shouldRenderPlacementGhost(true, true)).toBe(false)
-  })
-
-  it('renders the movement ghost after it leaves the selected anchor', () => {
-    expect(shouldRenderPlacementGhost(true, false)).toBe(true)
+  it('anchors the decoration ghost to the centre of its isometric footprint', () => {
+    expect(getDecorationGhostWorldPosition({
+      row: 2,
+      col: 3,
+      gridSize: 8,
+      tileSize: 100,
+      footprint: 2,
+    })).toEqual({ left: 450, top: 175 })
   })
 
   it('does not mark decoration tiles as selected when no plant exists on them', () => {

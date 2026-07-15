@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { DecorationImage } from '../decoration-image'
 import { PlacementGhost } from '../edit-mode/placement-ghost'
+import { DecorationPlacementGhostLayer } from '../edit-mode/decoration-placement-ghost-layer'
 import type { DecorationType } from '@/types/database'
 import { getDecorationArtSpec, getGroundedArtTransform } from '../decoration-art-spec'
 
@@ -67,5 +68,25 @@ describe('DecorationImage emoji grounding', () => {
     const reviewedTransform = getGroundedArtTransform(getDecorationArtSpec('stone-lantern', true, 2)).transform
     expect(placed).toContain(reviewedTransform)
     expect(ghost).toContain(reviewedTransform)
+  })
+
+  it('renders the complete ghost asset in an independent world-space layer', () => {
+    const html = renderToStaticMarkup(
+      <DecorationPlacementGhostLayer
+        row={2}
+        col={3}
+        gridSize={8}
+        tileSize={100}
+        decorationType={stoneLantern}
+        rotation={0}
+        isValid
+      />
+    )
+
+    expect(html).toContain('data-placement-ghost="true"')
+    expect(html).toContain('left:450px')
+    expect(html).toContain('top:175px')
+    expect(html).toContain('alt="Stone Lantern"')
+    expect(html).toContain('sanctuary-rock-lantern.png')
   })
 })

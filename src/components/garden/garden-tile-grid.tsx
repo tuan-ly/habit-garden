@@ -4,8 +4,7 @@ import { memo, useMemo } from 'react'
 import { IsometricTile } from './isometric-tile'
 import { IsometricPlant, type FocusState } from './isometric-plant'
 import { DecorationImage } from './decoration-image'
-import { PlacementGhost } from './edit-mode/placement-ghost'
-import type { DecorationRotation, DecorationType, PlantWithType, PlacedDecorationWithType, WeatherType } from '@/types/database'
+import type { PlantWithType, PlacedDecorationWithType, WeatherType } from '@/types/database'
 import type { MoveState } from './use-garden-interactions'
 import type { GardenMode } from './mode-toolbar'
 import { getPlantSizeScale } from '@/lib/utils/grid-positioning'
@@ -41,17 +40,7 @@ interface GardenTileGridProps {
   hideStatusIndicators?: boolean
   cinematic?: boolean
   selectedDecorationId?: string | null
-  placementGhost?: {
-    row: number
-    col: number
-    decorationType: DecorationType
-    rotation: DecorationRotation
-    isValid: boolean
-  } | null
-}
-
-export function shouldRenderPlacementGhost(ghostAtTile: boolean, decorationSelected: boolean): boolean {
-  return ghostAtTile && !decorationSelected
+  decorationPlacementActive?: boolean
 }
 
 export function isPlantSelectedForMove(
@@ -66,6 +55,14 @@ export function shouldDisableContentHoverScale(
   hasDecoration: boolean
 ): boolean {
   return Boolean(featuredPlantId) || hasDecoration
+}
+
+export function shouldShowPlantAddHint(
+  mode: GardenMode,
+  plantMoveActive: boolean,
+  decorationPlacementActive: boolean
+): boolean {
+  return mode === 'arrange' && !plantMoveActive && !decorationPlacementActive
 }
 
 export const GardenTileGrid = memo(function GardenTileGrid({
@@ -89,7 +86,7 @@ export const GardenTileGrid = memo(function GardenTileGrid({
   hideStatusIndicators = false,
   cinematic = false,
   selectedDecorationId,
-  placementGhost,
+  decorationPlacementActive = false,
 }: GardenTileGridProps) {
   // Build a map from "row-col" -> decoration (anchor only) for O(1) lookup.
   // Memoized so we don't rebuild the Map on every render (only when decorations change).
@@ -128,8 +125,6 @@ export const GardenTileGrid = memo(function GardenTileGrid({
         const decoration = decorationAnchorMap.get(tileKey)
         const occupyingDecoration = decorationCellMap.get(tileKey)
         const decorationSelected = occupyingDecoration?.id === selectedDecorationId
-        const ghostAtTile = placementGhost?.row === row && placementGhost.col === col
-        const ghostSize = placementGhost?.decorationType.grid_size || 1
         const decorationPixelSize = decoration
           ? getDecorationPixelSize(tileSize, decoration.grid_size)
           : undefined
@@ -145,7 +140,7 @@ export const GardenTileGrid = memo(function GardenTileGrid({
             isHovered={isHovered}
             isOccupiedByMultiCell={isOccupiedByMultiCell}
             isPartOfMultiCell={isPartOfMultiCell || (!!occupyingDecoration && occupyingDecoration.grid_size > 1)}
-            plantGridSize={plant?.grid_size || decoration?.grid_size || (ghostAtTile ? ghostSize : 1)}
+            plantGridSize={plant?.grid_size || decoration?.grid_size || 1}
             onClick={(e) => onTileClick(row, col, clickPlant, occupyingDecoration, e)}
             onKeyDown={(e) => {
               if (clickPlant && (e.key === 'Enter' || e.key === ' ')) {
@@ -159,7 +154,11 @@ export const GardenTileGrid = memo(function GardenTileGrid({
             tileSize={tileSize}
             plant={isAnchor ? plant : null}
             hideBadge={hidePlantBadges || isSelectedForMove}
-            showAddHint={mode === 'arrange' && !moveState.selectedPlant}
+            showAddHint={shouldShowPlantAddHint(
+              mode,
+              Boolean(moveState.selectedPlant),
+              decorationPlacementActive
+            )}
             isSelectedForMove={isSelectedForMove}
             disableContentHoverScale={shouldDisableContentHoverScale(featuredPlantId, Boolean(decoration))}
             previewPlant={isPreviewTile && moveState.selectedPlant ? moveState.selectedPlant : undefined}
@@ -167,16 +166,6 @@ export const GardenTileGrid = memo(function GardenTileGrid({
             cinematicShadows={cinematic}
             accessibleLabel={decoration ? `Chọn ${decoration.decoration_type.name}` : undefined}
             decorationHitSize={decorationPixelSize}
-            previewOverlayGridSize={ghostSize}
-            previewOverlay={placementGhost && shouldRenderPlacementGhost(ghostAtTile, decorationSelected) ? (
-              <PlacementGhost
-                decorationType={placementGhost.decorationType}
-                rotation={placementGhost.rotation}
-                isValid={placementGhost.isValid}
-                pixelSize={getDecorationPixelSize(tileSize, ghostSize)}
-                tileSize={tileSize}
-              />
-            ) : null}
           >
             {plant && isAnchor && (
               <>
