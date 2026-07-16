@@ -268,3 +268,23 @@ final result: blocked
 - Core interactions: passed via component tests and Chromium E2E for selection, footprint cells, draft validation, Sandbox expansion and Center/Edge/Corner states.
 
 final result: passed
+
+---
+
+# Design QA — Uniform center soil depth (2026-07-16)
+
+- Source visual truth: `C:/Users/TUAN LY/AppData/Local/Packages/MicrosoftWindows.Client.Core_cw5n1h2txyewy/TempState/ScreenClip/{4E4ABA76-611D-442E-A6FD-D9D9FE26FC1A}.png`, refined by the user requirement that center depth match both side edges and attract less attention.
+- Implementation screenshot: unavailable; the in-app Browser blocked navigation to the local Storybook fixture.
+- Intended viewport/state: sunny Living Embankment fixture, centered front junction.
+
+## Findings and implementation
+
+- [P2] The previous `0.32/0.46 × tileSize` side/front profile made the center soil mass 44% deeper than the side edges and emphasized the junction.
+- Fix: side and front depths now both use `0.32 × tileSize`; deterministic wobble stays within a `0.013 × tileSize` band.
+- Fix: crease shadow alpha/width and warm bevel alpha/width were reduced so the junction remains legible without becoming a focal point.
+- Full-view and focused-region comparisons: blocked because no browser-rendered implementation screenshot could be captured.
+- Fonts, typography and copy: not applicable to this terrain-only change.
+- Colors, source raster materials and garden layout: unchanged.
+- Automated evidence: all 24 geometry tests, file-scoped ESLint, TypeScript `--noEmit` and `git diff --check` pass.
+
+final result: blocked

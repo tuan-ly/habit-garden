@@ -37,19 +37,19 @@ describe('Living Embankment geometry', () => {
     }
   })
 
-  it.each(CASES)('keeps depth ratios and a sealed front seam for $gridSize×$gridSize', ({ gridSize, tileSize }) => {
+  it.each(CASES)('keeps uniform edge depth and a sealed front seam for $gridSize×$gridSize', ({ gridSize, tileSize }) => {
     const geometry = createLivingEmbankmentGeometry(gridSize, tileSize)
 
     expect(geometry.sideDepth).toBeCloseTo(tileSize * LIVING_EMBANKMENT_SIDE_DEPTH_RATIO)
     expect(geometry.frontDepth).toBeCloseTo(tileSize * LIVING_EMBANKMENT_FRONT_DEPTH_RATIO)
+    expect(geometry.frontDepth).toBeCloseTo(geometry.sideDepth)
     expect(geometry.left.top.at(-1)).toBe(geometry.frontTop)
     expect(geometry.right.top.at(-1)).toBe(geometry.frontTop)
     expect(geometry.left.bottom.at(-1)).toBe(geometry.frontBottom)
     expect(geometry.right.bottom.at(-1)).toBe(geometry.frontBottom)
 
     for (const face of [geometry.left, geometry.right]) {
-      let previousDepth = -Infinity
-      face.top.forEach((topPoint, index) => {
+      const depths = face.top.map((topPoint, index) => {
         const t = index / (LIVING_EMBANKMENT_SAMPLE_COUNT - 1)
         const expectedBaseRatio = LIVING_EMBANKMENT_SIDE_DEPTH_RATIO
           + (LIVING_EMBANKMENT_FRONT_DEPTH_RATIO - LIVING_EMBANKMENT_SIDE_DEPTH_RATIO) * t
@@ -57,9 +57,12 @@ describe('Living Embankment geometry', () => {
         const wobbleRatio = depth / tileSize - expectedBaseRatio
 
         expect(Math.abs(wobbleRatio)).toBeLessThanOrEqual(LIVING_EMBANKMENT_MAX_WOBBLE_RATIO)
-        expect(depth).toBeGreaterThan(previousDepth)
-        previousDepth = depth
+        return depth
       })
+
+      expect(depths[0]).toBeCloseTo(geometry.sideDepth)
+      expect(depths.at(-1)).toBeCloseTo(geometry.frontDepth)
+      expect(Math.max(...depths) - Math.min(...depths)).toBeLessThanOrEqual(tileSize * 0.013)
     }
   })
 
@@ -67,8 +70,8 @@ describe('Living Embankment geometry', () => {
     const geometry = createLivingEmbankmentGeometry(gridSize, tileSize)
 
     expect(geometry.sideDepth).toBeLessThanOrEqual(tileSize * 0.34)
-    expect(geometry.frontDepth).toBeLessThanOrEqual(tileSize * 0.48)
-    expect(geometry.frontDepth - geometry.sideDepth).toBeLessThanOrEqual(tileSize * 0.16)
+    expect(geometry.frontDepth).toBeLessThanOrEqual(tileSize * 0.34)
+    expect(Math.abs(geometry.frontDepth - geometry.sideDepth)).toBeLessThanOrEqual(tileSize * 0.01)
   })
 
   it.each(CASES)('supports both rounded grass caps without a floating overhang for $gridSize×$gridSize', ({ gridSize, tileSize }) => {

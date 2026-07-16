@@ -18,12 +18,11 @@ export interface LivingEmbankmentGeometry {
   canvasHeight: number
 }
 
-// Keep the soil bank present enough to sell the floating-island silhouette,
-// but subordinate it to the plantable garden surface. A shallow 0.32/0.46
-// profile preserves the two-face read without letting the earth mass dominate
-// the garden or magnify the front junction.
+// Keep one shallow visual thickness around the complete front edge. Earlier
+// profiles deepened toward the center and unintentionally made the junction a
+// focal point even when its crease and texture were restrained.
 export const LIVING_EMBANKMENT_SIDE_DEPTH_RATIO = 0.32
-export const LIVING_EMBANKMENT_FRONT_DEPTH_RATIO = 0.46
+export const LIVING_EMBANKMENT_FRONT_DEPTH_RATIO = 0.32
 export const LIVING_EMBANKMENT_MAX_WOBBLE_RATIO = 0.025
 export const LIVING_EMBANKMENT_SAMPLE_COUNT = 9
 export const LIVING_EMBANKMENT_SHADOW_BLEED_RATIO = 0.56

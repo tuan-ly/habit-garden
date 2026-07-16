@@ -658,14 +658,14 @@ function drawLivingEmbankmentMass(
     // its right side sells the light direction without drawing a hard divider.
     const frontDepth = Math.max(1, frontBottom.y - frontTop.y)
     const estimatedTileSize = frontDepth / LIVING_EMBANKMENT_FRONT_DEPTH_RATIO
-    const creaseStartY = frontTop.y + estimatedTileSize * 0.055
-    const creaseEndY = frontBottom.y - estimatedTileSize * 0.018
-    const creaseBend = estimatedTileSize * 0.018
+    const creaseStartY = frontTop.y + estimatedTileSize * 0.075
+    const creaseEndY = frontBottom.y - estimatedTileSize * 0.02
+    const creaseBend = estimatedTileSize * 0.012
 
     ctx.save()
-    ctx.filter = `blur(${Math.max(1.2, estimatedTileSize * 0.012)}px)`
-    ctx.strokeStyle = 'rgba(47, 33, 27, 0.17)'
-    ctx.lineWidth = Math.max(5, estimatedTileSize * 0.052)
+    ctx.filter = `blur(${Math.max(1, estimatedTileSize * 0.01)}px)`
+    ctx.strokeStyle = 'rgba(47, 33, 27, 0.10)'
+    ctx.lineWidth = Math.max(3.5, estimatedTileSize * 0.034)
     ctx.lineCap = 'round'
     ctx.beginPath()
     ctx.moveTo(frontTop.x, creaseStartY)
@@ -679,16 +679,16 @@ function drawLivingEmbankmentMass(
     ctx.restore()
 
     ctx.save()
-    ctx.filter = `blur(${Math.max(0.8, estimatedTileSize * 0.007)}px)`
-    ctx.strokeStyle = 'rgba(239, 201, 143, 0.075)'
-    ctx.lineWidth = Math.max(1.5, estimatedTileSize * 0.014)
+    ctx.filter = `blur(${Math.max(0.65, estimatedTileSize * 0.005)}px)`
+    ctx.strokeStyle = 'rgba(239, 201, 143, 0.04)'
+    ctx.lineWidth = Math.max(1, estimatedTileSize * 0.009)
     ctx.lineCap = 'round'
     ctx.beginPath()
-    ctx.moveTo(frontTop.x + estimatedTileSize * 0.018, creaseStartY + 1)
+    ctx.moveTo(frontTop.x + estimatedTileSize * 0.012, creaseStartY + 1)
     ctx.quadraticCurveTo(
-        frontTop.x - creaseBend + estimatedTileSize * 0.024,
+        frontTop.x - creaseBend + estimatedTileSize * 0.017,
         (creaseStartY + creaseEndY) / 2,
-        frontBottom.x + estimatedTileSize * 0.012,
+        frontBottom.x + estimatedTileSize * 0.008,
         creaseEndY - 1
     )
     ctx.stroke()
