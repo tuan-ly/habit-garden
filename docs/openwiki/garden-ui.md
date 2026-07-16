@@ -108,6 +108,10 @@ Trong sanctuary mode, chạm plant sẽ chạy luồng `overview → focus → c
 
 Plant focus follows **Exclusive Focus State**: while a focused plant is open, hover information and hover enlargement are suppressed across the garden. The selected plant receives one world-space **Focus Frame** anchored to its tile behind the sprite; the frame travels with the cinematic camera, adapts to the plant footprint, and never replaces or detaches the plant from the grid. The focus camera uses a responsive positive vertical offset so the frame sits below the top HUD and remains visually grouped with the bottom information panel.
 
+Focus zoom follows **Safe-area-constrained Zoom**: entering focus uses a dedicated cinematic scale instead of inheriting the user's idle zoom. The authored mobile/desktop scale is an upper bound, then the camera reduces it from the actual viewport width, height, focus frame and asset-manifest alpha bounds so tall plant silhouettes keep breathing room below the HUD across devices. Zoom controls are unavailable during focus and the unchanged idle camera is restored on exit.
+
+Focus composition follows **Focus-to-Panel Spacing**: `SanctuaryGardenChrome` measures the real information-panel top edge with `ResizeObserver`, and the camera keeps the selected plant contact point at least `20px` (mobile) or `24px` (desktop) above it. This measured boundary avoids device, browser zoom and display-scaling differences that a viewport-only offset cannot capture.
+
 ## UX Constraints
 
 The chosen direction is **Soft Isometric Sanctuary**: warm golden-hour light, sage/cream surfaces, generous organic radii and calm motion. Visible UI must not use death, critical-state, guilt or streak-loss messaging as primary motivation.

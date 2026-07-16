@@ -97,6 +97,33 @@ export function getTransformedAssetBounds({
   }
 }
 
+export function getPlantAssetVisualBounds({
+  plant,
+  contactX,
+  contactY,
+  tileSize,
+  renderScale,
+}: {
+  plant: PlantWithType
+  contactX: number
+  contactY: number
+  tileSize: number
+  renderScale: number
+}): VisualBounds {
+  const footprint = plant.grid_size || 1
+  const asset = getPlantAssetEntry(plant)
+
+  return getTransformedAssetBounds({
+    contactX,
+    contactY,
+    sourceBounds: asset?.analysis.bounds ?? FULL_SOURCE_BOUNDS,
+    display: asset ? resolveGameAssetDisplay(asset, footprint) : DEFAULT_DISPLAY,
+    boxSize: GARDEN_PLANT_ART_BOX_SIZE,
+    renderScale,
+    tileSize,
+  })
+}
+
 export function getEntityShadowBounds(
   contactX: number,
   contactY: number,
@@ -150,13 +177,10 @@ export function calculateGardenVisualBounds({
       footprint,
       tileSize
     )
-    const asset = getPlantAssetEntry(plant)
-    result.push(getTransformedAssetBounds({
+    result.push(getPlantAssetVisualBounds({
+      plant,
       contactX: contact.x,
       contactY: contact.y,
-      sourceBounds: asset?.analysis.bounds ?? FULL_SOURCE_BOUNDS,
-      display: asset ? resolveGameAssetDisplay(asset, footprint) : DEFAULT_DISPLAY,
-      boxSize: GARDEN_PLANT_ART_BOX_SIZE,
       renderScale: getPlantGrowthScale(plant.growth_percentage) * getPlantSizeScale(footprint),
       tileSize,
     }))

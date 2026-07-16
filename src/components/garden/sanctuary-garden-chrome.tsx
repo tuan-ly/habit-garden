@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useUser } from '@/lib/context/dashboard-data-context'
@@ -31,6 +32,7 @@ interface SanctuaryGardenChromeProps {
   onRestAction: () => void
   onOpenDetails: () => void
   onCloseFocus: () => void
+  onFocusPanelTopChange?: (top: number | null) => void
 }
 
 function getGardenDate(): string {
@@ -63,16 +65,43 @@ export function SanctuaryGardenChrome({
   onRestAction,
   onOpenDetails,
   onCloseFocus,
+  onFocusPanelTopChange,
 }: SanctuaryGardenChromeProps) {
   const user = useUser()
+  const chromeRef = useRef<HTMLDivElement>(null)
+  const focusPanelRef = useRef<HTMLElement>(null)
   const allDone = totalCount > 0 && completedCount >= totalCount
   const initials = (user?.user_metadata?.full_name || user?.email || 'G')
     .trim()
     .charAt(0)
     .toUpperCase()
 
+  useEffect(() => {
+    const chrome = chromeRef.current
+    const panel = focusPanelRef.current
+    if (!focusedPlant || !chrome || !panel) {
+      onFocusPanelTopChange?.(null)
+      return
+    }
+
+    const updatePanelTop = () => {
+      const panelRect = panel.getBoundingClientRect()
+      const chromeRect = chrome.getBoundingClientRect()
+      onFocusPanelTopChange?.(panelRect.top - chromeRect.top)
+    }
+    updatePanelTop()
+    const observer = new ResizeObserver(updatePanelTop)
+    observer.observe(panel)
+    window.addEventListener('resize', updatePanelTop)
+
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', updatePanelTop)
+    }
+  }, [focusedPlant, onFocusPanelTopChange])
+
   return (
-    <div className="pointer-events-none absolute inset-0 z-40 mx-auto w-full max-w-[520px] overflow-hidden text-[#263f22]">
+    <div ref={chromeRef} className="pointer-events-none absolute inset-0 z-40 mx-auto w-full max-w-[520px] overflow-hidden text-[#263f22]">
       <header className="pointer-events-auto absolute inset-x-0 top-0 flex items-start justify-between px-4 pt-[max(1rem,env(safe-area-inset-top))] sm:px-6">
         <Link
           href="/overview"
@@ -144,6 +173,7 @@ export function SanctuaryGardenChrome({
       {focusedPlant && <div className="pointer-events-auto absolute inset-x-3 bottom-[max(1rem,env(safe-area-inset-bottom))] sm:inset-x-5">
         {focusedPlant ? (
           <section
+            ref={focusPanelRef}
             role="dialog"
             aria-modal="false"
             aria-labelledby="sanctuary-focus-title"

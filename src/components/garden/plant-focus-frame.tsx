@@ -1,6 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
+import type { VisualBounds } from '@/lib/garden/camera-safe-area'
 
 interface PlantFocusFrameProps {
   tileSize: number
@@ -24,6 +25,49 @@ export function getPlantFocusTargetYOffset(viewportWidth: number, viewportHeight
   }
 
   return Math.min(112, Math.max(48, viewportHeight * 0.12))
+}
+
+export function getPlantFocusTargetY(
+  viewportWidth: number,
+  viewportHeight: number,
+  panelTop?: number | null
+) {
+  const defaultTargetY = viewportHeight / 2
+    + getPlantFocusTargetYOffset(viewportWidth, viewportHeight)
+  if (panelTop == null) return defaultTargetY
+
+  const panelGap = viewportWidth < 640 ? 20 : 24
+  return Math.min(defaultTargetY, panelTop - panelGap)
+}
+
+export function getPlantFocusCameraScale({
+  viewportWidth,
+  viewportHeight,
+  tileSize,
+  gridSize,
+  plantBounds,
+  panelTop,
+}: {
+  viewportWidth: number
+  viewportHeight: number
+  tileSize: number
+  gridSize: number
+  plantBounds?: VisualBounds
+  panelTop?: number | null
+}) {
+  const preferredScale = viewportWidth < 640 ? 1.28 : 1.18
+  const horizontalInset = viewportWidth < 640 ? 16 : 32
+  const topInset = viewportWidth < 640 ? 120 : 128
+  const targetY = getPlantFocusTargetY(viewportWidth, viewportHeight, panelTop)
+  const frame = getPlantFocusFrameSize(tileSize, gridSize)
+  const frameHeightFromAnchor = frame.height + Math.max(0, -frame.bottom)
+  const visualLeft = Math.min(-frame.width / 2, plantBounds?.left ?? 0)
+  const visualRight = Math.max(frame.width / 2, plantBounds?.right ?? 0)
+  const visualTop = Math.min(-frameHeightFromAnchor, plantBounds?.top ?? 0)
+  const widthFit = (viewportWidth - horizontalInset * 2) / (visualRight - visualLeft)
+  const heightFit = (targetY - topInset) / Math.abs(visualTop)
+
+  return Math.max(0.65, Math.min(preferredScale, widthFit, heightFit))
 }
 
 /**

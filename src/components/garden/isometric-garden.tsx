@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useCallback, useRef, useSyncExternalStore
 import dynamic from 'next/dynamic'
 import { type FocusState } from './isometric-plant'
 import { PlantInfoBar } from './plant-tooltip'
-import { getPlantFocusTargetYOffset } from './plant-focus-frame'
+import { getPlantFocusCameraScale, getPlantFocusTargetY } from './plant-focus-frame'
 import { GroundPlaneCanvas, type MultiCellArea } from './ground-plane-canvas'
 import { getGroundPlaneHeight } from './ground-plane-geometry'
 import { ZoomControls } from './zoom-controls'
@@ -36,9 +36,10 @@ import { toast } from 'sonner'
 import {
   calculateGardenVisualBounds,
   fitVisualBoundsToSafeArea,
+  getPlantAssetVisualBounds,
   getSanctuarySafeInsets,
 } from '@/lib/garden/camera-safe-area'
-import { getGardenTileSize } from '@/lib/assets/game-asset-render-metrics'
+import { getGardenTileSize, getPlantGrowthScale } from '@/lib/assets/game-asset-render-metrics'
 
 interface IsometricGardenProps {
   plantTypes: PlantType[]
@@ -157,6 +158,7 @@ export function IsometricGarden({
   const [currentTimeOfDay, setCurrentTimeOfDay] = useState<TimeOfDay>(() => getTimeOfDay())
   const [sanctuaryFocusedPlantId, setSanctuaryFocusedPlantId] = useState<string | null>(null)
   const [sanctuaryFocusClosing, setSanctuaryFocusClosing] = useState(false)
+  const [sanctuaryFocusPanelTop, setSanctuaryFocusPanelTop] = useState<number | null>(null)
 
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const gardenContainerRef = useRef<HTMLDivElement>(null)
@@ -569,10 +571,29 @@ export function IsometricGarden({
     const plantAnchorY = (col + row) * (tileSize / 4)
       + tileSize / 4
       + (plantGridSize - 1) * tileSize / 4
-    const focusScale = Math.min(maxZoom, Math.max(zoom, viewportSize.width < 640 ? 1.28 : 1.18))
-    const targetYOffset = getPlantFocusTargetYOffset(viewportSize.width, viewportSize.height)
+    const focusedPlantBounds = getPlantAssetVisualBounds({
+      plant: sanctuaryFocusedPlant,
+      contactX: 0,
+      contactY: 0,
+      tileSize,
+      renderScale: 3.4 * getPlantGrowthScale(sanctuaryFocusedPlant.growth_percentage),
+    })
+    const focusScale = getPlantFocusCameraScale({
+      viewportWidth: viewportSize.width,
+      viewportHeight: viewportSize.height,
+      tileSize,
+      gridSize: plantGridSize,
+      plantBounds: focusedPlantBounds,
+      panelTop: sanctuaryFocusPanelTop,
+    })
+    const targetY = getPlantFocusTargetY(
+      viewportSize.width,
+      viewportSize.height,
+      sanctuaryFocusPanelTop
+    )
     const translateX = -(plantAnchorX - containerWidth / 2) * focusScale
-    const translateY = targetYOffset - (plantAnchorY - containerHeight / 2) * focusScale
+    const translateY = targetY - viewportSize.height / 2
+      - (plantAnchorY - containerHeight / 2) * focusScale
 
     return `translate(-50%, -50%) translate(${translateX}px, ${translateY}px) scale(${focusScale})`
   }, [
@@ -584,9 +605,9 @@ export function IsometricGarden({
     containerWidth,
     containerHeight,
     tileSize,
-    maxZoom,
     viewportSize.width,
     viewportSize.height,
+    sanctuaryFocusPanelTop,
     sanctuaryCameraFit,
     visualSceneBounds,
   ])
@@ -625,7 +646,7 @@ export function IsometricGarden({
       )}
 
       {/* Zoom Controls */}
-      <ZoomControls
+      {!sanctuaryFocusedPlant && <ZoomControls
           zoom={zoom}
           minZoom={minZoom}
           maxZoom={maxZoom}
@@ -634,7 +655,7 @@ export function IsometricGarden({
           onReset={() => { resetZoom(); resetPan() }}
           sanctuary={sanctuaryMode}
           className="fixed right-3 top-1/2 -translate-y-1/2 z-50"
-        />
+        />}
 
       {/* Empty state */}
       {isEmpty && !sanctuaryMode && (
@@ -828,6 +849,7 @@ export function IsometricGarden({
             if (sanctuaryDisplayPlant) handleSanctuaryPlantFocus(sanctuaryDisplayPlant)
           }}
           onCloseFocus={handleSanctuaryFocusClose}
+          onFocusPanelTopChange={setSanctuaryFocusPanelTop}
         />
       )}
 
