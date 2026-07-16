@@ -8,7 +8,7 @@ on:
       - "scripts/check-supabase-migrations.mjs"
       - ".github/workflows/supabase-migration-ledger.yml"
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - "supabase/**"
       - "config/supabase-migration-ledger.json"

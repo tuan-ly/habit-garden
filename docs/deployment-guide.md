@@ -107,7 +107,7 @@ npm i -g vercel
 vercel --prod
 ```
 
-Or connect the GitHub repo in the Vercel dashboard for automatic deployments on push to `main`.
+Or connect the GitHub repo in the Vercel dashboard for automatic deployments on push to `master`.
 
 ### 4.2 Build Command
 
