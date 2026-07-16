@@ -4,6 +4,8 @@ import Image from 'next/image'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { DecorationType, DecorationRotation } from '@/types/database'
+import { getDecorationArtSpec, getGroundedArtTransform } from './decoration-art-spec'
+import { getTileOffsetTransform } from '@/lib/assets/game-asset-display'
 
 const SIZE_CONFIG = {
   sm:  { width: 32,  height: 32,  className: 'w-8 h-8' },
@@ -18,6 +20,12 @@ interface DecorationImageProps {
   rotation?: DecorationRotation
   isGhost?: boolean
   className?: string
+  /** Exact rendered size for grid-scaled garden entities. */
+  pixelSize?: number
+  /** Bottom-anchor the visible art to the garden contact point. */
+  grounded?: boolean
+  /** Garden tile size used to resolve tile-relative reviewed offsets. */
+  tileSize?: number
 }
 
 /**
@@ -29,21 +37,32 @@ export function DecorationImage({
   rotation = 0,
   isGhost = false,
   className,
+  pixelSize,
+  grounded = false,
+  tileSize = 0,
 }: DecorationImageProps) {
   const [imgError, setImgError] = useState(false)
   const sizeConfig = SIZE_CONFIG[size]
   const imagePath = decorationType.image_url
   const hasImage = !!imagePath && !imgError
+  const artSpec = getDecorationArtSpec(decorationType.slug, hasImage, decorationType.grid_size)
+  const groundedStyle = grounded ? getGroundedArtTransform(artSpec) : undefined
+  const offsetStyle = grounded ? getTileOffsetTransform(artSpec, tileSize) : undefined
 
-  const rotationStyle = rotation !== 0
-    ? { transform: `rotate(${rotation}deg)` }
-    : undefined
+  const rotationStyle = {
+    // Grounded isometric sprites need directional art to rotate around the
+    // world's vertical axis. CSS rotate() spins the screen plane and makes
+    // upright objects lie sideways, so keep single-variant garden art upright.
+    ...(!grounded && rotation !== 0 ? { transform: `rotate(${rotation}deg)` } : {}),
+    ...offsetStyle,
+    ...(pixelSize ? { width: pixelSize, height: pixelSize } : {}),
+  }
 
   return (
     <div
       className={cn(
         'relative inline-flex items-center justify-center',
-        sizeConfig.className,
+        !pixelSize && sizeConfig.className,
         isGhost && 'opacity-50',
         className
       )}
@@ -53,25 +72,37 @@ export function DecorationImage({
         <Image
           src={imagePath}
           alt={decorationType.name}
-          width={sizeConfig.width}
-          height={sizeConfig.height}
+          width={pixelSize ?? sizeConfig.width}
+          height={pixelSize ?? sizeConfig.height}
           loading="lazy"
           onError={() => setImgError(true)}
-          className="object-contain"
+          className="h-full w-full object-contain"
+          style={groundedStyle}
         />
       ) : (
         <span
           className={cn(
-            'select-none',
-            size === 'sm' && 'text-lg',
-            size === 'md' && 'text-2xl',
-            size === 'lg' && 'text-3xl',
-            size === 'xl' && 'text-5xl',
+            'flex h-full w-full select-none justify-center leading-none',
+            grounded ? 'items-end' : 'items-center',
           )}
+          style={pixelSize ? { '--decoration-size': `${pixelSize}px` } as React.CSSProperties : undefined}
           role="img"
           aria-label={decorationType.name}
         >
-          {decorationType.icon}
+          <span
+            data-decoration-emoji-glyph="true"
+            className={cn(
+              'inline-block',
+              size === 'sm' && 'text-lg',
+              size === 'md' && 'text-2xl',
+              size === 'lg' && 'text-3xl',
+              size === 'xl' && 'text-5xl',
+              pixelSize && 'text-[length:calc(var(--decoration-size)*0.52)]',
+            )}
+            style={groundedStyle}
+          >
+            {decorationType.icon}
+          </span>
         </span>
       )}
 

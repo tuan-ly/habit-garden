@@ -1,20 +1,21 @@
 'use client'
 
 import Image from 'next/image'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { cn } from '@/lib/utils'
-import type { PlantWithType, PlantStatus } from '@/types/database'
+import type { PlantWithType } from '@/types/database'
+import { getGroundedArtTransform } from '@/lib/assets/game-asset-display'
+import { resolveGameAssetDisplay } from '@/lib/assets/game-asset-contract'
+import {
+    GROWTH_STAGES,
+    getGrowthStage,
+    getPlantAssetEntry,
+    getPlantFolder,
+    getPlantImagePath,
+    type GrowthStage,
+} from '@/lib/assets/plant-asset-identity'
 
-// Growth stage thresholds matching plant-visual.tsx
-const GROWTH_STAGES = {
-    seed: { min: 0, max: 10 },
-    sprout: { min: 10, max: 25 },
-    growing: { min: 25, max: 75 },
-    blooming: { min: 75, max: 100 },
-    mature: { min: 100, max: Infinity },
-} as const
-
-export type GrowthStage = keyof typeof GROWTH_STAGES
+export type { GrowthStage }
 
 // Size configurations - pixel dimensions for <img> + classNames for container
 // width/height = intrinsic bitmap size requested from Next.js image optimizer
@@ -34,54 +35,8 @@ interface PlantImageProps {
     className?: string
     /** If true, aligns content to bottom (no vertical centering) */
     alignBottom?: boolean
-}
-
-function getGrowthStage(growthPercentage: number, status: PlantStatus): GrowthStage {
-    if (status === 'mature') return 'mature'
-    if (status === 'dead') return 'seed' // Dead plants show withered version
-
-    if (growthPercentage < GROWTH_STAGES.seed.max) return 'seed'
-    if (growthPercentage < GROWTH_STAGES.sprout.max) return 'sprout'
-    if (growthPercentage < GROWTH_STAGES.growing.max) return 'growing'
-    if (growthPercentage < GROWTH_STAGES.blooming.max) return 'blooming'
-    return 'mature'
-}
-
-// Map plant type names to folder names
-function getPlantFolder(plantTypeName: string): string {
-    const PLANT_TYPE_FOLDERS: Record<string, string> = {
-        'generic': 'generic',
-        'sunflower': 'sunflower',
-        'cherry blossom': 'cherry-blossom',
-        'cherry': 'cherry-blossom',
-        'sakura': 'cherry-blossom',
-        'cactus': 'cactus',
-        'bonsai': 'bonsai',
-        'lotus': 'lotus',
-        'rose': 'rose',
-        'bamboo': 'bamboo',
-    }
-    const normalizedName = plantTypeName.toLowerCase().trim()
-    return PLANT_TYPE_FOLDERS[normalizedName] || 'generic'
-}
-
-// Map clean stage names to numbered file prefixes
-const STAGE_FILE_PREFIX: Record<GrowthStage, string> = {
-    seed: '01-seed',
-    sprout: '02-sprout',
-    growing: '03-growing',
-    blooming: '04-blooming',
-    mature: '05-mature',
-}
-
-function getPlantImagePath(plantTypeName: string, stage: GrowthStage, isDead: boolean): string {
-    const folder = getPlantFolder(plantTypeName)
-
-    if (isDead) {
-        return `/plants/${folder}/dead.png`
-    }
-
-    return `/plants/${folder}/${STAGE_FILE_PREFIX[stage]}.png`
+    showStatusIndicator?: boolean
+    priority?: boolean
 }
 
 export function PlantImage({
@@ -90,21 +45,23 @@ export function PlantImage({
     showGrowthTransition = false,
     className,
     alignBottom = false,
+    showStatusIndicator = true,
+    priority = false,
 }: PlantImageProps) {
     const isDead = plant.status === 'dead'
     const currentStage = getGrowthStage(plant.growth_percentage, plant.status)
     const sizeConfig = SIZE_CONFIG[size]
 
     const imagePath = getPlantImagePath(plant.plant_type.name, currentStage, isDead)
+    const assetEntry = getPlantAssetEntry(plant)
+    const assetSpec = assetEntry
+        ? resolveGameAssetDisplay(assetEntry, plant.grid_size || 1)
+        : undefined
     const icon = plant.plant_type.icon || '🌱'
 
     // Track image load errors for emoji fallback
-    const [imgError, setImgError] = useState(false)
-
-    // Reset error state when plant type or stage changes
-    useEffect(() => {
-        setImgError(false)
-    }, [plant.plant_type.name, currentStage, isDead])
+    const [failedPath, setFailedPath] = useState<string | null>(null)
+    const imgError = failedPath === imagePath
 
     return (
         <div
@@ -136,17 +93,19 @@ export function PlantImage({
                     height={sizeConfig.height}
                     sizes={`${sizeConfig.width}px`}
                     quality={85}
-                    loading="lazy"
-                    onError={() => setImgError(true)}
+                    priority={priority}
+                    loading={priority ? undefined : 'lazy'}
+                    onError={() => setFailedPath(imagePath)}
                     className={cn(
                         'transition-all duration-300 object-contain',
                         isDead && 'grayscale opacity-60'
                     )}
+                    style={alignBottom && assetSpec ? getGroundedArtTransform(assetSpec) : undefined}
                 />
             )}
 
             {/* Wilting indicator for low moisture */}
-            {!isDead && plant.current_moisture < 30 && (
+            {showStatusIndicator && !isDead && plant.current_moisture < 30 && (
                 <span className="absolute -top-1 -right-1 text-xs animate-pulse">💦</span>
             )}
         </div>

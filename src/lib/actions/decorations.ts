@@ -9,6 +9,7 @@ import type {
   PickUpDecorationDto,
   DecorationRotation,
   DecorationType,
+  InventoryItemWithDetails,
 } from '@/types/database'
 
 /**
@@ -44,6 +45,8 @@ export async function placeDecoration(
   if (!user) return { error: 'Unauthorized' }
 
   const supabase = await createClient()
+
+  if (dto.grid_row < 0 || dto.grid_col < 0) return { error: 'Invalid grid position' }
 
   // 1. Verify inventory item exists and belongs to user
   const { data: invItem, error: invError } = await supabase
@@ -98,14 +101,22 @@ export async function placeDecoration(
     }
   }
 
-  // 4. Atomically decrement inventory FIRST (prevents double-place race)
-  const { error: decrError } = await supabase.rpc('atomic_inventory_decrement', {
-    p_inventory_id: invItem.id,
-    p_user_id: user.id,
-    p_amount: 1,
-  })
+  // quantity=1 cannot be updated to zero because the table enforces quantity > 0.
+  // For stacks, reserve one item first. For the last item, insert first and then
+  // delete the exact inventory row conditionally; a concurrent loser rolls back.
+  const isLastInventoryItem = invItem.quantity === 1
+  if (!isLastInventoryItem) {
+    const { error: decrError } = await supabase.rpc('atomic_inventory_decrement', {
+      p_inventory_id: invItem.id,
+      p_user_id: user.id,
+      p_amount: 1,
+    })
 
-  if (decrError) return { error: 'Failed to decrement inventory — item may already be placed' }
+    if (decrError) {
+      console.error('Decoration inventory decrement failed', decrError)
+      return { error: 'Failed to decrement inventory — item may already be placed' }
+    }
+  }
 
   // 5. Place the decoration
   const { data: placed, error: placeError } = await supabase
@@ -122,15 +133,39 @@ export async function placeDecoration(
     .single()
 
   if (placeError || !placed) {
-    // Rollback: re-add to inventory
-    await supabase.rpc('atomic_inventory_increment', {
-      p_user_id: user.id,
-      p_item_type: 'decoration',
-      p_decoration_type_id: invItem.decoration_type_id,
-      p_amount: 1,
-      p_acquired_via: 'craft',
-    })
+    if (!isLastInventoryItem) {
+      // Rollback the stack reservation.
+      await supabase.rpc('atomic_inventory_increment', {
+        p_user_id: user.id,
+        p_item_type: 'decoration',
+        p_decoration_type_id: invItem.decoration_type_id,
+        p_amount: 1,
+        p_acquired_via: 'craft',
+      })
+    }
     return { error: 'Failed to place decoration' }
+  }
+
+  if (isLastInventoryItem) {
+    const { data: removedInventory, error: removeError } = await supabase
+      .from('user_inventory')
+      .delete()
+      .eq('id', invItem.id)
+      .eq('user_id', user.id)
+      .eq('quantity', 1)
+      .select('id')
+      .maybeSingle()
+
+    if (removeError || !removedInventory) {
+      // Another request consumed the row, or deletion failed. Remove this
+      // placement so one inventory item can never create two decorations.
+      await supabase
+        .from('placed_decorations')
+        .delete()
+        .eq('id', placed.id)
+        .eq('user_id', user.id)
+      return { error: 'Failed to decrement inventory — item may already be placed' }
+    }
   }
 
   return { success: true, decorationId: placed.id }
@@ -146,6 +181,8 @@ export async function moveDecoration(
   if (!user) return { error: 'Unauthorized' }
 
   const supabase = await createClient()
+
+  if (dto.grid_row < 0 || dto.grid_col < 0) return { error: 'Invalid grid position' }
 
   // Verify ownership
   const { data: deco, error: decoError } = await supabase
@@ -205,11 +242,20 @@ export async function moveDecoration(
  */
 export async function pickUpDecoration(
   dto: PickUpDecorationDto
-): Promise<{ success: true } | { error: string }> {
+): Promise<{ success: true; inventoryItem: InventoryItemWithDetails } | { error: string }> {
   const user = await getAuthUser()
   if (!user) return { error: 'Unauthorized' }
 
   const supabase = await createClient()
+
+  const { data: placed, error: placedError } = await supabase
+    .from('placed_decorations')
+    .select('id, user_id, decoration_type_id')
+    .eq('id', dto.placed_decoration_id)
+    .eq('user_id', user.id)
+    .single()
+
+  if (placedError || !placed) return { error: 'Decoration not found' }
 
   const { error } = await supabase.rpc('pickup_decoration', {
     p_user_id: user.id,
@@ -217,13 +263,35 @@ export async function pickUpDecoration(
   })
 
   if (error) {
+    console.error('Decoration pickup failed', error)
     const msg = error.message.toLowerCase()
     if (msg.includes('decoration_not_found')) return { error: 'Decoration not found' }
     if (msg.includes('not_owner')) return { error: 'Not your decoration' }
     if (msg.includes('unauthorized')) return { error: 'Unauthorized' }
     return { error: error.message }
   }
-  return { success: true }
+
+  const { data: inventoryItem, error: inventoryError } = await supabase
+    .from('user_inventory')
+    .select(`
+      id, user_id, item_type, material_id, decoration_type_id, quantity, acquired_via, created_at, updated_at,
+      decoration_type:decoration_types(id, slug, name, description, icon, image_url, grid_size, category, rarity, unlock_level, coin_price, subscription_tier, is_craftable, created_at)
+    `)
+    .eq('user_id', user.id)
+    .eq('item_type', 'decoration')
+    .eq('decoration_type_id', placed.decoration_type_id)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (inventoryError || !inventoryItem) {
+    return { error: 'Decoration was stored but inventory could not be refreshed' }
+  }
+
+  return {
+    success: true,
+    inventoryItem: inventoryItem as unknown as InventoryItemWithDetails,
+  }
 }
 
 /**

@@ -1,7 +1,6 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
 import type { MoodLevel } from '@/lib/mood-system'
 import { DEFAULT_MOOD } from '@/lib/mood-system'
 import { getAuthUser } from '@/lib/auth-cached'
@@ -93,7 +92,6 @@ export async function setTodayMood(
     return { success: false, error: error.message }
   }
 
-  revalidatePath('/garden')
   return { success: true }
 }
 

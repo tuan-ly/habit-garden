@@ -10,8 +10,11 @@ import { PlantVisual, StreakFire, XpPopup } from './plant-visual'
 import { usePlants } from '@/lib/context/plants-context'
 import { useState, useEffect, memo } from 'react'
 import { cn } from '@/lib/utils'
+import {
+  formatGoalValue,
+  getRemainingGoalValue,
+} from '@/lib/goal-progress'
 import { getGoalForPlant, type GoalWithStats } from '@/lib/actions/goals'
-import { GoalProgressRing, GoalModeBadge } from '@/components/goals'
 
 // Plant type accent — a single hue for top border, not full gradient
 const PLANT_ACCENTS: Record<string, string> = {
@@ -26,6 +29,90 @@ const PLANT_ACCENTS: Record<string, string> = {
 
 function getPlantAccent(typeName: string): string {
   return PLANT_ACCENTS[typeName.toLowerCase()] || 'bg-moss'
+}
+
+interface PrimaryCardContent {
+  type: 'period_progress' | 'moisture_state' | 'overall_progress'
+  mainMetric: {
+    label: string
+    value: string | number
+    unit?: string
+    progress?: number  // 0-100 for progress bar
+  }
+  secondaryText?: string
+  cta: {
+    label: string
+    icon?: React.ReactNode
+    disabled: boolean
+  }
+}
+
+function getPrimaryCardContent(
+  plant: PlantWithType,
+  goal: GoalWithStats | null,
+  isWateredToday: boolean,
+  isDead: boolean
+): PrimaryCardContent {
+  const hasGoal = !!plant.goal_mode
+  
+  // Priority 1: Active goal with period target
+  if (hasGoal && goal?.currentPeriodTarget && goal.currentPeriodTarget > 0) {
+    const remaining = getRemainingGoalValue(goal.periodProgress, goal.currentPeriodTarget)
+    const isComplete = remaining === 0
+    
+    return {
+      type: 'period_progress',
+      mainMetric: {
+        label: goal.periodLabel || 'This week',
+        value: `${formatGoalValue(goal.periodProgress)} / ${formatGoalValue(goal.currentPeriodTarget)}`,
+        unit: goal.unit,
+        progress: (goal.periodProgress / goal.currentPeriodTarget) * 100
+      },
+      secondaryText: isComplete 
+        ? '✨ Period complete!' 
+        : `${formatGoalValue(remaining)} ${goal.unit} to go`,
+      cta: {
+        label: isDead ? 'Dead' : (isComplete ? 'Log more' : 'Log Progress'),
+        icon: isDead ? undefined : <Plus className="h-4 w-4 mr-2" />,
+        disabled: isDead
+      }
+    }
+  }
+  
+  // Priority 2: Simple watering habit (no goal)
+  if (!hasGoal) {
+    return {
+      type: 'moisture_state',
+      mainMetric: {
+        label: isWateredToday ? 'Watered today' : 'Needs water',
+        value: '', // Visual only via PlantVisual
+      },
+      secondaryText: plant.last_watered_at 
+        ? `Last: ${new Date(plant.last_watered_at).toLocaleDateString()}`
+        : undefined,
+      cta: {
+        label: isWateredToday ? 'Watered today' : (isDead ? 'Dead' : 'Water Plant'),
+        icon: isWateredToday ? <Check className="h-4 w-4 mr-2" /> : (isDead ? undefined : <Droplets className="h-4 w-4 mr-2" />),
+        disabled: isWateredToday || isDead
+      }
+    }
+  }
+  
+  // Priority 3: Goal without period (milestone)
+  return {
+    type: 'overall_progress',
+    mainMetric: {
+      label: 'Overall progress',
+      value: plant.growth_percentage,
+      unit: '%',
+      progress: plant.growth_percentage
+    },
+    cta: {
+      label: isDead ? 'Dead' : 'Log Progress',
+      icon: isDead ? undefined : <Plus className="h-4 w-4 mr-2" />,
+      disabled: isDead
+    }
+  }
 }
 
 interface PlantCardProps {
@@ -47,6 +134,13 @@ export const PlantCard = memo(function PlantCard({ plant: initialPlant, onClick,
   const goal = goalStats ?? lazyGoal
 
   const hasGoal = !!plant.goal_mode
+  const periodProgress = plant.goal?.period_progress ?? goal?.periodProgress ?? 0
+  const currentPeriodTarget = plant.goal?.current_period_target ?? goal?.currentPeriodTarget ?? 0
+  const periodLabel = plant.goal?.period_label ?? goal?.periodLabel ?? 'This period'
+  const goalUnit = plant.goal?.unit ?? goal?.unit ?? ''
+  const remainingPeriodValue = getRemainingGoalValue(periodProgress, currentPeriodTarget)
+  const isPeriodComplete = currentPeriodTarget > 0 && remainingPeriodValue === 0
+  const isPeriodOnTrack = goal?.isOnTrack ?? periodProgress >= currentPeriodTarget * 0.8
 
   useEffect(() => {
     if (hasGoal && goalStats === undefined) {
@@ -61,14 +155,19 @@ export const PlantCard = memo(function PlantCard({ plant: initialPlant, onClick,
   const isDead = plant.status === 'dead'
   const isMature = plant.status === 'mature'
 
+  // Get primary card content based on plant state
+  const content = getPrimaryCardContent(plant, goal, isWateredToday, isDead)
+
   const handleWater = async (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (isWateredToday || isDead) return
+    if (isDead) return
 
     if (hasGoal) {
       onClick?.()
       return
     }
+
+    if (isWateredToday) return
 
     setIsWatering(true)
     const result = await waterPlant(plant.id)
@@ -90,138 +189,89 @@ export const PlantCard = memo(function PlantCard({ plant: initialPlant, onClick,
         'hover:scale-[1.02]',
         isDead && 'opacity-60 grayscale',
         isMature && 'ring-1 ring-leaf/30',
-        hasGoal && goal && !goal.isOnTrack && 'ring-1 ring-bloom/40'
+        hasGoal && currentPeriodTarget > 0 && !isPeriodOnTrack && 'ring-1 ring-bloom/40'
       )}
       onClick={onClick}
     >
       {/* Plant-type accent strip */}
       <div className={cn('absolute top-0 left-0 right-0 h-1', getPlantAccent(plant.plant_type.name))} />
 
-      <CardContent className="p-4 pt-5 relative">
-        {/* Header row */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="relative flex-shrink-0 w-14 h-14 rounded-2xl bg-mist/80 dark:bg-muted flex items-center justify-center shadow-dappled">
-              <PlantVisual
-                plant={plant}
-                size="md"
-                showWateringEffect={isWatering}
-                weather={weather}
-              />
-              <XpPopup amount={earnedXp} show={showXp} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-display text-[17px] font-semibold text-canopy dark:text-foreground truncate leading-tight">
-                {plant.name}
-              </h3>
-              <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
-                <span>{plant.plant_type.name}</span>
-                {hasGoal && (
-                  <>
-                    <span className="w-1 h-1 rounded-full bg-muted-foreground/40" />
-                    <span className="inline-flex items-center gap-0.5 text-leaf">
-                      <Target className="h-3 w-3" />
-                      Goal
-                    </span>
-                  </>
-                )}
-              </p>
-            </div>
+      <CardContent className="p-6 relative">
+        {/* Header - cleaner */}
+        <div className="flex items-start justify-between mb-5">
+          <div className="relative w-14 h-14 rounded-2xl bg-mist/80 dark:bg-muted flex items-center justify-center shadow-dappled flex-shrink-0">
+            <PlantVisual
+              plant={plant}
+              size="md"
+              showWateringEffect={isWatering}
+              weather={weather}
+            />
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {goal && <GoalProgressRing goal={goal} size="sm" showPeriod={true} />}
-            <StreakFire streak={plant.current_streak} show={plant.current_streak > 0 && !hasGoal} />
+          <div className="flex-1 min-w-0 ml-3">
+            <h3 className="text-lg font-semibold text-canopy dark:text-foreground truncate">
+              {plant.name}
+            </h3>
+            <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
+              <span>{plant.plant_type.name}</span>
+              {hasGoal && (
+                <>
+                  <span className="w-1 h-1 rounded-full bg-muted-foreground/40" />
+                  <span className="inline-flex items-center gap-0.5 text-leaf">
+                    <Target className="h-3 w-3" />
+                    Goal
+                  </span>
+                </>
+              )}
+            </p>
           </div>
         </div>
 
-        {/* Metrics block */}
-        {hasGoal && goal ? (
-          <div className="space-y-3 mb-4 p-3.5 rounded-2xl bg-mist/60 dark:bg-muted/50">
-            <MoistureBar value={plant.current_moisture} />
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground font-medium">{goal.periodLabel}</span>
-              <span className={cn(
-                'font-display font-semibold tabular-nums',
-                goal.periodProgress >= goal.currentPeriodTarget ? 'text-leaf'
-                  : !goal.isOnTrack ? 'text-bloom'
-                  : 'text-canopy dark:text-foreground'
-              )}>
-                {Math.round(goal.periodProgress * 10) / 10} / {Math.round(goal.currentPeriodTarget * 10) / 10} {goal.unit}
+        {/* Single focused metric */}
+        <div className="space-y-4 mb-5 p-4 rounded-2xl bg-mist/60 dark:bg-muted/50">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">{content.mainMetric.label}</span>
+            {content.type === 'period_progress' && content.mainMetric.value && (
+              <span className="font-display font-semibold text-lg tabular-nums text-canopy dark:text-foreground">
+                {content.mainMetric.value} {content.mainMetric.unit}
               </span>
-            </div>
+            )}
+          </div>
+          
+          {content.mainMetric.progress !== undefined && (
             <div className="h-1.5 w-full rounded-full bg-white/70 dark:bg-black/30 overflow-hidden">
-              <div
-                className={cn(
-                  'h-full rounded-full transition-[width] duration-500 ease-out',
-                  goal.periodProgress >= goal.currentPeriodTarget ? 'bg-leaf'
-                    : goal.isOnTrack ? 'bg-moss'
-                    : 'bg-bloom'
-                )}
-                style={{ width: `${Math.min(100, goal.currentPeriodTarget > 0 ? (goal.periodProgress / goal.currentPeriodTarget) * 100 : 0)}%` }}
+              <div 
+                className="h-full rounded-full transition-all duration-500 bg-leaf"
+                style={{ width: `${Math.min(100, content.mainMetric.progress)}%` }}
               />
             </div>
-            {goal.periodProgress < goal.currentPeriodTarget && (
-              <p className="text-[10px] text-bloom/90 font-medium">
-                {Math.round((goal.currentPeriodTarget - goal.periodProgress) * 10) / 10} {goal.unit} to go
-              </p>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-3 mb-4 p-3.5 rounded-2xl bg-mist/60 dark:bg-muted/50">
-            <MoistureBar value={plant.current_moisture} />
-            <GrowthProgress
-              value={plant.growth_percentage}
-              status={plant.status}
-              maturityDays={plant.plant_type.maturity_days}
-            />
-          </div>
-        )}
+          )}
+          
+          {content.secondaryText && (
+            <p className="text-xs text-bloom font-medium">
+              {content.secondaryText}
+            </p>
+          )}
+        </div>
 
-        {/* CTA */}
-        {hasGoal ? (
-          <Button
-            size="sm"
-            className={cn(
-              'w-full h-10 rounded-full font-semibold cursor-pointer transition-colors',
-              isWateredToday || isDead
-                ? 'bg-mist hover:bg-mist text-muted-foreground shadow-none dark:bg-muted'
-                : 'bg-leaf hover:bg-canopy text-white shadow-leaf'
-            )}
-            onClick={handleWater}
-            disabled={isWateredToday || isDead}
-          >
-            {isWateredToday ? (
-              <><Check className="h-4 w-4 mr-2" />Logged today</>
-            ) : isDead ? (
-              'Dead'
-            ) : (
-              <><Plus className="h-4 w-4 mr-2" />Log Progress</>
-            )}
-          </Button>
-        ) : (
-          <Button
-            size="sm"
-            className={cn(
-              'w-full h-10 rounded-full font-semibold cursor-pointer transition-colors',
-              isWatering && 'animate-pulse',
-              isWateredToday || isDead
-                ? 'bg-mist hover:bg-mist text-muted-foreground shadow-none dark:bg-muted'
-                : 'bg-leaf hover:bg-canopy text-white shadow-leaf'
-            )}
-            onClick={handleWater}
-            disabled={isWatering || isWateredToday || isDead}
-          >
-            {isWateredToday ? (
-              <><Check className="h-4 w-4 mr-2" />Watered today</>
-            ) : isDead ? (
-              'Dead'
-            ) : isWatering ? (
-              <><Droplets className="h-4 w-4 mr-2 animate-bounce-subtle" />Watering…</>
-            ) : (
-              <><Droplets className="h-4 w-4 mr-2" />Water Plant</>
-            )}
-          </Button>
-        )}
+        {/* Single clear CTA */}
+        <Button
+          size="sm"
+          className={cn(
+            'w-full h-10 rounded-full font-semibold transition-colors',
+            isWatering && 'animate-pulse',
+            content.cta.disabled
+              ? 'bg-mist hover:bg-mist text-muted-foreground shadow-none dark:bg-muted cursor-not-allowed'
+              : 'bg-leaf hover:bg-canopy text-white shadow-leaf cursor-pointer'
+          )}
+          onClick={handleWater}
+          disabled={content.cta.disabled || isWatering}
+        >
+          {isWatering ? (
+            <><Droplets className="h-4 w-4 mr-2 animate-bounce-subtle" />Watering…</>
+          ) : (
+            <>{content.cta.icon}{content.cta.label}</>
+          )}
+        </Button>
       </CardContent>
     </Card>
   )

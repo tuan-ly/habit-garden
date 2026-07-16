@@ -1,0 +1,159 @@
+name: Supabase Migration Ledger
+
+on:
+  pull_request:
+    paths:
+      - "supabase/**"
+      - "config/supabase-migration-ledger.json"
+      - "scripts/check-supabase-migrations.mjs"
+      - ".github/workflows/supabase-migration-ledger.yml"
+  push:
+    branches: [master]
+    paths:
+      - "supabase/**"
+      - "config/supabase-migration-ledger.json"
+      - "scripts/check-supabase-migrations.mjs"
+      - ".github/workflows/supabase-migration-ledger.yml"
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Apply pending migrations after audit"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-migration-ledger-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: Audit migration ledger
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_ID: jkhkfsfjnilbfqfatonb
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate migration files
+        run: node scripts/check-supabase-migrations.mjs
+
+      - name: Detect first ledger bootstrap
+        if: github.event_name == 'pull_request'
+        id: ledger_bootstrap
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="origin/${{ github.base_ref }}"
+          if git cat-file -e "$base:config/supabase-migration-ledger.json" 2>/dev/null; then
+            echo "base_has_ledger=true" >> "$GITHUB_OUTPUT"
+            echo "Base branch already has a migration ledger; enforcing immutable history."
+          else
+            echo "base_has_ledger=false" >> "$GITHUB_OUTPUT"
+            echo "Base branch has no migration ledger; allowing the one-time bootstrap reconciliation."
+          fi
+
+      - name: Protect existing migration history
+        if: github.event_name == 'pull_request' && steps.ledger_bootstrap.outputs.base_has_ledger == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          changes="$(git diff --name-status "origin/${{ github.base_ref }}"...HEAD -- supabase/migrations)"
+          echo "$changes"
+          if echo "$changes" | grep -Eq '^(M|D|R)'; then
+            echo "Existing migrations are immutable. Add a new migration instead of modifying history."
+            exit 1
+          fi
+
+      - name: Require project-scoped secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD; do
+            if [ -z "${!name:-}" ]; then
+              echo "Missing required repository secret: $name"
+              exit 1
+            fi
+          done
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link the Habit Garden project
+        run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Capture remote migration ledger
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase migration list --linked | tee migration-ledger.txt
+          {
+            echo "## Supabase migration ledger"
+            echo
+            echo "Project: \`$SUPABASE_PROJECT_ID\`"
+            echo '```text'
+            cat migration-ledger.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Dry-run pending migrations
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase db push --linked --dry-run | tee migration-dry-run.txt
+          {
+            echo "### Dry run"
+            echo '```text'
+            cat migration-dry-run.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    name: Apply pending migrations
+    if: github.event_name == 'workflow_dispatch' && inputs.apply == true
+    needs: audit
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_ID: jkhkfsfjnilbfqfatonb
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link the Habit Garden project
+        run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Apply migrations
+        run: supabase db push --linked
+
+      - name: Write deployment receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase migration list --linked | tee migration-ledger-after.txt
+          {
+            echo "## Migration deployment receipt"
+            echo
+            echo "Project: \`$SUPABASE_PROJECT_ID\`"
+            echo "Commit: \`$GITHUB_SHA\`"
+            echo '```text'
+            cat migration-ledger-after.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

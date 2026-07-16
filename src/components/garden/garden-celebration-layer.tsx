@@ -3,6 +3,7 @@
 import { memo } from 'react'
 import dynamic from 'next/dynamic'
 import { WateringCelebration } from './watering-celebration'
+import { SanctuaryGardenReaction } from './sanctuary-garden-reaction'
 import type { AchievementDefinition } from '@/lib/achievements'
 import type { CelebrationState } from './use-garden-interactions'
 
@@ -21,6 +22,7 @@ interface GardenCelebrationLayerProps {
   harvestData: { plantName: string; material: { name: string; icon: string } } | null
   onHarvestClose: () => void
   showCelebrations: boolean
+  sanctuaryMode?: boolean
 }
 
 export const GardenCelebrationLayer = memo(function GardenCelebrationLayer({
@@ -33,11 +35,20 @@ export const GardenCelebrationLayer = memo(function GardenCelebrationLayer({
   harvestData,
   onHarvestClose,
   showCelebrations,
+  sanctuaryMode = false,
 }: GardenCelebrationLayerProps) {
   return (
     <>
       {/* Watering celebration effect */}
-      {showCelebrations && (
+      {showCelebrations && sanctuaryMode && (
+        <SanctuaryGardenReaction
+          active={celebration?.active ?? false}
+          plantName={celebration?.plantName}
+          onComplete={onCelebrationComplete}
+        />
+      )}
+
+      {showCelebrations && !sanctuaryMode && (
         <WateringCelebration
           isActive={celebration?.active ?? false}
           position={celebration?.position}
@@ -50,15 +61,17 @@ export const GardenCelebrationLayer = memo(function GardenCelebrationLayer({
       )}
 
       {/* Level up modal */}
-      <LevelUpModal
-        open={!!levelUpData}
-        onOpenChange={(open) => { if (!open) onLevelUpClose() }}
-        newLevel={levelUpData?.newLevel ?? 1}
-        oldLevel={levelUpData?.oldLevel}
-      />
+      {!sanctuaryMode && levelUpData && (
+        <LevelUpModal
+          open
+          onOpenChange={(open) => { if (!open) onLevelUpClose() }}
+          newLevel={levelUpData.newLevel}
+          oldLevel={levelUpData.oldLevel}
+        />
+      )}
 
       {/* Achievement unlock notifications */}
-      {pendingAchievements.length > 0 && (
+      {!sanctuaryMode && pendingAchievements.length > 0 && (
         <AchievementQueue
           achievements={pendingAchievements}
           onComplete={onAchievementsComplete}
@@ -66,12 +79,14 @@ export const GardenCelebrationLayer = memo(function GardenCelebrationLayer({
       )}
 
       {/* Harvest material notification */}
-      <HarvestDialog
-        open={!!harvestData}
-        onClose={onHarvestClose}
-        plantName={harvestData?.plantName ?? ''}
-        material={harvestData?.material ?? null}
-      />
+      {!sanctuaryMode && harvestData && (
+        <HarvestDialog
+          open
+          onClose={onHarvestClose}
+          plantName={harvestData.plantName}
+          material={harvestData.material}
+        />
+      )}
     </>
   )
 })

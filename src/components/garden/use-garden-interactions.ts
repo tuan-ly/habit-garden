@@ -8,10 +8,12 @@ import {
   showWaterToast,
 } from '@/components/plants/water-toast'
 import { isToday } from '@/lib/utils'
-import { logActivity } from '@/lib/actions/activity'
+import type { LogActivityDto, LogActivityResult } from '@/lib/actions/activity'
 import { validatePlantMove } from '@/lib/utils/grid-positioning'
+import { applyGoalLogToPeriod } from '@/lib/goal-progress'
 import type { PlantWithType, InventoryItemWithDetails, DecorationRotation } from '@/types/database'
 import type { GardenMode } from './mode-toolbar'
+import type { WateringActionMode } from '@/components/plants/gentle-watering-modal'
 
 // Double tap threshold for opening detail sheet
 const DOUBLE_TAP_THRESHOLD = 300
@@ -33,13 +35,15 @@ export interface MoveState {
 
 interface UseGardenInteractionsOpts {
   movePlant: (id: string, row: number, col: number) => Promise<{ success: boolean }>
-  updatePlant: (id: string, updates: Partial<PlantWithType>) => void
+  recordActivity: (
+    dto: Omit<LogActivityDto, 'mutationId'>,
+    optimisticUpdates: Partial<PlantWithType>
+  ) => Promise<LogActivityResult>
   welcomeBackPending: boolean
   onWelcomeBackUsed?: () => void
   mode: GardenMode
   didPan: boolean
   resetDidPan: () => void
-  occupiedCells: Map<string, PlantWithType>
   livingPlants: PlantWithType[]
   // Decoration placement
   editSelectedItem: InventoryItemWithDetails | null
@@ -47,13 +51,21 @@ interface UseGardenInteractionsOpts {
   onPlaceDecoration?: (inventoryItemId: string, row: number, col: number, rotation?: DecorationRotation) => Promise<{ success: boolean; decorationId?: string; error?: string }>
   onEditPushUndo?: (action: { type: 'place'; placedDecoId: string; inventoryItemId: string; row: number; col: number }) => void
   onEditDeselectItem?: () => void
+  onEditSelectItem?: (item: InventoryItemWithDetails) => void
+  onEditPlacementError?: (error: string) => void
+  onEditPlacementSuccess?: () => void
+  editPlacementPending?: boolean
+  calmFeedback?: boolean
 }
 
 export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
   const {
-    movePlant, updatePlant, welcomeBackPending, onWelcomeBackUsed,
-    mode, didPan, resetDidPan, occupiedCells, livingPlants,
+    movePlant, recordActivity, welcomeBackPending, onWelcomeBackUsed,
+    mode, didPan, resetDidPan, livingPlants,
     editSelectedItem, editGhostRotation, onPlaceDecoration, onEditPushUndo, onEditDeselectItem,
+    onEditSelectItem,
+    onEditPlacementError, onEditPlacementSuccess, editPlacementPending = false,
+    calmFeedback = false,
   } = opts
 
   // Modal state
@@ -65,6 +77,7 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
   // Watering modal state
   const [wateringPlant, setWateringPlant] = useState<PlantWithType | null>(null)
   const [wateringModalOpen, setWateringModalOpen] = useState(false)
+  const [wateringInitialMode, setWateringInitialMode] = useState<WateringActionMode>('choose')
 
   // Celebration state
   const [celebration, setCelebration] = useState<CelebrationState | null>(null)
@@ -118,8 +131,9 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
   }, [])
 
   // Open watering modal
-  const handleQuickWaterRequest = useCallback((plant: PlantWithType) => {
+  const handleQuickWaterRequest = useCallback((plant: PlantWithType, initialMode: WateringActionMode = 'choose') => {
     setWateringPlant(plant)
+    setWateringInitialMode(initialMode)
     setWateringModalOpen(true)
   }, [])
 
@@ -152,7 +166,7 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
       const baseGrowth = 100 / (plant.plant_type?.maturity_days || 30)
       const newGrowth = Math.min(100, plant.growth_percentage + baseGrowth)
 
-      updatePlant(plant.id, {
+      const optimisticUpdates = {
         current_moisture: newMoisture,
         growth_percentage: newGrowth,
         current_streak: newStreak,
@@ -160,27 +174,29 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
         total_waterings: plant.total_waterings + 1,
         last_watered_at: new Date().toISOString(),
         status: newGrowth >= 100 ? 'mature' : plant.status,
-      })
+      }
 
       try {
-        const result = await logActivity({
+        const result = await recordActivity({
           plant_id: plant.id,
           activity_type: 'watering',
           notes,
           is_welcome_back: welcomeBackPending,
-        })
+        }, optimisticUpdates)
 
         if (!result.success) {
           setCelebration(null)
           showWaterErrorToast(result.error || 'Unknown error')
         } else {
           if (welcomeBackPending) onWelcomeBackUsed?.()
-          showWaterToast({
-            plantName: plant.name,
-            plantIcon: plant.plant_type.icon,
-            xpEarned: result.xpEarned || 0,
-            streakCount: newStreak,
-          })
+          if (!calmFeedback) {
+            showWaterToast({
+              plantName: plant.name,
+              plantIcon: plant.plant_type.icon,
+              xpEarned: result.xpEarned || 0,
+              streakCount: newStreak,
+            })
+          }
           handleServerResult(result, plant.name)
         }
       } catch {
@@ -191,7 +207,7 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
         setTimeout(() => actionCooldown.current.delete(plant.id), 500)
       }
     },
-    [wateringPlant, updatePlant, welcomeBackPending, onWelcomeBackUsed, handleServerResult]
+    [wateringPlant, recordActivity, welcomeBackPending, onWelcomeBackUsed, handleServerResult, calmFeedback]
   )
 
   // Log + water confirm (from modal "I did it" action)
@@ -240,28 +256,42 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
         const newCurrentValue = plant.goal.goal_mode === 'total_progress'
           ? plant.goal.current_value + value
           : Math.max(plant.goal.current_value, value)
-        optimisticUpdates.goal = { ...plant.goal, current_value: newCurrentValue }
+        optimisticUpdates.goal = {
+          ...plant.goal,
+          current_value: newCurrentValue,
+          period_progress: applyGoalLogToPeriod(
+            plant.goal.goal_mode,
+            plant.goal.period_progress,
+            value
+          ),
+        }
         optimisticUpdates.today_value = (plant.today_value || 0) + value
         optimisticUpdates.today_log_count = (plant.today_log_count || 0) + 1
       }
 
-      updatePlant(plant.id, optimisticUpdates)
-
       try {
-        const result = await logActivity({
+        const result = await recordActivity({
           plant_id: plant.id,
           activity_type: hasGoal && value !== undefined ? 'progress' : 'completed',
           value: hasGoal ? value : undefined,
           notes,
           is_welcome_back: welcomeBackPending,
-        })
+        }, optimisticUpdates)
 
         if (!result.success) {
           setCelebration(null)
           showWaterErrorToast(result.error || 'Failed to log')
         } else {
           if (welcomeBackPending) onWelcomeBackUsed?.()
-          if (hasGoal && value !== undefined) {
+          if (!calmFeedback && hasGoal && value !== undefined) {
+            const nextPeriodProgress = plant.goal
+              ? applyGoalLogToPeriod(
+                  plant.goal.goal_mode,
+                  plant.goal.period_progress,
+                  value
+                )
+              : undefined
+
             showGoalLogToast({
               plantName: plant.name,
               plantIcon: plant.plant_type.icon,
@@ -269,9 +299,12 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
               unit: plant.goal?.unit || '',
               xpEarned: result.xpEarned || 0,
               isPersonalRecord: result.isPersonalRecord,
-              exceededTarget: false,
+              periodProgress: nextPeriodProgress,
+              periodTarget: plant.goal?.current_period_target,
+              periodLabel: plant.goal?.period_label,
+              consistencyDayAdded: isFirstActivityToday,
             })
-          } else {
+          } else if (!calmFeedback) {
             showWaterToast({
               plantName: plant.name,
               plantIcon: plant.plant_type.icon,
@@ -289,7 +322,7 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
         setTimeout(() => actionCooldown.current.delete(plant.id), 500)
       }
     },
-    [wateringPlant, isWateredToday, updatePlant, welcomeBackPending, onWelcomeBackUsed, handleServerResult]
+    [wateringPlant, isWateredToday, recordActivity, welcomeBackPending, onWelcomeBackUsed, handleServerResult, calmFeedback]
   )
 
   // Plant tap (single = water modal, double = detail sheet)
@@ -370,20 +403,31 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
   // Place decoration on tile
   const handlePlaceDecoration = useCallback(
     async (row: number, col: number) => {
-      if (!editSelectedItem || !onPlaceDecoration) return
+      if (!editSelectedItem || !onPlaceDecoration || editPlacementPending) return
+      const selectedItem = editSelectedItem
       const inventoryItemId = editSelectedItem.id
+      // The ghost represents an uncommitted intent. Clear it at click time so the
+      // optimistic placed decoration becomes the immediate visual response.
+      onEditDeselectItem?.()
       const result = await onPlaceDecoration(inventoryItemId, row, col, editGhostRotation)
       if (result.success && result.decorationId) {
         onEditPushUndo?.({ type: 'place', placedDecoId: result.decorationId, inventoryItemId, row, col })
-        onEditDeselectItem?.()
+        onEditPlacementSuccess?.()
+        return
       }
+      onEditSelectItem?.(selectedItem)
+      onEditPlacementError?.(result.error || 'Không thể đặt vật trang trí')
     },
-    [editSelectedItem, editGhostRotation, onPlaceDecoration, onEditPushUndo, onEditDeselectItem]
+    [
+      editSelectedItem, editGhostRotation, onPlaceDecoration, onEditPushUndo,
+      onEditDeselectItem, onEditSelectItem, onEditPlacementError, onEditPlacementSuccess,
+      editPlacementPending,
+    ]
   )
 
   // Tile click — mode-based
   const handleTileClick = useCallback(
-    (row: number, col: number, plant?: PlantWithType, event?: React.MouseEvent | React.TouchEvent) => {
+    (row: number, col: number, plant?: PlantWithType) => {
       if (didPan) { resetDidPan(); return }
 
       switch (mode) {
@@ -421,24 +465,11 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
     [handleShowInfo]
   )
 
-  // Tile hover
-  const handleTileHover = useCallback(
-    (row: number, col: number) => {
-      const plant = occupiedCells.get(`${row}-${col}`)
-      // Intentionally not using setHoveredTile here — parent manages hoveredTile state
-      // This returns the tile key so parent can set it
-      if (mode === 'arrange' && moveState.selectedPlant) {
-        updateMovePreview(row, col)
-      }
-    },
-    [mode, moveState.selectedPlant, occupiedCells, updateMovePreview]
-  )
-
   return {
     // Modal state
     selectedPlant, sheetOpen, setSheetOpen,
     addDialogOpen, setAddDialogOpen, addDialogPosition, setAddDialogPosition,
-    wateringPlant, wateringModalOpen, setWateringModalOpen,
+    wateringPlant, wateringModalOpen, setWateringModalOpen, wateringInitialMode,
     // Celebration state
     celebration, setCelebration,
     levelUpData, setLevelUpData,
@@ -449,7 +480,7 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
     updateMovePreview, clearMovePreview,
     // Handlers
     handleTileClick, handleContextMenu, handleWaterConfirm,
-    handleLogAndWaterConfirm, handleOpenDetails,
+    handleLogAndWaterConfirm, handleOpenDetails, handleQuickWaterRequest, handleShowInfo,
     isWateredToday,
   }
 }

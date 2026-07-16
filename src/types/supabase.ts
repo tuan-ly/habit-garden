@@ -616,6 +616,27 @@ export type Database = {
     }
     Functions: {
       calculate_growth: { Args: { plant_id: string }; Returns: number }
+      get_dashboard_bootstrap: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      get_garden_snapshot: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      habit_level_from_xp: { Args: { p_xp: number }; Returns: number }
+      habit_weather_for_date: { Args: { p_date: string }; Returns: Json }
+      record_activity_atomic: {
+        Args: {
+          p_mutation_id: string
+          p_plant_id: string
+          p_activity_type: string
+          p_value?: number | null
+          p_notes?: string | null
+          p_is_welcome_back?: boolean
+        }
+        Returns: Json
+      }
       create_notification: {
         Args: {
           p_user_id: string

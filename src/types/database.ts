@@ -188,6 +188,13 @@ export interface PlantGoalInfo {
   weekly_targets: number[] | null
   current_week_target: number
   week_number: number
+  frequency: GoalFrequency
+  period_progress: number
+  current_period_target: number
+  period_number: number
+  period_label: string
+  period_date_range: string
+  period_end: string
 }
 
 // Plant with type info (joined)
@@ -615,7 +622,7 @@ export interface LinkGoalToIdentityDto {
 export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
 export type DecorationCategory = 'furniture' | 'nature' | 'lighting' | 'path' | 'water' | 'seasonal' | 'special'
 export type InventoryItemType = 'material' | 'decoration'
-export type AcquisitionMethod = 'harvest' | 'craft' | 'purchase' | 'reward' | 'gift'
+export type AcquisitionMethod = 'harvest' | 'craft' | 'purchase' | 'reward' | 'gift' | 'pickup'
 export type DecorationRotation = 0 | 90 | 180 | 270
 
 // Material definition (produced by mature plants)
@@ -639,7 +646,8 @@ export interface DecorationType {
   description: string | null
   icon: string
   image_url: string | null
-  grid_size: 1 | 2
+  /** Square tile footprint. Decorations follow the same 1x1, 2x2, 3x3… model as plants. */
+  grid_size: number
   category: DecorationCategory
   rarity: ItemRarity
   unlock_level: number
@@ -748,4 +756,30 @@ export interface MoveDecorationDto {
 
 export interface PickUpDecorationDto {
   placed_decoration_id: string
+}
+
+// =====================================================
+// Dashboard performance RPC contracts
+// =====================================================
+
+export type MutationErrorCode =
+  | 'UNAUTHENTICATED'
+  | 'FORBIDDEN'
+  | 'NOT_FOUND'
+  | 'ALREADY_APPLIED'
+  | 'CONFLICT'
+  | 'VALIDATION_ERROR'
+  | 'DATABASE_ERROR'
+
+export interface DashboardBootstrapReadModel {
+  profile: Profile | null
+  mood: number | null
+  plant_types: PlantType[]
+}
+
+export interface GardenSnapshotReadModel {
+  plants: PlantWithType[]
+  goals: Goal[]
+  goal_logs: GoalLog[]
+  placed_decorations: PlacedDecorationWithType[]
 }

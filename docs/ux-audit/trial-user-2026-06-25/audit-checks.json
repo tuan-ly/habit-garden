@@ -1,0 +1,662 @@
+[
+  {
+    "name": "landing-desktop",
+    "data": {
+      "title": "Habien - Gamify Your Habits & Grow Your Life",
+      "url": "http://127.0.0.1:3000/",
+      "h1Count": 1,
+      "h2Count": 3,
+      "labels": [
+        {
+          "text": "Monthly",
+          "for": "billing-toggle"
+        },
+        {
+          "text": "Yearly (Save 20%)",
+          "for": "billing-toggle"
+        }
+      ],
+      "inputs": [
+        {
+          "id": "",
+          "name": "",
+          "type": "checkbox",
+          "required": false,
+          "placeholder": "",
+          "autocomplete": ""
+        }
+      ],
+      "interactive": [
+        {
+          "tag": "A",
+          "text": "Sign In",
+          "href": "/login",
+          "type": null,
+          "width": 76,
+          "height": 36,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        },
+        {
+          "tag": "A",
+          "text": "Get Started",
+          "href": "/signup",
+          "type": null,
+          "width": 104,
+          "height": 36,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        },
+        {
+          "tag": "A",
+          "text": "Start Growing Free",
+          "href": "/signup",
+          "type": null,
+          "width": 217,
+          "height": 48,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        },
+        {
+          "tag": "A",
+          "text": "View Pricing",
+          "href": "#pricing",
+          "type": null,
+          "width": 167,
+          "height": 50,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "",
+          "href": null,
+          "type": "button",
+          "width": 36,
+          "height": 20,
+          "ariaLabel": null,
+          "id": "billing-toggle",
+          "name": null
+        },
+        {
+          "tag": "INPUT",
+          "text": "",
+          "href": null,
+          "type": "checkbox",
+          "width": 13,
+          "height": 13,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        },
+        {
+          "tag": "A",
+          "text": "Start Free",
+          "href": "/signup",
+          "type": null,
+          "width": 313,
+          "height": 36,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Subscribe to Pro",
+          "href": null,
+          "type": null,
+          "width": 328,
+          "height": 38,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Subscribe to Premium",
+          "href": null,
+          "type": null,
+          "width": 313,
+          "height": 36,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        },
+        {
+          "tag": "A",
+          "text": "Privacy",
+          "href": "/privacy",
+          "type": null,
+          "width": 43,
+          "height": 20,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        },
+        {
+          "tag": "A",
+          "text": "Terms",
+          "href": "/terms",
+          "type": null,
+          "width": 36,
+          "height": 20,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        },
+        {
+          "tag": "A",
+          "text": "Refunds",
+          "href": "/refund",
+          "type": null,
+          "width": 50,
+          "height": 20,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        },
+        {
+          "tag": "A",
+          "text": "Contact",
+          "href": "mailto:support@habitgarden.com",
+          "type": null,
+          "width": 48,
+          "height": 20,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        }
+      ],
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      }
+    }
+  },
+  {
+    "name": "signup-desktop",
+    "data": {
+      "title": "Habien - Gamify Your Habits & Grow Your Life",
+      "url": "http://127.0.0.1:3000/signup",
+      "h1Count": 0,
+      "h2Count": 0,
+      "labels": [
+        {
+          "text": "Email",
+          "for": "email"
+        },
+        {
+          "text": "Password",
+          "for": "password"
+        }
+      ],
+      "inputs": [
+        {
+          "id": "email",
+          "name": "email",
+          "type": "email",
+          "required": true,
+          "placeholder": "email@example.com",
+          "autocomplete": ""
+        },
+        {
+          "id": "password",
+          "name": "password",
+          "type": "password",
+          "required": true,
+          "placeholder": "At least 6 characters",
+          "autocomplete": ""
+        }
+      ],
+      "interactive": [
+        {
+          "tag": "INPUT",
+          "text": "email@example.com",
+          "href": null,
+          "type": "email",
+          "width": 398,
+          "height": 36,
+          "ariaLabel": null,
+          "id": "email",
+          "name": "email"
+        },
+        {
+          "tag": "INPUT",
+          "text": "At least 6 characters",
+          "href": null,
+          "type": "password",
+          "width": 398,
+          "height": 36,
+          "ariaLabel": null,
+          "id": "password",
+          "name": "password"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Create Account",
+          "href": null,
+          "type": "submit",
+          "width": 398,
+          "height": 36,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Google",
+          "href": null,
+          "type": null,
+          "width": 398,
+          "height": 36,
+          "ariaLabel": null,
+          "id": "",
+          "name": "$ACTION_ID_002c08eb2168639c1f87fddc722782025cfa6d7a8a"
+        },
+        {
+          "tag": "A",
+          "text": "Sign In",
+          "href": "/login",
+          "type": null,
+          "width": 42,
+          "height": 19,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        }
+      ],
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      }
+    }
+  },
+  {
+    "name": "login-desktop",
+    "data": {
+      "title": "Habien - Gamify Your Habits & Grow Your Life",
+      "url": "http://127.0.0.1:3000/login",
+      "h1Count": 0,
+      "h2Count": 0,
+      "labels": [
+        {
+          "text": "Email",
+          "for": "email"
+        },
+        {
+          "text": "Password",
+          "for": "password"
+        }
+      ],
+      "inputs": [
+        {
+          "id": "email",
+          "name": "email",
+          "type": "email",
+          "required": true,
+          "placeholder": "email@example.com",
+          "autocomplete": ""
+        },
+        {
+          "id": "password",
+          "name": "password",
+          "type": "password",
+          "required": true,
+          "placeholder": "",
+          "autocomplete": ""
+        }
+      ],
+      "interactive": [
+        {
+          "tag": "INPUT",
+          "text": "email@example.com",
+          "href": null,
+          "type": "email",
+          "width": 398,
+          "height": 36,
+          "ariaLabel": null,
+          "id": "email",
+          "name": "email"
+        },
+        {
+          "tag": "INPUT",
+          "text": "",
+          "href": null,
+          "type": "password",
+          "width": 398,
+          "height": 36,
+          "ariaLabel": null,
+          "id": "password",
+          "name": "password"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Sign In",
+          "href": null,
+          "type": "submit",
+          "width": 398,
+          "height": 36,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Google",
+          "href": null,
+          "type": null,
+          "width": 398,
+          "height": 36,
+          "ariaLabel": null,
+          "id": "",
+          "name": "$ACTION_ID_002c08eb2168639c1f87fddc722782025cfa6d7a8a"
+        },
+        {
+          "tag": "A",
+          "text": "Sign Up",
+          "href": "/signup",
+          "type": null,
+          "width": 49,
+          "height": 19,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        }
+      ],
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      }
+    }
+  },
+  {
+    "name": "landing-mobile",
+    "data": {
+      "title": "Habien - Gamify Your Habits & Grow Your Life",
+      "url": "http://127.0.0.1:3000/",
+      "h1Count": 1,
+      "h2Count": 3,
+      "labels": [
+        {
+          "text": "Monthly",
+          "for": "billing-toggle"
+        },
+        {
+          "text": "Yearly (Save 20%)",
+          "for": "billing-toggle"
+        }
+      ],
+      "inputs": [
+        {
+          "id": "",
+          "name": "",
+          "type": "checkbox",
+          "required": false,
+          "placeholder": "",
+          "autocomplete": ""
+        }
+      ],
+      "interactive": [
+        {
+          "tag": "A",
+          "text": "Sign In",
+          "href": "/login",
+          "type": null,
+          "width": 76,
+          "height": 36,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        },
+        {
+          "tag": "A",
+          "text": "Get Started",
+          "href": "/signup",
+          "type": null,
+          "width": 104,
+          "height": 36,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        },
+        {
+          "tag": "A",
+          "text": "Start Growing Free",
+          "href": "/signup",
+          "type": null,
+          "width": 217,
+          "height": 48,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        },
+        {
+          "tag": "A",
+          "text": "View Pricing",
+          "href": "#pricing",
+          "type": null,
+          "width": 217,
+          "height": 50,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "",
+          "href": null,
+          "type": "button",
+          "width": 36,
+          "height": 20,
+          "ariaLabel": null,
+          "id": "billing-toggle",
+          "name": null
+        },
+        {
+          "tag": "INPUT",
+          "text": "",
+          "href": null,
+          "type": "checkbox",
+          "width": 13,
+          "height": 13,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        },
+        {
+          "tag": "A",
+          "text": "Start Free",
+          "href": "/signup",
+          "type": null,
+          "width": 308,
+          "height": 36,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Subscribe to Pro",
+          "href": null,
+          "type": null,
+          "width": 323,
+          "height": 38,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Subscribe to Premium",
+          "href": null,
+          "type": null,
+          "width": 308,
+          "height": 36,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        },
+        {
+          "tag": "A",
+          "text": "Privacy",
+          "href": "/privacy",
+          "type": null,
+          "width": 43,
+          "height": 20,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        },
+        {
+          "tag": "A",
+          "text": "Terms",
+          "href": "/terms",
+          "type": null,
+          "width": 36,
+          "height": 20,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        },
+        {
+          "tag": "A",
+          "text": "Refunds",
+          "href": "/refund",
+          "type": null,
+          "width": 50,
+          "height": 20,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        },
+        {
+          "tag": "A",
+          "text": "Contact",
+          "href": "mailto:support@habitgarden.com",
+          "type": null,
+          "width": 48,
+          "height": 20,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        }
+      ],
+      "viewport": {
+        "width": 390,
+        "height": 664
+      }
+    }
+  },
+  {
+    "name": "signup-mobile",
+    "data": {
+      "title": "Habien - Gamify Your Habits & Grow Your Life",
+      "url": "http://127.0.0.1:3000/signup",
+      "h1Count": 0,
+      "h2Count": 0,
+      "labels": [
+        {
+          "text": "Email",
+          "for": "email"
+        },
+        {
+          "text": "Password",
+          "for": "password"
+        }
+      ],
+      "inputs": [
+        {
+          "id": "email",
+          "name": "email",
+          "type": "email",
+          "required": true,
+          "placeholder": "email@example.com",
+          "autocomplete": ""
+        },
+        {
+          "id": "password",
+          "name": "password",
+          "type": "password",
+          "required": true,
+          "placeholder": "At least 6 characters",
+          "autocomplete": ""
+        }
+      ],
+      "interactive": [
+        {
+          "tag": "INPUT",
+          "text": "email@example.com",
+          "href": null,
+          "type": "email",
+          "width": 340,
+          "height": 36,
+          "ariaLabel": null,
+          "id": "email",
+          "name": "email"
+        },
+        {
+          "tag": "INPUT",
+          "text": "At least 6 characters",
+          "href": null,
+          "type": "password",
+          "width": 340,
+          "height": 36,
+          "ariaLabel": null,
+          "id": "password",
+          "name": "password"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Create Account",
+          "href": null,
+          "type": "submit",
+          "width": 340,
+          "height": 36,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Google",
+          "href": null,
+          "type": null,
+          "width": 340,
+          "height": 36,
+          "ariaLabel": null,
+          "id": "",
+          "name": "$ACTION_ID_002c08eb2168639c1f87fddc722782025cfa6d7a8a"
+        },
+        {
+          "tag": "A",
+          "text": "Sign In",
+          "href": "/login",
+          "type": null,
+          "width": 42,
+          "height": 19,
+          "ariaLabel": null,
+          "id": "",
+          "name": null
+        }
+      ],
+      "viewport": {
+        "width": 390,
+        "height": 664
+      }
+    }
+  },
+  {
+    "name": "signup-empty-submit-validation",
+    "data": {
+      "activeTag": "INPUT",
+      "activeId": "email",
+      "emailValidation": "Please fill out this field.",
+      "passwordValidation": "Please fill out this field.",
+      "url": "http://127.0.0.1:3000/signup"
+    }
+  }
+]

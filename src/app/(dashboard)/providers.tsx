@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic'
 import { MoodProvider } from '@/lib/context/mood-context'
 import { GardenSettingsProvider } from '@/lib/context/garden-settings-context'
-import { SubscriptionProvider } from '@/lib/context/subscription-context'
+import { SubscriptionProvider, useUpgradeModalState } from '@/lib/context/subscription-context'
 import { DashboardDataProvider } from '@/lib/context/dashboard-data-context'
 import { InventoryProvider } from '@/lib/context/inventory-context'
 import { DevDebugProvider } from '@/components/dev/dev-debug-context'
@@ -19,6 +19,11 @@ const UpgradeModalContainer = dynamic(
   () => import('@/components/game-ui/upgrade-modal-container').then(m => ({ default: m.UpgradeModalContainer })),
   { ssr: false }
 )
+
+function UpgradeModalBoundary() {
+  const { open } = useUpgradeModalState()
+  return open ? <UpgradeModalContainer /> : null
+}
 
 interface DashboardProvidersProps {
   children: ReactNode
@@ -52,7 +57,7 @@ export function DashboardProviders({
                 {/* Dev Debug Panel - only renders in development */}
                 <DevDebugPanel />
                 {/* Global upgrade modal */}
-                <UpgradeModalContainer />
+                <UpgradeModalBoundary />
               </InventoryProvider>
             </GardenSettingsProvider>
           </MoodProvider>

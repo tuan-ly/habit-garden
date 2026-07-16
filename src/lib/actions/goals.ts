@@ -1,10 +1,9 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
-import type { Goal, GoalLog, CreateGoalDto, LogGoalDto, GoalMode, ProgressionType } from '@/types/database'
+import type { Goal, GoalLog, CreateGoalDto, LogGoalDto, PlantStatus, PlantType } from '@/types/database'
 import { getAuthUser } from '@/lib/auth-cached'
-import { calculateTarget, generateProgressionPlan, type ProgressionType as ProgType } from '@/lib/progression'
+import { generateProgressionPlan, type ProgressionType as ProgType } from '@/lib/progression'
 import { calculateWateringXp, calculateNoteBonus } from '@/lib/xp-system'
 import { getTodayWeather, calculateWeatherXp } from '@/lib/weather-system'
 import { getPeriodInfo, getPeriodTarget } from '@/lib/goal-utils'
@@ -47,6 +46,25 @@ export interface GoalStatistics {
   weeklyProgress: number
   weeksCompleted: number
   weeklyTrend: 'up' | 'down' | 'stable'
+}
+
+type LogGoalPlant = {
+  id: string
+  user_id: string
+  plant_type_id: string
+  current_moisture: number
+  current_streak: number
+  longest_streak: number
+  total_waterings: number
+  growth_percentage: number
+  status: PlantStatus
+  matured_at: string | null
+  last_watered_at: string | null
+  plant_type: Pick<PlantType, 'moisture_boost' | 'maturity_days'> | Array<Pick<PlantType, 'moisture_boost' | 'maturity_days'>> | null
+}
+
+type GoalOwnerPlant = {
+  user_id: string
 }
 
 // Create a goal for a plant
@@ -119,7 +137,6 @@ export async function createGoal(dto: CreateGoalDto): Promise<{ success: boolean
     .update({ goal_mode: dto.goal_mode })
     .eq('id', dto.plant_id)
 
-  revalidatePath('/garden')
   return { success: true, goal: goal as Goal }
 }
 
@@ -154,6 +171,7 @@ export async function logGoalValue(dto: LogGoalDto): Promise<{
         total_waterings,
         growth_percentage,
         status,
+        matured_at,
         last_watered_at,
         plant_type:plant_types(*)
       )
@@ -165,7 +183,12 @@ export async function logGoalValue(dto: LogGoalDto): Promise<{
     return { success: false, error: 'Goal not found' }
   }
 
-  const plant = goal.plant as any
+  const plantRelation = goal.plant as LogGoalPlant | LogGoalPlant[] | null
+  const plant = Array.isArray(plantRelation) ? plantRelation[0] : plantRelation
+  if (!plant) {
+    return { success: false, error: 'Plant not found' }
+  }
+
   if (plant.user_id !== user.id) {
     return { success: false, error: 'Unauthorized' }
   }
@@ -173,15 +196,17 @@ export async function logGoalValue(dto: LogGoalDto): Promise<{
   const today = new Date().toISOString().split('T')[0]
 
   // Goal plants allow multiple logs per day (multi-log support)
-  // Check if already watered today (for plant watering, not goal logging)
-  const { data: existingWatering } = await supabase
-    .from('watering_logs')
+  // Check if the plant already has activity today (for plant watering effects, not goal logging)
+  const { data: existingActivity } = await supabase
+    .from('activity_logs')
     .select('id')
     .eq('plant_id', plant.id)
-    .eq('watered_date', today)
-    .single()
+    .eq('user_id', user.id)
+    .eq('logged_date', today)
+    .limit(1)
+    .maybeSingle()
 
-  const isFirstLogToday = !existingWatering
+  const isFirstLogToday = !existingActivity
 
   // Calculate week number
   const startDate = new Date(goal.started_at)
@@ -247,7 +272,11 @@ export async function logGoalValue(dto: LogGoalDto): Promise<{
 
   // Calculate XP - first log gets full XP, subsequent logs only get note XP
   const weather = getTodayWeather()
-  const plantType = plant.plant_type
+  const plantTypeRelation = plant.plant_type
+  const plantType = Array.isArray(plantTypeRelation) ? plantTypeRelation[0] : plantTypeRelation
+  if (!plantType) {
+    return { success: false, error: 'Plant type not found' }
+  }
   const currentHour = new Date().getHours()
   const isMorning = currentHour >= 5 && currentHour < 9
 
@@ -283,6 +312,8 @@ export async function logGoalValue(dto: LogGoalDto): Promise<{
   }
 
   let totalXp = 0
+  let streakBonus = 0
+  let firstLogMorningBonus = false
 
   // Only do plant watering effects on first log of the day
   if (isFirstLogToday) {
@@ -308,6 +339,8 @@ export async function logGoalValue(dto: LogGoalDto): Promise<{
       isRainbowDay: weather.type === 'rainbow',
     })
     totalXp = calculateWeatherXp(wateringXp, weather.type)
+    streakBonus = breakdown.streakBonus || 0
+    firstLogMorningBonus = isMorning
 
     // Add bonuses for first log only
     if (isPersonalRecord) totalXp += 25
@@ -323,19 +356,6 @@ export async function logGoalValue(dto: LogGoalDto): Promise<{
     const newGrowth = Math.min(100, plant.growth_percentage + weatherGrowth)
     const totalWaterings = plant.total_waterings + 1
     const hasMatured = newGrowth >= 100 && plant.status !== 'mature' && plant.status !== 'dead'
-
-    // Create watering log (only once per day)
-    await supabase
-      .from('watering_logs')
-      .insert({
-        plant_id: plant.id,
-        user_id: user.id,
-        watered_date: today,
-        xp_earned: totalXp,
-        morning_bonus: isMorning,
-        streak_bonus: breakdown.streakBonus || 0,
-        note_bonus: noteXp,
-      })
 
     // Update plant
     await supabase
@@ -355,6 +375,28 @@ export async function logGoalValue(dto: LogGoalDto): Promise<{
   } else {
     // Subsequent logs: only note XP (no base watering XP)
     totalXp = noteXp
+  }
+
+  const { error: activityLogError } = await supabase
+    .from('activity_logs')
+    .insert({
+      plant_id: plant.id,
+      season_id: goal.id,
+      user_id: user.id,
+      activity_type: 'progress',
+      logged_date: today,
+      value: dto.value,
+      notes: dto.notes || null,
+      xp_earned: totalXp,
+      is_first_of_day: isFirstLogToday,
+      is_personal_record: isPersonalRecord,
+      morning_bonus: firstLogMorningBonus,
+      streak_bonus: streakBonus,
+    })
+
+  if (activityLogError) {
+    console.error('Error creating activity log:', activityLogError)
+    return { success: false, error: activityLogError.message }
   }
 
   // Update user XP and journal tracking in profiles table
@@ -400,7 +442,6 @@ export async function logGoalValue(dto: LogGoalDto): Promise<{
       .eq('id', user.id)
   }
 
-  revalidatePath('/garden')
   return {
     success: true,
     xpEarned: totalXp,
@@ -427,7 +468,10 @@ export async function getGoalStats(goalId: string): Promise<GoalStatistics | nul
     .eq('id', goalId)
     .single()
 
-  if (goalError || !goal || (goal.plant as any).user_id !== user.id) {
+  const ownerPlantRelation = goal?.plant as GoalOwnerPlant | GoalOwnerPlant[] | null | undefined
+  const ownerPlant = Array.isArray(ownerPlantRelation) ? ownerPlantRelation[0] : ownerPlantRelation
+
+  if (goalError || !goal || !ownerPlant || ownerPlant.user_id !== user.id) {
     return null
   }
 
@@ -643,17 +687,21 @@ export async function getGoalsForPlants(plantIds: string[]): Promise<Map<string,
     .from('goals')
     .select('*')
     .in('plant_id', plantIds)
+    .eq('season_status', 'active')
 
   if (error || !goals || goals.length === 0) return result
 
   // Fetch all logs for all goals in one query
   const goalIds = goals.map(g => g.id)
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+  const earliestPeriodStart = goals.reduce((earliest, goal) => {
+    const periodStart = getPeriodInfo(goal as Goal).periodStart
+    return periodStart < earliest ? periodStart : earliest
+  }, new Date())
   const { data: allLogs } = await supabase
     .from('goal_logs')
     .select('goal_id, value, is_personal_record, logged_at')
     .in('goal_id', goalIds)
-    .gte('logged_at', thirtyDaysAgo)
+    .gte('logged_at', earliestPeriodStart.toISOString())
 
   // Group logs by goal_id
   const logsByGoal = new Map<string, Pick<GoalLog, 'value' | 'is_personal_record' | 'logged_at'>[]>()
@@ -778,6 +826,5 @@ export async function modifyGoal(dto: {
     return { success: false, error: error.message }
   }
 
-  revalidatePath('/garden')
   return { success: true, goal: goal as Goal }
 }

@@ -11,6 +11,7 @@ interface ZoomControlsProps {
   onZoomOut: () => void
   onReset: () => void
   className?: string
+  sanctuary?: boolean
 }
 
 export function ZoomControls({
@@ -21,6 +22,7 @@ export function ZoomControls({
   onZoomOut,
   onReset,
   className,
+  sanctuary = false,
 }: ZoomControlsProps) {
   const canZoomIn = zoom < maxZoom
   const canZoomOut = zoom > minZoom
@@ -30,7 +32,9 @@ export function ZoomControls({
     <div
       className={cn(
         'flex flex-col items-center gap-1 p-1.5 rounded-xl',
-        'bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 shadow-lg',
+        sanctuary
+          ? 'bg-[#fffaf0]/90 backdrop-blur-xl border border-white/70 shadow-lg'
+          : 'bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 shadow-lg',
         className
       )}
     >
@@ -41,7 +45,7 @@ export function ZoomControls({
         className={cn(
           'w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200',
           canZoomIn
-            ? 'text-white hover:bg-slate-700/50 active:scale-95'
+            ? sanctuary ? 'text-[#49693f] hover:bg-[#e8efdd] active:scale-95' : 'text-white hover:bg-slate-700/50 active:scale-95'
             : 'text-slate-600 cursor-not-allowed'
         )}
         aria-label="Zoom in"
@@ -50,7 +54,7 @@ export function ZoomControls({
       </button>
 
       {/* Zoom percentage indicator */}
-      <div className="px-1 py-0.5 text-[10px] font-medium text-slate-400 select-none">
+      <div className={cn('px-1 py-0.5 text-[10px] font-medium select-none', sanctuary ? 'text-[#67805d]' : 'text-slate-400')}>
         {Math.round(zoom * 100)}%
       </div>
 
@@ -61,7 +65,7 @@ export function ZoomControls({
         className={cn(
           'w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200',
           canZoomOut
-            ? 'text-white hover:bg-slate-700/50 active:scale-95'
+            ? sanctuary ? 'text-[#49693f] hover:bg-[#e8efdd] active:scale-95' : 'text-white hover:bg-slate-700/50 active:scale-95'
             : 'text-slate-600 cursor-not-allowed'
         )}
         aria-label="Zoom out"
@@ -79,7 +83,7 @@ export function ZoomControls({
         className={cn(
           'w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200',
           !isDefaultZoom
-            ? 'text-white hover:bg-slate-700/50 active:scale-95'
+            ? sanctuary ? 'text-[#49693f] hover:bg-[#e8efdd] active:scale-95' : 'text-white hover:bg-slate-700/50 active:scale-95'
             : 'text-slate-600 cursor-not-allowed'
         )}
         aria-label="Reset zoom"

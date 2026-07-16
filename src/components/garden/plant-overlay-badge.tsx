@@ -2,12 +2,11 @@
 
 import { memo } from 'react'
 import { cn, isToday } from '@/lib/utils'
+import { formatGoalValue, getRemainingGoalValue } from '@/lib/goal-progress'
 import type { PlantWithType } from '@/types/database'
 
 interface PlantOverlayBadgeProps {
   plant: PlantWithType
-  todayLogCount?: number
-  todayValue?: number
   className?: string
   /** Tile size for scaling the badge (default 60) */
   tileSize?: number
@@ -22,8 +21,6 @@ interface PlantOverlayBadgeProps {
  */
 function PlantOverlayBadgeComponent({
   plant,
-  todayLogCount = 0,
-  todayValue,
   className,
   tileSize = 60,
 }: PlantOverlayBadgeProps) {
@@ -86,15 +83,15 @@ function PlantOverlayBadgeComponent({
   }
 
   // Goal plant - wooden tag SVG grounded below plant
-  const currentWeekTarget = Math.round(goal?.current_week_target || 0)
-  const displayValue = todayValue ?? 0
-  const hasReachedTarget = currentWeekTarget > 0 && displayValue >= currentWeekTarget
-
-  const label = todayLogCount === 0
-    ? `${currentWeekTarget > 0 ? currentWeekTarget : '?'}`
+  const currentPeriodTarget = goal?.current_period_target || 0
+  const periodProgress = goal?.period_progress || 0
+  const remaining = getRemainingGoalValue(periodProgress, currentPeriodTarget)
+  const hasReachedTarget = currentPeriodTarget > 0 && remaining === 0
+  const label = currentPeriodTarget <= 0
+    ? '?'
     : hasReachedTarget
-      ? `✓ ${displayValue}`
-      : `${displayValue}/${currentWeekTarget}`
+      ? 'Done'
+      : `${formatGoalValue(remaining)} ${goal?.unit || ''} left`.trim()
 
   // Dimensions for wooden tag
   const tagW = (label.length * 5.5 + 14) * scale * 2

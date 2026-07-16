@@ -17,10 +17,20 @@ import { Minus, Plus, Trophy, Target, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { GoalWithStats } from '@/lib/actions/goals'
 import { logGoalValue } from '@/lib/actions/goals'
+import {
+  applyGoalLogToPeriod,
+  formatGoalValue,
+  getGoalLogCopy,
+  getRemainingGoalValue,
+} from '@/lib/goal-progress'
+import { showGoalLogToast } from '@/components/plants/water-toast'
 import { toast } from 'sonner'
 
 interface GoalLogModalProps {
   goal: GoalWithStats
+  plantName: string
+  plantIcon?: string
+  consistencyDayAdded?: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess?: () => void
@@ -28,6 +38,9 @@ interface GoalLogModalProps {
 
 export function GoalLogModal({
   goal,
+  plantName,
+  plantIcon,
+  consistencyDayAdded = false,
   open,
   onOpenChange,
   onSuccess,
@@ -69,20 +82,22 @@ export function GoalLogModal({
           exceededTarget: res.exceededTarget,
         })
 
-        // Show celebration toast
-        if (res.isPersonalRecord) {
-          toast.success('Personal Record!', {
-            description: `+${res.xpEarned} XP earned. New PR: ${numValue} ${goal.unit}!`,
-          })
-        } else if (res.exceededTarget) {
-          toast.success('Target exceeded!', {
-            description: `+${res.xpEarned} XP earned`,
-          })
-        } else {
-          toast.success('Progress logged!', {
-            description: `+${res.xpEarned} XP earned`,
-          })
-        }
+        showGoalLogToast({
+          plantName,
+          plantIcon,
+          value: numValue,
+          unit: goal.unit,
+          xpEarned: res.xpEarned || 0,
+          isPersonalRecord: res.isPersonalRecord,
+          periodProgress: applyGoalLogToPeriod(
+            goal.goal_mode,
+            goal.periodProgress,
+            numValue
+          ),
+          periodTarget: goal.currentPeriodTarget,
+          periodLabel: goal.periodLabel,
+          consistencyDayAdded,
+        })
 
         // Reset and close after a brief delay for celebration
         setTimeout(() => {
@@ -101,11 +116,21 @@ export function GoalLogModal({
   }
 
   const numValue = Number(value) || 0
-  const willExceedTarget = numValue >= goal.currentWeekTarget
+  const nextPeriodProgress = applyGoalLogToPeriod(
+    goal.goal_mode,
+    goal.periodProgress,
+    numValue
+  )
+  const remainingAfterLog = getRemainingGoalValue(
+    nextPeriodProgress,
+    goal.currentPeriodTarget
+  )
+  const willExceedTarget = numValue > 0 && remainingAfterLog === 0
   const willBePR =
     goal.goal_mode === 'build_capacity' &&
     goal.tracking_metric === 'max' &&
     numValue > Number(goal.current_value)
+  const goalLogCopy = getGoalLogCopy(goal.goal_mode, goal.unit)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -141,9 +166,7 @@ export function GoalLogModal({
             )}
           </DialogTitle>
           <DialogDescription>
-            {goal.goal_mode === 'build_capacity'
-              ? `Week ${goal.weekNumber} target: ${goal.currentWeekTarget.toFixed(1)} ${goal.unit}`
-              : `Progress: ${Number(goal.current_value).toFixed(1)} / ${goal.target_value} ${goal.unit}`}
+            {goal.periodLabel} target: {formatGoalValue(goal.currentPeriodTarget)} {goal.unit}
           </DialogDescription>
         </DialogHeader>
 
@@ -151,11 +174,8 @@ export function GoalLogModal({
           <div className="space-y-4 py-4">
             {/* Value input with +/- buttons */}
             <div className="space-y-2">
-              <Label htmlFor="value">
-                {goal.goal_mode === 'build_capacity'
-                  ? `Today's ${goal.unit}`
-                  : `Amount to add (${goal.unit})`}
-              </Label>
+              <Label htmlFor="value">{goalLogCopy.label}</Label>
+              <p className="text-xs text-muted-foreground">{goalLogCopy.hint}</p>
               <div className="flex items-center gap-2">
                 <Button
                   type="button"
@@ -228,11 +248,11 @@ export function GoalLogModal({
                 ) : willExceedTarget ? (
                   <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
                     <Sparkles className="h-4 w-4" />
-                    <span className="text-sm font-medium">Exceeds weekly target!</span>
+                    <span className="text-sm font-medium">{goal.periodLabel} target complete!</span>
                   </div>
                 ) : (
                   <div className="text-sm text-muted-foreground">
-                    {(goal.currentWeekTarget - numValue).toFixed(1)} {goal.unit} more to hit target
+                    {formatGoalValue(remainingAfterLog)} {goal.unit} left in {goal.periodLabel}
                   </div>
                 )}
               </div>

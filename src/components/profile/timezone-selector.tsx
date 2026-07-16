@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Globe, Check, ChevronDown } from 'lucide-react'
+import { Globe, Check } from 'lucide-react'
 import { updateTimezone } from '@/lib/actions/profile'
 import { toast } from 'sonner'
 import {
@@ -59,9 +59,9 @@ export function TimezoneSelector({ currentTimezone }: TimezoneSelectorProps) {
     startTransition(async () => {
       const result = await updateTimezone(value)
       if (result.success) {
-        toast.success('Timezone updated')
+        toast.success('Đã cập nhật múi giờ')
       } else {
-        toast.error(result.error || 'Failed to update timezone')
+        toast.error(result.error || 'Chưa thể cập nhật múi giờ')
         setTimezone(currentTimezone) // Revert on error
       }
     })
@@ -70,27 +70,27 @@ export function TimezoneSelector({ currentTimezone }: TimezoneSelectorProps) {
   const currentTz = TIMEZONES.find(tz => tz.value === timezone)
 
   return (
-    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-xl sm:rounded-2xl p-3 sm:p-5 border border-white/20 dark:border-slate-700/50 shadow-lg">
-      <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-purple-400 to-indigo-500 flex items-center justify-center shadow-md shadow-purple-500/30">
-          <Globe className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+    <div>
+      <div className="mb-4 flex items-center gap-3">
+        <div className="grid h-10 w-10 place-items-center rounded-2xl bg-[#dfe9d3] text-[#5f854f]">
+          <Globe className="h-5 w-5" />
         </div>
         <div>
-          <h2 className="text-sm sm:text-base font-bold">Timezone</h2>
-          <p className="text-[10px] sm:text-xs text-slate-500">Your local time for plant care</p>
+          <h3 className="font-bold text-[#40583a]">Múi giờ</h3>
+          <p className="text-xs text-[#7a8675]">Để khu vườn theo đúng nhịp ngày của bạn</p>
         </div>
       </div>
 
       <Select value={timezone} onValueChange={handleChange} disabled={isPending}>
-        <SelectTrigger className="w-full bg-white/50 dark:bg-slate-800/50">
-          <SelectValue placeholder="Select timezone">
+        <SelectTrigger className="min-h-12 w-full rounded-2xl border-[#d7dfd0] bg-white/70">
+          <SelectValue placeholder="Chọn múi giờ">
             {currentTz?.label || timezone}
           </SelectValue>
         </SelectTrigger>
         <SelectContent>
           {['Asia', 'Americas', 'Europe', 'Oceania', 'UTC'].map(region => (
             <div key={region}>
-              <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 bg-slate-50 dark:bg-slate-800">
+              <div className="bg-[#edf1e7] px-2 py-1.5 text-xs font-semibold text-[#6c7967]">
                 {region}
               </div>
               {TIMEZONES.filter(tz => tz.region === region).map(tz => (
@@ -106,8 +106,8 @@ export function TimezoneSelector({ currentTimezone }: TimezoneSelectorProps) {
         </SelectContent>
       </Select>
 
-      <p className="text-[10px] sm:text-xs text-slate-400 mt-2">
-        Plants are evaluated at midnight in your timezone. Water before midnight to keep your streak!
+      <p className="mt-3 text-xs leading-5 text-[#7b8676]">
+        Một ngày trong vườn khép lại lúc nửa đêm theo múi giờ này. Nếu lỡ hôm nay, cây chỉ nghỉ và chờ bạn trở lại.
       </p>
     </div>
   )

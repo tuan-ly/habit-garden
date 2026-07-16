@@ -13,8 +13,6 @@ import {
   getTierUnlockLevel,
   getGardenSize,
   getGardenSizeName,
-  getUnlockedDecorations,
-  isDecorationUnlocked,
   getLevelUnlocks,
   hasLevelUnlocks,
   getNextUnlockLevel,
@@ -485,72 +483,6 @@ describe('Garden Size Name (getGardenSizeName)', () => {
 })
 
 // ============================================
-// Decoration Unlocks Tests
-// ============================================
-
-describe('Decoration Unlocks (getUnlockedDecorations)', () => {
-  it('basic decorations (bush, rock) at level 1', () => {
-    const decos = getUnlockedDecorations(1)
-    expect(decos).toContain('bush')
-    expect(decos).toContain('rock')
-    expect(decos).toHaveLength(2)
-  })
-
-  it('mushrooms and flowers at level 5', () => {
-    const decos = getUnlockedDecorations(5)
-    expect(decos).toContain('mushroom')
-    expect(decos).toContain('flower-patch')
-    expect(decos).toHaveLength(4)
-  })
-
-  it('lanterns at level 8', () => {
-    const decos = getUnlockedDecorations(8)
-    expect(decos).toContain('lantern')
-    expect(decos).toHaveLength(5)
-  })
-
-  it('fences at level 10', () => {
-    const decos = getUnlockedDecorations(10)
-    expect(decos).toContain('fence-post')
-    expect(decos).toContain('fence-corner')
-    expect(decos).toHaveLength(7)
-  })
-
-  it('water features at level 12', () => {
-    const decos = getUnlockedDecorations(12)
-    expect(decos).toContain('pond')
-    expect(decos).toContain('fountain')
-    expect(decos).toHaveLength(9) // All decorations
-  })
-})
-
-// ============================================
-// Decoration Unlock Check Tests
-// ============================================
-
-describe('Decoration Unlock Check (isDecorationUnlocked)', () => {
-  it('bush is unlocked at level 1', () => {
-    expect(isDecorationUnlocked(1, 'bush')).toBe(true)
-  })
-
-  it('lantern is not unlocked at level 7', () => {
-    expect(isDecorationUnlocked(7, 'lantern')).toBe(false)
-  })
-
-  it('lantern is unlocked at level 8', () => {
-    expect(isDecorationUnlocked(8, 'lantern')).toBe(true)
-  })
-
-  it('fountain is not unlocked at level 11', () => {
-    expect(isDecorationUnlocked(11, 'fountain')).toBe(false)
-  })
-
-  it('fountain is unlocked at level 12', () => {
-    expect(isDecorationUnlocked(12, 'fountain')).toBe(true)
-  })
-})
-
-// ============================================
 // Level Unlocks Tests
 // ============================================
 
@@ -571,17 +503,11 @@ describe('Level Unlocks (getLevelUnlocks)', () => {
     expect(unlocks.some((u) => u.name === 'Tier 2 Plants')).toBe(true)
   })
 
-  it('level 8 unlocks lanterns', () => {
-    const unlocks = getLevelUnlocks(8)
-    expect(unlocks.some((u) => u.name === 'Garden Lanterns')).toBe(true)
-  })
-
-  it('level 12 has multiple unlocks', () => {
+  it('level 12 unlocks the fifth slot and unlimited garden', () => {
     const unlocks = getLevelUnlocks(12)
-    expect(unlocks.length).toBeGreaterThan(2)
+    expect(unlocks).toHaveLength(2)
     expect(unlocks.some((u) => u.type === 'slot')).toBe(true)
     expect(unlocks.some((u) => u.type === 'garden')).toBe(true)
-    expect(unlocks.some((u) => u.type === 'decoration')).toBe(true)
   })
 
   it('level 15 unlocks unlimited slots', () => {
@@ -589,9 +515,9 @@ describe('Level Unlocks (getLevelUnlocks)', () => {
     expect(unlocks.some((u) => u.name === 'Unlimited Slots')).toBe(true)
   })
 
-  it('level 3 has no special unlocks', () => {
+  it('level 3 unlocks the crafting workshop', () => {
     const unlocks = getLevelUnlocks(3)
-    expect(unlocks).toHaveLength(0)
+    expect(unlocks.some((u) => u.name === 'Crafting Workshop')).toBe(true)
   })
 })
 
@@ -608,7 +534,7 @@ describe('Has Level Unlocks (hasLevelUnlocks)', () => {
 
   it('returns false for levels without unlocks', () => {
     expect(hasLevelUnlocks(2)).toBe(false)
-    expect(hasLevelUnlocks(3)).toBe(false)
+    expect(hasLevelUnlocks(3)).toBe(true)
     expect(hasLevelUnlocks(11)).toBe(false)
   })
 })

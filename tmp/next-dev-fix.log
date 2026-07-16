@@ -1,0 +1,30 @@
+▲ Next.js 16.1.1 (Turbopack)
+- Local:         http://127.0.0.1:3001
+- Network:       http://127.0.0.1:3001
+- Environments: .env.local
+
+✓ Starting...
+✓ Ready in 8.9s
+○ Compiling /garden ...
+ GET /login 200 in 1651ms (compile: 1421ms, render: 230ms)
+ GET /garden 307 in 265ms (compile: 8ms, render: 257ms)
+ GET /login 200 in 167ms (compile: 6ms, render: 161ms)
+ POST /login 200 in 239ms (compile: 7ms, render: 232ms)
+ GET /garden 307 in 234ms (compile: 7ms, render: 226ms)
+ GET /login 200 in 121ms (compile: 5ms, render: 115ms)
+ GET /garden 200 in 1828ms (compile: 11ms, render: 1818ms)
+ GET /login 200 in 157ms (compile: 5ms, render: 152ms)
+ GET /garden 200 in 1067ms (compile: 8ms, render: 1059ms)
+ POST /login 303 in 1655ms (compile: 6ms, render: 1648ms)
+ POST /garden 200 in 602ms (compile: 11ms, render: 590ms)
+ POST /garden 200 in 564ms (compile: 11ms, render: 553ms)
+ GET /login 200 in 152ms (compile: 5ms, render: 146ms)
+ GET /garden 200 in 1326ms (compile: 8ms, render: 1318ms)
+ POST /login 303 in 3.0s (compile: 7ms, render: 3.0s)
+ POST /garden 200 in 532ms (compile: 12ms, render: 520ms)
+ POST /garden 200 in 516ms (compile: 8ms, render: 508ms)
+ POST /garden 200 in 836ms (compile: 11ms, render: 825ms)
+ POST /garden 200 in 6.9s (compile: 11ms, render: 6.9s)
+ POST /garden 200 in 533ms (compile: 9ms, render: 525ms)
+ POST /garden 200 in 481ms (compile: 6ms, render: 475ms)
+ POST /garden 200 in 468ms (compile: 7ms, render: 461ms)
