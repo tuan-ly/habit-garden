@@ -31,6 +31,8 @@ Không đặt database password, service-role key hoặc access token trong Git.
 5. Chạy `supabase db push --dry-run` để phát hiện pending migration hoặc drift.
 6. Chỉ apply khi chạy workflow thủ công với `apply=true`; job production có thể được bảo vệ bằng required reviewer.
 
+Trong lần bootstrap duy nhất, base branch chưa có `config/supabase-migration-ledger.json`, nên workflow cho phép thay local history bằng remote-authoritative history. Ngoại lệ tự đóng sau lần merge đầu: khi base đã có ledger, mọi sửa, xóa hoặc đổi tên migration cũ tiếp tục bị chặn.
+
 ## Legacy baseline
 
 Remote history còn một version 8 chữ số (`20260712`) giữa các version 14 chữ số. Đây là legacy exception duy nhất được ghi trong `config/supabase-migration-ledger.json`.

@@ -49,8 +49,23 @@ jobs:
       - name: Validate migration files
         run: node scripts/check-supabase-migrations.mjs
 
-      - name: Protect existing migration history
+      - name: Detect first ledger bootstrap
         if: github.event_name == 'pull_request'
+        id: ledger_bootstrap
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="origin/${{ github.base_ref }}"
+          if git cat-file -e "$base:config/supabase-migration-ledger.json" 2>/dev/null; then
+            echo "base_has_ledger=true" >> "$GITHUB_OUTPUT"
+            echo "Base branch already has a migration ledger; enforcing immutable history."
+          else
+            echo "base_has_ledger=false" >> "$GITHUB_OUTPUT"
+            echo "Base branch has no migration ledger; allowing the one-time bootstrap reconciliation."
+          fi
+
+      - name: Protect existing migration history
+        if: github.event_name == 'pull_request' && steps.ledger_bootstrap.outputs.base_has_ledger == 'true'
         shell: bash
         run: |
           set -euo pipefail
