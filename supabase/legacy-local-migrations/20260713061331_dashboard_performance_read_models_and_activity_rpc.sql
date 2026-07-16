@@ -62,11 +62,21 @@ AS $$
           AND ml.date = ((now() AT TIME ZONE COALESCE(
             (SELECT p.timezone FROM public.profiles p WHERE p.id = (SELECT auth.uid())),
             'Asia/Ho_Chi_Minh'
-        ))::date)
+          ))::date)
         LIMIT 1
       ),
-      -- energy_logs was an early compatibility table and is absent from some
-      -- production schemas even when its historical migration is recorded.
+      (
+        SELECT CASE el.energy_level
+          WHEN 4 THEN 5 WHEN 3 THEN 4 WHEN 2 THEN 3 WHEN 1 THEN 2 ELSE 3
+        END
+        FROM public.energy_logs el
+        WHERE el.user_id = (SELECT auth.uid())
+          AND el.date = ((now() AT TIME ZONE COALESCE(
+            (SELECT p.timezone FROM public.profiles p WHERE p.id = (SELECT auth.uid())),
+            'Asia/Ho_Chi_Minh'
+          ))::date)
+        LIMIT 1
+      ),
       3
     ),
     'plant_types', COALESCE((

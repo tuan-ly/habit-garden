@@ -39,6 +39,14 @@ Habit Garden uses a project-scoped migration ledger. Local SQL files remain in `
 
 Project targeting comes from repository secrets rather than a developer-global link. See `docs/SUPABASE-MIGRATION-LEDGER.md` for setup and the one-time legacy baseline procedure.
 
+The first linked audit on 2026-07-16 found 18 local-only and 51 remote-only ledger rows, with legacy 8/14-digit timestamp histories and duplicate local versions. A failed dry-run was treated as a deployment gate, not permission to run `migration repair` blindly.
+
+The reconciliation fetched all 51 authoritative SQL entries from the remote history table, archived the 18 former local files outside the execution path, and reintroduced only three verified pending changes after the remote baseline. All 54 migrations replayed successfully on local Postgres before the three pending versions were applied remotely. The final remote ledger is aligned 54/54 and a linked dry-run reports no pending migration. No remote history row was repaired or deleted.
+
+The production schema no longer contains the legacy `energy_logs` table even though an old ledger entry created it. Dashboard read models therefore depend on `mood_logs` only. Treat the current schema plus the reconciled ledger as authoritative; do not reintroduce a runtime dependency merely because an earlier migration once created it.
+
+Database advisors currently report WARN-only legacy backlog: broad `SECURITY DEFINER` execute grants, disabled leaked-password protection, and a duplicate `goal_logs` index. Review RPC call sites before revoking grants; this is a separate security-hardening change from migration reconciliation.
+
 ## Existing Migration Themes
 
 The migration history includes:

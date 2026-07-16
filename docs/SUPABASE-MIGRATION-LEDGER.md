@@ -11,11 +11,12 @@
 
 ## Repository secrets
 
-Thêm ba secret trong GitHub repository settings:
+Thêm hai secret trong GitHub repository settings:
 
 - `SUPABASE_ACCESS_TOKEN`
 - `SUPABASE_DB_PASSWORD`
-- `SUPABASE_PROJECT_ID` = `jkhkfsfjnilbfqfatonb`
+
+Project ref `jkhkfsfjnilbfqfatonb` không phải secret và được khai báo trực tiếp trong workflow của repo này để audit luôn có target rõ ràng.
 
 Không đặt database password, service-role key hoặc access token trong Git.
 
@@ -32,13 +33,41 @@ Không đặt database password, service-role key hoặc access token trong Git.
 
 ## Legacy baseline
 
-Repo hiện có hai version collision cũ: `20260212` và `20260419`. Chúng được ghi rõ trong `config/supabase-migration-ledger.json` để audit tiếp tục cảnh báo nhưng không giả vờ rằng lịch sử đã sạch.
+Remote history còn một version 8 chữ số (`20260712`) giữa các version 14 chữ số. Đây là legacy exception duy nhất được ghi trong `config/supabase-migration-ledger.json`.
 
-Trước lần deploy đầu tiên:
+Initial remote audit ngày 2026-07-16:
 
-1. Capture remote ledger.
-2. Đối chiếu schema thực tế với từng migration legacy.
-3. Baseline/repair migration history chỉ sau khi xác minh schema đã tồn tại.
-4. Chạy lại audit và dry-run cho tới khi không còn drift.
+- Link target: `jkhkfsfjnilbfqfatonb` (`habit-garden`).
+- Local-only rows: 18.
+- Remote-only rows: 51.
+- Exact aligned rows: 0 vì local và remote dùng hai timestamp histories khác nhau.
+- `supabase db push --dry-run` bị chặn đúng thiết kế; không migration hoặc repair nào được thực thi.
 
-Không dùng `--include-all` hoặc sửa timestamp của migration đã chạy để vượt qua baseline.
+Reconciliation ngày 2026-07-16:
+
+- Fetch đủ 51 migration SQL trực tiếp từ remote history table vào workdir tách biệt.
+- Thay active local history bằng 51 file authoritative này, không chạy `migration repair`.
+- Archive 18 file local cũ tại `supabase/legacy-local-migrations/` để giữ bằng chứng nhưng loại khỏi execution path.
+- Reintroduce ba thay đổi chưa áp dụng với version sau baseline: `20260713000000`, `20260713000100`, `20260713061331`.
+
+Deployment receipt ngày 2026-07-16:
+
+- Replay sạch toàn bộ 54 migration trên local Postgres thành công trước khi deploy.
+- Áp dụng ba migration mới lên remote: `20260713000000`, `20260713000100`, `20260713061331`.
+- Dashboard read-model migration dùng `mood_logs` làm nguồn mood duy nhất vì schema remote thực tế không còn `energy_logs`; compatibility fallback không được phép tạo dependency lên một bảng legacy đã biến mất.
+- Remote ledger sau deploy khớp 54/54 version; dry-run trả về `Remote database is up to date`.
+- Semantic verification xác nhận `mutation_receipts`, ba dashboard/garden/activity RPC, inventory zero-delete fix, decoration footprint `stone-lantern=2`, `koi-pond=3` và trigger đồng bộ đều tồn tại.
+- Không dùng `migration repair`, `--include-all`, sửa timestamp đã chạy hoặc thao tác trực tiếp bảng ledger.
+
+Lệnh push có một cảnh báo cache `pg-delta` sau khi transaction đã commit. Ledger, dry-run và semantic query độc lập đều xác nhận migration đã áp dụng thành công.
+
+## Advisor backlog
+
+Remote database advisors không có lỗi mức `ERROR`, nhưng còn 40 cảnh báo cần xử lý trong một security hardening task riêng:
+
+- 19 `SECURITY DEFINER` function có quyền execute cho `anon`.
+- 19 `SECURITY DEFINER` function có quyền execute cho `authenticated`.
+- Leaked Password Protection đang tắt.
+- `goal_logs` có một cặp duplicate index.
+
+Không tự động revoke hàng loạt trong migration baseline vì mỗi RPC cần được phân loại public/internal và kiểm tra call site trước khi thay đổi quyền production.

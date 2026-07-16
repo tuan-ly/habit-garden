@@ -40,6 +40,13 @@ for (const [version, siblings] of versions) {
   else errors.push(message)
 }
 
+const versionLengths = new Set(versions.keys().map((version) => version.length))
+if (versionLengths.size > 1) {
+  const message = `mixed migration version lengths (${[...versionLengths].sort().join(', ')} digits)`
+  if (ledgerConfig.allowLegacyMixedVersionLengths) warnings.push(`legacy ${message}`)
+  else errors.push(message)
+}
+
 for (const allowedVersion of allowedLegacyDuplicates) {
   if ((versions.get(allowedVersion)?.length ?? 0) < 2) {
     errors.push(`${allowedVersion}: legacy duplicate allowlist is stale`)
