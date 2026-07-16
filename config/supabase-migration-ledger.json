@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "projectRef": "jkhkfsfjnilbfqfatonb",
+  "allowedLegacyDuplicateVersions": [
+    "20260212",
+    "20260419"
+  ],
+  "reason": "These version collisions predate the migration ledger. Do not rename them until the remote migration history has been baselined and verified."
+}

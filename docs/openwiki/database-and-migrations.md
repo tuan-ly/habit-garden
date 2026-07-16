@@ -33,6 +33,12 @@ When adding or changing schema:
 4. Update relevant actions with explicit column lists.
 5. Add focused tests or manual verification notes for risky domain logic.
 
+## Migration Ledger
+
+Habit Garden uses a project-scoped migration ledger. Local SQL files remain in `supabase/migrations`; remote applied versions remain in `supabase_migrations.schema_migrations`. The GitHub workflow `.github/workflows/supabase-migration-ledger.yml` records both the remote ledger and a push dry-run in the job summary, rejects edits to existing migration files, and only applies migrations through a manually approved production job.
+
+Project targeting comes from repository secrets rather than a developer-global link. See `docs/SUPABASE-MIGRATION-LEDGER.md` for setup and the one-time legacy baseline procedure.
+
 ## Existing Migration Themes
 
 The migration history includes:
