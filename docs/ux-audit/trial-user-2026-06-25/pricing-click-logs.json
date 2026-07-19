@@ -1,0 +1,21 @@
+{
+  "url": "http://127.0.0.1:3000/#pricing",
+  "logs": [
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "type": "log",
+      "text": "[HMR] connected"
+    },
+    {
+      "type": "warning",
+      "text": "Paddle client token not configured. Set NEXT_PUBLIC_PADDLE_CLIENT_TOKEN in .env.local"
+    },
+    {
+      "type": "warning",
+      "text": "Paddle not configured"
+    }
+  ]
+}

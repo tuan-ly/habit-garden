@@ -1,4 +1,4 @@
-import { test as base, expect } from '@playwright/test'
+import { test as base, expect, type Page } from '@playwright/test'
 
 /**
  * Custom fixtures for Habit Garden E2E tests
@@ -13,24 +13,24 @@ export const TEST_USER = {
 
 // Extended test fixture with authentication
 export const test = base.extend<{
-  authenticatedPage: typeof base
+  authenticatedPage: Page
 }>({
   // Fixture that provides an authenticated page
-  authenticatedPage: async ({ page }, use) => {
+  authenticatedPage: async ({ page }, provide) => {
     // Navigate to login
     await page.goto('/login')
 
     // Fill login form
     await page.getByLabel('Email').fill(TEST_USER.email)
-    await page.getByLabel('Password').fill(TEST_USER.password)
+    await page.getByLabel('Mật khẩu').fill(TEST_USER.password)
 
     // Submit login
-    await page.getByRole('button', { name: /sign in/i }).click()
+    await page.getByRole('button', { name: /trở lại khu vườn/i }).click()
 
     // Wait for redirect to garden
     await page.waitForURL('**/garden', { timeout: 10000 })
 
-    await use(base)
+    await provide(page)
   },
 })
 
@@ -39,7 +39,7 @@ export { expect }
 /**
  * Helper: Wait for page to be fully loaded
  */
-export async function waitForPageLoad(page: typeof base.prototype) {
+export async function waitForPageLoad(page: Page) {
   await page.waitForLoadState('networkidle')
 }
 
@@ -47,7 +47,7 @@ export async function waitForPageLoad(page: typeof base.prototype) {
  * Helper: Check if element is visible with timeout
  */
 export async function isVisible(
-  page: typeof base.prototype,
+  page: Page,
   selector: string,
   timeout = 5000
 ): Promise<boolean> {
@@ -63,11 +63,11 @@ export async function isVisible(
  * Helper: Login and navigate to garden page
  * DRYs up the common beforeEach pattern across auth-required test files
  */
-export async function loginAndGoToGarden(page: typeof base.prototype) {
+export async function loginAndGoToGarden(page: Page) {
   await page.goto('/login')
   await page.getByLabel('Email').fill(TEST_USER.email)
-  await page.getByLabel('Password').fill(TEST_USER.password)
-  await page.getByRole('button', { name: /sign in/i }).click()
+  await page.getByLabel('Mật khẩu').fill(TEST_USER.password)
+  await page.getByRole('button', { name: /trở lại khu vườn/i }).click()
   await page.waitForURL('**/garden', { timeout: 15000 })
 }
 
@@ -75,7 +75,7 @@ export async function loginAndGoToGarden(page: typeof base.prototype) {
  * Helper: Open a plant interaction modal by clicking the first visible plant
  * Returns true if modal was opened, false if no plant found
  */
-export async function openPlantModal(page: typeof base.prototype): Promise<boolean> {
+export async function openPlantModal(page: Page): Promise<boolean> {
   const plantElement = page.locator('[class*="plant-card"], [class*="PlantCard"]').first()
   if (!(await plantElement.isVisible().catch(() => false))) return false
 

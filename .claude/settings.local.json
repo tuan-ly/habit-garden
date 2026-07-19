@@ -45,5 +45,8 @@
       "Bash(xargs grep -l \"export.*function.*goal\\\\|export.*const.*goal\")",
       "Bash(gemini --version)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "supabase"
+  ]
 }

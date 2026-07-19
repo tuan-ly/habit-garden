@@ -1,13 +1,14 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
-import type { CreatePlantDto, PlantWithType, PlantType, Difficulty, WeatherType, PlantGoalInfo, TodayGoalLog, GoalMode, PlantTier, Profile } from '@/types/database'
+import type { CreatePlantDto, PlantWithType, PlantType, Difficulty, WeatherType, PlantGoalInfo, TodayGoalLog, GoalMode, PlantTier, Profile, Goal } from '@/types/database'
 import { getAuthUser } from '@/lib/auth-cached'
 import { getTodayWeather, calculateWeatherXp } from '@/lib/weather-system'
 import { calculateWateringXp, calculateNoteBonus } from '@/lib/xp-system'
 import { getTodayMood } from '@/lib/actions/mood'
-import { calculateXpWithMood, getMoodBonusXp, getMoodConfig } from '@/lib/mood-system'
+import { calculateXpWithMood, getMoodBonusXp, getMoodConfig, type MoodLevel } from '@/lib/mood-system'
+import { getPeriodInfo, getPeriodTarget } from '@/lib/goal-utils'
+import { applyGoalLogToPeriod } from '@/lib/goal-progress'
 import {
   calculateRequiredGridSize,
   findNextAvailablePosition,
@@ -17,110 +18,189 @@ import {
 import {
   checkSlotAvailability,
   canPlantTier,
-  getMaxPlants,
-  calculateProgressionFields,
+  PLANT_CREATION_GATES_ENABLED,
 } from '@/lib/progression-system'
 import { getDevPlantBypass } from '@/lib/actions/dev'
+import { cache } from 'react'
+import type { PlacedDecorationWithType } from '@/types/database'
+
+interface GardenReadModel {
+  plants: PlantWithType[]
+  goals: Goal[]
+  goal_logs: Array<{
+    id: string
+    goal_id: string
+    plant_id: string
+    value: number
+    notes: string | null
+    logged_at: string
+    logged_date: string
+  }>
+  placed_decorations: PlacedDecorationWithType[]
+}
+
+let warnedAboutGardenSnapshotFallback = false
+
+async function loadLegacyGardenReadModel(userId: string): Promise<GardenReadModel> {
+  const supabase = await createClient()
+  const [
+    { data: plants, error: plantsError },
+    { data: placedDecorations },
+  ] = await Promise.all([
+    supabase
+      .from('plants')
+      .select('*, plant_type:plant_types(*)')
+      .eq('user_id', userId)
+      .order('position', { ascending: true }),
+    supabase
+      .from('placed_decorations')
+      .select('*, decoration_type:decoration_types(*)')
+      .eq('user_id', userId)
+      .order('placed_at', { ascending: true }),
+  ])
+
+  if (plantsError) {
+    console.error('Legacy garden plants query failed:', plantsError)
+    return { plants: [], goals: [], goal_logs: [], placed_decorations: [] }
+  }
+
+  const plantIds = (plants ?? []).map((plant) => plant.id)
+  if (plantIds.length === 0) {
+    return {
+      plants: [], goals: [], goal_logs: [],
+      placed_decorations: (placedDecorations ?? []) as unknown as PlacedDecorationWithType[],
+    }
+  }
+
+  const since = new Date()
+  since.setDate(since.getDate() - 35)
+  const [{ data: goals }, { data: goalLogs }] = await Promise.all([
+    supabase.from('goals').select('*').in('plant_id', plantIds).eq('season_status', 'active'),
+    supabase.from('goal_logs').select('*').in('plant_id', plantIds).gte('logged_at', since.toISOString()),
+  ])
+
+  return {
+    plants: (plants ?? []) as unknown as PlantWithType[],
+    goals: (goals ?? []) as Goal[],
+    goal_logs: (goalLogs ?? []) as GardenReadModel['goal_logs'],
+    placed_decorations: (placedDecorations ?? []) as unknown as PlacedDecorationWithType[],
+  }
+}
+
+const loadGardenReadModel = cache(async (): Promise<GardenReadModel | null> => {
+  const user = await getAuthUser()
+  if (!user) return null
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('get_garden_snapshot')
+  if (error) {
+    if (!warnedAboutGardenSnapshotFallback) {
+      warnedAboutGardenSnapshotFallback = true
+      console.warn('get_garden_snapshot unavailable; using compatibility queries:', error.code)
+    }
+    return loadLegacyGardenReadModel(user.id)
+  }
+  return data as unknown as GardenReadModel
+})
 
 export async function getPlants(): Promise<PlantWithType[]> {
-  const supabase = await createClient()
-
   const user = await getAuthUser()
   if (!user) return []
 
   const today = new Date().toISOString().split('T')[0]
+  const snapshot = await loadGardenReadModel()
+  const plantsData = snapshot?.plants ?? []
 
-  // Fetch plants with plant_type (explicit columns for performance)
-  const { data: plantsData, error } = await supabase
-    .from('plants')
-    .select(`
-      id, user_id, plant_type_id, name, habit_description, started_at,
-      current_moisture, growth_percentage, total_waterings,
-      current_streak, longest_streak, last_watered_at, status, matured_at,
-      died_at, death_reason, goal_mode, reminder_time, reminder_enabled, adaptive_mode,
-      position, grid_size, grid_row, grid_col, growth_blocked,
-      why_i_started, maturity_level, visual_stage, grace_period_days,
-      days_this_week, days_this_month, consistency_percentage,
-      easy_mode, tiny_seed, created_at, updated_at,
-      plant_type:plant_types(
-        id, name, name_vi, icon, description, description_vi,
-        maturity_days, frequency_type, frequency_target,
-        moisture_decay_rate, moisture_boost, special_effect,
-        category, difficulty, is_premium, tier, tier_unlock_level, created_at
-      )
-    `)
-    .eq('user_id', user.id)
-    .order('position', { ascending: true })
-
-  if (error) {
-    console.error('Error fetching plants:', error.message, error.details, error.hint, error.code)
-    return []
-  }
-
-  if (!plantsData || plantsData.length === 0) {
+  if (plantsData.length === 0) {
     return []
   }
 
   // Get plant IDs that have goals
-  const plantIds = plantsData.map(p => p.id)
   const plantsWithGoalMode = plantsData.filter(p => p.goal_mode)
   const plantIdsWithGoal = plantsWithGoalMode.map(p => p.id)
 
-  // Fetch goals and today's logs in parallel for plants that have goal_mode
-  let goalsMap = new Map<string, PlantGoalInfo>()
-  let todayLogsMap = new Map<string, TodayGoalLog[]>()
+  // Fetch active goals and the logs needed to calculate each current period.
+  const goalsMap = new Map<string, PlantGoalInfo>()
+  const todayLogsMap = new Map<string, TodayGoalLog[]>()
 
   if (plantIdsWithGoal.length > 0) {
-    const [goalsResult, todayLogsResult] = await Promise.all([
-      supabase
-        .from('goals')
-        .select('id, plant_id, goal_mode, tracking_metric, unit, target_value, current_value, weekly_targets, started_at')
-        .in('plant_id', plantIdsWithGoal),
-      supabase
-        .from('goal_logs')
-        .select('id, plant_id, value, notes, logged_at')
-        .in('plant_id', plantIdsWithGoal)
-        .eq('logged_date', today)
-        .order('logged_at', { ascending: false }),
-    ])
+    const goals = (snapshot?.goals ?? []).filter((goal) => plantIdsWithGoal.includes(goal.plant_id))
+    const periodInfoByGoal = new Map<string, ReturnType<typeof getPeriodInfo>>()
 
-    const goals = goalsResult.data
-    const todayLogs = todayLogsResult.data
-
-    if (goals) {
-      for (const goal of goals) {
-        // Calculate week number and current week target
-        const startDate = new Date(goal.started_at)
-        const daysSinceStart = Math.floor((Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24))
-        const weekNumber = Math.floor(daysSinceStart / 7) + 1
-        const weeklyTargets = (goal.weekly_targets as number[]) || []
-        const currentWeekTarget = weeklyTargets[Math.min(weekNumber - 1, weeklyTargets.length - 1)] || goal.target_value
-
-        goalsMap.set(goal.plant_id, {
-          id: goal.id,
-          goal_mode: goal.goal_mode,
-          tracking_metric: goal.tracking_metric,
-          unit: goal.unit,
-          target_value: goal.target_value,
-          current_value: goal.current_value,
-          weekly_targets: weeklyTargets,
-          current_week_target: currentWeekTarget,
-          week_number: weekNumber,
-        })
-      }
+    for (const goal of goals) {
+      periodInfoByGoal.set(goal.id, getPeriodInfo(goal))
     }
 
-    if (todayLogs) {
-      for (const log of todayLogs) {
+    const earliestPeriodStart = Array.from(periodInfoByGoal.values())
+      .reduce<Date | null>((earliest, period) => {
+        if (!earliest || period.periodStart < earliest) return period.periodStart
+        return earliest
+      }, null)
+
+    const goalLogs = earliestPeriodStart && goals.length > 0
+      ? (snapshot?.goal_logs ?? []).filter((log) =>
+          goals.some((goal) => goal.id === log.goal_id)
+          && new Date(log.logged_at) >= earliestPeriodStart
+        )
+      : []
+
+    const logsByGoal = new Map<string, typeof goalLogs>()
+    for (const log of goalLogs) {
+      const goalLogsForPeriod = logsByGoal.get(log.goal_id) || []
+      goalLogsForPeriod.push(log)
+      logsByGoal.set(log.goal_id, goalLogsForPeriod)
+
+      if (log.logged_date === today) {
         const plantLogs = todayLogsMap.get(log.plant_id) || []
         plantLogs.push({
           id: log.id,
-          value: log.value,
+          value: Number(log.value),
           notes: log.notes,
           logged_at: log.logged_at,
         })
         todayLogsMap.set(log.plant_id, plantLogs)
       }
+    }
+
+    for (const goal of goals) {
+      const periodInfo = periodInfoByGoal.get(goal.id)
+      if (!periodInfo) continue
+
+      const periodLogs = (logsByGoal.get(goal.id) || []).filter(log => {
+        const loggedAt = new Date(log.logged_at)
+        return loggedAt >= periodInfo.periodStart && loggedAt <= periodInfo.periodEnd
+      })
+
+      const periodProgress = periodLogs.reduce(
+        (progress, log) => applyGoalLogToPeriod(goal.goal_mode, progress, Number(log.value)),
+        0
+      )
+      const currentPeriodTarget = getPeriodTarget(goal, periodInfo.periodNumber)
+
+      // Keep the legacy week fields while period-aware UI is rolled out.
+      const startDate = new Date(goal.started_at)
+      const daysSinceStart = Math.floor((Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+      const weekNumber = Math.floor(daysSinceStart / 7) + 1
+      const weeklyTargets = (goal.weekly_targets as number[]) || []
+      const currentWeekTarget = weeklyTargets[Math.min(weekNumber - 1, weeklyTargets.length - 1)] || goal.target_value
+
+      goalsMap.set(goal.plant_id, {
+        id: goal.id,
+        goal_mode: goal.goal_mode,
+        tracking_metric: goal.tracking_metric,
+        unit: goal.unit,
+        target_value: Number(goal.target_value),
+        current_value: Number(goal.current_value),
+        weekly_targets: weeklyTargets,
+        current_week_target: Number(currentWeekTarget),
+        week_number: weekNumber,
+        frequency: goal.frequency || 'weekly',
+        period_progress: periodProgress,
+        current_period_target: Number(currentPeriodTarget),
+        period_number: periodInfo.periodNumber,
+        period_label: periodInfo.periodLabel,
+        period_date_range: periodInfo.periodDateRange,
+        period_end: periodInfo.periodEnd.toISOString(),
+      })
     }
   }
 
@@ -208,7 +288,7 @@ export async function createPlant(dto: CreatePlantDto): Promise<{ success: boole
 
   // Validate slot availability
   const devBypass = await getDevPlantBypass()
-  if (profile && !devBypass) {
+  if (PLANT_CREATION_GATES_ENABLED && profile && !devBypass) {
     const slotCheck = checkSlotAvailability(profile as Profile, livingPlants.length)
     if (!slotCheck.hasSlot) {
       return { success: false, error: slotCheck.message || 'No plant slots available. Level up to unlock more!' }
@@ -340,7 +420,6 @@ export async function createPlant(dto: CreatePlantDto): Promise<{ success: boole
     return { success: false, error: error?.message || 'Failed to create plant' }
   }
 
-  revalidatePath('/garden')
   return { success: true, plant: newPlant as PlantWithType }
 }
 
@@ -363,7 +442,6 @@ export async function deletePlant(plantId: string): Promise<{ success: boolean; 
     return { success: false, error: error.message }
   }
 
-  revalidatePath('/garden')
   return { success: true }
 }
 
@@ -404,16 +482,18 @@ export async function waterPlant(
     return { success: false, error: 'Plant not found' }
   }
 
-  // Check if already watered today
+  // Check if already logged today
   const today = new Date().toISOString().split('T')[0]
-  const { data: existingWatering } = await supabase
-    .from('watering_logs')
+  const { data: existingActivity } = await supabase
+    .from('activity_logs')
     .select('id')
     .eq('plant_id', plantId)
-    .eq('watered_date', today)
-    .single()
+    .eq('user_id', user.id)
+    .eq('logged_date', today)
+    .limit(1)
+    .maybeSingle()
 
-  if (existingWatering) {
+  if (existingActivity) {
     return { success: false, error: 'Already watered today' }
   }
 
@@ -542,23 +622,25 @@ export async function waterPlant(
     }
   }
 
-  // Create watering log
+  // Create activity log
   const { error: logError } = await supabase
-    .from('watering_logs')
+    .from('activity_logs')
     .insert({
       plant_id: plantId,
       user_id: user.id,
-      watered_date: today,
+      activity_type: 'watering',
+      logged_date: today,
       difficulty: options?.difficulty || null,
       notes: options?.notes || null,
       xp_earned: totalXp,
       morning_bonus: isMorning,
       streak_bonus: breakdown.streakBonus || 0,
-      note_bonus: noteBonusXp,
+      is_first_of_day: true,
+      is_personal_record: false,
     })
 
   if (logError) {
-    console.error('Error creating watering log:', logError)
+    console.error('Error creating activity log:', logError)
     return { success: false, error: logError.message }
   }
 
@@ -623,7 +705,6 @@ export async function waterPlant(
   // Check for new achievements
   const newAchievements = await checkAndUnlockAchievements(user.id)
 
-  revalidatePath('/garden')
   return {
     success: true,
     xpEarned: totalXp,
@@ -712,7 +793,6 @@ export async function resolveGrowthConflict(plantId: string): Promise<{ success:
     return { success: false, error: 'Failed to update plant size' }
   }
 
-  revalidatePath('/garden')
   return { success: true }
 }
 
@@ -734,12 +814,13 @@ export async function checkAndUnlockAchievements(userId: string): Promise<string
     .single()
 
   const { count: totalWaterings } = await supabase
-    .from('watering_logs')
+    .from('activity_logs')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', userId)
+    .eq('is_first_of_day', true)
 
   const { count: morningWaterings } = await supabase
-    .from('watering_logs')
+    .from('activity_logs')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', userId)
     .eq('morning_bonus', true)
@@ -755,7 +836,6 @@ export async function checkAndUnlockAchievements(userId: string): Promise<string
   const totalPlants = plants?.length || 0
   const maturePlants = plants?.filter(p => p.status === 'mature').length || 0
   const bestStreak = Math.max(...(plants?.map(p => p.longest_streak) || [0]))
-  const currentStreak = Math.max(...(plants?.map(p => p.current_streak) || [0]))
 
   // Define achievement checks
   const achievementChecks = [
@@ -1069,17 +1149,32 @@ export async function getGardenStats(
   }
 }
 
+type MoodLogForWeather = {
+  mood_level: number | null
+}
+
+/** Garden route hydration reuses the same cached database snapshot as getPlants(). */
+export async function getGardenPlacedDecorations(): Promise<PlacedDecorationWithType[]> {
+  return (await loadGardenReadModel())?.placed_decorations ?? []
+}
+
+function isMoodLevel(level: number): level is MoodLevel {
+  return Number.isInteger(level) && level >= 1 && level <= 5
+}
+
 // Helper to calculate dominant weather from mood logs
-function calculateDominantWeather(logs: any[]): WeatherType | null {
+function calculateDominantWeather(logs: MoodLogForWeather[]): WeatherType | null {
   if (!logs || logs.length === 0) return null
 
   // Count mood levels
-  const counts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+  const counts: Record<MoodLevel, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
   let maxCount = 0
-  let dominantLevel = 4 // Default to neutral/good
+  let dominantLevel: MoodLevel = 4 // Default to neutral/good
 
   for (const log of logs) {
-    const level = log.mood_level
+    const level = Number(log.mood_level)
+    if (!isMoodLevel(level)) continue
+
     counts[level] = (counts[level] || 0) + 1
     
     // Update dominant (prefer lower moods if tie for "tough" days logic? or just first found? 
@@ -1093,7 +1188,7 @@ function calculateDominantWeather(logs: any[]): WeatherType | null {
 
   // Map mood level to weather type for GardenSky
   // 5: Sunny, 4: Partly Cloudy, 3: Cloudy, 2: Rainy, 1: Stormy
-  const config = getMoodConfig(dominantLevel as any)
+  const config = getMoodConfig(dominantLevel)
   if (!config) return 'sunny'
 
   const weatherMap: Record<string, WeatherType> = {
@@ -1348,7 +1443,6 @@ export async function updatePlantPosition(
     return { success: false, error: error.message }
   }
 
-  revalidatePath('/garden')
   return { success: true }
 }
 
@@ -1532,7 +1626,6 @@ export async function expandPlantSize(
     return { success: false, error: updateError.message }
   }
 
-  revalidatePath('/garden')
   return { success: true, relocatedPlants: relocatedPlantIds }
 }
 

@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "projectRef": "jkhkfsfjnilbfqfatonb",
+  "allowedLegacyDuplicateVersions": [],
+  "allowLegacyMixedVersionLengths": true,
+  "reason": "The authoritative remote history contains one legacy 8-digit version (20260712) among 14-digit versions. The 2026-07-16 reconciliation removed local duplicate versions without mutating remote history."
+}

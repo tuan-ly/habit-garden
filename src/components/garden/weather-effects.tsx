@@ -24,7 +24,9 @@ export function WeatherEffects({ weather, className, contained, breathingValue =
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [showLightning, setShowLightning] = useState(false)
   const breathingRef = useRef(breathingValue)
-  breathingRef.current = breathingValue
+  useEffect(() => {
+    breathingRef.current = breathingValue
+  }, [breathingValue])
 
   // Canvas-driven rain (replaces per-drop DOM elements for perf)
   useEffect(() => {
@@ -34,7 +36,7 @@ export function WeatherEffects({ weather, className, contained, breathingValue =
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const dpr = window.devicePixelRatio || 1
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5)
     const resize = () => {
       const { width, height } = canvas.getBoundingClientRect()
       canvas.width = width * dpr
@@ -55,6 +57,10 @@ export function WeatherEffects({ weather, className, contained, breathingValue =
 
     let rafId = 0
     const tick = () => {
+      if (document.hidden) {
+        rafId = 0
+        return
+      }
       const w = canvas.clientWidth
       const h = canvas.clientHeight
       ctx.clearRect(0, 0, w, h)
@@ -79,16 +85,26 @@ export function WeatherEffects({ weather, className, contained, breathingValue =
     }
     rafId = requestAnimationFrame(tick)
 
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        cancelAnimationFrame(rafId)
+        rafId = 0
+      } else if (!rafId) {
+        rafId = requestAnimationFrame(tick)
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
     return () => {
       cancelAnimationFrame(rafId)
       window.removeEventListener('resize', resize)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [weather])
 
   // Lightning flash schedule
   useEffect(() => {
     if (weather !== 'stormy') {
-      setShowLightning(false)
       return
     }
 

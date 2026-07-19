@@ -27,9 +27,9 @@ import { SlotIndicator } from '@/components/garden/slot-indicator'
 import { Switch } from '@/components/ui/switch'
 import {
   isTierUnlocked,
-  getTierInfo,
   getTierUnlockLevel,
   checkSlotAvailability,
+  PLANT_CREATION_GATES_ENABLED,
 } from '@/lib/progression-system'
 import { getMinimumSubscriptionForPlantTier } from '@/lib/subscription-limits'
 
@@ -80,6 +80,9 @@ export function AddPlantDialog({
 
   // Check slot availability (level-based)
   const levelSlotCheck = useMemo(() => {
+    if (!PLANT_CREATION_GATES_ENABLED) {
+      return { hasSlot: true, currentCount: actualPlantCount, maxSlots: -1 }
+    }
     // Dev bypass for slot limit
     if (devOverrides.bypassSlotLimit) {
       return { hasSlot: true, currentCount: actualPlantCount, maxSlots: 999, message: 'Dev bypass active' }
@@ -93,6 +96,14 @@ export function AddPlantDialog({
 
   // Combined slot check - both level AND subscription must allow
   const slotCheck = useMemo(() => {
+    if (!PLANT_CREATION_GATES_ENABLED) {
+      return {
+        ...levelSlotCheck,
+        maxSlots: -1,
+        hasSlot: true,
+        isSubscriptionLimited: false,
+      }
+    }
     // Use the more restrictive of level or subscription limits
     const maxSlots = Math.min(levelSlotCheck.maxSlots, limits.maxPlants === -1 ? 999 : limits.maxPlants)
     const hasSlot = levelSlotCheck.hasSlot && subscriptionHasSlot
@@ -116,6 +127,9 @@ export function AddPlantDialog({
 
   // Check which tiers are unlocked (both level-based AND subscription-based)
   const tierStatus = useMemo(() => {
+    if (!PLANT_CREATION_GATES_ENABLED) {
+      return { 1: true, 2: true, 3: true, 4: true, 5: true }
+    }
     // Dev bypass for tier limit
     if (devOverrides.bypassTierLimit) {
       return { 1: true, 2: true, 3: true, 4: true, 5: true }
@@ -132,6 +146,7 @@ export function AddPlantDialog({
 
   // Check if tier is locked due to subscription (not level)
   const isSubscriptionLocked = useCallback((tier: PlantTier): boolean => {
+    if (!PLANT_CREATION_GATES_ENABLED) return false
     if (devOverrides.bypassTierLimit) return false
     if (!effectiveProfile) return false
     // If level unlocked but subscription doesn't allow
@@ -151,7 +166,6 @@ export function AddPlantDialog({
 
       // Check if it's subscription-locked
       if (isSubscriptionLocked(tier)) {
-        const requiredSub = getMinimumSubscriptionForPlantTier(tier)
         showUpgradeModal('tier_limit', plantType.name)
         return
       }
@@ -236,19 +250,17 @@ export function AddPlantDialog({
 
   const renderPlantCard = (plant: PlantType, isLocked: boolean) => {
     const tier = (plant.tier || 1) as PlantTier
-    const tierInfo = getTierInfo(tier)
-
     return (
       <button
         key={plant.id}
         onClick={() => handleSelectType(plant, isLocked)}
         disabled={isLocked}
         className={cn(
-          'flex flex-col items-center p-4 rounded-lg border transition-colors text-left relative',
+          'relative flex min-h-40 flex-col items-center rounded-[1.35rem] border p-4 text-left transition-all',
           isLocked
-            ? 'opacity-60 cursor-not-allowed bg-muted border-muted'
-            : 'hover:border-primary hover:bg-accent',
-          plant.category === 'special' && !isLocked && 'border-purple-200 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950'
+            ? 'cursor-not-allowed border-[#d9dfce] bg-[#ecebe2] opacity-60'
+            : 'border-[#dbe3cf] bg-white/55 text-[#355239] shadow-[0_5px_18px_rgba(78,101,67,.06)] hover:-translate-y-0.5 hover:border-[#9cb787] hover:bg-[#f3f7e9] hover:shadow-[0_10px_24px_rgba(78,101,67,.11)]',
+          plant.category === 'special' && !isLocked && 'border-[#d8cdd9] hover:border-[#bca5bf] hover:bg-[#faf2f7]'
         )}
       >
         {isLocked && (
@@ -257,8 +269,8 @@ export function AddPlantDialog({
           </div>
         )}
         <span className="text-3xl mb-2">{plant.icon}</span>
-        <span className="font-medium text-sm">{plant.name}</span>
-        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+        <span className="text-sm font-semibold">{plant.name}</span>
+        <div className="mt-1 flex items-center gap-1 text-xs text-[#71806c]">
           <Clock className="h-3 w-3" />
           <span>{plant.maturity_days} days</span>
         </div>
@@ -283,12 +295,11 @@ export function AddPlantDialog({
 
     const isLocked = !tierStatus[tier]
     const isSubLocked = isSubscriptionLocked(tier)
-    const tierInfo = getTierInfo(tier)
     const requiredSub = getMinimumSubscriptionForPlantTier(tier)
 
     return (
       <div key={tier}>
-        <h3 className={cn('font-medium mb-3 flex items-center gap-2', isLocked && 'opacity-60')}>
+        <h3 className={cn('mb-3 flex items-center gap-2 font-semibold text-[#4d6748]', isLocked && 'opacity-60')}>
           <TierBadge tier={tier} showLabel showTooltip={false} locked={isLocked} />
           {isLocked && !isSubLocked && (
             <span className="text-xs text-muted-foreground">
@@ -320,18 +331,18 @@ export function AddPlantDialog({
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-h-[88vh] max-w-2xl overflow-y-auto border-[#d9dfce] bg-[#fffaf0]/98 text-[#355239] shadow-[0_28px_90px_rgba(52,70,44,.28)] sm:rounded-[2rem]">
         {step === 'select' ? (
           <>
             <DialogHeader>
-              <DialogTitle>Choose a Plant Type</DialogTitle>
-              <DialogDescription>
-                Each plant type has different growth requirements and maturity times.
+              <DialogTitle className="text-xl text-[#355239]">Chọn một người bạn mới</DialogTitle>
+              <DialogDescription className="text-[#71806c]">
+                Chọn dáng cây bạn muốn ngắm lớn lên cùng thói quen này.
               </DialogDescription>
             </DialogHeader>
 
             {/* Slot indicator */}
-            {effectiveProfile && (
+            {PLANT_CREATION_GATES_ENABLED && effectiveProfile && (
               <div className="py-2">
                 <SlotIndicator
                   currentCount={actualPlantCount}
@@ -371,7 +382,7 @@ export function AddPlantDialog({
               </div>
             )}
 
-            <div className="space-y-6 py-4">
+            <div className="space-y-7 py-4">
               {useTierGrouping ? (
                 // Tier-based grouping (new system)
                 <>
@@ -407,45 +418,47 @@ export function AddPlantDialog({
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <span className="text-2xl">{selectedType?.icon}</span>
-                Plant a {selectedType?.name}
+                Trồng {selectedType?.name}
               </DialogTitle>
               <DialogDescription>
-                Give your habit a name and description to help you stay motivated.
+                Gọi tên thói quen để cây có câu chuyện riêng trong khu vườn.
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Habit Name *</Label>
+                <Label htmlFor="name">Tên thói quen *</Label>
                 <Input
                   id="name"
-                  placeholder="e.g., Morning Exercise, Read 30 mins, Meditate"
+                  placeholder="Ví dụ: Chạy bộ sáng, đọc 30 phút, thiền"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  className="rounded-xl border-[#d7dfcc] bg-white/75 text-[#355239] placeholder:text-[#9aa393] focus-visible:ring-[#91aa7e]"
                   required
                   autoFocus
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description (optional)</Label>
+                <Label htmlFor="description">Vì sao bạn bắt đầu? (không bắt buộc)</Label>
                 <Textarea
                   id="description"
-                  placeholder="Why is this habit important to you?"
+                  placeholder="Một lời nhắc dịu dàng cho chính bạn…"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
+                  className="rounded-xl border-[#d7dfcc] bg-white/75 text-[#355239] placeholder:text-[#9aa393] focus-visible:ring-[#91aa7e]"
                   rows={3}
                 />
               </div>
 
               {/* Easy Mode Toggle */}
-              <div className="rounded-xl border border-emerald-100 dark:border-emerald-900/50 bg-emerald-50/50 dark:bg-emerald-950/30 p-4 space-y-3">
+              <div className="space-y-3 rounded-[1.35rem] border border-[#dbe5cd] bg-[#edf3df]/70 p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-lg">🌱</span>
                     <div>
-                      <div className="font-medium text-sm">Easy Mode</div>
-                      <div className="text-xs text-muted-foreground">Start with the 2-minute version</div>
+                      <div className="text-sm font-semibold">Bắt đầu thật nhỏ</div>
+                      <div className="text-xs text-[#71806c]">Phiên bản chỉ mất 2 phút</div>
                     </div>
                   </div>
                   <Switch
@@ -457,9 +470,9 @@ export function AddPlantDialog({
                 </div>
 
                 {/* XP bonus callout - always visible */}
-                <div className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                <div className="flex items-center gap-1 text-xs text-[#60804e]">
                   <span>⚡</span>
-                  <span>+20% XP bonus for your first 30 days</span>
+                  <span>Thêm 20% XP trong 30 ngày đầu</span>
                 </div>
 
                 {/* Tiny seed input - only when easy mode is ON */}
@@ -483,22 +496,21 @@ export function AddPlantDialog({
                 )}
               </div>
 
-              <div className="p-3 rounded-lg bg-muted">
+              <div className="rounded-[1.25rem] border border-[#e2e2d5] bg-white/55 p-4">
                 <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
-                  Plant Info
+                  Nhịp lớn lên
                   {selectedType?.tier && (
                     <TierBadge tier={selectedType.tier as PlantTier} size="sm" />
                   )}
                 </h4>
                 <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Matures in {selectedType?.maturity_days} days</li>
+                  <li>• Trưởng thành sau {selectedType?.maturity_days} ngày</li>
                   <li>
                     • Frequency:{' '}
-                    {selectedType?.frequency_type === 'daily' ? 'Daily check-in' : 'Flexible'}
+                    {selectedType?.frequency_type === 'daily' ? 'Chăm mỗi ngày' : 'Linh hoạt'}
                   </li>
                   <li>
-                    • Moisture decay: {selectedType?.moisture_decay_rate}% per day without
-                    watering
+                    • Độ ẩm giảm {selectedType?.moisture_decay_rate}% mỗi ngày chưa chăm
                   </li>
                   {selectedType?.special_effect && (
                     <li className="text-purple-600">• Has special ability!</li>
@@ -508,11 +520,11 @@ export function AddPlantDialog({
             </div>
 
             <DialogFooter className="gap-2">
-              <Button type="button" variant="outline" onClick={handleBack}>
-                Back
+              <Button type="button" variant="outline" onClick={handleBack} className="rounded-full border-[#cad5bd] bg-white/70 text-[#4d6748] hover:bg-[#edf3df]">
+                Quay lại
               </Button>
-              <Button type="submit" disabled={isPending || !name.trim()}>
-                {isPending ? 'Planting...' : 'Plant Habit'}
+              <Button type="submit" disabled={isPending || !name.trim()} className="rounded-full bg-[#638653] px-6 text-white hover:bg-[#557747]">
+                {isPending ? 'Đang vun đất…' : 'Trồng cây'}
               </Button>
             </DialogFooter>
           </form>

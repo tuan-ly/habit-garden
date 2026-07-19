@@ -5,30 +5,35 @@ test.describe('Landing Page', () => {
     await page.goto('/')
 
     // Check hero content
-    await expect(page.getByRole('heading', { name: /grow your habits/i })).toBeVisible()
-    await expect(page.getByText(/transform your daily routines/i)).toBeVisible()
+    await expect(page.getByRole('heading', { name: /nuôi một nhịp sống/i })).toBeVisible()
+    await expect(page.getByText(/biến mỗi lần đọc sách/i)).toBeVisible()
 
     // Check CTA buttons
-    await expect(page.getByRole('link', { name: /start growing free/i })).toBeVisible()
-    await expect(page.getByRole('link', { name: /view pricing/i })).toBeVisible()
+    await expect(page.getByRole('link', { name: /bắt đầu miễn phí/i })).toBeVisible()
+    await expect(page.getByRole('link', { name: /xem cách khu vườn lớn lên/i })).toBeVisible()
   })
 
   test('shows navigation links', async ({ page }) => {
     await page.goto('/')
 
     // Check nav brand (use first() since it appears in both nav and footer)
-    await expect(page.getByText('Habit Garden').first()).toBeVisible()
+    await expect(page.getByText('Habien').first()).toBeVisible()
 
     // Check auth links in navigation
-    await expect(page.locator('nav').getByRole('link', { name: /sign in/i })).toBeVisible()
-    await expect(page.locator('nav').getByRole('link', { name: /get started/i })).toBeVisible()
+    const loginLink = page.locator('nav').getByRole('link', { name: /đăng nhập/i })
+    if ((page.viewportSize()?.width ?? 0) >= 640) {
+      await expect(loginLink).toBeVisible()
+    } else {
+      await expect(loginLink).toBeHidden()
+    }
+    await expect(page.locator('nav').getByRole('link', { name: /gieo hạt đầu tiên/i })).toBeVisible()
   })
 
   test('navigates to signup from CTA', async ({ page }) => {
     await page.goto('/')
 
     // Click the main CTA button
-    await page.getByRole('link', { name: /start growing free/i }).click()
+    await page.getByRole('link', { name: /bắt đầu miễn phí/i }).click()
 
     await expect(page).toHaveURL('/signup')
   })
@@ -36,7 +41,13 @@ test.describe('Landing Page', () => {
   test('navigates to login from nav', async ({ page }) => {
     await page.goto('/')
 
-    await page.locator('nav').getByRole('link', { name: /sign in/i }).click()
+    const loginLink = page.locator('nav').getByRole('link', { name: /đăng nhập/i })
+    if ((page.viewportSize()?.width ?? 0) < 640) {
+      await expect(loginLink).toBeHidden()
+      await page.goto('/login')
+    } else {
+      await loginLink.click()
+    }
 
     await expect(page).toHaveURL('/login')
   })
@@ -47,10 +58,10 @@ test.describe('Signup Flow', () => {
     await page.goto('/signup')
 
     // Card title (CardTitle uses div, not heading role)
-    await expect(page.getByText(/start your garden/i)).toBeVisible()
+    await expect(page.getByText(/tạo một nơi để bạn trở lại/i)).toBeVisible()
     await expect(page.getByLabel(/email/i)).toBeVisible()
-    await expect(page.getByLabel(/password/i)).toBeVisible()
-    await expect(page.getByRole('button', { name: /create account/i })).toBeVisible()
+    await expect(page.getByLabel(/mật khẩu/i)).toBeVisible()
+    await expect(page.getByRole('button', { name: /tạo khu vườn của tôi/i })).toBeVisible()
   })
 
   test('shows Google OAuth option', async ({ page }) => {
@@ -63,7 +74,7 @@ test.describe('Signup Flow', () => {
     await page.goto('/signup')
 
     // Use the link text that matches the actual page
-    await page.getByRole('link', { name: /sign in/i }).click()
+    await page.getByRole('link', { name: /mở lại khu vườn/i }).click()
 
     await expect(page).toHaveURL('/login')
   })
@@ -75,7 +86,7 @@ test.describe('Signup Flow', () => {
     const initialUrl = page.url()
 
     // Click submit without filling fields - HTML5 validation prevents submission
-    await page.getByRole('button', { name: /create account/i }).click()
+    await page.getByRole('button', { name: /tạo khu vườn của tôi/i }).click()
 
     // Should still be on signup page (validation prevented navigation)
     await expect(page).toHaveURL(initialUrl)
@@ -86,16 +97,16 @@ test.describe('Signup Flow', () => {
 
     // Fill form with test credentials
     await page.getByLabel(/email/i).fill('test@example.com')
-    await page.getByLabel(/password/i).fill('password123')
+    await page.getByLabel(/mật khẩu/i).fill('password123')
 
     // Click submit and check for loading state
-    const submitButton = page.getByRole('button', { name: /create account/i })
+    const submitButton = page.getByRole('button', { name: /tạo khu vườn của tôi/i })
     await submitButton.click()
 
     // Should briefly show loading state OR navigate/show error
     // The button text changes to "Creating account..." during submission
     await expect(
-      page.getByRole('button', { name: /creating account/i }).or(page.getByRole('alert'))
+      page.getByRole('button', { name: /đang chuẩn bị mảnh đất/i }).or(page.getByRole('alert'))
     ).toBeVisible({ timeout: 5000 })
   })
 })
@@ -105,10 +116,10 @@ test.describe('Login Flow', () => {
     await page.goto('/login')
 
     // Card title (CardTitle uses div, not heading role)
-    await expect(page.getByText(/welcome back/i)).toBeVisible()
+    await expect(page.getByText(/mừng bạn trở lại/i)).toBeVisible()
     await expect(page.getByLabel(/email/i)).toBeVisible()
-    await expect(page.getByLabel(/password/i)).toBeVisible()
-    await expect(page.getByRole('button', { name: /sign in/i })).toBeVisible()
+    await expect(page.getByLabel(/mật khẩu/i)).toBeVisible()
+    await expect(page.getByRole('button', { name: /trở lại khu vườn/i })).toBeVisible()
   })
 
   test('shows Google OAuth option', async ({ page }) => {
@@ -120,7 +131,7 @@ test.describe('Login Flow', () => {
   test('links to signup page', async ({ page }) => {
     await page.goto('/login')
 
-    await page.getByRole('link', { name: /sign up/i }).click()
+    await page.getByRole('link', { name: /gieo hạt đầu tiên/i }).click()
 
     await expect(page).toHaveURL('/signup')
   })
@@ -130,10 +141,10 @@ test.describe('Login Flow', () => {
 
     // Fill with invalid credentials
     await page.getByLabel(/email/i).fill('invalid@example.com')
-    await page.getByLabel(/password/i).fill('wrongpassword')
+    await page.getByLabel(/mật khẩu/i).fill('wrongpassword')
 
     // Submit
-    await page.getByRole('button', { name: /sign in/i }).click()
+    await page.getByRole('button', { name: /trở lại khu vườn/i }).click()
 
     // Wait for error message (either alert role or toast)
     await expect(

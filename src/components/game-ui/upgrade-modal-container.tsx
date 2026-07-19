@@ -5,7 +5,7 @@ import { useSubscription, useUpgradeModalState } from '@/lib/context/subscriptio
 import { UpgradeModal } from './upgrade-modal'
 import { updateUpgradePromptAction } from '@/lib/actions/subscription'
 import { openTierCheckout, isPaddleConfigured } from '@/lib/paddle'
-import { createClient } from '@/lib/supabase/client'
+import { useUser } from '@/lib/context/dashboard-data-context'
 
 /**
  * Global upgrade modal container
@@ -14,27 +14,9 @@ import { createClient } from '@/lib/supabase/client'
  */
 export function UpgradeModalContainer() {
   const { tier, hideUpgradeModal, refreshTier } = useSubscription()
+  const user = useUser()
   const upgradeModal = useUpgradeModalState()
   const [isProcessing, setIsProcessing] = useState(false)
-  const [userInfo, setUserInfo] = useState<{ email?: string; id?: string } | null>(null)
-
-  // Fetch user info for checkout
-  useEffect(() => {
-    async function fetchUserInfo() {
-      try {
-        const supabase = createClient()
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
-        if (user) {
-          setUserInfo({ email: user.email, id: user.id })
-        }
-      } catch (error) {
-        console.error('Failed to fetch user info:', error)
-      }
-    }
-    fetchUserInfo()
-  }, [])
 
   // Listen for checkout complete events
   useEffect(() => {
@@ -79,7 +61,7 @@ export function UpgradeModalContainer() {
       }
 
       // Open Paddle checkout
-      await openTierCheckout(targetTier, 'monthly', userInfo?.email, userInfo?.id)
+      await openTierCheckout(targetTier, 'monthly', user.email, user.id)
 
       // Note: Modal stays open during checkout
       // It will close when checkout completes via event listener
@@ -107,7 +89,7 @@ export function UpgradeModalContainer() {
 
       // Open Paddle checkout for PRO trial
       // Note: Trial setup should be configured in Paddle dashboard
-      await openTierCheckout('pro', 'monthly', userInfo?.email, userInfo?.id)
+      await openTierCheckout('pro', 'monthly', user.email, user.id)
     } catch (error) {
       console.error('Failed to start trial:', error)
       window.location.href = '/pricing?trial=true'

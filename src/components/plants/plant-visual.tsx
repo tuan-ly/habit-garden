@@ -1,8 +1,8 @@
 'use client'
 
 import { cn, isToday } from '@/lib/utils'
-import type { PlantWithType, PlantStatus, WeatherType } from '@/types/database'
-import { memo, useEffect, useState, useRef, useMemo } from 'react'
+import type { PlantWithType, WeatherType } from '@/types/database'
+import { memo, useEffect, useState, useRef } from 'react'
 import { PlantImage, getGrowthStage, type GrowthStage } from './plant-image'
 
 // Re-export growth stages for backwards compatibility
@@ -52,6 +52,8 @@ interface PlantVisualProps {
   isWateredToday?: boolean
   /** If true, aligns plant to bottom of container (for isometric garden view) */
   alignBottom?: boolean
+  hideStatusIndicators?: boolean
+  priority?: boolean
 }
 
 function getSpecialEffectClass(plantTypeName: string): string {
@@ -95,6 +97,8 @@ export const PlantVisual = memo(function PlantVisual({
   className,
   isWateredToday,
   alignBottom = false,
+  hideStatusIndicators = false,
+  priority = false,
 }: PlantVisualProps) {
   // Auto-detect if watered today when not explicitly passed
   const wateredToday = isWateredToday ?? isToday(plant.last_watered_at)
@@ -105,7 +109,7 @@ export const PlantVisual = memo(function PlantVisual({
   // Handle watering animation trigger
   useEffect(() => {
     if (showWateringEffect) {
-      setIsWatering(true)
+      queueMicrotask(() => setIsWatering(true))
       const timer = setTimeout(() => setIsWatering(false), 800)
       return () => clearTimeout(timer)
     }
@@ -119,7 +123,7 @@ export const PlantVisual = memo(function PlantVisual({
   // Detect growth stage changes for burst animation
   useEffect(() => {
     if (previousStageRef.current && previousStageRef.current !== growthStage && !isDead) {
-      setShowGrowthBurst(true)
+      queueMicrotask(() => setShowGrowthBurst(true))
       const timer = setTimeout(() => setShowGrowthBurst(false), 800)
       return () => clearTimeout(timer)
     }
@@ -134,7 +138,7 @@ export const PlantVisual = memo(function PlantVisual({
 
   useEffect(() => {
     if (weather !== 'stormy') {
-      setIsStormShaking(false)
+      queueMicrotask(() => setIsStormShaking(false))
       return
     }
 
@@ -206,6 +210,8 @@ export const PlantVisual = memo(function PlantVisual({
           size={size}
           showGrowthTransition={showGrowthBurst}
           alignBottom={alignBottom}
+          showStatusIndicator={!hideStatusIndicators}
+          priority={priority}
         />
       </div>
 
@@ -223,7 +229,7 @@ export const PlantVisual = memo(function PlantVisual({
       )}
 
       {/* Needs water indicator - shows when plant hasn't been watered today */}
-      {!wateredToday && !isDead && !isWatering && (
+      {!hideStatusIndicators && !wateredToday && !isDead && !isWatering && (
         <div className="needs-water-indicator">
           <div className="relative flex items-center justify-center">
             {/* Watering can icon */}
@@ -238,14 +244,6 @@ export const PlantVisual = memo(function PlantVisual({
         </div>
       )}
 
-      {/* Wilting indicator - more prominent (only shows when critically low) */}
-      {wilting && !isDead && (
-        <div className="absolute -top-2 -right-2 flex items-center gap-0.5 bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 rounded-full shadow-sm">
-          <span className="text-xs">⚠️</span>
-          <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">Critical!</span>
-        </div>
-      )}
-
       {/* Growth stage indicator - enhanced */}
       {growthStage === 'blooming' && !isDead && !wilting && (
         <div className="absolute -top-1 -right-1 flex">
@@ -254,12 +252,6 @@ export const PlantVisual = memo(function PlantVisual({
         </div>
       )}
 
-      {/* Mature badge */}
-      {plant.status === 'mature' && !isDead && (
-        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-md">
-          MATURE
-        </div>
-      )}
 
       {/* Growth burst effect */}
       {showGrowthBurst && (
@@ -289,12 +281,12 @@ export function CherryBlossomPetals({ active }: { active: boolean }) {
 
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden">
-      {petals.map((id) => (
+      {petals.map((id, index) => (
         <span
           key={id}
           className="cherry-petal absolute text-pink-300 text-xs"
           style={{
-            left: `${Math.random() * 80 + 10}%`,
+            left: `${[18, 31, 46, 59, 72, 84][index % 6]}%`,
             top: '0',
           }}
         >

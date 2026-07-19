@@ -11,7 +11,6 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { getAuthUser } from '@/lib/auth-cached'
-import { revalidatePath } from 'next/cache'
 import type {
   ActivityLog,
   Reflection,
@@ -405,7 +404,6 @@ export async function createReflection(
     return { success: false, error: error.message }
   }
 
-  revalidatePath('/garden')
 
   return {
     success: true,

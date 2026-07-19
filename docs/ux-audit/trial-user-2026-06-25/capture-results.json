@@ -1,0 +1,326 @@
+[
+  {
+    "name": "01-landing-desktop",
+    "requestedUrl": "http://127.0.0.1:3000/",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3000/",
+    "screenshotPath": "D:\\Code\\habit-garden\\docs\\ux-audit\\trial-user-2026-06-25\\01-landing-desktop.png",
+    "consoleErrors": [
+      "warning: Paddle client token not configured. Set NEXT_PUBLIC_PADDLE_CLIENT_TOKEN in .env.local"
+    ],
+    "snapshot": {
+      "title": "Habien - Gamify Your Habits & Grow Your Life",
+      "url": "http://127.0.0.1:3000/",
+      "h1": [
+        "Grow Your Habits,Watch Them Flourish"
+      ],
+      "buttons": [
+        {
+          "text": "Sign In",
+          "href": "/login",
+          "tag": "A"
+        },
+        {
+          "text": "Get Started",
+          "href": "/signup",
+          "tag": "A"
+        },
+        {
+          "text": "Start Growing Free",
+          "href": "/signup",
+          "tag": "A"
+        },
+        {
+          "text": "View Pricing",
+          "href": "#pricing",
+          "tag": "A"
+        },
+        {
+          "text": "Start Free",
+          "href": "/signup",
+          "tag": "A"
+        },
+        {
+          "text": "Subscribe to Pro",
+          "href": null,
+          "tag": "BUTTON"
+        },
+        {
+          "text": "Subscribe to Premium",
+          "href": null,
+          "tag": "BUTTON"
+        },
+        {
+          "text": "Privacy",
+          "href": "/privacy",
+          "tag": "A"
+        },
+        {
+          "text": "Terms",
+          "href": "/terms",
+          "tag": "A"
+        },
+        {
+          "text": "Refunds",
+          "href": "/refund",
+          "tag": "A"
+        },
+        {
+          "text": "Contact",
+          "href": "mailto:support@habitgarden.com",
+          "tag": "A"
+        }
+      ],
+      "visibleText": "🌱\nHabit Garden\nSign In\nGet Started\n🌳\nGrow Your Habits,\nWatch Them Flourish\n\nTransform your daily routines into a thriving digital garden. Every positive action nurtures your plants—and yourself.\n\nStart Growing Free\nView Pricing\nWho Do You Want To Become?\n\nTrue behavior change is identity change. You might start a habit because of motivation, but you'll stick with it because it becomes who you are.\n\nOutcome Based\n\nMost people focus on what they want to achieve (losing weight, writing a book). This leads to temporary results.\n\nIdentity Based\n\nWe focus on who you wish to become. Every action you take is a vote for the type of person you wish to become.\n\nSmall Wins\n\nYou don't need to change everything at once. Decide the type of person you want to be. Prove it to yourself with small wins.\n\nGamify Your Growth\n\nWe make building habits as satisfying as playing a game.\n\nDaily Watering\n\nCheck-in daily to water your plants. Neglect them, and they'll wither.\n\nStreak Bonfires\n\nMaintain streaks to light up your garden at night with bonfires.\n\nVisual Progress\n\nWatch your habits literally grow from seeds to mighty oaks.\n\nHarvest Rewards\n\nCollect fruits from your trees to unlock new garden skins.\n\nInvest In Your Growth\n\nChoose the plan that best fits your journey. Start for free, upgrade when you're ready to commit.\n\nMonthly\nYearly\n(Save 20%)\nSeedling\n🌱\nStart your habit journey\n$0/forever\n3 plant slots\nTier 1-2 plants\n3x3 garden\nBasic decorations\nLevels 1-10\nStart Free\nMost Popular\nGardener\n🌿\nAchieve your goals\n$4.99/mo\n8 plant slots\nTier 1-4 plants\n5x5 garden\nAdvanced decorations\nLeve",
+      "activeElement": "<body class=\"__variable_f27602 __variable_22812c __variable_d898da __variable_6ef691 antialiased\"><div hidden=\"\"><!--$--><!--/$--></div><script>((e, i, s, u, m, a, l, h)=>{\n    let d = document.documentElement, w = [\n        \"light\",\n        \"dark\"\n    ];\n    function p(n) {\n        (Array.isArray(e"
+    }
+  },
+  {
+    "name": "02-landing-pricing-section",
+    "requestedUrl": "http://127.0.0.1:3000/",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3000/",
+    "screenshotPath": "D:\\Code\\habit-garden\\docs\\ux-audit\\trial-user-2026-06-25\\02-landing-pricing-section.png",
+    "consoleErrors": [
+      "warning: Paddle client token not configured. Set NEXT_PUBLIC_PADDLE_CLIENT_TOKEN in .env.local"
+    ],
+    "snapshot": {
+      "title": "Habien - Gamify Your Habits & Grow Your Life",
+      "url": "http://127.0.0.1:3000/",
+      "h1": [
+        "Grow Your Habits,Watch Them Flourish"
+      ],
+      "buttons": [
+        {
+          "text": "Sign In",
+          "href": "/login",
+          "tag": "A"
+        },
+        {
+          "text": "Get Started",
+          "href": "/signup",
+          "tag": "A"
+        },
+        {
+          "text": "Start Growing Free",
+          "href": "/signup",
+          "tag": "A"
+        },
+        {
+          "text": "View Pricing",
+          "href": "#pricing",
+          "tag": "A"
+        },
+        {
+          "text": "Start Free",
+          "href": "/signup",
+          "tag": "A"
+        },
+        {
+          "text": "Subscribe to Pro",
+          "href": null,
+          "tag": "BUTTON"
+        },
+        {
+          "text": "Subscribe to Premium",
+          "href": null,
+          "tag": "BUTTON"
+        },
+        {
+          "text": "Privacy",
+          "href": "/privacy",
+          "tag": "A"
+        },
+        {
+          "text": "Terms",
+          "href": "/terms",
+          "tag": "A"
+        },
+        {
+          "text": "Refunds",
+          "href": "/refund",
+          "tag": "A"
+        },
+        {
+          "text": "Contact",
+          "href": "mailto:support@habitgarden.com",
+          "tag": "A"
+        }
+      ],
+      "visibleText": "🌱\nHabit Garden\nSign In\nGet Started\n🌳\nGrow Your Habits,\nWatch Them Flourish\n\nTransform your daily routines into a thriving digital garden. Every positive action nurtures your plants—and yourself.\n\nStart Growing Free\nView Pricing\nWho Do You Want To Become?\n\nTrue behavior change is identity change. You might start a habit because of motivation, but you'll stick with it because it becomes who you are.\n\nOutcome Based\n\nMost people focus on what they want to achieve (losing weight, writing a book). This leads to temporary results.\n\nIdentity Based\n\nWe focus on who you wish to become. Every action you take is a vote for the type of person you wish to become.\n\nSmall Wins\n\nYou don't need to change everything at once. Decide the type of person you want to be. Prove it to yourself with small wins.\n\nGamify Your Growth\n\nWe make building habits as satisfying as playing a game.\n\nDaily Watering\n\nCheck-in daily to water your plants. Neglect them, and they'll wither.\n\nStreak Bonfires\n\nMaintain streaks to light up your garden at night with bonfires.\n\nVisual Progress\n\nWatch your habits literally grow from seeds to mighty oaks.\n\nHarvest Rewards\n\nCollect fruits from your trees to unlock new garden skins.\n\nInvest In Your Growth\n\nChoose the plan that best fits your journey. Start for free, upgrade when you're ready to commit.\n\nMonthly\nYearly\n(Save 20%)\nSeedling\n🌱\nStart your habit journey\n$0/forever\n3 plant slots\nTier 1-2 plants\n3x3 garden\nBasic decorations\nLevels 1-10\nStart Free\nMost Popular\nGardener\n🌿\nAchieve your goals\n$4.99/mo\n8 plant slots\nTier 1-4 plants\n5x5 garden\nAdvanced decorations\nLeve",
+      "activeElement": "<body class=\"__variable_f27602 __variable_22812c __variable_d898da __variable_6ef691 antialiased\"><div hidden=\"\"><!--$--><!--/$--></div><script>((e, i, s, u, m, a, l, h)=>{\n    let d = document.documentElement, w = [\n        \"light\",\n        \"dark\"\n    ];\n    function p(n) {\n        (Array.isArray(e"
+    }
+  },
+  {
+    "name": "03-signup",
+    "requestedUrl": "http://127.0.0.1:3000/signup",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3000/signup",
+    "screenshotPath": "D:\\Code\\habit-garden\\docs\\ux-audit\\trial-user-2026-06-25\\03-signup.png",
+    "consoleErrors": [],
+    "snapshot": {
+      "title": "Habien - Gamify Your Habits & Grow Your Life",
+      "url": "http://127.0.0.1:3000/signup",
+      "h1": [],
+      "buttons": [
+        {
+          "text": "Create Account",
+          "href": null,
+          "tag": "BUTTON"
+        },
+        {
+          "text": "Google",
+          "href": null,
+          "tag": "BUTTON"
+        },
+        {
+          "text": "Sign In",
+          "href": "/login",
+          "tag": "A"
+        }
+      ],
+      "visibleText": "🌱\nStart Your Garden\nCreate an account to begin growing your habits\nEmail\nPassword\nCreate Account\nOR CONTINUE WITH\nGoogle\n\nAlready have an account? Sign In",
+      "activeElement": "<body class=\"__variable_f27602 __variable_22812c __variable_d898da __variable_6ef691 antialiased\"><div hidden=\"\"><!--$--><!--/$--></div><script>((e, i, s, u, m, a, l, h)=>{\n    let d = document.documentElement, w = [\n        \"light\",\n        \"dark\"\n    ];\n    function p(n) {\n        (Array.isArray(e"
+    }
+  },
+  {
+    "name": "04-login-redirect-from-garden",
+    "requestedUrl": "http://127.0.0.1:3000/garden",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3000/login",
+    "screenshotPath": "D:\\Code\\habit-garden\\docs\\ux-audit\\trial-user-2026-06-25\\04-login-redirect-from-garden.png",
+    "consoleErrors": [],
+    "snapshot": {
+      "title": "Habien - Gamify Your Habits & Grow Your Life",
+      "url": "http://127.0.0.1:3000/login",
+      "h1": [],
+      "buttons": [
+        {
+          "text": "Sign In",
+          "href": null,
+          "tag": "BUTTON"
+        },
+        {
+          "text": "Google",
+          "href": null,
+          "tag": "BUTTON"
+        },
+        {
+          "text": "Sign Up",
+          "href": "/signup",
+          "tag": "A"
+        }
+      ],
+      "visibleText": "🌱\nWelcome Back\nSign in to continue growing your habits\nEmail\nPassword\nSign In\nOR CONTINUE WITH\nGoogle\n\nDon't have an account? Sign Up",
+      "activeElement": "<body class=\"__variable_f27602 __variable_22812c __variable_d898da __variable_6ef691 antialiased\"><div hidden=\"\"><!--$--><!--/$--></div><script>((e, i, s, u, m, a, l, h)=>{\n    let d = document.documentElement, w = [\n        \"light\",\n        \"dark\"\n    ];\n    function p(n) {\n        (Array.isArray(e"
+    }
+  },
+  {
+    "name": "05-landing-mobile",
+    "requestedUrl": "http://127.0.0.1:3000/",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3000/",
+    "screenshotPath": "D:\\Code\\habit-garden\\docs\\ux-audit\\trial-user-2026-06-25\\05-landing-mobile.png",
+    "consoleErrors": [
+      "warning: Paddle client token not configured. Set NEXT_PUBLIC_PADDLE_CLIENT_TOKEN in .env.local"
+    ],
+    "snapshot": {
+      "title": "Habien - Gamify Your Habits & Grow Your Life",
+      "url": "http://127.0.0.1:3000/",
+      "h1": [
+        "Grow Your Habits,Watch Them Flourish"
+      ],
+      "buttons": [
+        {
+          "text": "Sign In",
+          "href": "/login",
+          "tag": "A"
+        },
+        {
+          "text": "Get Started",
+          "href": "/signup",
+          "tag": "A"
+        },
+        {
+          "text": "Start Growing Free",
+          "href": "/signup",
+          "tag": "A"
+        },
+        {
+          "text": "View Pricing",
+          "href": "#pricing",
+          "tag": "A"
+        },
+        {
+          "text": "Start Free",
+          "href": "/signup",
+          "tag": "A"
+        },
+        {
+          "text": "Subscribe to Pro",
+          "href": null,
+          "tag": "BUTTON"
+        },
+        {
+          "text": "Subscribe to Premium",
+          "href": null,
+          "tag": "BUTTON"
+        },
+        {
+          "text": "Privacy",
+          "href": "/privacy",
+          "tag": "A"
+        },
+        {
+          "text": "Terms",
+          "href": "/terms",
+          "tag": "A"
+        },
+        {
+          "text": "Refunds",
+          "href": "/refund",
+          "tag": "A"
+        },
+        {
+          "text": "Contact",
+          "href": "mailto:support@habitgarden.com",
+          "tag": "A"
+        }
+      ],
+      "visibleText": "🌱\nHabit Garden\nSign In\nGet Started\n🌳\nGrow Your Habits,\nWatch Them Flourish\n\nTransform your daily routines into a thriving digital garden. Every positive action nurtures your plants—and yourself.\n\nStart Growing Free\nView Pricing\nWho Do You Want To Become?\n\nTrue behavior change is identity change. You might start a habit because of motivation, but you'll stick with it because it becomes who you are.\n\nOutcome Based\n\nMost people focus on what they want to achieve (losing weight, writing a book). This leads to temporary results.\n\nIdentity Based\n\nWe focus on who you wish to become. Every action you take is a vote for the type of person you wish to become.\n\nSmall Wins\n\nYou don't need to change everything at once. Decide the type of person you want to be. Prove it to yourself with small wins.\n\nGamify Your Growth\n\nWe make building habits as satisfying as playing a game.\n\nDaily Watering\n\nCheck-in daily to water your plants. Neglect them, and they'll wither.\n\nStreak Bonfires\n\nMaintain streaks to light up your garden at night with bonfires.\n\nVisual Progress\n\nWatch your habits literally grow from seeds to mighty oaks.\n\nHarvest Rewards\n\nCollect fruits from your trees to unlock new garden skins.\n\nInvest In Your Growth\n\nChoose the plan that best fits your journey. Start for free, upgrade when you're ready to commit.\n\nMonthly\nYearly\n(Save 20%)\nSeedling\n🌱\nStart your habit journey\n$0/forever\n3 plant slots\nTier 1-2 plants\n3x3 garden\nBasic decorations\nLevels 1-10\nStart Free\nMost Popular\nGardener\n🌿\nAchieve your goals\n$4.99/mo\n8 plant slots\nTier 1-4 plants\n5x5 garden\nAdvanced decorations\nLeve",
+      "activeElement": "<body class=\"__variable_f27602 __variable_22812c __variable_d898da __variable_6ef691 antialiased\"><div hidden=\"\"><!--$--><!--/$--></div><script>((e, i, s, u, m, a, l, h)=>{\n    let d = document.documentElement, w = [\n        \"light\",\n        \"dark\"\n    ];\n    function p(n) {\n        (Array.isArray(e"
+    }
+  },
+  {
+    "name": "06-signup-mobile",
+    "requestedUrl": "http://127.0.0.1:3000/signup",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3000/signup",
+    "screenshotPath": "D:\\Code\\habit-garden\\docs\\ux-audit\\trial-user-2026-06-25\\06-signup-mobile.png",
+    "consoleErrors": [],
+    "snapshot": {
+      "title": "Habien - Gamify Your Habits & Grow Your Life",
+      "url": "http://127.0.0.1:3000/signup",
+      "h1": [],
+      "buttons": [
+        {
+          "text": "Create Account",
+          "href": null,
+          "tag": "BUTTON"
+        },
+        {
+          "text": "Google",
+          "href": null,
+          "tag": "BUTTON"
+        },
+        {
+          "text": "Sign In",
+          "href": "/login",
+          "tag": "A"
+        }
+      ],
+      "visibleText": "🌱\nStart Your Garden\nCreate an account to begin growing your habits\nEmail\nPassword\nCreate Account\nOR CONTINUE WITH\nGoogle\n\nAlready have an account? Sign In",
+      "activeElement": "<body class=\"__variable_f27602 __variable_22812c __variable_d898da __variable_6ef691 antialiased\"><div hidden=\"\"><!--$--><!--/$--></div><script>((e, i, s, u, m, a, l, h)=>{\n    let d = document.documentElement, w = [\n        \"light\",\n        \"dark\"\n    ];\n    function p(n) {\n        (Array.isArray(e"
+    }
+  }
+]

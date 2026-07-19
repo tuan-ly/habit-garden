@@ -15,17 +15,6 @@ import type {
   RecipeWithDetails,
   DecorationRotation,
 } from '@/types/database'
-import { getUserInventory } from '@/lib/actions/inventory'
-import { getRecipes, craftDecoration as craftDecorationAction } from '@/lib/actions/crafting'
-import {
-  getPlacedDecorations,
-  placeDecoration as placeDecorationAction,
-  pickUpDecoration as pickUpDecorationAction,
-  moveDecoration as moveDecorationAction,
-  rotateDecoration as rotateDecorationAction,
-  purchaseDecoration as purchaseDecorationAction,
-} from '@/lib/actions/decorations'
-import { getCoinBalance } from '@/lib/actions/coins'
 
 // ============================================
 // Return types
@@ -51,6 +40,10 @@ interface PlaceResult {
 interface ActionResult {
   success: boolean
   error?: string
+}
+
+interface PickupResult extends ActionResult {
+  inventoryItemId?: string
 }
 
 // ============================================
@@ -81,9 +74,10 @@ interface InventoryContextType {
     col: number,
     rotation?: DecorationRotation
   ) => Promise<PlaceResult>
-  pickUpDecoration: (placedDecoId: string) => Promise<ActionResult>
+  pickUpDecoration: (placedDecoId: string) => Promise<PickupResult>
   moveDecoration: (placedDecoId: string, row: number, col: number) => Promise<ActionResult>
   rotateDecoration: (placedDecoId: string) => Promise<ActionResult>
+  hydratePlacedDecorations: (decorations: PlacedDecorationWithType[]) => void
 
   // Helpers
   getMaterialCount: (materialSlug: string) => number
@@ -139,6 +133,9 @@ export function InventoryProvider({
   const [recipesLoaded, setRecipesLoaded] = useState(false)
   // De-dupe concurrent loadRecipes calls — single in-flight promise wins
   const recipesInFlight = useRef<Promise<void> | null>(null)
+  const hydratePlacedDecorations = useCallback((next: PlacedDecorationWithType[]) => {
+    setPlacedDecorations(next)
+  }, [])
 
   // Per-operation loading helpers
   const startOp = useCallback((op: string) => {
@@ -163,9 +160,15 @@ export function InventoryProvider({
   const refreshInventory = useCallback(async () => {
     startOp('refresh')
     try {
-      const [invResult, coinsResult] = await Promise.all([
+      const [{ getUserInventory }, { getCoinBalance }, { getPlacedDecorations }] = await Promise.all([
+        import('@/lib/actions/inventory'),
+        import('@/lib/actions/coins'),
+        import('@/lib/actions/decorations'),
+      ])
+      const [invResult, coinsResult, placedResult] = await Promise.all([
         getUserInventory(),
         getCoinBalance(),
+        getPlacedDecorations(),
       ])
 
       if ('materials' in invResult) {
@@ -175,6 +178,9 @@ export function InventoryProvider({
 
       if ('coins' in coinsResult) {
         setCoins(coinsResult.coins)
+      }
+      if ('decorations' in placedResult) {
+        setPlacedDecorations(placedResult.decorations)
       }
     } finally {
       endOp('refresh')
@@ -191,6 +197,7 @@ export function InventoryProvider({
     startOp('recipes')
     const p = (async () => {
       try {
+        const { getRecipes } = await import('@/lib/actions/crafting')
         const result = await getRecipes()
         if ('recipes' in result) {
           setRecipes(result.recipes)
@@ -212,6 +219,10 @@ export function InventoryProvider({
     async (recipeId: string): Promise<CraftResult> => {
       startOp('craft')
       try {
+        const [{ craftDecoration: craftDecorationAction }, { getUserInventory }] = await Promise.all([
+          import('@/lib/actions/crafting'),
+          import('@/lib/actions/inventory'),
+        ])
         const result = await craftDecorationAction(recipeId)
 
         if (!('success' in result)) {
@@ -242,6 +253,15 @@ export function InventoryProvider({
     async (decoTypeId: string): Promise<PurchaseResult> => {
       startOp('purchase')
       try {
+        const [
+          { purchaseDecoration: purchaseDecorationAction },
+          { getUserInventory },
+          { getCoinBalance },
+        ] = await Promise.all([
+          import('@/lib/actions/decorations'),
+          import('@/lib/actions/inventory'),
+          import('@/lib/actions/coins'),
+        ])
         const result = await purchaseDecorationAction(decoTypeId)
 
         if (!('success' in result)) {
@@ -281,8 +301,37 @@ export function InventoryProvider({
       col: number,
       rotation?: DecorationRotation
     ): Promise<PlaceResult> => {
+      const inventoryItem = decorations.find((item) => item.id === inventoryItemId)
+      const decorationType = inventoryItem?.decoration_type
+      if (!inventoryItem || !decorationType) {
+        return { success: false, error: 'Decoration not found in inventory' }
+      }
+
+      const optimisticId = `optimistic-${crypto.randomUUID()}`
+      const optimisticDecoration: PlacedDecorationWithType = {
+        id: optimisticId,
+        user_id: inventoryItem.user_id,
+        decoration_type_id: decorationType.id,
+        grid_row: row,
+        grid_col: col,
+        grid_size: decorationType.grid_size,
+        rotation: rotation ?? 0,
+        placed_at: new Date().toISOString(),
+        decoration_type: decorationType,
+      }
+
+      // Commit the user's intent to the UI before loading the server-action chunk
+      // or waiting for Supabase. The temporary id is reconciled on success.
+      setPlacedDecorations((prev) => [...prev, optimisticDecoration])
+      setDecorations((prev) =>
+        prev.flatMap((item) => {
+          if (item.id !== inventoryItemId) return [item]
+          return item.quantity > 1 ? [{ ...item, quantity: item.quantity - 1 }] : []
+        })
+      )
       startOp('place')
       try {
+        const { placeDecoration: placeDecorationAction } = await import('@/lib/actions/decorations')
         const result = await placeDecorationAction({
           inventory_item_id: inventoryItemId,
           grid_row: row,
@@ -291,65 +340,89 @@ export function InventoryProvider({
         })
 
         if (!('success' in result)) {
+          setPlacedDecorations((prev) => prev.filter((item) => item.id !== optimisticId))
+          setDecorations((prev) => {
+            const withoutOptimisticQuantity = prev.filter((item) => item.id !== inventoryItemId)
+            return [...withoutOptimisticQuantity, inventoryItem]
+          })
           return { success: false, error: (result as { error: string }).error }
         }
 
         const decorationId = (result as { success: true; decorationId: string }).decorationId
-
-        // Refresh inventory (quantity decremented) and placed decorations list
-        const [invResult, placedResult] = await Promise.all([
-          getUserInventory(),
-          getPlacedDecorations(),
-        ])
-
-        if ('decorations' in invResult) {
-          setDecorations(invResult.decorations)
-        }
-        if ('decorations' in placedResult) {
-          setPlacedDecorations(placedResult.decorations)
-        }
+        setPlacedDecorations((prev) =>
+          prev.map((item) => item.id === optimisticId ? { ...item, id: decorationId } : item)
+        )
 
         return { success: true as boolean, decorationId } as PlaceResult
       } catch {
+        setPlacedDecorations((prev) => prev.filter((item) => item.id !== optimisticId))
+        setDecorations((prev) => {
+          const withoutOptimisticQuantity = prev.filter((item) => item.id !== inventoryItemId)
+          return [...withoutOptimisticQuantity, inventoryItem]
+        })
         return { success: false, error: 'Network error' }
       } finally {
         endOp('place')
       }
     },
-    [startOp, endOp]
+    [decorations, startOp, endOp]
   )
 
   // -----------------------------------------------
   // pickUpDecoration — remove from grid, return to inventory
   // -----------------------------------------------
   const pickUpDecoration = useCallback(
-    async (placedDecoId: string): Promise<ActionResult> => {
+    async (placedDecoId: string): Promise<PickupResult> => {
+      const placedDecoration = placedDecorations.find((item) => item.id === placedDecoId)
+      if (!placedDecoration) return { success: false, error: 'Decoration not found' }
+
+      const previousIndex = placedDecorations.findIndex((item) => item.id === placedDecoId)
+      const rollback = () => {
+        setPlacedDecorations((prev) => {
+          if (prev.some((item) => item.id === placedDecoId)) return prev
+          const insertAt = Math.min(previousIndex, prev.length)
+          return [
+            ...prev.slice(0, insertAt),
+            placedDecoration,
+            ...prev.slice(insertAt),
+          ]
+        })
+      }
+
+      // Commit the pickup intent before loading the server-action chunk or
+      // waiting for Supabase. Re-add the same entity if the mutation fails.
+      setPlacedDecorations((prev) => prev.filter((item) => item.id !== placedDecoId))
       startOp('pickup')
       try {
+        const { pickUpDecoration: pickUpDecorationAction } = await import('@/lib/actions/decorations')
         const result = await pickUpDecorationAction({
           placed_decoration_id: placedDecoId,
         })
 
         if (!('success' in result)) {
+          rollback()
           return { success: false, error: (result as { error: string }).error }
         }
 
-        // Optimistically remove from placed list; refresh inventory
-        setPlacedDecorations((prev) => prev.filter((d) => d.id !== placedDecoId))
+        const inventoryItem = result.inventoryItem
+        setDecorations((prev) => {
+          const existingIndex = prev.findIndex((item) => item.id === inventoryItem.id)
+          if (existingIndex === -1) return [...prev, inventoryItem]
+          return prev.map((item) => item.id === inventoryItem.id ? inventoryItem : item)
+        })
 
-        const invResult = await getUserInventory()
-        if ('decorations' in invResult) {
-          setDecorations(invResult.decorations)
-        }
-
-        return { success: true as boolean } as ActionResult
+        return {
+          success: true as boolean,
+          inventoryItemId: inventoryItem.id,
+        } as PickupResult
       } catch {
+        rollback()
         return { success: false, error: 'Network error' }
       } finally {
         endOp('pickup')
       }
     },
-    [startOp, endOp]
+    [placedDecorations, startOp, endOp]
   )
 
   // -----------------------------------------------
@@ -357,6 +430,17 @@ export function InventoryProvider({
   // -----------------------------------------------
   const moveDecoration = useCallback(
     async (placedDecoId: string, row: number, col: number): Promise<ActionResult> => {
+      const previousDecoration = placedDecorations.find((decoration) => decoration.id === placedDecoId)
+      if (!previousDecoration) return { success: false, error: 'Decoration not found' }
+
+      const rollback = () => {
+        setPlacedDecorations((prev) =>
+          prev.map((decoration) =>
+            decoration.id === placedDecoId ? previousDecoration : decoration
+          )
+        )
+      }
+
       // Apply optimistic update immediately
       setPlacedDecorations((prev) =>
         prev.map((d) =>
@@ -365,6 +449,7 @@ export function InventoryProvider({
       )
 
       try {
+        const { moveDecoration: moveDecorationAction } = await import('@/lib/actions/decorations')
         const result = await moveDecorationAction({
           placed_decoration_id: placedDecoId,
           grid_row: row,
@@ -372,20 +457,17 @@ export function InventoryProvider({
         })
 
         if (!('success' in result)) {
-          // Revert by re-fetching authoritative server state
-          const placedResult = await getPlacedDecorations()
-          if ('decorations' in placedResult) {
-            setPlacedDecorations(placedResult.decorations)
-          }
+          rollback()
           return { success: false, error: (result as { error: string }).error }
         }
 
         return { success: true as boolean } as ActionResult
       } catch {
+        rollback()
         return { success: false, error: 'Network error' }
       }
     },
-    []
+    [placedDecorations]
   )
 
   // -----------------------------------------------
@@ -406,6 +488,7 @@ export function InventoryProvider({
       )
 
       try {
+        const { rotateDecoration: rotateDecorationAction, getPlacedDecorations } = await import('@/lib/actions/decorations')
         const result = await rotateDecorationAction(placedDecoId)
 
         if (!('success' in result)) {
@@ -474,6 +557,7 @@ export function InventoryProvider({
       pickUpDecoration,
       moveDecoration,
       rotateDecoration,
+      hydratePlacedDecorations,
       getMaterialCount,
       canAfford,
     }),
@@ -496,6 +580,7 @@ export function InventoryProvider({
       pickUpDecoration,
       moveDecoration,
       rotateDecoration,
+      hydratePlacedDecorations,
       getMaterialCount,
       canAfford,
     ]

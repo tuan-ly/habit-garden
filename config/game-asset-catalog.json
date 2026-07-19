@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "decorations": {
+    "stone-lantern": {
+      "canonicalFootprint": 2,
+      "reason": "Production catalog footprint migrated from the decoration catalog."
+    },
+    "koi-pond": {
+      "canonicalFootprint": 3,
+      "reason": "Production catalog footprint migrated from the decoration catalog."
+    }
+  }
+}
