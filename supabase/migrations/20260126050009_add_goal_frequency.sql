@@ -18,4 +18,4 @@ ALTER TABLE goals
 ADD CONSTRAINT goals_frequency_check CHECK (frequency IN ('daily', 'weekly', 'monthly'));
 
 -- Create index for efficient frequency-based queries
-CREATE INDEX IF NOT EXISTS idx_goals_frequency ON goals(frequency);
+CREATE INDEX IF NOT EXISTS idx_goals_frequency ON goals(frequency);;

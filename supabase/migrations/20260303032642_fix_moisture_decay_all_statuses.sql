@@ -1,6 +1,6 @@
--- Fix moisture decay function - remove daily_weather dependency
--- Issue: Cron job was failing because daily_weather table doesn't exist
--- Solution: Simplified function to work without weather modifiers
+-- Fix moisture decay function: include all living plant statuses
+-- Bug: function only processed status='growing', missing 'thriving'/'resting'/'waiting'/'sleeping'
+-- When users log activity (activity.ts), plant status changes to 'thriving' → never got decay
 
 CREATE OR REPLACE FUNCTION public.update_daily_moisture()
 RETURNS void
@@ -12,7 +12,6 @@ DECLARE
   v_user_local_date DATE;
   v_new_moisture INTEGER;
 BEGIN
-  -- Loop through all growing plants
   FOR v_plant IN
     SELECT
       p.id,
@@ -26,22 +25,18 @@ BEGIN
     FROM plants p
     JOIN plant_types pt ON p.plant_type_id = pt.id
     LEFT JOIN profiles pr ON p.user_id = pr.id
-    WHERE p.status = 'growing'
+    WHERE p.status IN ('growing', 'thriving', 'resting', 'waiting', 'sleeping')
   LOOP
-    -- Get user's local date
     v_user_tz := v_plant.user_timezone;
     v_user_local_date := (NOW() AT TIME ZONE v_user_tz)::date;
 
-    -- Skip if plant was watered today (in user's timezone)
     IF v_plant.last_watered_at IS NOT NULL AND
        (v_plant.last_watered_at AT TIME ZONE v_user_tz)::date >= v_user_local_date THEN
       CONTINUE;
     END IF;
 
-    -- Calculate new moisture
     v_new_moisture := GREATEST(0, v_plant.current_moisture - v_plant.moisture_decay_rate);
 
-    -- Update moisture or mark as dead
     IF v_new_moisture <= 0 THEN
       UPDATE plants
       SET
@@ -61,4 +56,4 @@ BEGIN
     END IF;
   END LOOP;
 END;
-$function$;
+$function$;;

@@ -8,28 +8,23 @@
 CREATE TABLE IF NOT EXISTS identities (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
-  name TEXT NOT NULL,                    -- "Reader", "Athlete", "Developer"
-  description TEXT,                      -- Optional longer description
-  icon TEXT DEFAULT '🎯',                -- Emoji icon
-  color TEXT DEFAULT 'purple',           -- Theme color (purple, blue, green, amber, rose)
-  status TEXT DEFAULT 'active',          -- 'active', 'achieved', 'paused'
-  progress_percentage NUMERIC DEFAULT 0, -- Calculated from linked goals (0-100)
-  goals_count INTEGER DEFAULT 0,         -- Cached count of linked goals
+  name TEXT NOT NULL,
+  description TEXT,
+  icon TEXT DEFAULT '🎯',
+  color TEXT DEFAULT 'purple',
+  status TEXT DEFAULT 'active',
+  progress_percentage NUMERIC DEFAULT 0,
+  goals_count INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
 
-  -- Ensure unique identity names per user
   UNIQUE(user_id, name),
-
-  -- Status must be valid
   CONSTRAINT valid_identity_status CHECK (status IN ('active', 'achieved', 'paused')),
-
-  -- Color must be valid
   CONSTRAINT valid_identity_color CHECK (color IN ('purple', 'blue', 'green', 'amber', 'rose', 'cyan', 'pink', 'orange'))
 );
 
 COMMENT ON TABLE identities IS 'User identities for grouping goals (PREMIUM feature)';
-COMMENT ON COLUMN identities.name IS 'Identity name, e.g., "Reader", "Athlete"';
+COMMENT ON COLUMN identities.name IS 'Identity name, e.g., Reader, Athlete';
 COMMENT ON COLUMN identities.progress_percentage IS 'Average progress of all linked goals';
 
 -- =====================================================
@@ -54,23 +49,19 @@ CREATE INDEX IF NOT EXISTS idx_goals_identity ON goals(identity_id) WHERE identi
 
 ALTER TABLE identities ENABLE ROW LEVEL SECURITY;
 
--- Users can view their own identities
 CREATE POLICY "Users can view own identities"
 ON identities FOR SELECT
 USING (auth.uid() = user_id);
 
--- Users can create their own identities
 CREATE POLICY "Users can create own identities"
 ON identities FOR INSERT
 WITH CHECK (auth.uid() = user_id);
 
--- Users can update their own identities
 CREATE POLICY "Users can update own identities"
 ON identities FOR UPDATE
 USING (auth.uid() = user_id)
 WITH CHECK (auth.uid() = user_id);
 
--- Users can delete their own identities
 CREATE POLICY "Users can delete own identities"
 ON identities FOR DELETE
 USING (auth.uid() = user_id);
@@ -85,7 +76,6 @@ DECLARE
   avg_progress NUMERIC;
   goal_count INTEGER;
 BEGIN
-  -- Calculate average progress from linked goals
   SELECT
     COALESCE(AVG(
       CASE
@@ -99,7 +89,6 @@ BEGIN
   WHERE identity_id = identity_uuid
     AND season_status = 'active';
 
-  -- Update the identity
   UPDATE identities
   SET
     progress_percentage = LEAST(avg_progress, 100),
@@ -118,12 +107,10 @@ COMMENT ON FUNCTION update_identity_progress IS 'Recalculates identity progress 
 CREATE OR REPLACE FUNCTION trigger_update_identity_progress()
 RETURNS TRIGGER AS $$
 BEGIN
-  -- Update old identity if it existed
   IF OLD IS NOT NULL AND OLD.identity_id IS NOT NULL THEN
     PERFORM update_identity_progress(OLD.identity_id);
   END IF;
 
-  -- Update new identity if it exists
   IF NEW IS NOT NULL AND NEW.identity_id IS NOT NULL THEN
     PERFORM update_identity_progress(NEW.identity_id);
   END IF;
@@ -132,24 +119,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Trigger on goal updates (progress, linking/unlinking)
 DROP TRIGGER IF EXISTS trigger_goal_identity_progress ON goals;
 CREATE TRIGGER trigger_goal_identity_progress
 AFTER INSERT OR UPDATE OR DELETE ON goals
 FOR EACH ROW
-EXECUTE FUNCTION trigger_update_identity_progress();
-
--- =====================================================
--- 7. Seed some preset identity templates (optional)
--- =====================================================
-
--- These are just suggestions shown in the UI, not actual data
--- The UI will show these as preset options:
--- - Reader (📚, purple)
--- - Athlete (🏃, green)
--- - Developer (💻, blue)
--- - Artist (🎨, rose)
--- - Learner (🎓, amber)
--- - Mindful (🧘, cyan)
--- - Builder (🔨, orange)
--- - Explorer (🌍, pink)
+EXECUTE FUNCTION trigger_update_identity_progress();;

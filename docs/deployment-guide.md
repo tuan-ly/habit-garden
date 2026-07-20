@@ -1,7 +1,7 @@
 # Habit Garden — Deployment Guide
 
 > **Purpose**: Everything needed to deploy Habit Garden to production — Vercel, Supabase, Paddle, env vars, and mobile builds.
-> **Last updated**: 2026-04-19
+> **Last updated**: 2026-07-20
 
 ---
 
@@ -51,18 +51,31 @@ NEXT_PUBLIC_PADDLE_PREMIUM_YEARLY_PRICE_ID=pri_xxx
 
 ### 3.1 Database Migrations
 
-Run all migrations in order from `supabase/migrations/`:
+The migration files in `supabase/migrations/` and the linked project's migration
+ledger are the canonical database history. Before deploying, verify that both
+sides are aligned and replay the chain locally:
 
 ```bash
-# Via Supabase CLI (recommended)
-npx supabase db push
-
-# Or apply individually via Supabase MCP tool / SQL Editor
+npx supabase migration list --linked
+npx supabase db reset --local --no-seed
+npx supabase db push --linked --dry-run
+npx supabase db push --linked
 ```
 
-Migration order matters — files are named `YYYYMMDD_description.sql`.
+Create every new schema change through the CLI so it receives a unique
+14-digit timestamp:
 
-> **Important**: Verify `20260311_crafting_decoration_system.sql` has been applied to production before launch (Phase 8 migration — as of 2026-04-19, may still be pending on prod).
+```bash
+npx supabase migration new descriptive_change_name
+```
+
+Migration order matters — files are named
+`YYYYMMDDHHMMSS_description.sql`. Do not rename or combine applied migrations.
+
+> **Guardrail**: Do not change the production schema through the Dashboard SQL
+> Editor. `migration repair` only changes ledger metadata and is allowed only
+> after verifying that the corresponding SQL state already exists. Never run
+> `supabase db reset --linked` against production.
 
 ### 3.2 Cron Job
 

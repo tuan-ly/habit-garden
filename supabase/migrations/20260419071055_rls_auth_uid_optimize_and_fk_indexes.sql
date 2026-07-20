@@ -1,10 +1,5 @@
--- Phase 05: RLS init-plan optimization + missing FK indexes
--- Wraps bare auth.uid() in (SELECT auth.uid()) for once-per-query evaluation.
--- Adds indexes to all unindexed foreign keys (avoids seq-scan on cascade/join).
 
--- =====================================================
--- RLS: wrap auth.uid() for init-plan optimization
--- =====================================================
+-- RLS: wrap auth.uid() in SELECT subquery for init-plan evaluation
 DROP POLICY IF EXISTS "Users can insert their own activity logs" ON public.activity_logs;
 CREATE POLICY "Users can insert their own activity logs" ON public.activity_logs
   FOR INSERT TO authenticated WITH CHECK ((SELECT auth.uid()) = user_id);
@@ -159,9 +154,7 @@ DROP POLICY IF EXISTS "Users can view own achievements" ON public.user_achieveme
 CREATE POLICY "Users can view own achievements" ON public.user_achievements
   FOR SELECT TO authenticated USING ((SELECT auth.uid()) = user_id);
 
--- =====================================================
--- FK indexes (avoid seq-scans on cascade/join)
--- =====================================================
+-- FK indexes (unindexed FKs = seq scans on cascade/join)
 CREATE INDEX IF NOT EXISTS idx_activity_logs_season_id ON public.activity_logs(season_id);
 CREATE INDEX IF NOT EXISTS idx_goal_logs_plant_id ON public.goal_logs(plant_id);
 CREATE INDEX IF NOT EXISTS idx_goal_logs_user_id ON public.goal_logs(user_id);
@@ -175,3 +168,4 @@ CREATE INDEX IF NOT EXISTS idx_subscriptions_tier_id ON public.subscriptions(tie
 CREATE INDEX IF NOT EXISTS idx_user_achievements_achievement_id ON public.user_achievements(achievement_id);
 CREATE INDEX IF NOT EXISTS idx_user_inventory_decoration_type_id ON public.user_inventory(decoration_type_id);
 CREATE INDEX IF NOT EXISTS idx_user_inventory_material_id ON public.user_inventory(material_id);
+;

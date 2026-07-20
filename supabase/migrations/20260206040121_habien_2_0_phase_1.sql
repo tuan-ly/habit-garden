@@ -112,4 +112,4 @@ ALTER TABLE profiles ADD CONSTRAINT profiles_phase_check
 -- 6. Create index for tier filtering
 -- =====================================================
 
-CREATE INDEX IF NOT EXISTS idx_plant_types_tier ON plant_types(tier);
+CREATE INDEX IF NOT EXISTS idx_plant_types_tier ON plant_types(tier);;

@@ -14,7 +14,4 @@ COMMENT ON COLUMN plants.grid_row IS 'Top-left row position of the plant in the 
 COMMENT ON COLUMN plants.grid_col IS 'Top-left column position of the plant in the garden grid';
 
 -- Create index for efficient grid queries
-CREATE INDEX IF NOT EXISTS idx_plants_grid_position ON plants(user_id, grid_row, grid_col);
-
--- Note: The 'position' column is kept for backward compatibility but will be deprecated
--- New plants should use grid_row and grid_col instead
+CREATE INDEX IF NOT EXISTS idx_plants_grid_position ON plants(user_id, grid_row, grid_col);;
