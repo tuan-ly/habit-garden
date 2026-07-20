@@ -45,6 +45,8 @@ next-env.d.ts
 
 # temp files
 tmpclaude-*
+/supabase/.branches/
+/supabase/.temp/
 
 # Windows reserved names (created by scripts using wrong redirect)
 nul
