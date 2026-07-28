@@ -58,6 +58,11 @@ export function ReadingHome({ snapshot }: { snapshot: ReadingJourneySnapshot }) 
   const progress = Math.min(100, (completed / target) * 100)
   const completedToday = completed > 0
   const stage = STAGE_META[growth.plant_stage]
+  const plantMessage = completedToday
+    ? today?.met_target
+      ? `Hôm nay bạn đã nuôi cây bằng ${completed} trang và đạt mục tiêu.`
+      : `Hôm nay bạn đã nuôi cây bằng ${completed} trang. Mỗi trang đều được ghi nhận.`
+    : stage.message
 
   return (
     <ReadingShell
@@ -116,7 +121,7 @@ export function ReadingHome({ snapshot }: { snapshot: ReadingJourneySnapshot }) 
             />
           </div>
 
-          <p className="mt-4 text-sm leading-6 text-[#62735b]">{stage.message}</p>
+          <p className="mt-4 text-sm leading-6 text-[#62735b]">{plantMessage}</p>
 
           <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
             <div className="rounded-2xl bg-[#eef3e7] p-3">
@@ -162,4 +167,3 @@ export function ReadingHome({ snapshot }: { snapshot: ReadingJourneySnapshot }) 
     </ReadingShell>
   )
 }
-

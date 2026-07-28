@@ -6,6 +6,10 @@ const migration = readFileSync(
   resolve('supabase/migrations/20260728121000_reading_habit_vertical_slice.sql'),
   'utf8'
 )
+const grantsMigration = readFileSync(
+  resolve('supabase/migrations/20260728123500_grant_guided_habit_table_access.sql'),
+  'utf8'
+)
 const actions = readFileSync(
   resolve('src/lib/actions/habit-sessions.ts'),
   'utf8'
@@ -43,5 +47,18 @@ describe('habit session persistence contract', () => {
     expect(migration).toContain("WHERE status IN ('running', 'paused', 'awaiting_completion')")
     expect(actions).not.toMatch(/\.select\(\s*['"`]\*['"`]\s*\)/)
   })
-})
 
+  it('explicitly exposes RLS-protected tables to authenticated users', () => {
+    for (const table of [
+      'habits',
+      'goal_plans',
+      'habit_sessions',
+      'daily_progress',
+      'growth_states',
+    ]) {
+      expect(grantsMigration).toContain(
+        `GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.${table} TO authenticated`
+      )
+    }
+  })
+})

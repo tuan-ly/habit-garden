@@ -126,6 +126,33 @@ describe('reading habit vertical slice UI', () => {
     )
   })
 
+  it('acknowledges persisted progress even while the plant is still a seed', () => {
+    render(
+      <ReadingHome
+        snapshot={{
+          ...journey,
+          today: {
+            id: 'daily-1',
+            habit_id: habit.id,
+            user_id: habit.user_id,
+            progress_date: '2026-07-28',
+            target_value: 5,
+            completed_value: 7,
+            session_count: 1,
+            met_target: true,
+            completed_at: '2026-07-28T00:26:00.000Z',
+            created_at: '2026-07-28T00:26:00.000Z',
+            updated_at: '2026-07-28T00:26:00.000Z',
+          },
+        }}
+      />
+    )
+
+    expect(screen.getByText('7/5 trang')).toBeInTheDocument()
+    expect(screen.getByText('Hôm nay bạn đã nuôi cây bằng 7 trang và đạt mục tiêu.')).toBeInTheDocument()
+    expect(screen.queryByText('Cây tri thức đang chờ phiên đọc đầu tiên.')).not.toBeInTheDocument()
+  })
+
   it('restores a paused focus session with target and remaining time', () => {
     render(<FocusSessionClient habit={habit} initialSession={pausedSession} />)
 
