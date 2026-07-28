@@ -119,3 +119,11 @@ export interface ReadingJourneySnapshot {
   latest_completed_session: HabitSession | null
 }
 
+export interface ReadingCompletionSnapshot {
+  habit: Habit
+  plan: GoalPlan
+  growth: GrowthState
+  daily_progress: DailyProgress
+  session: HabitSession
+}
+
