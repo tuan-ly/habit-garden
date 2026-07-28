@@ -29,6 +29,7 @@ The app must be fun enough that users open it on their worst day. Psychology ser
 - ✓ PWA support — v1.0
 - ✓ Easy Mode (2-minute rule, +20% XP) — v1.0
 - ✓ Dev Debug Panel (Ctrl+Shift+D) — v1.0
+- ✓ Reading Habit Vertical Slice — persistent guided session, completion and deterministic 5→30 pages/day Growth Plan — 2026-07-28
 
 ### Active
 
@@ -53,7 +54,7 @@ The app must be fun enough that users open it on their worst day. Psychology ser
 ## Context
 
 - **User profile:** Solopreneur building solo. Can code but not professional developer. Needs AI as Product Thinking Partner.
-- **Current state:** v1.0 feature-complete on master. Decoration/crafting system built but migration not applied. Most plant images missing (emoji fallback).
+- **Current state:** The Reading Habit Vertical Slice is complete on `feature/reading-habit-vertical-slice`; its two additive Supabase migrations are locally replayed and await linked-environment deployment. The older Dual Growth backlog remains pending.
 - **Design philosophy:** "Unfinished is OK, ugly is not." Every visible element must feel intentional and polished.
 - **Brand:** Habien (habien.com). Vietnamese market primary (VND pricing). English UI.
 - **Previous workflow:** SDD (Spec-Driven Development) → migrating to GSD for better phase management.
@@ -77,6 +78,7 @@ The app must be fun enough that users open it on their worst day. Psychology ser
 | Paddle for payments | Best for indie devs, handles tax/compliance | ✓ Good |
 | No separate API layer | Server Actions sufficient for solo dev, less boilerplate | ✓ Good |
 | Emoji fallback for missing images | Ship quality > block on assets | ✓ Good |
+| Generic guided-session aggregate | A reusable Habit/Plan/Session/Progress/Growth model enables persistent sessions and deterministic progression without coupling the domain to Reading UI | ✓ Good |
 
 ## Evolution
 
@@ -96,4 +98,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-28 after initialization*
+*Last updated: 2026-07-28 after Reading Habit Vertical Slice delivery*

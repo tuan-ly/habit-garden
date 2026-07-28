@@ -60,6 +60,15 @@ The migration history includes:
 - crafting and decoration system
 - atomic economy/crafting/purchase/pickup functions
 - RLS/auth.uid performance optimization and foreign key indexes
+- reusable guided habits, persisted sessions, daily progress and deterministic growth state
+
+## Guided Habit Session Schema
+
+Migration `20260728121000_reading_habit_vertical_slice.sql` is additive. It creates `habits`, `goal_plans`, `habit_sessions`, `daily_progress` and `growth_states`, with direct user ownership, authenticated RLS policies and explicit indexes. A partial unique index permits only one running, paused or awaiting-completion session per habit.
+
+Migration `20260728123500_grant_guided_habit_table_access.sql` explicitly grants authenticated CRUD privileges because newer Supabase projects may disable automatic exposure of new public tables. RLS remains the ownership boundary.
+
+`complete_habit_session_atomic(...)` is `SECURITY INVOKER`, clears `search_path`, locks the owned session/growth rows and completes all outcome writes in one transaction. Keep its review behavior aligned with `src/lib/habit-growth.ts` and its contract tests.
 
 ## Decoration Footprint Calibration
 

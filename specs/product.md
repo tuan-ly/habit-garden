@@ -596,3 +596,18 @@ Includes: selection quiz (3 questions), rebirth system (change plant type while 
 ### Brainstorm: Dual Growth Model (2026-04-28)
 
 Short-cycle plants (3×3 garden, seasonal harvest) vs Long-cycle plants (single tree growing for years). Review-cycle-based maturation. See `decision-dual-growth-model-habit-garden.md` in Brain Opera vault.
+
+---
+
+## 16. Reading Habit Vertical Slice (2026-07-28)
+
+The retention core now includes one complete guided reading journey:
+
+- Home Garden shows a persistent reading plant, plant stage, today pages/target, Start Reading and Growth Plan.
+- Focus Session persists a 30-minute start/pause/resume/finish timer and ambient preference across refresh or route leave.
+- Completion validates whole pages, records them atomically and reveals target comparison, reward, plant growth and streak.
+- Growth Plan shows a deterministic 5→30 pages/day trajectory with previous/current/next milestones, review date, rule and history.
+
+Generic domain models support habits, numeric units, plans, sessions, daily progress and growth state. Reading is configured as `type=reading`, `unit=pages`, 30 minutes, a seven-day review period, an 80% performance threshold and five-page increments capped at 30. Missed thresholds hold the target without guilt or unpredictable regression.
+
+See `docs/reading-habit-vertical-slice.md` and ADR `docs/adr/001-guided-habit-session-aggregate.md`.

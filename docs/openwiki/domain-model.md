@@ -35,6 +35,18 @@ Goals add measurable habit progress. Main modes:
 
 Goal frequency can be daily, weekly, or monthly. Period-aware helpers live in `src/lib/goal-utils.ts` and `src/lib/goal-progress.ts`.
 
+## Guided Habits
+
+The additive guided-habit aggregate supports sessions without changing legacy plant/goal semantics:
+
+- `Habit` - reusable habit identity, numeric unit and default session duration.
+- `GoalPlan` - start/end target, timeframe and deterministic review configuration.
+- `HabitSession` - running/paused/completion state with persisted elapsed time.
+- `DailyProgress` - one per habit/date, accumulating completed numeric value.
+- `GrowthState` - current/previous/next target, streak, plant stage and review history.
+
+Reading configures this model as pages, 30 minutes, 5→30 pages/day, seven-day reviews, 80% consistency and five-page increments. Pure progression rules live in `src/lib/habit-growth.ts`.
+
 ## Mood And Weather
 
 Mood is user-facing emotional state. Garden weather can be derived from mood in `GardenView`: high mood trends sunny, lower mood trends rainy/stormy. Weather also appears in XP and visual systems.

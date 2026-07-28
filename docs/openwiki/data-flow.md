@@ -48,6 +48,12 @@ Client component -> context helper -> compatibility server action -> atomic Supa
 
 User-facing mutations must not call `revalidatePath()` or `router.refresh()`. Single-row preference/profile writes may use `update(...).select(...)`; multi-write/reward flows belong in an atomic RPC.
 
+## Guided Reading Session
+
+`/reading` bootstraps one idempotent reading habit/plan/state for the authenticated user. Starting creates or returns the single open `habit_sessions` row. Pause/resume updates persisted elapsed fields; clients derive live elapsed time from the canonical timestamps, so refresh and route leave do not lose the timer.
+
+Finishing moves the session to `awaiting_completion`. `complete_habit_session_atomic(...)` then validates pages and atomically updates session result, daily progress, reward, streak, plant stage and any due review history. The action returns canonical completion data directly; no route refresh is required for the completion reveal.
+
 ## Cross-Feature Data
 
 Plant rows can embed goal summary data for garden rendering. `getPlants()` joins `plant_types`, fetches active goals and relevant period logs, then attaches `goal`, `today_logs`, `today_log_count`, and `today_value` to `PlantWithType`.

@@ -34,6 +34,16 @@
 - [ ] **POLISH-04**: Fix XP morning bonus inconsistency (constants 3 vs system 5)
 - [ ] **POLISH-05**: Populate goals.best_streak field
 
+## Retention Phase: Reading Habit Vertical Slice
+
+- [x] **READ-01**: Home Garden shows the reading habit, plant state, today target/progress, session entry and Growth Plan
+- [x] **READ-02**: A 30-minute Focus Session starts, pauses, resumes, finishes and survives refresh or route changes
+- [x] **READ-03**: Completion validates whole pages, persists the result and shows comparison, reward, growth and streak
+- [x] **READ-04**: Growth Plan shows 5→30 pages/day, previous/current/next milestones, dates, rule and history
+- [x] **READ-05**: Habit, Goal Plan, Habit Session, Daily Progress and Growth State remain reusable across numeric units
+- [x] **READ-06**: Progression evaluates only after a review period, increases only at the configured threshold, caps at 30 and preserves history
+- [x] **READ-07**: Persistence, validation, loading/empty/completed/error states, responsiveness, accessibility, automated coverage and operating docs are present
+
 ## v2 Requirements (Future)
 
 ### Extended Growth Mechanics
@@ -94,12 +104,20 @@
 | POLISH-03 | Phase 4 | Pending |
 | POLISH-04 | Phase 4 | Pending |
 | POLISH-05 | Phase 4 | Pending |
+| READ-01 | Reading Vertical Slice | Complete |
+| READ-02 | Reading Vertical Slice | Complete |
+| READ-03 | Reading Vertical Slice | Complete |
+| READ-04 | Reading Vertical Slice | Complete |
+| READ-05 | Reading Vertical Slice | Complete |
+| READ-06 | Reading Vertical Slice | Complete |
+| READ-07 | Reading Vertical Slice | Complete |
 
 **Coverage:**
 - v1 requirements: 17 total
 - Mapped to phases: 17
+- Reading retention requirements: 7 total, 7 complete
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-04-28*
-*Last updated: 2026-04-28 after initial definition*
+*Last updated: 2026-07-28 after Reading Habit Vertical Slice delivery*

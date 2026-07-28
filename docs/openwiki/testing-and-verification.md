@@ -30,6 +30,14 @@ Playwright tests live in `e2e/`. They cover flows such as watering, plant lifecy
 
 Run targeted specs when changing user flows; run the full suite before broad UI/behavior changes when practical.
 
+`e2e/reading-vertical-slice.spec.ts` covers the authenticated reading journey, including pause persistence across reload, ambient toggle, completion and Growth Plan navigation. It requires explicit E2E credentials.
+
+Guided-session unit and contract coverage lives in:
+
+- `src/lib/__tests__/habit-growth.test.ts`
+- `src/lib/__tests__/habit-persistence-contract.test.ts`
+- `src/components/reading/__tests__/reading-vertical-slice.test.tsx`
+
 ## Storybook
 
 Stories live beside component areas such as `src/components/garden/__stories__/`, `src/components/plants/__stories__/`, `src/components/gamification/__stories__/`, and `src/components/ui/__stories__/`.

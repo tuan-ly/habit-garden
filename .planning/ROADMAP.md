@@ -7,6 +7,24 @@
 
 ---
 
+## Delivered Retention Phase: Reading Habit Vertical Slice
+
+**Status:** Complete on `feature/reading-habit-vertical-slice` (2026-07-28)
+
+**Goal:** Improve retention by replacing one checklist-style reading habit with a persistent guided session and an understandable long-term trajectory.
+
+**Requirements:** READ-01 through READ-07
+
+**Success Criteria:**
+1. The authenticated journey persists from Reading Home through timer, completion, reward and Growth Plan.
+2. Progression is deterministic: 7-day reviews, 80% threshold, +5 pages and a 30-page cap; missed thresholds hold rather than punish.
+3. Generic domain and persistence models support other numeric units without shipping unrelated habit UI.
+4. Domain/component/contract tests, authenticated E2E, local migration replay, typecheck and production build pass.
+
+**Deployment gate:** apply migrations `20260728121000` and `20260728123500` to the staging/linked Supabase environment before deploying the app branch.
+
+---
+
 ## Phase Overview
 
 | # | Phase | Goal | Requirements | Success Criteria |
@@ -101,4 +119,4 @@ All 17 v1 requirements mapped to phases. No gaps.
 
 ---
 *Roadmap created: 2026-04-28*
-*Last updated: 2026-04-28 after initial creation*
+*Last updated: 2026-07-28 after Reading Habit Vertical Slice delivery*

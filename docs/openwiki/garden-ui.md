@@ -83,6 +83,8 @@ The production `/garden` route is now **Garden-first**:
 
 Legacy list/focus/edit primitives still exist for compatibility and garden arrangement, but they are not first-level navigation.
 
+The sanctuary header also links to the additive `/reading` Home Garden. That route owns the guided reading journey and must not replace or fork the existing sanctuary plant-care mutations.
+
 ## Reaction And Modal Rules
 
 - `useGardenInteractions()` performs existing optimistic mutations and can open a selected action mode directly.
