@@ -8,6 +8,10 @@ test.describe('Reading Habit Vertical Slice', () => {
   )
 
   test('persists the journey from Home Garden through completion and Growth Plan', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem('habit-garden-onboarding-completed', 'true')
+    })
+
     await loginAndGoToGarden(page)
     await page.getByRole('link', { name: 'Mở cây đọc sách' }).click()
     await expect(page).toHaveURL(/\/reading$/)
@@ -19,6 +23,7 @@ test.describe('Reading Habit Vertical Slice', () => {
       name: /Bắt đầu đọc|Đọc thêm|Tiếp tục đọc|Ghi kết quả/i,
     })
     await startButton.click()
+    await page.waitForURL(/\/reading\/(session|completion)/, { timeout: 15_000 })
 
     if (page.url().includes('/reading/session')) {
       await expect(page.getByText('30 phút cùng một cuốn sách')).toBeVisible()
@@ -38,14 +43,13 @@ test.describe('Reading Habit Vertical Slice', () => {
       await page.getByRole('button', { name: /Kết thúc & ghi trang/i }).click()
     }
 
-    await expect(page).toHaveURL(/\/reading\/completion/)
+    await expect(page).toHaveURL(/\/reading\/completion/, { timeout: 15_000 })
     const pagesInput = page.getByLabel('Số trang đã đọc')
-    if (await pagesInput.isVisible().catch(() => false)) {
-      await pagesInput.fill('7')
-      await page.getByRole('button', { name: 'Lưu kết quả' }).click()
-    }
+    await expect(pagesInput).toBeVisible({ timeout: 15_000 })
+    await pagesInput.fill('7')
+    await page.getByRole('button', { name: 'Lưu kết quả' }).click()
 
-    await expect(page.getByText(/trang đã thành tăng trưởng/)).toBeVisible()
+    await expect(page.getByText(/trang đã thành tăng trưởng/)).toBeVisible({ timeout: 15_000 })
     await expect(page.getByText(/\+\d+ growth/)).toBeVisible()
     await page.getByRole('link', { name: /Xem Growth Plan/i }).click()
     await expect(page).toHaveURL(/\/reading\/growth-plan/)
@@ -53,4 +57,3 @@ test.describe('Reading Habit Vertical Slice', () => {
     await expect(page.getByText(/Review mỗi 7 ngày/)).toBeVisible()
   })
 })
-
