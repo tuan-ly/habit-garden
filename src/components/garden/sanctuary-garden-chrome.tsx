@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import type { PlantWithType } from '@/types/database'
 import {
   Check,
+  BookOpenText,
   ChevronRight,
   Clock3,
   Leaf,
@@ -103,15 +104,26 @@ export function SanctuaryGardenChrome({
   return (
     <div ref={chromeRef} className="pointer-events-none absolute inset-0 z-40 mx-auto w-full max-w-[520px] overflow-hidden text-[#263f22]">
       <header className="pointer-events-auto absolute inset-x-0 top-0 flex items-start justify-between px-4 pt-[max(1rem,env(safe-area-inset-top))] sm:px-6">
-        <Link
-          href="/overview"
-          prefetch={false}
-          className="group flex min-h-12 items-center gap-2 rounded-full border border-white/65 bg-[#fffaf0]/88 px-3.5 text-sm font-semibold text-[#49693f] shadow-[0_10px_30px_rgba(41,69,38,0.13)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#789a68]"
-          aria-label="Mở hành trình"
-        >
-          <MapPinned className="h-5 w-5" />
-          <span className="hidden min-[380px]:inline">Hành trình</span>
-        </Link>
+        <div className="flex items-center gap-1.5">
+          <Link
+            href="/overview"
+            prefetch={false}
+            className="group flex min-h-12 items-center gap-2 rounded-full border border-white/65 bg-[#fffaf0]/88 px-3 text-sm font-semibold text-[#49693f] shadow-[0_10px_30px_rgba(41,69,38,0.13)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#789a68]"
+            aria-label="Mở hành trình"
+          >
+            <MapPinned className="h-5 w-5" />
+            <span className="hidden min-[470px]:inline">Hành trình</span>
+          </Link>
+          <Link
+            href="/reading"
+            prefetch={false}
+            className="group flex min-h-12 items-center gap-2 rounded-full border border-white/65 bg-[#fffaf0]/88 px-3 text-sm font-semibold text-[#49693f] shadow-[0_10px_30px_rgba(41,69,38,0.13)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#789a68]"
+            aria-label="Mở cây đọc sách"
+          >
+            <BookOpenText className="h-5 w-5" />
+            <span className="hidden min-[470px]:inline">Đọc</span>
+          </Link>
+        </div>
 
         <div className="min-w-0 px-3 text-center drop-shadow-[0_1px_0_rgba(255,255,255,0.7)]">
           <p className="font-display text-lg font-semibold leading-tight text-[#476f37] sm:text-xl">
