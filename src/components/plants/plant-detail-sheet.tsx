@@ -40,6 +40,8 @@ import {
   Leaf,
 } from 'lucide-react'
 import type { PlantWithType, WeatherType, MilestoneType } from '@/types/database'
+import type { VirtualPlant } from '@/lib/habit-plant-mapping'
+import { isVirtualPlant } from '@/lib/habit-plant-mapping'
 import { PlantVisual, XpPopup } from './plant-visual'
 import { usePlants } from '@/lib/context/plants-context'
 import { useSubscription } from '@/lib/context/subscription-context'
@@ -70,7 +72,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn, isToday } from '@/lib/utils'
 
 interface PlantDetailSheetProps {
-  plant: PlantWithType | null
+  plant: PlantWithType | VirtualPlant | null
   open: boolean
   onOpenChange: (open: boolean) => void
   weather?: WeatherType | null
@@ -87,6 +89,8 @@ export function PlantDetailSheet({
   const { plants, waterPlant, updatePlant } = usePlants()
   const { hasGoals, showUpgradeModal } = useSubscription()
   const plant = initialPlant ? (plants.find(p => p.id === initialPlant.id) || initialPlant) : null
+
+  const realPlant = plant && !isVirtualPlant(plant) ? plant : null
 
   const [isWatering, setIsWatering] = useState(false)
   const [showXp, setShowXp] = useState(false)
@@ -117,18 +121,15 @@ export function PlantDetailSheet({
   const [isPending, startTransition] = useTransition()
 
   useEffect(() => {
-    if (plant && open) {
-      setGoal(null)
-      setQuickRhythm(null)
-
-      const hasGoalMode = !!plant.goal_mode
+    if (realPlant && open) {
+      const hasGoalMode = !!realPlant.goal_mode
 
       if (hasGoalMode) {
-        setIsLoadingGoal(true)
+        queueMicrotask(() => setIsLoadingGoal(true))
         let cancelled = false
         Promise.all([
-          getGoalForPlant(plant.id),
-          getPlantActivityHistory(plant.id, 7),
+          getGoalForPlant(realPlant.id),
+          getPlantActivityHistory(realPlant.id, 7),
         ]).then(([g, rhythm]) => {
           if (!cancelled) {
             setGoal(g)
@@ -138,41 +139,40 @@ export function PlantDetailSheet({
         })
         return () => { cancelled = true }
       } else {
-        setIsLoadingGoal(false)
-        getPlantActivityHistory(plant.id, 7).then(setQuickRhythm)
+        getPlantActivityHistory(realPlant.id, 7).then(setQuickRhythm)
       }
     }
-  }, [plant?.id, open])
+  }, [realPlant, open])
 
   useEffect(() => {
-    if (!open) {
-      setActiveTab('overview')
-    }
-    setJournalData(null)
-    setFullActivityHistory(null)
-  }, [open, plant?.id])
+    queueMicrotask(() => {
+      if (!open) setActiveTab('overview')
+      setJournalData(null)
+      setFullActivityHistory(null)
+    })
+  }, [open, realPlant?.id])
 
   useEffect(() => {
-    if (plant && activeTab === 'journal' && !journalData && !journalLoading) {
-      setJournalLoading(true)
+    if (realPlant && activeTab === 'journal' && !journalData && !journalLoading) {
+      queueMicrotask(() => setJournalLoading(true))
       startTransition(async () => {
-        const data = await getPlantJournalData(plant.id)
+        const data = await getPlantJournalData(realPlant.id)
         setJournalData(data)
         setJournalLoading(false)
       })
     }
-  }, [activeTab, plant?.id, journalData, journalLoading])
+  }, [activeTab, realPlant, journalData, journalLoading])
 
   useEffect(() => {
-    if (plant && activeTab === 'stats' && !fullActivityHistory && !statsLoading) {
-      setStatsLoading(true)
+    if (realPlant && activeTab === 'stats' && !fullActivityHistory && !statsLoading) {
+      queueMicrotask(() => setStatsLoading(true))
       startTransition(async () => {
-        const history = await getPlantActivityHistory(plant.id, 30)
+        const history = await getPlantActivityHistory(realPlant.id, 30)
         setFullActivityHistory(history)
         setStatsLoading(false)
       })
     }
-  }, [activeTab, plant?.id, fullActivityHistory, statsLoading])
+  }, [activeTab, realPlant, fullActivityHistory, statsLoading])
 
   useEffect(() => {
     if (goal && showGoalStats) {
@@ -187,7 +187,7 @@ export function PlantDetailSheet({
         }
       })
     }
-  }, [goal?.id, showGoalStats])
+  }, [goal, showGoalStats])
 
   const periodDaysLeft = useMemo(() => {
     if (!goal) return 0
@@ -199,16 +199,35 @@ export function PlantDetailSheet({
     } catch {
       return 0
     }
-  }, [goal?.id, goal?.periodNumber])
+  }, [goal])
 
-  if (!plant) return null
+  if (!realPlant) {
+    if (!plant) return null
 
-  const isWateredToday = isToday(plant.last_watered_at)
-  const isSleeping = plant.status === 'dead' || plant.status === 'sleeping'
-  const isResting = plant.status === 'resting' || plant.status === 'dormant'
-  const hasGoal = !!plant.goal_mode
+    return (
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>{plant.name}</SheetTitle>
+            <SheetDescription>Habit Plant (Reading)</SheetDescription>
+          </SheetHeader>
+          <div className="py-8 text-center">
+            <p className="text-muted-foreground mb-4">
+              Virtual plant details are not yet available. This feature is coming in Phase 2.2.
+            </p>
+            <Button onClick={() => onOpenChange(false)}>Close</Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+    )
+  }
 
-  const startedDate = new Date(plant.started_at).toLocaleDateString('en-US', {
+  const isWateredToday = isToday(realPlant.last_watered_at)
+  const isSleeping = realPlant.status === 'dead' || realPlant.status === 'sleeping'
+  const isResting = realPlant.status === 'resting' || realPlant.status === 'dormant'
+  const hasGoal = !!realPlant.goal_mode
+
+  const startedDate = new Date(realPlant.started_at).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -217,7 +236,7 @@ export function PlantDetailSheet({
   const handleWater = async () => {
     if (isWateredToday) return
     setIsWatering(true)
-    const result = await waterPlant(plant.id)
+    const result = await waterPlant(realPlant.id)
     if (result.success) {
       setEarnedXp(result.xpEarned || 0)
       setShowXp(true)
@@ -229,11 +248,11 @@ export function PlantDetailSheet({
   }
 
   const handleGoalComplete = async () => {
-    const newGoal = await getGoalForPlant(plant.id)
+    const newGoal = await getGoalForPlant(realPlant.id)
     setGoal(newGoal)
     if (newGoal) {
       const periodInfo = getPeriodInfo(newGoal)
-      updatePlant(plant.id, {
+      updatePlant(realPlant.id, {
         goal_mode: newGoal.goal_mode,
         goal: {
           id: newGoal.id,
@@ -258,14 +277,14 @@ export function PlantDetailSheet({
     setQuickRhythm(null)
     setFullActivityHistory(null)
     if (activeTab === 'journal') {
-      const data = await getPlantJournalData(plant.id)
+      const data = await getPlantJournalData(realPlant.id)
       setJournalData(data)
     }
   }
 
   const handleAdaptiveComplete = () => {
     if (goal) {
-      getGoalForPlant(plant.id).then(setGoal)
+      getGoalForPlant(realPlant.id).then(setGoal)
       getGoalStats(goal.id).then(setGoalStats)
       getAdaptiveAnalysis(goal.id).then(setAdaptiveAnalysis)
     }
@@ -277,8 +296,8 @@ export function PlantDetailSheet({
   }
 
   const handleReflectionComplete = async () => {
-    if (plant) {
-      const data = await getPlantJournalData(plant.id)
+    if (realPlant) {
+      const data = await getPlantJournalData(realPlant.id)
       setJournalData(data)
     }
   }
@@ -289,7 +308,7 @@ export function PlantDetailSheet({
         <SheetContent className="overflow-y-auto p-0 w-full sm:max-w-md border-l-0 surface-paper">
           {/* ═══ Hero Header ═══ */}
           <HeroHeader
-            plant={plant}
+            plant={realPlant}
             goal={goal}
             weather={weather}
             isWatering={isWatering}
@@ -348,7 +367,7 @@ export function PlantDetailSheet({
                 )}
 
                 {/* Why I started */}
-                {plant.why_i_started && (
+                {realPlant.why_i_started && (
                   <div className="p-4 rounded-2xl bg-bloom/10 dark:bg-accent/60 ring-1 ring-bloom/25">
                     <div className="flex items-start gap-3">
                       <div className="p-2 rounded-xl bg-white/80 dark:bg-muted shadow-sm">
@@ -359,7 +378,7 @@ export function PlantDetailSheet({
                           Why I Started
                         </h5>
                         <p className="font-display text-[15px] text-canopy dark:text-foreground italic leading-snug">
-                          &ldquo;{plant.why_i_started}&rdquo;
+                          &ldquo;{realPlant.why_i_started}&rdquo;
                         </p>
                       </div>
                     </div>
@@ -502,21 +521,21 @@ export function PlantDetailSheet({
                 <div className="flex items-center justify-around py-3">
                   <QuickStat
                     icon={<Flame className="h-4 w-4" />}
-                    value={plant.current_streak}
+                    value={realPlant.current_streak}
                     label="Streak"
                     tone="bloom"
                   />
                   <div className="h-8 w-px bg-border" />
                   <QuickStat
                     icon={<TrendingUp className="h-4 w-4" />}
-                    value={`${Math.round(plant.growth_percentage)}%`}
+                    value={`${Math.round(realPlant.growth_percentage)}%`}
                     label="Growth"
                     tone="leaf"
                   />
                   <div className="h-8 w-px bg-border" />
                   <QuickStat
                     icon={<Droplets className="h-4 w-4" />}
-                    value={plant.total_waterings}
+                    value={realPlant.total_waterings}
                     label="Waters"
                     tone="moisture"
                   />
@@ -564,10 +583,10 @@ export function PlantDetailSheet({
                       <MeterRow
                         icon={<Droplets className="h-4 w-4" />}
                         label="Moisture"
-                        value={plant.current_moisture}
+                        value={realPlant.current_moisture}
                         tone={
-                          plant.current_moisture >= 70 ? 'moisture'
-                            : plant.current_moisture >= 40 ? 'bloom'
+                          realPlant.current_moisture >= 70 ? 'moisture'
+                            : realPlant.current_moisture >= 40 ? 'bloom'
                               : 'danger'
                         }
                       />
@@ -575,12 +594,12 @@ export function PlantDetailSheet({
                       <MeterRow
                         icon={<Leaf className="h-4 w-4" />}
                         label="Growth"
-                        value={plant.growth_percentage}
-                        tone={plant.status === 'dead' ? 'ash' : 'leaf'}
+                        value={realPlant.growth_percentage}
+                        tone={realPlant.status === 'dead' ? 'ash' : 'leaf'}
                         suffix={
-                          plant.status === 'mature'
+                          realPlant.status === 'mature'
                             ? 'Complete'
-                            : `~${Math.ceil(plant.plant_type.maturity_days * (100 - plant.growth_percentage) / 100)}d left`
+                            : `~${Math.ceil(realPlant.plant_type.maturity_days * (100 - realPlant.growth_percentage) / 100)}d left`
                         }
                       />
                     </div>
@@ -597,17 +616,17 @@ export function PlantDetailSheet({
                             <Flame className="h-4 w-4 text-bloom" />
                             <span className="text-[10px] uppercase tracking-[0.12em] font-bold text-canopy/70 dark:text-muted-foreground">Streak</span>
                           </div>
-                          <p className="font-display text-3xl font-semibold text-canopy dark:text-foreground leading-none">{plant.current_streak}</p>
+                          <p className="font-display text-3xl font-semibold text-canopy dark:text-foreground leading-none">{realPlant.current_streak}</p>
                           <p className="text-[10px] text-muted-foreground mt-0.5">days</p>
                         </div>
                         <div className="p-3 rounded-2xl text-center bg-mist/70 dark:bg-muted">
                           <Trophy className="h-3.5 w-3.5 text-bloom mx-auto mb-1" />
-                          <p className="font-display text-xl font-semibold text-canopy dark:text-foreground leading-none">{plant.longest_streak}</p>
+                          <p className="font-display text-xl font-semibold text-canopy dark:text-foreground leading-none">{realPlant.longest_streak}</p>
                           <p className="text-[9px] text-muted-foreground uppercase mt-0.5 tracking-wider">Best</p>
                         </div>
                         <div className="p-3 rounded-2xl text-center bg-mist/70 dark:bg-muted">
                           <Droplets className="h-3.5 w-3.5 text-moisture mx-auto mb-1" />
-                          <p className="font-display text-xl font-semibold text-canopy dark:text-foreground leading-none">{plant.total_waterings}</p>
+                          <p className="font-display text-xl font-semibold text-canopy dark:text-foreground leading-none">{realPlant.total_waterings}</p>
                           <p className="text-[9px] text-muted-foreground uppercase mt-0.5 tracking-wider">Waters</p>
                         </div>
                       </div>
@@ -643,24 +662,24 @@ export function PlantDetailSheet({
                     <div className="space-y-3">
                       <h4 className="text-sm font-semibold text-canopy dark:text-foreground">Details</h4>
                       <div className="rounded-2xl bg-white/70 dark:bg-card ring-1 ring-border divide-y divide-border overflow-hidden shadow-dappled">
-                        {plant.habit_description && !plant.why_i_started && (
+                        {realPlant.habit_description && !realPlant.why_i_started && (
                           <div className="p-4">
                             <p className="font-display text-[15px] text-canopy dark:text-foreground italic leading-snug">
-                              &ldquo;{plant.habit_description}&rdquo;
+                              &ldquo;{realPlant.habit_description}&rdquo;
                             </p>
                           </div>
                         )}
                         <DetailRow icon={<Calendar className="h-4 w-4" />} label="Started" value={startedDate} />
-                        <DetailRow icon={<Clock className="h-4 w-4" />} label="Maturity" value={`${plant.plant_type.maturity_days} days`} />
+                        <DetailRow icon={<Clock className="h-4 w-4" />} label="Maturity" value={`${realPlant.plant_type.maturity_days} days`} />
                       </div>
-                      {plant.plant_type.special_effect && (
+                      {realPlant.plant_type.special_effect && (
                         <div className="p-4 rounded-2xl bg-moss/10 dark:bg-accent/60 ring-1 ring-moss/25">
                           <div className="flex items-center gap-2 mb-1">
                             <Sparkles className="h-4 w-4 text-leaf" />
                             <span className="text-sm font-semibold text-canopy dark:text-foreground">Special Ability</span>
                           </div>
                           <p className="text-sm text-muted-foreground capitalize">
-                            {plant.plant_type.special_effect.type.replace(/_/g, ' ')}
+                            {realPlant.plant_type.special_effect.type.replace(/_/g, ' ')}
                           </p>
                         </div>
                       )}
@@ -675,8 +694,8 @@ export function PlantDetailSheet({
 
       {/* Modals */}
       <GoalSetupWizard
-        plantId={plant.id}
-        plantName={plant.name}
+        plantId={realPlant.id}
+        plantName={realPlant.name}
         open={showGoalWizard}
         onOpenChange={setShowGoalWizard}
         onComplete={handleGoalComplete}
@@ -685,8 +704,8 @@ export function PlantDetailSheet({
       {goal && (
         <GoalLogModal
           goal={goal}
-          plantName={plant.name}
-          plantIcon={plant.plant_type.icon}
+          plantName={realPlant.name}
+          plantIcon={realPlant.plant_type.icon}
           consistencyDayAdded={!isWateredToday}
           open={showGoalLog}
           onOpenChange={setShowGoalLog}
@@ -702,7 +721,7 @@ export function PlantDetailSheet({
                 Goal Statistics
               </SheetTitle>
               <SheetDescription className="text-muted-foreground">
-                {plant.name}
+                {realPlant.name}
               </SheetDescription>
             </SheetHeader>
             <div className="mt-5 px-1">
@@ -760,7 +779,7 @@ export function PlantDetailSheet({
 
       {reflectionMilestone && (
         <ReflectionModal
-          plantId={plant.id}
+          plantId={realPlant.id}
           milestoneType={reflectionMilestone.type}
           milestoneTitle={reflectionMilestone.title}
           open={showReflectionModal}

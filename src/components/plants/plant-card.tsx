@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Droplets, Target, Plus, Check } from 'lucide-react'
 import type { PlantWithType, WeatherType } from '@/types/database'
+import { isVirtualPlant, type VirtualPlant } from '@/lib/habit-plant-mapping'
 import { MoistureBar } from './moisture-bar'
 import { GrowthProgress } from './growth-progress'
 import { PlantVisual, StreakFire, XpPopup } from './plant-visual'
@@ -116,16 +117,54 @@ function getPrimaryCardContent(
 }
 
 interface PlantCardProps {
-  plant: PlantWithType
+  plant: PlantWithType | VirtualPlant
   onClick?: () => void
   weather?: WeatherType | null
   goalStats?: GoalWithStats | null
 }
 
-export const PlantCard = memo(function PlantCard({ plant: initialPlant, onClick, weather, goalStats }: PlantCardProps) {
-  const { plants, waterPlant } = usePlants()
-  const plant = plants.find(p => p.id === initialPlant.id) || initialPlant
+export const PlantCard = memo(function PlantCard(props: PlantCardProps) {
+  const { plants } = usePlants()
+  const plant = plants.find(p => p.id === props.plant.id) || props.plant
 
+  if (isVirtualPlant(plant)) {
+    return <VirtualPlantCard plant={plant} onClick={props.onClick} />
+  }
+
+  return (
+    <RealPlantCard
+      plant={plant}
+      onClick={props.onClick}
+      weather={props.weather}
+      goalStats={props.goalStats}
+    />
+  )
+})
+
+function VirtualPlantCard({ plant, onClick }: { plant: VirtualPlant; onClick?: () => void }) {
+  return (
+    <Card className="relative overflow-hidden cursor-pointer" onClick={onClick}>
+      <div className="h-2 bg-amber-400" />
+      <CardContent className="p-4">
+        <div className="text-center py-8">
+          <p className="text-sm font-medium text-stone-700">{plant.name}</p>
+          <p className="text-xs text-stone-500 mt-1">Habit Plant (Reading)</p>
+          <Button variant="outline" size="sm" className="mt-4" onClick={onClick}>
+            View Habit
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function RealPlantCard({ plant: realPlant, onClick, weather, goalStats }: {
+  plant: PlantWithType
+  onClick?: () => void
+  weather?: WeatherType | null
+  goalStats?: GoalWithStats | null
+}) {
+  const { waterPlant } = usePlants()
   const [isWatering, setIsWatering] = useState(false)
   const [showXp, setShowXp] = useState(false)
   const [earnedXp, setEarnedXp] = useState(0)
@@ -133,30 +172,30 @@ export const PlantCard = memo(function PlantCard({ plant: initialPlant, onClick,
   const [lazyGoal, setLazyGoal] = useState<GoalWithStats | null>(null)
   const goal = goalStats ?? lazyGoal
 
-  const hasGoal = !!plant.goal_mode
-  const periodProgress = plant.goal?.period_progress ?? goal?.periodProgress ?? 0
-  const currentPeriodTarget = plant.goal?.current_period_target ?? goal?.currentPeriodTarget ?? 0
-  const periodLabel = plant.goal?.period_label ?? goal?.periodLabel ?? 'This period'
-  const goalUnit = plant.goal?.unit ?? goal?.unit ?? ''
+  const hasGoal = !!realPlant.goal_mode
+  const periodProgress = realPlant.goal?.period_progress ?? goal?.periodProgress ?? 0
+  const currentPeriodTarget = realPlant.goal?.current_period_target ?? goal?.currentPeriodTarget ?? 0
+  const periodLabel = realPlant.goal?.period_label ?? goal?.periodLabel ?? 'This period'
+  const goalUnit = realPlant.goal?.unit ?? goal?.unit ?? ''
   const remainingPeriodValue = getRemainingGoalValue(periodProgress, currentPeriodTarget)
   const isPeriodComplete = currentPeriodTarget > 0 && remainingPeriodValue === 0
   const isPeriodOnTrack = goal?.isOnTrack ?? periodProgress >= currentPeriodTarget * 0.8
 
   useEffect(() => {
     if (hasGoal && goalStats === undefined) {
-      getGoalForPlant(plant.id).then(setLazyGoal)
+      getGoalForPlant(realPlant.id).then(setLazyGoal)
     }
-  }, [plant.id, hasGoal, goalStats])
+  }, [realPlant.id, hasGoal, goalStats])
 
-  const isWateredToday = plant.last_watered_at
-    ? new Date(plant.last_watered_at).toDateString() === new Date().toDateString()
+  const isWateredToday = realPlant.last_watered_at
+    ? new Date(realPlant.last_watered_at).toDateString() === new Date().toDateString()
     : false
 
-  const isDead = plant.status === 'dead'
-  const isMature = plant.status === 'mature'
+  const isDead = realPlant.status === 'dead'
+  const isMature = realPlant.status === 'mature'
 
   // Get primary card content based on plant state
-  const content = getPrimaryCardContent(plant, goal, isWateredToday, isDead)
+  const content = getPrimaryCardContent(realPlant, goal, isWateredToday, isDead)
 
   const handleWater = async (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -170,7 +209,7 @@ export const PlantCard = memo(function PlantCard({ plant: initialPlant, onClick,
     if (isWateredToday) return
 
     setIsWatering(true)
-    const result = await waterPlant(plant.id)
+    const result = await waterPlant(realPlant.id)
     if (result.success) {
       setEarnedXp(result.xpEarned || 0)
       setShowXp(true)
@@ -194,14 +233,14 @@ export const PlantCard = memo(function PlantCard({ plant: initialPlant, onClick,
       onClick={onClick}
     >
       {/* Plant-type accent strip */}
-      <div className={cn('absolute top-0 left-0 right-0 h-1', getPlantAccent(plant.plant_type.name))} />
+      <div className={cn('absolute top-0 left-0 right-0 h-1', getPlantAccent(realPlant.plant_type.name))} />
 
       <CardContent className="p-6 relative">
         {/* Header - cleaner */}
         <div className="flex items-start justify-between mb-5">
           <div className="relative w-14 h-14 rounded-2xl bg-mist/80 dark:bg-muted flex items-center justify-center shadow-dappled flex-shrink-0">
             <PlantVisual
-              plant={plant}
+              plant={realPlant}
               size="md"
               showWateringEffect={isWatering}
               weather={weather}
@@ -209,10 +248,10 @@ export const PlantCard = memo(function PlantCard({ plant: initialPlant, onClick,
           </div>
           <div className="flex-1 min-w-0 ml-3">
             <h3 className="text-lg font-semibold text-canopy dark:text-foreground truncate">
-              {plant.name}
+              {realPlant.name}
             </h3>
             <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
-              <span>{plant.plant_type.name}</span>
+              <span>{realPlant.plant_type.name}</span>
               {hasGoal && (
                 <>
                   <span className="w-1 h-1 rounded-full bg-muted-foreground/40" />
@@ -275,4 +314,4 @@ export const PlantCard = memo(function PlantCard({ plant: initialPlant, onClick,
       </CardContent>
     </Card>
   )
-})
+}

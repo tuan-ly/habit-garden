@@ -675,6 +675,25 @@ export async function completeReadingSession(
   const ensured = await ensureReadingJourney(user.id)
   if (!ensured.success) return ensured
 
+  // TODO Phase 2: Log to activity_logs once schema supports virtual plants
+  // Currently blocked by:
+  // 1. activity_logs.plant_id has FK constraint to plants table (requires UUID)
+  // 2. No metadata field to store habit session context
+  // 3. No activity_type for 'habit_session_completed'
+  //
+  // Planned implementation:
+  // await logActivity({
+  //   plant_id: habit.id, // Will map to virtual plant via habit-plant-mapping
+  //   activity_type: 'habit_session_completed',
+  //   value: completedPages,
+  //   notes: reflection?.trim() || undefined,
+  //   metadata: {
+  //     session_id: payload.session.id,
+  //     habit_type: habit.type,
+  //     duration_seconds: payload.session.duration_seconds
+  //   }
+  // })
+
   return {
     success: true,
     data: {

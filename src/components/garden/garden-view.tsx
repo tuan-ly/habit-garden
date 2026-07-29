@@ -10,6 +10,7 @@ import { usePlantTypes, useProfile } from '@/lib/context/dashboard-data-context'
 import { useDevOverride } from '@/components/dev/dev-debug-context'
 import { useGardenSettingsOptional } from '@/lib/context/garden-settings-context'
 import type { WeatherType } from '@/types/database'
+import type { HabitSession } from '@/types/habits'
 
 const LAST_VISIT_KEY = 'habit-garden-last-visit'
 const ABSENCE_THRESHOLD_DAYS = 3
@@ -21,6 +22,7 @@ const WeatherEffects = dynamic(
 
 interface GardenViewProps {
   weather?: WeatherType | null
+  activeSession?: HabitSession | null
 }
 
 function getDaysDiff(previousDate: string, today: string): number {
@@ -45,7 +47,7 @@ function moodToWeather(mood: number | null, fallback?: WeatherType | null): Weat
   }
 }
 
-export function GardenView({ weather }: GardenViewProps) {
+export function GardenView({ weather, activeSession = null }: GardenViewProps) {
   const { plants } = usePlants()
   const { mood } = useMood()
   const plantTypes = usePlantTypes()
@@ -127,6 +129,7 @@ export function GardenView({ weather }: GardenViewProps) {
           welcomeBackDays={welcomeBackDays}
           onWelcomeBackUsed={() => setWelcomeBackPending(false)}
           sanctuaryMode
+          activeHabitId={activeSession?.habit_id}
         />
       </main>
 

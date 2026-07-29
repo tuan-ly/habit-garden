@@ -27,6 +27,7 @@ The sanctuary surface includes deterministic **Non-occupying Terrain Inlays**: o
 
 `IsometricGarden` owns or coordinates:
 
+- real and virtual habit-plant tiles from `PlantsProvider`; virtual plants occupy deterministic free 1×1 cells, do not participate in plant-care/edit mutations, and route to the guided habit flow
 - zoom and pan through `useGardenZoom()`
 - visible tile calculation through `useVisibleTiles()`
 - garden mode through `ModeToolbar`
@@ -83,7 +84,7 @@ The production `/garden` route is now **Garden-first**:
 
 Legacy list/focus/edit primitives still exist for compatibility and garden arrangement, but they are not first-level navigation.
 
-The sanctuary header also links to the additive `/reading` Home Garden. That route owns the guided reading journey and must not replace or fork the existing sanctuary plant-care mutations.
+The sanctuary header also links to the additive `/reading` Home Garden. That route owns the guided reading journey and must not replace or fork the existing sanctuary plant-care mutations. The `/garden` server page maps the reading journey to a `VirtualPlant` and renders its active-session indicator; the dashboard layout shows a global resume banner for a running session. Selecting the virtual tile routes to `/reading`, or directly to `/reading/session` while that habit has an active session.
 
 ## Reaction And Modal Rules
 

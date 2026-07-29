@@ -12,6 +12,7 @@ import type { LogActivityDto, LogActivityResult } from '@/lib/actions/activity'
 import { validatePlantMove } from '@/lib/utils/grid-positioning'
 import { applyGoalLogToPeriod } from '@/lib/goal-progress'
 import type { PlantWithType, InventoryItemWithDetails, DecorationRotation } from '@/types/database'
+import type { VirtualPlant } from '@/lib/habit-plant-mapping'
 import type { GardenMode } from './mode-toolbar'
 import type { WateringActionMode } from '@/components/plants/gentle-watering-modal'
 
@@ -458,9 +459,9 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
 
   // Context menu (right-click)
   const handleContextMenu = useCallback(
-    (e: React.MouseEvent, plant?: PlantWithType) => {
+    (e: React.MouseEvent, plant?: PlantWithType | VirtualPlant) => {
       e.preventDefault()
-      if (plant) handleShowInfo(plant)
+      if (plant && 'plant_type' in plant) handleShowInfo(plant)
     },
     [handleShowInfo]
   )
