@@ -10,13 +10,11 @@ import type { GardenMode } from './mode-toolbar'
 import { getPlantSizeScale } from '@/lib/utils/grid-positioning'
 import { getDecorationPixelSize } from '@/lib/assets/game-asset-render-metrics'
 import { PlantFocusFrame } from './plant-focus-frame'
-import { isVirtualPlant, type VirtualPlant } from '@/lib/habit-plant-mapping'
-import { HabitPlantTile } from './HabitPlantTile'
 
 interface TileData {
   row: number
   col: number
-  plant?: PlantWithType | VirtualPlant
+  plant?: PlantWithType
   isAnchor: boolean
   isOccupiedByMultiCell: boolean
 }
@@ -32,10 +30,10 @@ interface GardenTileGridProps {
   focusStates?: Map<string, FocusState>
   weather?: WeatherType | null
   placedDecorations?: PlacedDecorationWithType[]
-  onTileClick: (row: number, col: number, plant?: PlantWithType | VirtualPlant, decoration?: PlacedDecorationWithType, event?: React.MouseEvent | React.TouchEvent) => void
+  onTileClick: (row: number, col: number, plant?: PlantWithType, decoration?: PlacedDecorationWithType, event?: React.MouseEvent | React.TouchEvent) => void
   onTileHover: (row: number, col: number) => void
   onTileLeave: () => void
-  onContextMenu: (e: React.MouseEvent, plant?: PlantWithType | VirtualPlant) => void
+  onContextMenu: (e: React.MouseEvent, plant?: PlantWithType) => void
   hidePlantBadges?: boolean
   featuredPlantId?: string | null
   focusFrameClosing?: boolean
@@ -43,7 +41,6 @@ interface GardenTileGridProps {
   cinematic?: boolean
   selectedDecorationId?: string | null
   decorationPlacementActive?: boolean
-  activeHabitId?: string | null
 }
 
 export function isPlantSelectedForMove(
@@ -90,7 +87,6 @@ export const GardenTileGrid = memo(function GardenTileGrid({
   cinematic = false,
   selectedDecorationId,
   decorationPlacementActive = false,
-  activeHabitId,
 }: GardenTileGridProps) {
   // Build a map from "row-col" -> decoration (anchor only) for O(1) lookup.
   // Memoized so we don't rebuild the Map on every render (only when decorations change).
@@ -121,8 +117,7 @@ export const GardenTileGrid = memo(function GardenTileGrid({
 
         const isHovered = hoveredTile === tileKey
         const clickPlant = isOccupiedByMultiCell ? plant : (isAnchor ? plant : undefined)
-        const plantGridSize = plant && !isVirtualPlant(plant) ? (plant.grid_size || 1) : 1
-        const isPartOfMultiCell = plant !== undefined && plantGridSize > 1
+        const isPartOfMultiCell = plant !== undefined && (plant.grid_size || 1) > 1
         const isSelectedForMove = isPlantSelectedForMove(plant?.id, moveState.selectedPlant?.id)
         const isPreviewTile = moveState.previewCell?.row === row && moveState.previewCell?.col === col
 
@@ -145,7 +140,7 @@ export const GardenTileGrid = memo(function GardenTileGrid({
             isHovered={isHovered}
             isOccupiedByMultiCell={isOccupiedByMultiCell}
             isPartOfMultiCell={isPartOfMultiCell || (!!occupyingDecoration && occupyingDecoration.grid_size > 1)}
-            plantGridSize={plantGridSize || decoration?.grid_size || 1}
+            plantGridSize={plant?.grid_size || decoration?.grid_size || 1}
             onClick={(e) => onTileClick(row, col, clickPlant, occupyingDecoration, e)}
             onKeyDown={(e) => {
               if (clickPlant && (e.key === 'Enter' || e.key === ' ')) {
@@ -157,7 +152,7 @@ export const GardenTileGrid = memo(function GardenTileGrid({
             onMouseEnter={() => onTileHover(row, col)}
             onMouseLeave={onTileLeave}
             tileSize={tileSize}
-            plant={isAnchor && plant && !isVirtualPlant(plant) ? plant : null}
+            plant={isAnchor ? plant : null}
             hideBadge={hidePlantBadges || isSelectedForMove}
             showAddHint={shouldShowPlantAddHint(
               mode,
@@ -174,36 +169,27 @@ export const GardenTileGrid = memo(function GardenTileGrid({
           >
             {plant && isAnchor && (
               <>
-                {isVirtualPlant(plant) ? (
-                  <HabitPlantTile
-                    plant={plant}
-                    isActive={plant.habit_id === activeHabitId}
+                {isFeaturedPlant && (
+                  <PlantFocusFrame
+                    tileSize={tileSize}
+                    gridSize={plant.grid_size || 1}
+                    closing={focusFrameClosing}
                   />
-                ) : (
-                  <>
-                    {isFeaturedPlant && (
-                      <PlantFocusFrame
-                        tileSize={tileSize}
-                        gridSize={plant.grid_size || 1}
-                        closing={focusFrameClosing}
-                      />
-                    )}
-                    <div className={isSelectedForMove ? 'relative z-10 opacity-40 scale-95 transition-all' : 'relative z-10'}>
-                      <IsometricPlant
-                        plant={plant}
-                        weather={weather}
-                        scale={isFeaturedPlant
-                          ? (cinematic ? 3.4 : 1.9) / getPlantSizeScale(plant.grid_size || 1)
-                          : 1}
-                        focusState={focusStates?.get(plant.id)}
-                        hideStatusIndicators={hideStatusIndicators}
-                        priority={isFeaturedPlant}
-                        cinematic={cinematic}
-                        tileSize={tileSize}
-                      />
-                    </div>
-                  </>
                 )}
+                <div className={isSelectedForMove ? 'relative z-10 opacity-40 scale-95 transition-all' : 'relative z-10'}>
+                  <IsometricPlant
+                    plant={plant}
+                    weather={weather}
+                    scale={isFeaturedPlant
+                      ? (cinematic ? 3.4 : 1.9) / getPlantSizeScale(plant.grid_size || 1)
+                      : 1}
+                    focusState={focusStates?.get(plant.id)}
+                    hideStatusIndicators={hideStatusIndicators}
+                    priority={isFeaturedPlant}
+                    cinematic={cinematic}
+                    tileSize={tileSize}
+                  />
+                </div>
               </>
             )}
             {decoration && !plant && (

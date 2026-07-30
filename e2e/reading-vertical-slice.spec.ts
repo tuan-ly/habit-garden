@@ -13,7 +13,10 @@ test.describe('Reading Habit Vertical Slice', () => {
     })
 
     await loginAndGoToGarden(page)
-    await page.getByRole('link', { name: 'Mở cây đọc sách' }).click()
+    const readingBadge = page.locator('[data-guided-capability="reading"]').first()
+    await expect(readingBadge).toBeVisible()
+    await readingBadge.locator('xpath=ancestor::button[1]').click()
+    await page.getByRole('link', { name: 'Mở hành trình đọc' }).click()
     await expect(page).toHaveURL(/\/reading$/)
 
     await expect(page.getByRole('heading', { name: 'Đọc sách mỗi ngày' })).toBeVisible()

@@ -18,7 +18,6 @@ import { validatePlantMove } from '@/lib/utils/grid-positioning'
 import { applyGoalLogToPeriod } from '@/lib/goal-progress'
 import { toast } from 'sonner'
 import { logActivity, type LogActivityDto, type LogActivityResult } from '@/lib/actions/activity'
-import { isVirtualPlant, mergeRealAndVirtualPlants, type VirtualPlant } from '@/lib/habit-plant-mapping'
 
 // Types for optimistic updates
 type OptimisticAction =
@@ -53,7 +52,7 @@ interface MoveResult {
 }
 
 interface PlantsContextType {
-  plants: (PlantWithType | VirtualPlant)[]
+  plants: PlantWithType[]
   isPending: boolean
   isSyncing: boolean
   isPlantPending: (plantId: string) => boolean
@@ -78,21 +77,21 @@ interface PlantsContextType {
   addPlant: (plant: PlantWithType) => void
   removePlant: (plantId: string) => void
   updatePlant: (plantId: string, updates: Partial<PlantWithType>) => void
-  refreshPlants: (newPlants: PlantWithType[], virtualPlants?: VirtualPlant[]) => void
-  getPlant: (plantId: string) => (PlantWithType | VirtualPlant) | undefined
+  refreshPlants: (newPlants: PlantWithType[]) => void
+  getPlant: (plantId: string) => PlantWithType | undefined
 }
 
 const PlantsContext = createContext<PlantsContextType | null>(null)
 
 // Reducer for optimistic updates
 function plantsReducer(
-  state: (PlantWithType | VirtualPlant)[],
+  state: PlantWithType[],
   action: OptimisticAction
-): (PlantWithType | VirtualPlant)[] {
+): PlantWithType[] {
   switch (action.type) {
     case 'WATER_PLANT': {
       return state.map((plant) => {
-        if (plant.id !== action.plantId || isVirtualPlant(plant)) return plant
+        if (plant.id !== action.plantId) return plant
 
         // Optimistically update plant state
         const newMoisture = Math.min(100, plant.current_moisture + (plant.plant_type?.moisture_boost || 20))
@@ -118,7 +117,7 @@ function plantsReducer(
 
     case 'LOG_GOAL': {
       return state.map((plant) => {
-        if (plant.id !== action.plantId || isVirtualPlant(plant)) return plant
+        if (plant.id !== action.plantId) return plant
 
         // Create optimistic log entry
         const newLog: TodayGoalLog = {
@@ -195,7 +194,7 @@ function plantsReducer(
 
     case 'MOVE_PLANT': {
       return state.map((plant) =>
-        plant.id === action.plantId && !isVirtualPlant(plant)
+        plant.id === action.plantId
           ? { ...plant, grid_row: action.gridRow, grid_col: action.gridCol }
           : plant
       )
@@ -209,35 +208,25 @@ function plantsReducer(
 interface PlantsProviderProps {
   children: ReactNode
   initialPlants: PlantWithType[]
-  virtualPlants?: VirtualPlant[]
 }
 
 export function PlantsProvider({
   children,
   initialPlants,
-  virtualPlants = [],
 }: PlantsProviderProps) {
   const [serverPlants, setServerPlants] = useState(initialPlants)
-  const [serverVirtualPlants, setServerVirtualPlants] = useState(virtualPlants)
   const [isPending, startTransition] = useTransition()
   const [isSyncing, setIsSyncing] = useState(false)
   const [pendingPlantIds, setPendingPlantIds] = useState<Set<string>>(new Set())
 
-  // Merge real and virtual plants
-  const allServerPlants = useMemo(
-    () => mergeRealAndVirtualPlants(serverPlants, serverVirtualPlants),
-    [serverPlants, serverVirtualPlants]
-  )
-
   // Sync when RSC refetches new initialPlants (e.g. after dev panel edits)
   useEffect(() => {
     setServerPlants(initialPlants)
-    setServerVirtualPlants(virtualPlants)
-  }, [initialPlants, virtualPlants])
+  }, [initialPlants])
 
   // Optimistic state management
   const [optimisticPlants, addOptimisticUpdate] = useOptimistic(
-    allServerPlants,
+    serverPlants,
     plantsReducer
   )
 
@@ -316,9 +305,6 @@ export function PlantsProvider({
       const plant = optimisticPlants.find((p) => p.id === plantId)
       if (!plant) {
         return { success: false, error: 'Plant not found' }
-      }
-      if (isVirtualPlant(plant)) {
-        return { success: false, error: 'Habit plants cannot be watered directly' }
       }
 
       // Check if already watered today
@@ -408,9 +394,6 @@ export function PlantsProvider({
       const plant = optimisticPlants.find((p) => p.id === plantId)
       if (!plant) {
         return { success: false, error: 'Plant not found' }
-      }
-      if (isVirtualPlant(plant)) {
-        return { success: false, error: 'Habit plants do not use garden goals' }
       }
 
       if (!plant.goal) {
@@ -587,9 +570,8 @@ export function PlantsProvider({
   }, [])
 
   // Refresh plants from server
-  const refreshPlants = useCallback((newPlants: PlantWithType[], newVirtualPlants: VirtualPlant[] = []) => {
+  const refreshPlants = useCallback((newPlants: PlantWithType[]) => {
     setServerPlants(newPlants)
-    setServerVirtualPlants(newVirtualPlants)
   }, [])
 
   // Get a single plant

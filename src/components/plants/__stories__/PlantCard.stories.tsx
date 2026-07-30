@@ -2,7 +2,6 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { PlantCard } from '../plant-card'
 import type { PlantWithType, WeatherType } from '@/types/database'
 import { PlantsProvider } from '@/lib/context/plants-context'
-import { isVirtualPlant } from '@/lib/habit-plant-mapping'
 
 // Mock plant data factory
 const createMockPlant = (overrides: Partial<PlantWithType> = {}): PlantWithType => ({
@@ -83,9 +82,8 @@ const meta: Meta<typeof PlantCard> = {
   decorators: [
     (Story, context) => {
       const plant = context.args.plant || createMockPlant()
-      const realPlants = isVirtualPlant(plant) ? [] : [plant]
       return (
-        <MockPlantsProvider plants={realPlants}>
+        <MockPlantsProvider plants={[plant]}>
           <div className="max-w-sm">
             <Story />
           </div>

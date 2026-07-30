@@ -1,6 +1,7 @@
 'use client'
 
 import { memo } from 'react'
+import { BookOpen } from 'lucide-react'
 import { PlantVisual } from '@/components/plants/plant-visual'
 import type { PlantWithType, WeatherType } from '@/types/database'
 import { cn } from '@/lib/utils'
@@ -11,6 +12,10 @@ import { getTileOffsetTransform } from '@/lib/assets/game-asset-display'
 import { resolveGameAssetDisplay } from '@/lib/assets/game-asset-contract'
 
 export type FocusState = 'normal' | 'highlight' | 'dim' | 'urgent'
+
+export function hasActiveReadingCapability(plant: PlantWithType): boolean {
+  return plant.guided_habit?.type === 'reading' && plant.guided_habit.is_active
+}
 
 interface IsometricPlantProps {
   plant: PlantWithType
@@ -96,6 +101,16 @@ function IsometricPlantComponent({
         hideStatusIndicators={hideStatusIndicators}
         priority={priority}
       />
+
+      {hasActiveReadingCapability(plant) && (
+        <div
+          data-guided-capability="reading"
+          className="pointer-events-none absolute -right-3 -top-5 z-20 flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#fff8df] bg-[#31523b] text-[#fff8df] shadow-[0_5px_14px_rgba(35,65,39,0.28)]"
+          title="Theo dõi đọc sách"
+        >
+          <BookOpen className="h-4 w-4" aria-hidden="true" />
+        </div>
+      )}
 
       {/* Growth Blocked Indicator */}
       {plant.growth_blocked && (

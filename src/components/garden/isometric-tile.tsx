@@ -3,7 +3,6 @@
 import { memo } from 'react'
 import { cn } from '@/lib/utils'
 import type { PlantWithType } from '@/types/database'
-import type { VirtualPlant } from '@/lib/habit-plant-mapping'
 import { PlantOverlayBadge } from './plant-overlay-badge'
 import { IsometricPlant } from './isometric-plant'
 import { Plus } from 'lucide-react'
@@ -28,7 +27,7 @@ interface IsometricTileProps {
   children?: React.ReactNode
   tileSize?: number
   /** Plant data for badge (optional - only needed when plant exists) */
-  plant?: PlantWithType | VirtualPlant | null
+  plant?: PlantWithType | null
   /** Hide badge (e.g., when dragging) */
   hideBadge?: boolean
   /** Show add hint on empty tiles (when in add mode) */

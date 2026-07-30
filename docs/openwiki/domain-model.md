@@ -35,17 +35,18 @@ Goals add measurable habit progress. Main modes:
 
 Goal frequency can be daily, weekly, or monthly. Period-aware helpers live in `src/lib/goal-utils.ts` and `src/lib/goal-progress.ts`.
 
-## Guided Habits
+## Guided Plant Capabilities
 
-The additive guided-habit aggregate supports sessions without changing legacy plant/goal semantics:
+The guided-habit aggregate adds session behavior to a persisted plant without creating another plant representation:
 
-- `Habit` - reusable habit identity, numeric unit and default session duration.
+- `Plant` - visual identity, lifecycle and persisted garden placement.
+- `Habit` - optional guided capability linked by the owned, unique `plant_id`; defines type, numeric unit and default session duration.
 - `GoalPlan` - start/end target, timeframe and deterministic review configuration.
 - `HabitSession` - running/paused/completion state with persisted elapsed time.
 - `DailyProgress` - one per habit/date, accumulating completed numeric value.
 - `GrowthState` - current/previous/next target, streak, plant stage and review history.
 
-Reading configures this model as pages, 30 minutes, 5→30 pages/day, seven-day reviews, 80% consistency and five-page increments. Pure progression rules live in `src/lib/habit-growth.ts`.
+Reading configures this model as pages, 30 minutes, 5→30 pages/day, seven-day reviews, 80% consistency and five-page increments. `PlantWithType.guided_habit` is the garden read-model attachment; pure progression rules live in `src/lib/habit-growth.ts`.
 
 ## Mood And Weather
 

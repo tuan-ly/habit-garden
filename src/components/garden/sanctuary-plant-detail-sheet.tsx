@@ -3,14 +3,21 @@
 import Link from 'next/link'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { PlantImage } from '@/components/plants/plant-image'
+import { ReadingCapabilityControl } from '@/components/garden/reading-capability-control'
 import { isToday } from '@/lib/utils'
 import type { PlantWithType } from '@/types/database'
-import { CalendarDays, Check, ChevronRight, Leaf, Moon, Sprout } from 'lucide-react'
+import { BookOpen, CalendarDays, Check, ChevronRight, Leaf, Moon, Sprout } from 'lucide-react'
 
 interface SanctuaryPlantDetailSheetProps {
   plant: PlantWithType | null
   open: boolean
   onOpenChange: (open: boolean) => void
+}
+
+export function getGuidedHabitHref(plant: PlantWithType): string | null {
+  if (!plant.guided_habit?.is_active) return null
+  if (plant.guided_habit.type === 'reading') return '/reading'
+  return null
 }
 
 function getStateCopy(plant: PlantWithType): { label: string; body: string } {
@@ -34,6 +41,7 @@ export function SanctuaryPlantDetailSheet({
   const goalProgress = plant.goal?.current_period_target
     ? Math.min(100, (plant.goal.period_progress / plant.goal.current_period_target) * 100)
     : null
+  const guidedHabitHref = getGuidedHabitHref(plant)
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -139,6 +147,37 @@ export function SanctuaryPlantDetailSheet({
               <p className="mt-1 text-[11px] text-[#74806e]">đang nghỉ</p>
             </div>
           </section>
+
+          {guidedHabitHref ? (
+            <section className="rounded-[1.75rem] border border-[#d8dfc8] bg-[#f2f0df] p-5">
+              <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-[#718064]">
+                <BookOpen className="h-4 w-4" />
+                Tính năng của cây
+              </p>
+              <p className="mt-2 font-display text-xl font-semibold text-[#315027]">
+                Theo dõi đọc sách
+              </p>
+              <p className="mt-1 text-sm leading-6 text-[#697561]">
+                Những phiên đọc được lưu vào hành trình và nuôi lớn chính cây này.
+              </p>
+              <Link
+                href={guidedHabitHref}
+                onClick={() => onOpenChange(false)}
+                className="mt-4 flex min-h-12 items-center justify-between rounded-full bg-[#31523b] px-5 text-sm font-bold text-[#fff9e8] transition hover:bg-[#274633]"
+              >
+                <span className="flex items-center gap-3">
+                  <BookOpen className="h-5 w-5" />
+                  Mở hành trình đọc
+                </span>
+                <ChevronRight className="h-5 w-5" />
+              </Link>
+            </section>
+          ) : (
+            <ReadingCapabilityControl
+              plant={plant}
+              onAttached={() => onOpenChange(false)}
+            />
+          )}
 
           <Link
             href="/overview"

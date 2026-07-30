@@ -27,7 +27,7 @@ The sanctuary surface includes deterministic **Non-occupying Terrain Inlays**: o
 
 `IsometricGarden` owns or coordinates:
 
-- real and virtual habit-plant tiles from `PlantsProvider`; virtual plants occupy deterministic free 1×1 cells, do not participate in plant-care/edit mutations, and route to the guided habit flow
+- persisted plant tiles from `PlantsProvider`; optional guided behavior is metadata on a real plant and never changes placement or care invariants
 - zoom and pan through `useGardenZoom()`
 - visible tile calculation through `useVisibleTiles()`
 - garden mode through `ModeToolbar`
@@ -84,7 +84,9 @@ The production `/garden` route is now **Garden-first**:
 
 Legacy list/focus/edit primitives still exist for compatibility and garden arrangement, but they are not first-level navigation.
 
-The sanctuary header also links to the additive `/reading` Home Garden. That route owns the guided reading journey and must not replace or fork the existing sanctuary plant-care mutations. The `/garden` server page maps the reading journey to a `VirtualPlant` and renders its active-session indicator; the dashboard layout shows a global resume banner for a running session. Selecting the virtual tile routes to `/reading`, or directly to `/reading/session` while that habit has an active session.
+The sanctuary header also links to the additive `/reading` Home Garden. Reading is a **Capability Attachment** on a persisted plant through `habits.plant_id`; it is not a virtual tile. The linked plant keeps normal placement, movement and care behavior, while its detail sheet exposes `Mở hành trình đọc`. The dashboard layout uses a read-only active-session query for the global resume banner and must not create a habit merely because a protected page rendered.
+
+An attached Reading capability is visible as a book badge on the real plant. Selecting any normal plant exposes either `Mở hành trình đọc` or an explicit attach/move control in the production sanctuary focus panel; the detail sheet mirrors the same behavior. Opening `/reading` without an attachment routes the user back to Garden instead of silently creating a grass plant.
 
 ## Reaction And Modal Rules
 

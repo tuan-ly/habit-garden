@@ -3,11 +3,13 @@
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { ReadingCapabilityControl } from '@/components/garden/reading-capability-control'
 import { useUser } from '@/lib/context/dashboard-data-context'
 import { cn } from '@/lib/utils'
 import type { PlantWithType } from '@/types/database'
 import {
   Check,
+  BookOpen,
   BookOpenText,
   ChevronRight,
   Clock3,
@@ -234,6 +236,26 @@ export function SanctuaryGardenChrome({
                 </div>
               </div>
             </div>
+
+            {focusedPlant.guided_habit?.type === 'reading'
+              && focusedPlant.guided_habit.is_active ? (
+                <Link
+                  href="/reading"
+                  className="mt-3 flex min-h-14 items-center justify-between rounded-2xl bg-[#31523b] px-4 text-sm font-bold text-[#fff9e8] transition hover:bg-[#274633]"
+                >
+                  <span className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4" />
+                    Mở hành trình đọc
+                  </span>
+                  <ChevronRight className="h-4 w-4" />
+                </Link>
+              ) : (
+                <ReadingCapabilityControl
+                  plant={focusedPlant}
+                  compact
+                  onAttached={onCloseFocus}
+                />
+              )}
 
             <div className="mt-3 grid grid-cols-[1fr_1.18fr_1fr] items-end gap-2">
               <button

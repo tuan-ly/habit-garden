@@ -31,6 +31,7 @@ vi.mock('@/lib/actions/habit-sessions', () => ({
 const habit: Habit = {
   id: 'habit-1',
   user_id: 'user-1',
+  plant_id: 'plant-1',
   type: 'reading',
   name: 'Đọc sách mỗi ngày',
   description: 'Một phiên đọc yên tĩnh.',

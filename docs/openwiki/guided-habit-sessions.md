@@ -15,13 +15,15 @@ UI components live in `src/components/reading/`. The existing sanctuary exposes 
 
 Reusable types live in `src/types/habits.ts`; deterministic progression and timer calculations live in `src/lib/habit-growth.ts`. Reading is configuration, not a hard-coded domain branch: pages, 30 minutes, 5→30 target, seven-day review, 80% threshold and five-page increment.
 
-Migration `20260728121000_reading_habit_vertical_slice.sql` owns `habits`, `goal_plans`, `habit_sessions`, `daily_progress`, `growth_states`, RLS and `complete_habit_session_atomic(...)`.
+Migration `20260728121000_reading_habit_vertical_slice.sql` owns `habits`, `goal_plans`, `habit_sessions`, `daily_progress`, `growth_states`, RLS and `complete_habit_session_atomic(...)`. Migration `20260729155039_attach_habits_to_plants.sql` links each habit to one owned real plant and backfills existing reading journeys.
 
 ## Mutation Flow
 
-`reading client -> habit-sessions server action -> owned row / atomic completion RPC -> canonical session/progress/growth -> local reconcile or route navigation`
+`real plant capability -> reading client -> habit-sessions server action -> owned row / atomic completion RPC -> canonical session/progress/growth -> idempotent real-plant activity -> local reconcile or route navigation`
 
-Timer state is persisted as accumulated seconds plus the last resume timestamp. Do not replace it with localStorage or a client-only countdown. Completion is the transaction boundary; do not split result, streak and progression writes across UI calls.
+Timer state is persisted as accumulated seconds plus the last resume timestamp. Do not replace it with localStorage or a client-only countdown. Completion remains the guided-session transaction boundary; the linked plant activity uses the session id as its idempotency key.
+
+Reading attachment is explicit: `attachReadingCapabilityToPlant(plantId)` validates ownership, creates the first Reading habit or moves the existing habit by updating only `plant_id`, then revalidates Garden and Reading. Moving preserves all records keyed by `habit_id`. `ensureReadingJourney()` may initialize plan/growth records for an attached habit, but it must never create a plant.
 
 ## Progression Contract
 

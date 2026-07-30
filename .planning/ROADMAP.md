@@ -21,7 +21,7 @@
 3. Generic domain and persistence models support other numeric units without shipping unrelated habit UI.
 4. Domain/component/contract tests, authenticated E2E, local migration replay, typecheck and production build pass.
 
-**Deployment gate:** apply migrations `20260728121000` and `20260728123500` to the staging/linked Supabase environment before deploying the app branch.
+**Deployment gate:** apply migrations `20260728121000`, `20260728123500` and `20260729155039` to the staging/linked Supabase environment before deploying the app branch.
 
 ---
 

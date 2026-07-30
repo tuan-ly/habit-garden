@@ -1,12 +1,12 @@
 # Current State
 
-- Date: 2026-07-29
+- Date: 2026-07-30
 - Milestone: Retention Core — Guided Habit Sessions
-- Active task: Plan Reading-Plant Integration — unified model approach
-- Context: Reading vertical slice complete but isolated from plant system; need to integrate habits into garden as virtual plants
-- Completed: analyzed integration gaps (5 items); chose Option A (Unified Model) over Option B (Parallel Systems); created detailed 5-phase integration plan in `.planning/reading-plant-integration-plan.md`
-- Plan details: Virtual Plant Pattern (no data duplication), 15 files across data layer/garden UI/progression history/session customization/cross-system sync, estimated 16-21h effort
-- Verification: none yet (planning phase)
-- Risks: mapping layer adds complexity; need careful testing to avoid breaking existing plant features
-- Blockers: awaiting user approval of integration plan
-- Next smallest step: review plan → if approved, start Phase 1 (Data Layer Integration)
+- Active task: Complete explicit Capability Attachment UX for normal plants
+- Status: complete
+- Vertical slice: a persisted plant owns garden identity/placement and optionally exposes a Reading capability backed by sessions, daily progress, goal plan and growth state
+- Completed: removed VirtualPlant from garden core; restored move-to-empty behavior; added owned `habits.plant_id`; backfilled existing habits; added explicit attach/move Reading control to normal plant focus/detail; added visible Reading badge and focus CTA; removed implicit `/reading` plant provisioning; synced completion to plant activity; applied migration `20260729155039` to linked Supabase
+- Verification: typecheck pass; focused ESLint pass; 29 Vitest files / 344 tests pass; production build pass; authenticated Chromium Reading E2E pass; migration ledger has 59 unique versions; remote column/FK/unique/RLS invariants pass
+- Risks: local full-chain migration replay still depends on Docker Desktop; attach-new-capability is covered by action/UI tests while Chromium acceptance used the existing backfilled Reading capability
+- Blockers: none
+- Next smallest step: review the complete R2 diff and commit the Capability Attachment slice

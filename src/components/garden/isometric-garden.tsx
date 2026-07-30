@@ -2,7 +2,6 @@
 
 import { useState, useMemo, useEffect, useCallback, useRef, useSyncExternalStore } from 'react'
 import dynamic from 'next/dynamic'
-import { useRouter } from 'next/navigation'
 import { type FocusState } from './isometric-plant'
 import { PlantInfoBar } from './plant-tooltip'
 import { getPlantFocusCameraScale, getPlantFocusTargetY } from './plant-focus-frame'
@@ -23,7 +22,6 @@ import { useInventoryOptional } from '@/lib/context/inventory-context'
 import { useGardenZoom, useVisibleTiles } from '@/lib/hooks'
 import { formatGoalValue } from '@/lib/goal-progress'
 import type { PlantWithType, PlantType, WeatherType } from '@/types/database'
-import { isVirtualPlant, type VirtualPlant } from '@/lib/habit-plant-mapping'
 import {
   calculateRequiredGridSize,
   buildOccupiedCellsMap,
@@ -54,7 +52,6 @@ interface IsometricGardenProps {
   onWelcomeBackUsed?: () => void
   sanctuaryMode?: boolean
   welcomeBackDays?: number
-  activeHabitId?: string | null
 }
 
 const DEFAULT_TILE_SIZE = 140
@@ -97,9 +94,7 @@ export function IsometricGarden({
   onWelcomeBackUsed,
   sanctuaryMode = false,
   welcomeBackDays = 0,
-  activeHabitId,
 }: IsometricGardenProps) {
-  const router = useRouter()
   const { plants, movePlant, recordActivity, isPlantPending } = usePlants()
   const gardenSettings = useGardenSettingsOptional()
   const isLowPowerDevice = useSyncExternalStore(
@@ -241,9 +236,8 @@ export function IsometricGarden({
     return () => clearInterval(interval)
   }, [])
 
-  // Grid computation - filter out virtual plants for grid calculations
-  const realPlants = useMemo(() => plants.filter((p): p is PlantWithType => !isVirtualPlant(p)), [plants])
-  const livingPlants = useMemo(() => realPlants.filter((p) => p.status !== 'dead'), [realPlants])
+  // Grid computation
+  const livingPlants = useMemo(() => plants.filter((p) => p.status !== 'dead'), [plants])
   const minimumGridSize = useMemo(() => getGardenSize(userLevel), [userLevel])
   // Include decorations in grid size calculation so placed decos don't get cut off
   const allGridItems = useMemo(
@@ -257,23 +251,6 @@ export function IsometricGarden({
     [livingPlants, placedDecorations]
   )
 
-  const virtualPlantPositions = useMemo(() => {
-    const positions = new Map<string, { row: number; col: number }>()
-    const virtualPlants = plants.filter(isVirtualPlant)
-    let virtualIndex = 0
-
-    for (let row = 0; row < gridSize && virtualIndex < virtualPlants.length; row++) {
-      for (let col = 0; col < gridSize && virtualIndex < virtualPlants.length; col++) {
-        if (occupiedCellsSet.has(`${row}-${col}`)) continue
-        const virtualPlant = virtualPlants[virtualIndex]
-        positions.set(virtualPlant.id, { row, col })
-        virtualIndex += 1
-      }
-    }
-
-    return positions
-  }, [gridSize, occupiedCellsSet, plants])
-
   const multiCellAreas: MultiCellArea[] = useMemo(() => {
     return [...livingPlants, ...placedDecorations]
       .filter((p) => (p.grid_size || 1) > 1)
@@ -281,26 +258,17 @@ export function IsometricGarden({
   }, [livingPlants, placedDecorations])
 
   const tiles = useMemo(() => {
-    const virtualPlantByCell = new Map<string, VirtualPlant>()
-    for (const virtualPlant of plants.filter(isVirtualPlant)) {
-      const position = virtualPlantPositions.get(virtualPlant.id)
-      if (position) virtualPlantByCell.set(`${position.row}-${position.col}`, virtualPlant)
-    }
-
-    const result: { row: number; col: number; plant?: PlantWithType | VirtualPlant; isAnchor: boolean; isOccupiedByMultiCell: boolean }[] = []
+    const result: { row: number; col: number; plant?: PlantWithType; isAnchor: boolean; isOccupiedByMultiCell: boolean }[] = []
     for (let row = 0; row < gridSize; row++) {
       for (let col = 0; col < gridSize; col++) {
-        const realPlant = occupiedCells.get(`${row}-${col}`)
-        const virtualPlant = virtualPlantByCell.get(`${row}-${col}`)
-        const plant = realPlant ?? virtualPlant
-        const isAnchor = virtualPlant ? true : realPlant ? isAnchorCell(realPlant, row, col) : false
-        const isOccupiedByMultiCell = realPlant !== undefined && !isAnchor && (realPlant.grid_size || 1) > 1
+        const plant = occupiedCells.get(`${row}-${col}`)
+        const isAnchor = plant ? isAnchorCell(plant, row, col) : false
+        const isOccupiedByMultiCell = plant !== undefined && !isAnchor && (plant.grid_size || 1) > 1
         result.push({ row, col, plant, isAnchor, isOccupiedByMultiCell })
       }
     }
-
     return result
-  }, [gridSize, occupiedCells, plants, virtualPlantPositions])
+  }, [gridSize, occupiedCells])
 
   const containerWidth = gridSize * tileSize
   const containerHeight = getGroundPlaneHeight(gridSize, tileSize, sanctuaryMode)
@@ -400,15 +368,11 @@ export function IsometricGarden({
   const handleGardenTileClick = useCallback(async (
     row: number,
     col: number,
-    plant?: PlantWithType | VirtualPlant,
+    plant?: PlantWithType,
     decoration?: typeof placedDecorations[number]
   ) => {
     if (mode !== 'arrange') {
-      if (plant && isVirtualPlant(plant)) {
-        router.push(activeHabitId === plant.habit_id ? '/reading/session' : '/reading')
-      } else if (plant) {
-        interactions.handleTileClick(row, col, plant)
-      }
+      interactions.handleTileClick(row, col, plant)
       return
     }
 
@@ -452,10 +416,8 @@ export function IsometricGarden({
       editMode.selectDecoration(decoration)
       return
     }
-    if (plant && !isVirtualPlant(plant)) {
-      interactions.handleTileClick(row, col, plant)
-    }
-  }, [mode, interactions, editMode, inventory, router, activeHabitId])
+    interactions.handleTileClick(row, col, plant)
+  }, [mode, interactions, editMode, inventory])
 
   // Hovered data
   const hoveredPlant = hoveredTile ? occupiedCells.get(hoveredTile) ?? null : null
@@ -466,7 +428,7 @@ export function IsometricGarden({
     return { row: plant.grid_row || 0, col: plant.grid_col || 0, size: plant.grid_size || 1 }
   }, [hoveredTile, occupiedCells])
 
-  const isEmpty = livingPlants.length === 0 && virtualPlantPositions.size === 0
+  const isEmpty = livingPlants.length === 0
 
   const sanctuaryPlants = useMemo(
     () => livingPlants.filter((plant) => plant.status !== 'dormant'),
@@ -518,12 +480,12 @@ export function IsometricGarden({
   }, [sanctuaryMode, sanctuaryFocusedPlantId, handleSanctuaryFocusClose])
 
   const handleSanctuaryTileClick = useCallback(
-    (_row: number, _col: number, plant?: PlantWithType | VirtualPlant) => {
+    (_row: number, _col: number, plant?: PlantWithType) => {
       if (didPan) {
         resetDidPan()
         return
       }
-      if (plant && !isVirtualPlant(plant)) {
+      if (plant) {
         handleSanctuaryPlantFocus(plant)
       } else if (sanctuaryFocusedPlantId) {
         handleSanctuaryFocusClose()
@@ -817,7 +779,6 @@ export function IsometricGarden({
               cinematic={sanctuaryMode}
               selectedDecorationId={selectedPlacedDecoration?.id}
               decorationPlacementActive={Boolean(editMode.selectedItem || selectedPlacedDecoration)}
-              activeHabitId={activeHabitId}
             />
 
             {activeDecorationGhost && (

@@ -1,5 +1,7 @@
 // Database types for Habit Garden
 
+import type { HabitCapabilitySummary } from './habits'
+
 // Gentle Growth: New plant statuses
 // Note: 'dead' and 'dormant' kept for backward compatibility but deprecated
 // UI should treat 'dead' as 'sleeping' and 'dormant' as 'resting'
@@ -200,6 +202,8 @@ export interface PlantGoalInfo {
 // Plant with type info (joined)
 export interface PlantWithType extends Plant {
   plant_type: PlantType
+  // Optional guided behavior attached to this persisted garden plant.
+  guided_habit?: HabitCapabilitySummary | null
   // Optional goal info (populated when plant has goal_mode)
   goal?: PlantGoalInfo | null
   // Today's goal logs for this plant

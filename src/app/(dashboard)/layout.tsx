@@ -6,7 +6,7 @@ import { getAuthUser } from '@/lib/auth-cached'
 import { getDashboardBootstrap } from '@/lib/actions/dashboard-bootstrap'
 import { TimezoneSync } from '@/components/timezone-sync'
 import { ClientModals } from './client-modals'
-import { getReadingJourneySnapshot } from '@/lib/actions/habit-sessions'
+import { getActiveReadingSession } from '@/lib/actions/habit-sessions'
 import { ActiveSessionBanner } from '@/components/game-ui/ActiveSessionBanner'
 
 export default async function DashboardLayout({
@@ -22,13 +22,13 @@ export default async function DashboardLayout({
   }
 
   // One read-model request replaces the three shell queries.
-  const [{ mood: initialMood, profile, plantTypes }, readingJourney] = await Promise.all([
+  const [{ mood: initialMood, profile, plantTypes }, activeSessionResult] = await Promise.all([
     getDashboardBootstrap(),
-    getReadingJourneySnapshot(),
+    getActiveReadingSession(),
   ])
   const userTimezone = profile?.timezone ?? null
-  const activeReadingSession = readingJourney.success
-    ? readingJourney.data.active_session
+  const activeReadingSession = activeSessionResult.success
+    ? activeSessionResult.data
     : null
 
   return (

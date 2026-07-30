@@ -10,6 +10,10 @@ const grantsMigration = readFileSync(
   resolve('supabase/migrations/20260728123500_grant_guided_habit_table_access.sql'),
   'utf8'
 )
+const plantCapabilityMigration = readFileSync(
+  resolve('supabase/migrations/20260729155039_attach_habits_to_plants.sql'),
+  'utf8'
+)
 const actions = readFileSync(
   resolve('src/lib/actions/habit-sessions.ts'),
   'utf8'
@@ -60,5 +64,27 @@ describe('habit session persistence contract', () => {
         `GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.${table} TO authenticated`
       )
     }
+  })
+
+  it('attaches each guided habit to an owned persisted plant', () => {
+    expect(plantCapabilityMigration).toContain('ADD COLUMN plant_id UUID')
+    expect(plantCapabilityMigration).toContain('habits_plant_unique UNIQUE (plant_id)')
+    expect(plantCapabilityMigration).toContain('FOREIGN KEY (plant_id, user_id)')
+    expect(plantCapabilityMigration).toContain('REFERENCES public.plants (id, user_id)')
+    expect(plantCapabilityMigration).toContain('plants.user_id = (SELECT auth.uid())')
+  })
+
+  it('synchronizes completion to the linked plant idempotently', () => {
+    expect(actions).toContain('mutationId: payload.session.id')
+    expect(actions).toContain('plant_id: ensured.data.habit.plant_id')
+  })
+
+  it('attaches Reading explicitly instead of provisioning a hidden plant', () => {
+    expect(actions).toContain('attachReadingCapabilityToPlant')
+    expect(actions).toContain(".update({ plant_id: plantId })")
+    expect(actions).toContain("outcome: existing ? 'moved' : 'attached'")
+    expect(actions).not.toContain('createPlant({')
+    expect(actions).not.toContain('deletePlant(')
+    expect(actions).toContain('Hãy chọn một cây trong khu vườn')
   })
 })

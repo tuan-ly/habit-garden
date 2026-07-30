@@ -23,6 +23,7 @@ import {
 import { getDevPlantBypass } from '@/lib/actions/dev'
 import { cache } from 'react'
 import type { PlacedDecorationWithType } from '@/types/database'
+import type { HabitCapabilitySummary } from '@/types/habits'
 
 interface GardenReadModel {
   plants: PlantWithType[]
@@ -106,6 +107,7 @@ export async function getPlants(): Promise<PlantWithType[]> {
   const user = await getAuthUser()
   if (!user) return []
 
+  const supabase = await createClient()
   const today = new Date().toISOString().split('T')[0]
   const snapshot = await loadGardenReadModel()
   const plantsData = snapshot?.plants ?? []
@@ -113,6 +115,25 @@ export async function getPlants(): Promise<PlantWithType[]> {
   if (plantsData.length === 0) {
     return []
   }
+
+  const plantIds = plantsData.map(plant => plant.id)
+  const { data: guidedHabits, error: guidedHabitsError } = await supabase
+    .from('habits')
+    .select('id, plant_id, type, is_active')
+    .eq('user_id', user.id)
+    .eq('is_active', true)
+    .in('plant_id', plantIds)
+
+  if (guidedHabitsError) {
+    console.error('Unable to load guided plant capabilities:', guidedHabitsError)
+  }
+
+  const guidedHabitByPlant = new Map<string, HabitCapabilitySummary>(
+    (guidedHabits ?? []).map(habit => [
+      habit.plant_id,
+      habit as HabitCapabilitySummary,
+    ])
+  )
 
   // Get plant IDs that have goals
   const plantsWithGoalMode = plantsData.filter(p => p.goal_mode)
@@ -217,6 +238,7 @@ export async function getPlants(): Promise<PlantWithType[]> {
     return {
       ...plant,
       plant_type: plantType,
+      guided_habit: guidedHabitByPlant.get(plant.id) ?? null,
       goal,
       today_logs: todayLogs,
       today_log_count: todayLogCount,

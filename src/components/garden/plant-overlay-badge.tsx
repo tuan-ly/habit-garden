@@ -4,10 +4,9 @@ import { memo } from 'react'
 import { cn, isToday } from '@/lib/utils'
 import { formatGoalValue, getRemainingGoalValue } from '@/lib/goal-progress'
 import type { PlantWithType } from '@/types/database'
-import type { VirtualPlant } from '@/lib/habit-plant-mapping'
 
 interface PlantOverlayBadgeProps {
-  plant: PlantWithType | VirtualPlant
+  plant: PlantWithType
   className?: string
   /** Tile size for scaling the badge (default 60) */
   tileSize?: number
@@ -25,14 +24,9 @@ function PlantOverlayBadgeComponent({
   className,
   tileSize = 60,
 }: PlantOverlayBadgeProps) {
-  // Virtual plants don't show badges yet (Phase 2 will add habit-specific badges)
-  if ('type' in plant && plant.type === 'habit') {
-    return null
-  }
-
-  const hasGoal = !!(plant as PlantWithType).goal_mode
-  const goal = (plant as PlantWithType).goal
-  const isWateredToday = isToday((plant as PlantWithType).last_watered_at)
+  const hasGoal = !!plant.goal_mode
+  const goal = plant.goal
+  const isWateredToday = isToday(plant.last_watered_at)
 
   // Scale marker based on tile size - markers are ~30% smaller than old pills
   const scale = Math.max(0.3, (tileSize / 60) * 0.25)

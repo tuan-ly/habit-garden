@@ -27,6 +27,7 @@ export interface GrowthHistoryEntry {
 export interface Habit {
   id: string
   user_id: string
+  plant_id: string
   type: string
   name: string
   description: string | null
@@ -36,6 +37,13 @@ export interface Habit {
   is_active: boolean
   created_at: string
   updated_at: string
+}
+
+export interface HabitCapabilitySummary {
+  id: string
+  plant_id: string
+  type: string
+  is_active: boolean
 }
 
 export interface GoalPlan {
