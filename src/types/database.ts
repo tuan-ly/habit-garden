@@ -141,6 +141,8 @@ export interface Plant {
   matured_at: string | null
   died_at: string | null // Legacy: kept for backwards compat
   death_reason: string | null // Legacy: kept for backwards compat
+  /** A dead plant stays in the garden until its owner has acknowledged it. */
+  death_acknowledged_at?: string | null
   goal_mode: GoalMode | null
   reminder_time: string | null
   reminder_enabled: boolean

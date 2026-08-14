@@ -19,6 +19,8 @@ Keep these contracts backward-compatible. Previous application artifacts may ign
 
 Treat migrations as the source of schema history. Treat `src/types/database.ts` as the app-facing type contract that must stay aligned with the live schema.
 
+Migration `20260814051729_acknowledge_plant_deaths.sql` adds nullable `plants.death_acknowledged_at`, backfills deaths that existed before the workflow, and indexes each user's pending losses by death time. Existing plant UPDATE RLS remains sufficient because the acknowledgement server action still scopes the write to the authenticated owner and unacknowledged `dead` row.
+
 ## RLS
 
 All user-owned tables should have RLS policies that constrain reads/writes by `auth.uid()`. Server actions should still perform ownership checks before writes; RLS is the database backstop, not a reason to skip app-level authorization.

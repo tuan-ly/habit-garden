@@ -6,7 +6,7 @@
 
 ## Core Rules
 
-1. **Plants never die.** Moisture = 0 → sleeping/dormant, never permanent death. User can always revive.
+1. **Plant loss phải được xác nhận.** Cron có thể đặt cây thành `dead`, nhưng cây vẫn ở trên map cho đến khi chủ sở hữu chủ động nói lời tạm biệt; không xóa record lịch sử.
 2. **No guilt mechanics.** Every message is warm, forward-looking. Never punish absence.
 3. **Fun first.** If a feature isn't fun, it doesn't ship. Psychology serves fun, not the other way around.
 4. **Never look cheap.** Missing features OK, ugly UI never OK.
@@ -30,7 +30,8 @@
 
 - Valid living statuses: growing, thriving, resting, waiting, sleeping
 - Terminal statuses: mature, dead (legacy), dormant (legacy)
-- Filter living plants: `status !== 'dead' && status !== 'dormant'`
+- `dead` với `death_acknowledged_at = null` là pending loss: vẫn chiếm ô/slot và chỉ hiện Goodbye dialog.
+- Filter cây hiển thị trên garden: `isVisibleInGarden(plant)`; không copy điều kiện status thủ công.
 - Never use `status === 'growing'` alone — misses thriving/resting/waiting/sleeping
 - `calculatePlantStatus()` is display-only, never writes to DB
 

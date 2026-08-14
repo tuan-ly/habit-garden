@@ -33,6 +33,7 @@ import {
   getGardenSize,
 } from '@/lib/progression-system'
 import { toast } from 'sonner'
+import { isVisibleInGarden } from '@/lib/plant-status'
 import {
   calculateGardenVisualBounds,
   fitVisualBoundsToSafeArea,
@@ -237,7 +238,8 @@ export function IsometricGarden({
   }, [])
 
   // Grid computation
-  const livingPlants = useMemo(() => plants.filter((p) => p.status !== 'dead'), [plants])
+  // Pending losses remain on the grid so their plot cannot be reused early.
+  const livingPlants = useMemo(() => plants.filter(isVisibleInGarden), [plants])
   const minimumGridSize = useMemo(() => getGardenSize(userLevel), [userLevel])
   // Include decorations in grid size calculation so placed decos don't get cut off
   const allGridItems = useMemo(
@@ -431,7 +433,7 @@ export function IsometricGarden({
   const isEmpty = livingPlants.length === 0
 
   const sanctuaryPlants = useMemo(
-    () => livingPlants.filter((plant) => plant.status !== 'dormant'),
+    () => livingPlants.filter((plant) => plant.status !== 'dead' && plant.status !== 'dormant'),
     [livingPlants]
   )
   const sanctuaryCompleted = useMemo(

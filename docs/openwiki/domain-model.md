@@ -12,6 +12,7 @@ Important fields:
 - `grid_row`, `grid_col`, `grid_size` - isometric garden placement.
 - `goal_mode` - whether this plant has a goal-tracking layer.
 - `visual_stage`, `maturity_level`, `grace_period_days` - gentle-growth concepts.
+- `death_acknowledged_at` - dấu mốc người dùng đã xác nhận lời tạm biệt cho một cây `dead`.
 
 ## Plant Status
 
@@ -24,7 +25,7 @@ New code should prefer the gentle status language:
 - `sleeping`
 - `mature`
 
-`dead` and `dormant` remain in types for backward compatibility. Treat them carefully and avoid reintroducing harsh UX language.
+`dead` and `dormant` remain in types for backward compatibility. Một cây `dead` có `death_acknowledged_at = null` là pending loss: vẫn render, giữ grid footprint/plant slot và mở Goodbye dialog theo thứ tự `died_at`. Khi action `acknowledgePlantDeath` lưu timestamp, cây rời garden nhưng record lịch sử vẫn còn. Dùng `isVisibleInGarden()` thay vì tự lọc theo `status`.
 
 ## Goals
 

@@ -32,6 +32,7 @@ import {
   PLANT_CREATION_GATES_ENABLED,
 } from '@/lib/progression-system'
 import { getMinimumSubscriptionForPlantTier } from '@/lib/subscription-limits'
+import { isVisibleInGarden } from '@/lib/plant-status'
 
 interface AddPlantDialogProps {
   plantTypes: PlantType[]
@@ -76,7 +77,7 @@ export function AddPlantDialog({
   const [isPending, startTransition] = useTransition()
 
   // Calculate actual plant count (from context or prop)
-  const actualPlantCount = currentPlantCount || plants.filter(p => p.status !== 'dead').length
+  const actualPlantCount = currentPlantCount || plants.filter(isVisibleInGarden).length
 
   // Check slot availability (level-based)
   const levelSlotCheck = useMemo(() => {

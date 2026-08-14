@@ -10,6 +10,8 @@ import { usePlantTypes, useProfile } from '@/lib/context/dashboard-data-context'
 import { useDevOverride } from '@/components/dev/dev-debug-context'
 import { useGardenSettingsOptional } from '@/lib/context/garden-settings-context'
 import type { WeatherType } from '@/types/database'
+import { isVisibleInGarden } from '@/lib/plant-status'
+import { PlantLossDialog } from './plant-loss-dialog'
 
 const LAST_VISIT_KEY = 'habit-garden-last-visit'
 const ABSENCE_THRESHOLD_DAYS = 3
@@ -83,9 +85,7 @@ export function GardenView({ weather }: GardenViewProps) {
   }, [])
 
   const displayWeather = moodToWeather(mood, weather)
-  const hasLivingPlants = plants.some(
-    (plant) => plant.status !== 'dead' && plant.status !== 'dormant'
-  )
+  const hasVisiblePlants = plants.some(isVisibleInGarden)
 
   return (
     <div className="relative h-full min-h-[540px] overflow-hidden bg-[#dbe8dc] text-[#263f22]">
@@ -130,7 +130,9 @@ export function GardenView({ weather }: GardenViewProps) {
         />
       </main>
 
-      {!hasLivingPlants && (
+      <PlantLossDialog />
+
+      {!hasVisiblePlants && (
         <p className="sr-only">
           Khu vườn đang trống. Hãy gieo hạt giống đầu tiên để bắt đầu một thói quen.
         </p>

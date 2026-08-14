@@ -11,6 +11,7 @@ import { isToday } from '@/lib/utils'
 import type { LogActivityDto, LogActivityResult } from '@/lib/actions/activity'
 import { validatePlantMove } from '@/lib/utils/grid-positioning'
 import { applyGoalLogToPeriod } from '@/lib/goal-progress'
+import { isPendingPlantDeath } from '@/lib/plant-status'
 import type { PlantWithType, InventoryItemWithDetails, DecorationRotation } from '@/types/database'
 import type { GardenMode } from './mode-toolbar'
 import type { WateringActionMode } from '@/components/plants/gentle-watering-modal'
@@ -132,6 +133,7 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
 
   // Open watering modal
   const handleQuickWaterRequest = useCallback((plant: PlantWithType, initialMode: WateringActionMode = 'choose') => {
+    if (isPendingPlantDeath(plant)) return
     setWateringPlant(plant)
     setWateringInitialMode(initialMode)
     setWateringModalOpen(true)
@@ -364,6 +366,7 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
 
   // Move operations
   const selectPlantForMove = useCallback((plant: PlantWithType) => {
+    if (isPendingPlantDeath(plant)) return
     if (navigator.vibrate) navigator.vibrate(30)
     setMoveState({ selectedPlant: plant, previewCell: null, isValidPreview: false })
   }, [])
