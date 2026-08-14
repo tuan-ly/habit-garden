@@ -54,7 +54,7 @@ The app must be fun enough that users open it on their worst day. Psychology ser
 ## Context
 
 - **User profile:** Solopreneur building solo. Can code but not professional developer. Needs AI as Product Thinking Partner.
-- **Current state:** The Reading Habit Vertical Slice now attaches to a real persisted plant through Capability Attachment. Migration `20260729155039` awaits local replay and linked-environment deployment. The older Dual Growth backlog remains pending.
+- **Current state:** The Reading Habit Vertical Slice now attaches to a real persisted plant through Capability Attachment. Migration `20260729155039` is applied on the linked Supabase project, and commit `0fd1339` is pushed on `develop` with a successful Vercel deployment. Local full-chain replay still depends on Docker Desktop. The older Dual Growth backlog remains pending.
 - **Design philosophy:** "Unfinished is OK, ugly is not." Every visible element must feel intentional and polished.
 - **Brand:** Habien (habien.com). Vietnamese market primary (VND pricing). English UI.
 - **Previous workflow:** SDD (Spec-Driven Development) → migrating to GSD for better phase management.

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { PlantImage } from '@/components/plants/plant-image'
 import { ReadingCapabilityControl } from '@/components/garden/reading-capability-control'
+import { getPlantHref } from '@/lib/reading-routes'
 import { isToday } from '@/lib/utils'
 import type { PlantWithType } from '@/types/database'
 import { BookOpen, CalendarDays, Check, ChevronRight, Leaf, Moon, Sprout } from 'lucide-react'
@@ -16,7 +17,7 @@ interface SanctuaryPlantDetailSheetProps {
 
 export function getGuidedHabitHref(plant: PlantWithType): string | null {
   if (!plant.guided_habit?.is_active) return null
-  if (plant.guided_habit.type === 'reading') return '/reading'
+  if (plant.guided_habit.type === 'reading') return getPlantHref(plant.id)
   return null
 }
 

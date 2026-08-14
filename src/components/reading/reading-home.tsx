@@ -1,4 +1,3 @@
-import Image from 'next/image'
 import Link from 'next/link'
 import {
   ArrowRight,
@@ -10,38 +9,16 @@ import {
 } from 'lucide-react'
 import { ReadingShell } from '@/components/reading/reading-shell'
 import { ReadingStartButton } from '@/components/reading/reading-start-button'
+import { PlantImage } from '@/components/plants/plant-image'
+import { getReadingGrowthPlanHref } from '@/lib/reading-routes'
 import type { HabitPlantStage, ReadingJourneySnapshot } from '@/types/habits'
 
-const STAGE_META: Record<HabitPlantStage, {
-  label: string
-  image: string
-  message: string
-}> = {
-  seed: {
-    label: 'Hạt giống',
-    image: '/plants/generic/01-seed.png',
-    message: 'Cây tri thức đang chờ phiên đọc đầu tiên.',
-  },
-  sprout: {
-    label: 'Mầm non',
-    image: '/plants/generic/02-sprout.png',
-    message: 'Những trang sách đầu tiên đã thành một mầm xanh.',
-  },
-  growing: {
-    label: 'Đang lớn',
-    image: '/plants/generic/03-growing.png',
-    message: 'Nhịp đọc đều đang làm tán lá dày hơn.',
-  },
-  blooming: {
-    label: 'Nở hoa',
-    image: '/plants/generic/04-blooming.png',
-    message: 'Sự đều đặn đang nở thành một thói quen sống.',
-  },
-  mature: {
-    label: 'Trưởng thành',
-    image: '/plants/generic/05-mature.png',
-    message: 'Cây tri thức đã trưởng thành và vẫn tiếp tục lớn.',
-  },
+const READING_STAGE_MESSAGE: Record<HabitPlantStage, string> = {
+  seed: 'Cây đang chờ phiên đọc đầu tiên của hành trình này.',
+  sprout: 'Những trang sách đầu tiên đã thành một mầm xanh.',
+  growing: 'Nhịp đọc đều đang làm hành trình này lớn lên.',
+  blooming: 'Sự đều đặn đang nở thành một thói quen sống.',
+  mature: 'Hành trình đọc đã trưởng thành và vẫn tiếp tục lớn.',
 }
 
 function formatDate(value: string): string {
@@ -52,36 +29,38 @@ function formatDate(value: string): string {
 }
 
 export function ReadingHome({ snapshot }: { snapshot: ReadingJourneySnapshot }) {
-  const { habit, plan, growth, today, active_session: activeSession } = snapshot
+  const { habit, plant, plan, growth, today, active_session: activeSession } = snapshot
   const completed = Number(today?.completed_value ?? 0)
   const target = Number(growth.current_target)
   const progress = Math.min(100, (completed / target) * 100)
   const completedToday = completed > 0
-  const stage = STAGE_META[growth.plant_stage]
+  const plantTypeName = plant.plant_type.name_vi || plant.plant_type.name
   const plantMessage = completedToday
     ? today?.met_target
       ? `Hôm nay bạn đã nuôi cây bằng ${completed} trang và đạt mục tiêu.`
       : `Hôm nay bạn đã nuôi cây bằng ${completed} trang. Mỗi trang đều được ghi nhận.`
-    : stage.message
+    : READING_STAGE_MESSAGE[growth.plant_stage]
 
   return (
     <ReadingShell
-      eyebrow="Home Garden · Hôm nay"
-      title={habit.name}
-      description="Một phiên 30 phút. Một mục tiêu vừa sức. Cây sẽ lớn theo nhịp bạn thật sự giữ được."
+      eyebrow={`${habit.name} · Hôm nay`}
+      title={plant.name}
+      description={`Mỗi phiên đọc được ghi vào hành trình và nuôi lớn chính ${plant.name}.`}
     >
       <section className="mx-auto mt-8 grid max-w-3xl overflow-hidden rounded-[2rem] border border-white/75 bg-[#fffaf0]/92 shadow-[0_26px_80px_rgba(47,72,42,.2)] backdrop-blur-2xl md:grid-cols-[0.9fr_1.1fr]">
         <div className="relative min-h-[300px] overflow-hidden bg-[radial-gradient(circle_at_50%_30%,#f9efc9_0%,#dce8c9_52%,#b9cfaa_100%)]">
           <div className="absolute inset-x-8 bottom-5 h-14 rounded-[50%] bg-[#6e8b5c]/20 blur-sm" aria-hidden="true" />
-          <Image
-            src={stage.image}
-            alt={`Cây đọc sách ở giai đoạn ${stage.label}`}
-            fill
-            sizes="(max-width: 768px) 100vw, 45vw"
-            className="object-contain object-bottom p-8"
-          />
+          <div className="absolute inset-0 flex items-end justify-center pb-9" data-reading-plant-id={plant.id}>
+            <PlantImage
+              plant={plant}
+              size="2xl"
+              showStatusIndicator={false}
+              priority
+              className="origin-bottom scale-[2.15] sm:scale-[2.35]"
+            />
+          </div>
           <div className="absolute left-4 top-4 rounded-full border border-white/70 bg-[#fffaf0]/88 px-3 py-1.5 text-xs font-extrabold text-[#527047] shadow-sm backdrop-blur-xl">
-            {stage.label}
+            {plantTypeName}
           </div>
         </div>
 
@@ -146,11 +125,12 @@ export function ReadingHome({ snapshot }: { snapshot: ReadingJourneySnapshot }) 
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
             <ReadingStartButton
+              plantId={plant.id}
               activeSession={activeSession}
               completedToday={completedToday}
             />
             <Link
-              href="/reading/growth-plan"
+              href={getReadingGrowthPlanHref(plant.id)}
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#bfcdb4] bg-white/70 px-5 text-sm font-extrabold text-[#537048] transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#789a68]"
             >
               <Route className="h-4 w-4" />

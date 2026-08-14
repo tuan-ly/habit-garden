@@ -5,13 +5,14 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Book, Play } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
-import type { HabitSession } from '@/types/habits'
+import { getReadingSessionHref } from '@/lib/reading-routes'
+import type { ActiveReadingSession } from '@/types/habits'
 
 interface ActiveSessionBannerProps {
-  activeSession: HabitSession | null
+  activeSession: ActiveReadingSession | null
 }
 
-function getInitialElapsed(activeSession: HabitSession | null): number {
+function getInitialElapsed(activeSession: ActiveReadingSession | null): number {
   if (!activeSession) return 0
   return activeSession.accumulated_seconds
 }
@@ -79,7 +80,7 @@ export function ActiveSessionBanner({ activeSession }: ActiveSessionBannerProps)
             <Button
               size="sm"
               variant="secondary"
-              onClick={() => router.push('/reading/session')}
+              onClick={() => router.push(getReadingSessionHref(activeSession.plant_id))}
               className="h-7 px-3 text-xs"
             >
               Resume

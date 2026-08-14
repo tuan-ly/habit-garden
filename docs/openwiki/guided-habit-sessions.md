@@ -2,14 +2,16 @@
 
 ## Reading Slice
 
-The first guided slice lives under `src/app/(dashboard)/reading/`:
+The first guided slice lives under `src/app/(dashboard)/plant/[plantId]/`:
 
-- `/reading` - Home Garden and today progress.
-- `/reading/session` - persistent timer and ambient audio.
-- `/reading/completion` - page validation and persisted outcome.
-- `/reading/growth-plan` - milestones, rule, dates and review history.
+- `/plant/{plantId}` - plant home; Reading Home replaces the base capability state only for the active attached plant.
+- `/plant/{plantId}/reading/session` - persistent timer and ambient audio.
+- `/plant/{plantId}/reading/completion` - page validation and persisted outcome.
+- `/plant/{plantId}/reading/growth-plan` - milestones, rule, dates and review history.
 
 UI components live in `src/components/reading/`. The existing sanctuary exposes an entry link; it does not replace the garden's plant-care flow.
+
+`ReadingJourneySnapshot` carries the owned linked `PlantWithType` resolved through `habit.plant_id`. Reading Home and its child routes must show that plant's name, type and canonical `PlantImage`; never choose a second visual identity from `growth_states.plant_stage` or a generic asset. The guided stage may still drive Reading-specific copy and progression, while the persisted plant remains the visual and lifecycle source of truth.
 
 ## Domain And Persistence
 
@@ -23,7 +25,7 @@ Migration `20260728121000_reading_habit_vertical_slice.sql` owns `habits`, `goal
 
 Timer state is persisted as accumulated seconds plus the last resume timestamp. Do not replace it with localStorage or a client-only countdown. Completion remains the guided-session transaction boundary; the linked plant activity uses the session id as its idempotency key.
 
-Reading attachment is explicit: `attachReadingCapabilityToPlant(plantId)` validates ownership, creates the first Reading habit or moves the existing habit by updating only `plant_id`, then revalidates Garden and Reading. Moving preserves all records keyed by `habit_id`. `ensureReadingJourney()` may initialize plan/growth records for an attached habit, but it must never create a plant.
+Reading attachment is explicit: `attachReadingCapabilityToPlant(plantId)` validates ownership, creates the first Reading habit or moves the existing habit by updating only `plant_id`, then revalidates Garden and both affected plant routes. Moving preserves all records keyed by `habit_id`. `ensureReadingJourney(userId, plantId)` may initialize plan/growth records only after the active capability matches the requested owned plant; it must never create a plant.
 
 ## Progression Contract
 

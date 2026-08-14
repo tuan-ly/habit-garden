@@ -1,0 +1,65 @@
+version: 1
+rules:
+  - id: git-working-tree
+    producer:
+      kind: git-working-tree
+    subjectRef:
+      type: asset
+      id: asset-531d83d96a6c
+    triggerSeverities:
+      - attention
+      - critical
+    disposition:
+      kind: observe
+  - id: build-test-verification
+    producer:
+      kind: verification-receipt
+      receiptPath: .obiz/verification.json
+      staleAfterHours: 24
+    subjectRef:
+      type: capability
+      id: capability-product-bootstrap
+    triggerSeverities:
+      - critical
+    disposition:
+      kind: request-checkpoint
+      workOrderId: work-order-first-operation
+      checkpointType: blocked-failed-exception
+  - id: successful-run-outcome
+    producer:
+      kind: run-outcome
+      workOrderId: work-order-first-operation
+    subjectRef:
+      type: work-order
+      id: work-order-first-operation
+    triggerSeverities:
+      - healthy
+    disposition:
+      kind: propose-work-order-update
+      workOrderId: work-order-first-operation
+  - id: failed-run-outcome
+    producer:
+      kind: run-outcome
+      workOrderId: work-order-first-operation
+    subjectRef:
+      type: work-order
+      id: work-order-first-operation
+    triggerSeverities:
+      - critical
+    disposition:
+      kind: request-checkpoint
+      workOrderId: work-order-first-operation
+      checkpointType: blocked-failed-exception
+  - id: workspace-manifest-freshness
+    producer:
+      kind: artifact-freshness
+      artifactId: artifact-workspace-manifest
+      staleAfterHours: 168
+    subjectRef:
+      type: artifact
+      id: artifact-workspace-manifest
+    triggerSeverities:
+      - attention
+      - critical
+    disposition:
+      kind: observe

@@ -4,6 +4,7 @@ import { CompletionClient } from '@/components/reading/completion-client'
 import { FocusSessionClient } from '@/components/reading/focus-session-client'
 import { GrowthPlanView } from '@/components/reading/growth-plan-view'
 import { ReadingHome } from '@/components/reading/reading-home'
+import type { PlantWithType } from '@/types/database'
 import type {
   GoalPlan,
   GrowthState,
@@ -16,6 +17,18 @@ import type {
 vi.mock('@/components/garden/background-audio', () => ({
   BackgroundAudio: ({ isPlaying }: { isPlaying: boolean }) => (
     <div data-testid="ambient-audio">{isPlaying ? 'playing' : 'stopped'}</div>
+  ),
+}))
+
+vi.mock('@/components/plants/plant-image', () => ({
+  PlantImage: ({ plant }: { plant: PlantWithType }) => (
+    <div
+      data-testid="reading-plant-image"
+      data-plant-id={plant.id}
+      data-plant-type={plant.plant_type.name}
+    >
+      {plant.name}
+    </div>
   ),
 }))
 
@@ -42,6 +55,76 @@ const habit: Habit = {
   created_at: '2026-07-28T00:00:00.000Z',
   updated_at: '2026-07-28T00:00:00.000Z',
 }
+
+const linkedPlant = {
+  id: habit.plant_id,
+  user_id: habit.user_id,
+  plant_type_id: 'plant-type-lavender',
+  name: 'Cây Oải Hương',
+  habit_description: 'Đọc một chương mỗi ngày.',
+  started_at: '2026-07-01T00:00:00.000Z',
+  current_moisture: 72,
+  growth_percentage: 48,
+  total_waterings: 12,
+  current_streak: 3,
+  longest_streak: 7,
+  last_watered_at: null,
+  status: 'growing',
+  matured_at: null,
+  died_at: null,
+  death_reason: null,
+  goal_mode: null,
+  reminder_time: null,
+  reminder_enabled: false,
+  adaptive_mode: 'suggest',
+  position: 0,
+  grid_size: 1,
+  grid_row: 2,
+  grid_col: 3,
+  weed_count: 0,
+  last_weed_added: null,
+  weeds_cleared_total: 0,
+  why_i_started: 'Giữ một khoảng yên tĩnh mỗi ngày.',
+  maturity_level: 4,
+  visual_stage: 'growing',
+  grace_period_days: 3,
+  days_this_week: 2,
+  days_this_month: 8,
+  consistency_percentage: 67,
+  easy_mode: true,
+  tiny_seed: 'Đọc 2 trang',
+  created_at: '2026-07-01T00:00:00.000Z',
+  updated_at: '2026-07-28T00:00:00.000Z',
+  plant_type: {
+    id: 'plant-type-lavender',
+    name: 'Lavender',
+    name_vi: 'Oải hương',
+    icon: '🌿',
+    description: 'A calm flowering herb.',
+    description_vi: 'Một loài thảo mộc có hoa dịu dàng.',
+    maturity_days: 30,
+    frequency_type: 'daily',
+    frequency_target: 1,
+    moisture_decay_rate: 10,
+    moisture_boost: 30,
+    special_effect: null,
+    category: 'herb',
+    difficulty: 'easy',
+    is_premium: false,
+    tier: 1,
+    tier_unlock_level: 1,
+    created_at: '2026-07-01T00:00:00.000Z',
+  },
+  guided_habit: {
+    id: habit.id,
+    plant_id: habit.plant_id,
+    type: habit.type,
+    is_active: habit.is_active,
+  },
+  goal: null,
+  today_logs: [],
+  today_log_count: 0,
+} satisfies PlantWithType
 
 const plan: GoalPlan = {
   id: 'plan-1',
@@ -103,6 +186,7 @@ const pausedSession: HabitSession = {
 
 const journey: ReadingJourneySnapshot = {
   habit,
+  plant: linkedPlant,
   plan,
   growth,
   today: null,
@@ -114,12 +198,21 @@ describe('reading habit vertical slice UI', () => {
   it('shows the reading plant, today target, and both primary destinations', () => {
     render(<ReadingHome snapshot={journey} />)
 
-    expect(screen.getByRole('heading', { name: 'Đọc sách mỗi ngày' })).toBeInTheDocument()
+    expect(screen.getByTestId('reading-plant-image')).toHaveAttribute(
+      'data-plant-id',
+      habit.plant_id
+    )
+    expect(screen.getByTestId('reading-plant-image')).toHaveAttribute(
+      'data-plant-type',
+      linkedPlant.plant_type.name
+    )
+    expect(screen.getByTestId('reading-plant-image')).toHaveTextContent(linkedPlant.name)
+    expect(screen.getByRole('heading', { name: linkedPlant.name })).toBeInTheDocument()
     expect(screen.getByText('0/5 trang')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Bắt đầu đọc' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Growth Plan/i })).toHaveAttribute(
       'href',
-      '/reading/growth-plan'
+      '/plant/plant-1/reading/growth-plan'
     )
     expect(screen.getByRole('progressbar', { name: 'Tiến độ đọc hôm nay' })).toHaveAttribute(
       'aria-valuenow',
@@ -155,7 +248,13 @@ describe('reading habit vertical slice UI', () => {
   })
 
   it('restores a paused focus session with target and remaining time', () => {
-    render(<FocusSessionClient habit={habit} initialSession={pausedSession} />)
+    render(
+      <FocusSessionClient
+        plantId={linkedPlant.id}
+        habit={habit}
+        initialSession={pausedSession}
+      />
+    )
 
     expect(screen.getByText('Đang tạm dừng')).toBeInTheDocument()
     expect(screen.getByText('28:00')).toBeInTheDocument()
@@ -202,6 +301,7 @@ describe('reading habit vertical slice UI', () => {
 
     render(
       <CompletionClient
+        plantId={linkedPlant.id}
         initialSession={completedSession}
         initialCompletion={completion}
       />
@@ -212,6 +312,10 @@ describe('reading habit vertical slice UI', () => {
     expect(screen.getByText('+8 growth')).toBeInTheDocument()
     expect(screen.getByText('1 ngày')).toBeInTheDocument()
     expect(screen.getByText('“Một chương rất hay.”')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Về cây hôm nay' })).toHaveAttribute(
+      'href',
+      '/plant/plant-1'
+    )
   })
 
   it('shows deterministic milestones and an honest empty history state', () => {

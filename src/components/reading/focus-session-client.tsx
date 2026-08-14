@@ -21,6 +21,10 @@ import {
   setReadingAmbient,
 } from '@/lib/actions/habit-sessions'
 import { getSessionElapsedSeconds } from '@/lib/habit-growth'
+import {
+  getPlantHref,
+  getReadingCompletionHref,
+} from '@/lib/reading-routes'
 import type { Habit, HabitSession } from '@/types/habits'
 
 function formatClock(totalSeconds: number): string {
@@ -31,11 +35,13 @@ function formatClock(totalSeconds: number): string {
 }
 
 interface FocusSessionClientProps {
+  plantId: string
   habit: Habit
   initialSession: HabitSession
 }
 
 export function FocusSessionClient({
+  plantId,
   habit,
   initialSession,
 }: FocusSessionClientProps) {
@@ -77,9 +83,9 @@ export function FocusSessionClient({
         setError(result.error)
         return
       }
-      router.replace(`/reading/completion?id=${result.data.id}`)
+      router.replace(getReadingCompletionHref(plantId, result.data.id))
     })
-  }, [remaining, router, session.id, session.status])
+  }, [plantId, remaining, router, session.id, session.status])
 
   function handlePauseOrResume() {
     setError(null)
@@ -104,7 +110,7 @@ export function FocusSessionClient({
         setError(result.error)
         return
       }
-      router.push(`/reading/completion?id=${result.data.id}`)
+      router.push(getReadingCompletionHref(plantId, result.data.id))
     })
   }
 
@@ -241,7 +247,7 @@ export function FocusSessionClient({
       </p>
       <div className="mt-2 text-center">
         <Link
-          href="/reading"
+          href={getPlantHref(plantId)}
           className="inline-flex min-h-10 items-center text-sm font-bold text-[#5b7651] underline decoration-[#9fb493] underline-offset-4"
         >
           Rời phiên, giữ timer

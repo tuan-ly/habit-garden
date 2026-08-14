@@ -22,7 +22,7 @@ describe('guided plant capability routing', () => {
   it('routes an active reading capability from its real plant', () => {
     const plant = plantWithCapability('reading')
 
-    expect(getGuidedHabitHref(plant)).toBe('/reading')
+    expect(getGuidedHabitHref(plant)).toBe('/plant/plant-1')
     expect(hasActiveReadingCapability(plant)).toBe(true)
   })
 

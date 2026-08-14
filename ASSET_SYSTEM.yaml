@@ -1,0 +1,210 @@
+version: 2
+asset:
+  id: asset-531d83d96a6c
+  name: Habit Garden
+  description: Local Asset System bootstrapped by Obiz; replace unknown state only with source-backed observations.
+  stage:
+    value: operating
+    provenance:
+      kind: workspace-file
+      sourceRef: ASSET_SYSTEM.yaml#asset.stage
+    observedAt: 2026-08-08T07:02:47.103Z
+    freshness: current
+  health:
+    value: unknown
+    provenance:
+      kind: workspace-file
+      sourceRef: ASSET_SYSTEM.yaml#asset.health
+    observedAt: 2026-08-08T07:02:47.103Z
+    freshness: unknown
+  engineIds:
+    - engine-product
+    - engine-commerce
+    - engine-content-growth
+  signalIds: []
+  flowIds:
+    - flow-product-commerce
+    - flow-commerce-growth
+engines:
+  - id: engine-product
+    assetId: asset-531d83d96a6c
+    kind: product
+    name: Product Engine
+    description: Build and improve the asset capability that delivers its core value.
+    health:
+      value: unknown
+      provenance:
+        kind: workspace-file
+        sourceRef: ASSET_SYSTEM.yaml#engines.engine-product.health
+      observedAt: 2026-08-08T07:02:47.103Z
+      freshness: unknown
+    capabilityIds:
+      - capability-product-bootstrap
+    signalIds: []
+    workOrderIds:
+      - work-order-first-operation
+  - id: engine-commerce
+    assetId: asset-531d83d96a6c
+    kind: commerce
+    name: Commerce Engine
+    description: Observe offer and transaction capability without assuming an integrated source.
+    health:
+      value: unknown
+      provenance:
+        kind: workspace-file
+        sourceRef: ASSET_SYSTEM.yaml#engines.engine-commerce.health
+      observedAt: 2026-08-08T07:02:47.103Z
+      freshness: unknown
+    capabilityIds:
+      - capability-commerce-bootstrap
+    signalIds: []
+    workOrderIds: []
+  - id: engine-content-growth
+    assetId: asset-531d83d96a6c
+    kind: content-growth
+    name: Content & Growth Engine
+    description: Observe distribution and learning capability without assuming an integrated source.
+    health:
+      value: unknown
+      provenance:
+        kind: workspace-file
+        sourceRef: ASSET_SYSTEM.yaml#engines.engine-content-growth.health
+      observedAt: 2026-08-08T07:02:47.103Z
+      freshness: unknown
+    capabilityIds:
+      - capability-growth-bootstrap
+    signalIds: []
+    workOrderIds: []
+capabilities:
+  - id: capability-product-bootstrap
+    engineId: engine-product
+    name: Define the first value-producing capability
+    status: planned
+    artifactIds:
+      - artifact-workspace-manifest
+    signalIds: []
+  - id: capability-commerce-bootstrap
+    engineId: engine-commerce
+    name: Define the first commerce capability
+    status: planned
+    artifactIds: []
+    signalIds: []
+  - id: capability-growth-bootstrap
+    engineId: engine-content-growth
+    name: Define the first distribution capability
+    status: planned
+    artifactIds: []
+    signalIds: []
+signals: []
+workOrders:
+  - id: work-order-first-operation
+    engineId: engine-product
+    capabilityId: capability-product-bootstrap
+    title: Habit Garden — Local Release Readiness
+    status: ready
+    outcome: "Read AGENTS.md, current-state.md, docs/openwiki/README.md and only docs/openwiki/testing-and-verification.md. Write only artifacts/o5-release-readiness-2026-08-08.md; do not edit any pre-existing tracked or untracked file, Git index/ref, dependency/lock file, .env*/.mcp* file, or remote state. Record branch, HEAD, initial git status and protected-file hashes. Run in order: npm.cmd run db:migrations:check; .\\node_modules\\.bin\\tsc.cmd --noEmit; npm.cmd run lint; npm.cmd run test:run; npm.cmd run assets:check; npm.cmd run build; git diff --check. Then repeat git status and hashes. Give READY or NOT READY for whether exactly the five reviewed closure docs are safe to commit, cite each local result, distinguish existing dirt from this run, and name the next action. Do not run E2E, Docker, install, build:mobile, browser, Supabase/Vercel, deploy, commit, push or network commands. Label prior evidence not rerun. If a protected file changes, stop and report the violation without fixing it."
+    workspaceRef: workspace-root
+    folderRef: .
+    instructionTarget:
+      agent: codex
+      folderRef: .
+    artifactIds:
+      - artifact-workspace-manifest
+    eligibleOperatorIds:
+      - operator-codex
+      - operator-claude
+      - operator-hermes
+    source:
+      kind: workspace-file
+      sourceRef: ASSET_SYSTEM.yaml#workOrders.work-order-first-operation
+    acceptanceCriteria:
+      - id: truth-sourced
+        description: The report records exact local verification results and a defensible READY or NOT READY decision.
+      - id: first-outcome
+        description: Every pre-existing user-owned dirty file remains byte-for-byte unchanged and no forbidden operation is used.
+    updatedAt: 2026-08-08T07:02:51.819Z
+    executionPolicy:
+      version: 1
+      adapter: codex
+      cwd: work-order-folder
+      permissionMode: workspace-write
+      networkMode: blocked
+      timeoutSeconds: 1800
+      retry:
+        maxAttempts: 1
+        backoffSeconds: 0
+      evidencePolicy:
+        required:
+          - instruction-snapshot
+          - policy-snapshot
+          - work-order-revision
+          - terminal-log
+          - exit-code
+        completionProposal: required
+      checkpointConditions:
+        - permission-escalation
+        - policy-violation
+        - run-failure
+        - timeout
+        - missing-evidence
+artifacts:
+  - id: artifact-workspace-manifest
+    assetId: asset-531d83d96a6c
+    kind: spec
+    name: Obiz workspace manifest
+    locator: OBIZ.yaml
+    role: evidence
+    provenance:
+      kind: workspace-file
+      sourceRef: OBIZ.yaml
+operators:
+  - id: operator-codex
+    kind: agent
+    name: Codex
+    adapterId: codex
+    status: available
+    capabilities:
+      - code
+      - test
+      - docs
+  - id: operator-claude
+    kind: agent
+    name: Claude Code
+    adapterId: claude-code
+    status: available
+    capabilities:
+      - code
+      - test
+      - docs
+  - id: operator-hermes
+    kind: agent
+    name: Hermes
+    adapterId: hermes
+    status: available
+    capabilities:
+      - code
+      - test
+      - docs
+flows:
+  - id: flow-product-commerce
+    assetId: asset-531d83d96a6c
+    sourceRef:
+      type: engine
+      id: engine-product
+    targetRef:
+      type: engine
+      id: engine-commerce
+    kind: value
+    label: Product value may become an offer after a source is connected
+    status: unknown
+  - id: flow-commerce-growth
+    assetId: asset-531d83d96a6c
+    sourceRef:
+      type: engine
+      id: engine-commerce
+    targetRef:
+      type: engine
+      id: engine-content-growth
+    kind: distribution
+    label: Commerce may inform distribution after a source is connected
+    status: unknown

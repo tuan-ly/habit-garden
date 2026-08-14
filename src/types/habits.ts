@@ -1,3 +1,5 @@
+import type { PlantWithType } from './database'
+
 export type HabitUnit = 'pages' | 'minutes' | 'repetitions' | 'sessions' | 'other'
 
 export type HabitSessionStatus =
@@ -83,6 +85,10 @@ export interface HabitSession {
   updated_at: string
 }
 
+export type ActiveReadingSession = HabitSession & {
+  plant_id: string
+}
+
 export interface DailyProgress {
   id: string
   habit_id: string
@@ -120,6 +126,7 @@ export interface GrowthState {
 
 export interface ReadingJourneySnapshot {
   habit: Habit
+  plant: PlantWithType
   plan: GoalPlan
   growth: GrowthState
   today: DailyProgress | null

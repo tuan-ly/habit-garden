@@ -84,9 +84,9 @@ The production `/garden` route is now **Garden-first**:
 
 Legacy list/focus/edit primitives still exist for compatibility and garden arrangement, but they are not first-level navigation.
 
-The sanctuary header also links to the additive `/reading` Home Garden. Reading is a **Capability Attachment** on a persisted plant through `habits.plant_id`; it is not a virtual tile. The linked plant keeps normal placement, movement and care behavior, while its detail sheet exposes `Mở hành trình đọc`. The dashboard layout uses a read-only active-session query for the global resume banner and must not create a habit merely because a protected page rendered.
+Reading is a **Capability Attachment** on a persisted plant through `habits.plant_id`; it is not a virtual tile or a global destination. The linked plant keeps normal placement, movement and care behavior, while its detail sheet exposes `Mở hành trình đọc` to `/plant/{plantId}`. The dashboard layout uses a read-only active-session query carrying `plant_id` for the global resume banner and must not create a habit merely because a protected page rendered.
 
-An attached Reading capability is visible as a book badge on the real plant. Selecting any normal plant exposes either `Mở hành trình đọc` or an explicit attach/move control in the production sanctuary focus panel; the detail sheet mirrors the same behavior. Opening `/reading` without an attachment routes the user back to Garden instead of silently creating a grass plant.
+An attached Reading capability is visible as a book badge on the real plant. Selecting any normal plant exposes either `Mở hành trình đọc` or an explicit attach/move control in the production sanctuary focus panel; the detail sheet mirrors the same behavior. `/plant/{plantId}` renders Reading only when `habits.user_id`, `habits.plant_id`, `habits.type` and active state all match. A normal plant without Reading shows its own capability-empty state instead of another plant's journey.
 
 ## Reaction And Modal Rules
 

@@ -10,7 +10,9 @@ import {
 } from '@/lib/habit-growth'
 import { createClient } from '@/lib/supabase/server'
 import { logActivity } from '@/lib/actions/activity'
+import { getPlantHref } from '@/lib/reading-routes'
 import type {
+  ActiveReadingSession,
   DailyProgress,
   GoalPlan,
   GrowthState,
@@ -19,6 +21,7 @@ import type {
   ReadingCompletionSnapshot,
   ReadingJourneySnapshot,
 } from '@/types/habits'
+import type { PlantWithType } from '@/types/database'
 
 const HABIT_COLUMNS = [
   'id',
@@ -152,6 +155,10 @@ function asGrowthState(value: unknown): GrowthState {
   return value as GrowthState
 }
 
+function asPlant(value: unknown): PlantWithType {
+  return value as PlantWithType
+}
+
 async function requireUser() {
   const user = await getAuthUser()
   if (!user) return null
@@ -250,7 +257,10 @@ export async function attachReadingCapabilityToPlant(
   }
 
   revalidatePath('/garden')
-  revalidatePath('/reading')
+  revalidatePath(getPlantHref(plantId))
+  if (existing?.plant_id && existing.plant_id !== plantId) {
+    revalidatePath(getPlantHref(existing.plant_id))
+  }
 
   return {
     success: true,
@@ -261,19 +271,33 @@ export async function attachReadingCapabilityToPlant(
   }
 }
 
-async function ensureReadingJourney(userId: string): Promise<ReadingActionResult<{
+async function ensureReadingJourney(
+  userId: string,
+  plantId?: string
+): Promise<ReadingActionResult<{
   habit: Habit
   plan: GoalPlan
   growth: GrowthState
 }>> {
+  if (plantId && !UUID_PATTERN.test(plantId)) {
+    return fail('INVALID_INPUT', 'Cây được chọn không hợp lệ.')
+  }
+
   const supabase = await createClient()
   const today = todayIsoDate()
 
-  const { data: habitRow, error: habitError } = await supabase
+  let habitQuery = supabase
     .from('habits')
     .select(HABIT_COLUMNS)
     .eq('user_id', userId)
     .eq('type', READING_HABIT_TEMPLATE.type)
+    .eq('is_active', true)
+
+  if (plantId) {
+    habitQuery = habitQuery.eq('plant_id', plantId)
+  }
+
+  const { data: habitRow, error: habitError } = await habitQuery
     .maybeSingle()
 
   if (habitError) {
@@ -376,7 +400,7 @@ async function ensureReadingJourney(userId: string): Promise<ReadingActionResult
 }
 
 export async function getActiveReadingSession(): Promise<
-  ReadingActionResult<HabitSession | null>
+  ReadingActionResult<ActiveReadingSession | null>
 > {
   const user = await requireUser()
   if (!user) return fail('NOT_AUTHENTICATED', 'Bạn cần đăng nhập để tải phiên đọc.')
@@ -384,9 +408,10 @@ export async function getActiveReadingSession(): Promise<
   const supabase = await createClient()
   const habitResult = await supabase
     .from('habits')
-    .select('id')
+    .select('id, plant_id')
     .eq('user_id', user.id)
     .eq('type', READING_HABIT_TEMPLATE.type)
+    .eq('is_active', true)
     .maybeSingle()
 
   if (habitResult.error) {
@@ -412,24 +437,32 @@ export async function getActiveReadingSession(): Promise<
 
   return {
     success: true,
-    data: sessionResult.data ? asSession(sessionResult.data) : null,
+    data: sessionResult.data
+      ? { ...asSession(sessionResult.data), plant_id: habitResult.data.plant_id }
+      : null,
   }
 }
 
-export async function getReadingJourneySnapshot(): Promise<
+export async function getReadingJourneySnapshot(plantId: string): Promise<
   ReadingActionResult<ReadingJourneySnapshot>
 > {
   const user = await requireUser()
   if (!user) return fail('NOT_AUTHENTICATED', 'Bạn cần đăng nhập để mở hành trình đọc.')
 
-  const ensured = await ensureReadingJourney(user.id)
+  const ensured = await ensureReadingJourney(user.id, plantId)
   if (!ensured.success) return ensured
 
   const supabase = await createClient()
   const { habit, plan, growth } = ensured.data
   const today = todayIsoDate()
 
-  const [todayResult, activeSessionResult, completedSessionResult] = await Promise.all([
+  const [plantResult, todayResult, activeSessionResult, completedSessionResult] = await Promise.all([
+    supabase
+      .from('plants')
+      .select('*, plant_type:plant_types(*)')
+      .eq('id', habit.plant_id)
+      .eq('user_id', user.id)
+      .maybeSingle(),
     supabase
       .from('daily_progress')
       .select(DAILY_PROGRESS_COLUMNS)
@@ -459,16 +492,27 @@ export async function getReadingJourneySnapshot(): Promise<
       .maybeSingle(),
   ])
 
-  const readError = todayResult.error || activeSessionResult.error || completedSessionResult.error
+  const readError = plantResult.error
+    || todayResult.error
+    || activeSessionResult.error
+    || completedSessionResult.error
   if (readError) {
     console.error('Unable to load reading journey snapshot:', readError)
     return fail('PERSISTENCE_ERROR', 'Không thể làm mới hành trình đọc.')
+  }
+
+  if (!plantResult.data) {
+    return fail(
+      'NOT_FOUND',
+      'Không tìm thấy cây đang gắn với hành trình đọc trong khu vườn của bạn.'
+    )
   }
 
   return {
     success: true,
     data: {
       habit,
+      plant: asPlant(plantResult.data),
       plan,
       growth,
       today: todayResult.data ? asDailyProgress(todayResult.data) : null,
@@ -480,11 +524,13 @@ export async function getReadingJourneySnapshot(): Promise<
   }
 }
 
-export async function startReadingSession(): Promise<ReadingActionResult<HabitSession>> {
+export async function startReadingSession(
+  plantId: string
+): Promise<ReadingActionResult<HabitSession>> {
   const user = await requireUser()
   if (!user) return fail('NOT_AUTHENTICATED', 'Bạn cần đăng nhập để bắt đầu đọc.')
 
-  const ensured = await ensureReadingJourney(user.id)
+  const ensured = await ensureReadingJourney(user.id, plantId)
   if (!ensured.success) return ensured
 
   const supabase = await createClient()
@@ -568,19 +614,58 @@ async function getOwnedSession(
 }
 
 export async function getReadingSession(
+  plantId: string,
   sessionId?: string
 ): Promise<ReadingActionResult<HabitSession>> {
   const user = await requireUser()
   if (!user) return fail('NOT_AUTHENTICATED', 'Bạn cần đăng nhập để mở phiên đọc.')
+  if (!UUID_PATTERN.test(plantId)) return fail('INVALID_INPUT', 'Cây được chọn không hợp lệ.')
 
-  if (sessionId) return getOwnedSession(sessionId, user.id)
+  const supabase = await createClient()
+  const habitResult = await supabase
+    .from('habits')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('plant_id', plantId)
+    .eq('type', READING_HABIT_TEMPLATE.type)
+    .eq('is_active', true)
+    .maybeSingle()
 
-  const snapshot = await getReadingJourneySnapshot()
-  if (!snapshot.success) return snapshot
-  if (!snapshot.data.active_session) {
+  if (habitResult.error) {
+    console.error('Unable to validate the plant reading capability:', habitResult.error)
+    return fail('PERSISTENCE_ERROR', 'Không thể tải phiên đọc lúc này.')
+  }
+  if (!habitResult.data) {
+    return fail('NOT_FOUND', 'Cây này chưa được gắn tính năng theo dõi đọc sách.')
+  }
+
+  if (sessionId) {
+    const owned = await getOwnedSession(sessionId, user.id)
+    if (!owned.success) return owned
+    if (owned.data.habit_id !== habitResult.data.id) {
+      return fail('NOT_FOUND', 'Phiên đọc này không thuộc cây được chọn.')
+    }
+    return owned
+  }
+
+  const sessionResult = await supabase
+    .from('habit_sessions')
+    .select(SESSION_COLUMNS)
+    .eq('habit_id', habitResult.data.id)
+    .eq('user_id', user.id)
+    .in('status', OPEN_SESSION_STATUSES)
+    .order('started_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (sessionResult.error) {
+    console.error('Unable to load the plant reading session:', sessionResult.error)
+    return fail('PERSISTENCE_ERROR', 'Không thể tải phiên đọc lúc này.')
+  }
+  if (!sessionResult.data) {
     return fail('NOT_FOUND', 'Chưa có phiên đọc đang mở.')
   }
-  return { success: true, data: snapshot.data.active_session }
+  return { success: true, data: asSession(sessionResult.data) }
 }
 
 export async function pauseReadingSession(

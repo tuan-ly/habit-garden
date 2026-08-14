@@ -5,12 +5,12 @@ import Link from 'next/link'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ReadingCapabilityControl } from '@/components/garden/reading-capability-control'
 import { useUser } from '@/lib/context/dashboard-data-context'
+import { getPlantHref } from '@/lib/reading-routes'
 import { cn } from '@/lib/utils'
 import type { PlantWithType } from '@/types/database'
 import {
   Check,
   BookOpen,
-  BookOpenText,
   ChevronRight,
   Clock3,
   Leaf,
@@ -115,15 +115,6 @@ export function SanctuaryGardenChrome({
           >
             <MapPinned className="h-5 w-5" />
             <span className="hidden min-[470px]:inline">Hành trình</span>
-          </Link>
-          <Link
-            href="/reading"
-            prefetch={false}
-            className="group flex min-h-12 items-center gap-2 rounded-full border border-white/65 bg-[#fffaf0]/88 px-3 text-sm font-semibold text-[#49693f] shadow-[0_10px_30px_rgba(41,69,38,0.13)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#789a68]"
-            aria-label="Mở cây đọc sách"
-          >
-            <BookOpenText className="h-5 w-5" />
-            <span className="hidden min-[470px]:inline">Đọc</span>
           </Link>
         </div>
 
@@ -240,7 +231,7 @@ export function SanctuaryGardenChrome({
             {focusedPlant.guided_habit?.type === 'reading'
               && focusedPlant.guided_habit.is_active ? (
                 <Link
-                  href="/reading"
+                  href={getPlantHref(focusedPlant.id)}
                   className="mt-3 flex min-h-14 items-center justify-between rounded-2xl bg-[#31523b] px-4 text-sm font-bold text-[#fff9e8] transition hover:bg-[#274633]"
                 >
                   <span className="flex items-center gap-2">

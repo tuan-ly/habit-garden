@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { completeReadingSession } from '@/lib/actions/habit-sessions'
 import { validateCompletedValue } from '@/lib/habit-growth'
+import { getPlantHref, getReadingGrowthPlanHref } from '@/lib/reading-routes'
 import type {
   HabitPlantStage,
   HabitSession,
@@ -33,11 +34,13 @@ const PLANT_STAGE_LABELS: Record<HabitPlantStage, string> = {
 }
 
 interface CompletionClientProps {
+  plantId: string
   initialSession: HabitSession
   initialCompletion?: ReadingCompletionSnapshot
 }
 
 export function CompletionClient({
+  plantId,
   initialSession,
   initialCompletion,
 }: CompletionClientProps) {
@@ -244,13 +247,13 @@ export function CompletionClient({
 
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
           <Button asChild size="lg" className="min-h-12 rounded-2xl bg-[#5f854f] text-white">
-            <Link href="/reading">
+            <Link href={getPlantHref(plantId)}>
               <Leaf className="h-5 w-5" />
               Về cây hôm nay
             </Link>
           </Button>
           <Button asChild variant="outline" size="lg" className="min-h-12 rounded-2xl border-[#bdcdb2] bg-white/70">
-            <Link href="/reading/growth-plan">
+            <Link href={getReadingGrowthPlanHref(plantId)}>
               Xem Growth Plan
               <ArrowRight className="h-4 w-4" />
             </Link>

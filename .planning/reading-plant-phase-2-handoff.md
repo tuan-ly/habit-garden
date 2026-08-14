@@ -1,7 +1,7 @@
 # Reading Plant Integration — Capability Attachment Handoff
 
 **Date:** 2026-07-30
-**Status:** Complete and migrated on linked Supabase
+**Status:** Complete, migrated, committed and preview-deployed from `develop`
 
 ## Outcome
 
@@ -34,7 +34,11 @@ The Virtual Plant integration was replaced. Reading is now a guided capability a
 - Reading capability badge and focus-panel CTA — authenticated Chromium E2E pass.
 - Full Vitest suite — 29 files, 344 tests passed.
 - Local Supabase replay — blocked because Docker Desktop daemon was not running.
+- Commit `0fd1339` — pushed to `origin/develop`.
+- Vercel commit status — deployment completed successfully.
+- Post-push release verification — 59 unique migrations, typecheck, 344 tests and production build passed.
+- Authenticated preview smoke — not repeated because the browser connector was unavailable; the authenticated Chromium Reading E2E had passed before release.
 
 ## Next Smallest Step
 
-Review the complete R2 diff and commit the Capability Attachment slice.
+Commit only the reviewed R2 release-closure documentation; exclude generated Playwright reports and test-result artifacts.

@@ -15,21 +15,38 @@ test.describe('Reading Habit Vertical Slice', () => {
     await loginAndGoToGarden(page)
     const readingBadge = page.locator('[data-guided-capability="reading"]').first()
     await expect(readingBadge).toBeVisible()
-    await readingBadge.locator('xpath=ancestor::button[1]').click()
-    await page.getByRole('link', { name: 'Mở hành trình đọc' }).click()
-    await expect(page).toHaveURL(/\/reading$/)
+    const readingPlantButton = readingBadge.locator('xpath=ancestor::button[1]')
+    const gardenPlantLabel = await readingPlantButton.getAttribute('aria-label')
+    const gardenPlantName = gardenPlantLabel?.replace(/^Đến thăm\s+/, '').trim()
+    const gardenPlantImage = readingPlantButton.locator('img').first()
+    await expect(gardenPlantImage).toBeVisible()
+    const gardenPlantImageAlt = await gardenPlantImage.getAttribute('alt')
 
-    await expect(page.getByRole('heading', { name: 'Đọc sách mỗi ngày' })).toBeVisible()
+    if (!gardenPlantName || !gardenPlantImageAlt) {
+      throw new Error('Reading plant must expose its name and image identity in the Garden')
+    }
+
+    await readingPlantButton.click()
+    const readingLink = page.getByRole('link', { name: 'Mở hành trình đọc' })
+    const plantHref = await readingLink.getAttribute('href')
+    if (!plantHref || !/^\/plant\/[^/]+$/.test(plantHref)) {
+      throw new Error('Reading capability must link to its owning plant route')
+    }
+    await readingLink.click()
+    await expect(page).toHaveURL(new RegExp(`${plantHref}$`))
+
+    await expect(page.getByRole('heading', { name: gardenPlantName })).toBeVisible()
+    await expect(page.getByRole('img', { name: gardenPlantImageAlt })).toBeVisible()
     await expect(page.getByRole('link', { name: /Growth Plan/i })).toBeVisible()
 
     const startButton = page.getByRole('button', {
       name: /Bắt đầu đọc|Đọc thêm|Tiếp tục đọc|Ghi kết quả/i,
     })
     await startButton.click()
-    await page.waitForURL(/\/reading\/(session|completion)/, { timeout: 15_000 })
+    await page.waitForURL(new RegExp(`${plantHref}/reading/(session|completion)`), { timeout: 15_000 })
 
-    if (page.url().includes('/reading/session')) {
-      await expect(page.getByText('30 phút cùng một cuốn sách')).toBeVisible()
+    if (page.url().includes(`${plantHref}/reading/session`)) {
+      await expect(page.getByRole('heading', { name: `30 phút cùng ${gardenPlantName}` })).toBeVisible()
       await expect(page.getByText(/Target/).first()).toBeVisible()
 
       const pauseButton = page.getByRole('button', { name: 'Tạm dừng' })
@@ -46,7 +63,7 @@ test.describe('Reading Habit Vertical Slice', () => {
       await page.getByRole('button', { name: /Kết thúc & ghi trang/i }).click()
     }
 
-    await expect(page).toHaveURL(/\/reading\/completion/, { timeout: 15_000 })
+    await expect(page).toHaveURL(new RegExp(`${plantHref}/reading/completion`), { timeout: 15_000 })
     const pagesInput = page.getByLabel('Số trang đã đọc')
     await expect(pagesInput).toBeVisible({ timeout: 15_000 })
     await pagesInput.fill('7')
@@ -55,7 +72,7 @@ test.describe('Reading Habit Vertical Slice', () => {
     await expect(page.getByText(/trang đã thành tăng trưởng/)).toBeVisible({ timeout: 15_000 })
     await expect(page.getByText(/\+\d+ growth/)).toBeVisible()
     await page.getByRole('link', { name: /Xem Growth Plan/i }).click()
-    await expect(page).toHaveURL(/\/reading\/growth-plan/)
+    await expect(page).toHaveURL(new RegExp(`${plantHref}/reading/growth-plan`))
     await expect(page.getByRole('heading', { name: '5→30 trang mỗi ngày' })).toBeVisible()
     await expect(page.getByText(/Review mỗi 7 ngày/)).toBeVisible()
   })

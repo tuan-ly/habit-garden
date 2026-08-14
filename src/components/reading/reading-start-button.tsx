@@ -5,14 +5,20 @@ import { useRouter } from 'next/navigation'
 import { BookOpen, Loader2, Play } from 'lucide-react'
 import { startReadingSession } from '@/lib/actions/habit-sessions'
 import { Button } from '@/components/ui/button'
+import {
+  getReadingCompletionHref,
+  getReadingSessionHref,
+} from '@/lib/reading-routes'
 import type { HabitSession } from '@/types/habits'
 
 interface ReadingStartButtonProps {
+  plantId: string
   activeSession: HabitSession | null
   completedToday: boolean
 }
 
 export function ReadingStartButton({
+  plantId,
   activeSession,
   completedToday,
 }: ReadingStartButtonProps) {
@@ -31,21 +37,21 @@ export function ReadingStartButton({
   function handleStart() {
     setError(null)
     if (activeSession?.status === 'awaiting_completion') {
-      router.push(`/reading/completion?id=${activeSession.id}`)
+      router.push(getReadingCompletionHref(plantId, activeSession.id))
       return
     }
     if (activeSession) {
-      router.push(`/reading/session?id=${activeSession.id}`)
+      router.push(getReadingSessionHref(plantId, activeSession.id))
       return
     }
 
     startTransition(async () => {
-      const result = await startReadingSession()
+      const result = await startReadingSession(plantId)
       if (!result.success) {
         setError(result.error)
         return
       }
-      router.push(`/reading/session?id=${result.data.id}`)
+      router.push(getReadingSessionHref(plantId, result.data.id))
     })
   }
 

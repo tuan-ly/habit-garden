@@ -4,12 +4,12 @@
 
 The reading slice turns one daily checklist into a persistent guided journey:
 
-1. `/reading` — Home Garden shows the reading plant, today progress, current target, session entry and Growth Plan.
-2. `/reading/session` — a 30-minute timer can start, pause, resume and finish; elapsed state and ambient preference survive refresh or leaving the route.
-3. `/reading/completion` — validates and records whole pages, then shows target comparison, reward, plant growth, streak and next navigation.
-4. `/reading/growth-plan` — shows the 5→30 pages/day trajectory, previous/current/next milestones, dates, rule and review history.
+1. `/plant/{plantId}` — shows the requested owned plant and renders Reading only when that plant owns the active Reading capability.
+2. `/plant/{plantId}/reading/session` — a 30-minute timer can start, pause, resume and finish; elapsed state and ambient preference survive refresh or leaving the route.
+3. `/plant/{plantId}/reading/completion` — validates and records whole pages, then shows target comparison, reward, plant growth, streak and next navigation.
+4. `/plant/{plantId}/reading/growth-plan` — shows the 5→30 pages/day trajectory, previous/current/next milestones, dates, rule and review history.
 
-The existing `/garden` sanctuary links to the slice without replacing legacy plant care.
+The existing `/garden` sanctuary links from the attached real plant. There is no global `/reading` route or global Reading navigation item.
 
 ## Persistent Model
 

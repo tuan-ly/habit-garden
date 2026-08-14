@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useUser } from '@/lib/context/dashboard-data-context'
 import { cn } from '@/lib/utils'
-import { BookOpenText, Leaf, MapPinned } from 'lucide-react'
+import { Leaf, MapPinned } from 'lucide-react'
 
 export function GameNav() {
   const pathname = usePathname()
@@ -20,7 +20,6 @@ export function GameNav() {
 
   const items = [
     { label: 'Vườn', href: '/garden', icon: Leaf },
-    { label: 'Đọc', href: '/reading', icon: BookOpenText },
     { label: 'Hành trình', href: '/overview', icon: MapPinned },
   ]
 

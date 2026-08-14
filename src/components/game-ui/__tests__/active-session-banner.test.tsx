@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ActiveSessionBanner } from '@/components/game-ui/ActiveSessionBanner'
-import type { HabitSession } from '@/types/habits'
+import type { ActiveReadingSession } from '@/types/habits'
 
 const push = vi.fn()
 
@@ -9,8 +9,9 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push }),
 }))
 
-const runningSession: HabitSession = {
+const runningSession: ActiveReadingSession = {
   id: 'session-1',
+  plant_id: 'plant-1',
   habit_id: 'habit-1',
   user_id: 'user-1',
   status: 'running',
@@ -38,7 +39,7 @@ describe('ActiveSessionBanner', () => {
 
     expect(screen.getByText('Reading: 1:30')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Resume' }))
-    expect(push).toHaveBeenCalledWith('/reading/session')
+    expect(push).toHaveBeenCalledWith('/plant/plant-1/reading/session')
   })
 
   it('stays hidden for a paused session', () => {

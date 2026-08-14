@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { ReadingShell } from '@/components/reading/reading-shell'
 import { ReadingStartButton } from '@/components/reading/reading-start-button'
+import { getPlantHref } from '@/lib/reading-routes'
 import type { GrowthHistoryEntry, ReadingJourneySnapshot } from '@/types/habits'
 
 function formatDate(value: string): string {
@@ -49,10 +50,10 @@ export function GrowthPlanView({ snapshot }: { snapshot: ReadingJourneySnapshot 
 
   return (
     <ReadingShell
-      eyebrow="Growth Plan"
+      eyebrow={`Growth Plan · ${snapshot.plant.name}`}
       title={`${plan.start_target}→${plan.end_target} trang mỗi ngày`}
-      description="Một quỹ đạo rõ ràng, chỉ thay đổi sau kỳ review. Lỡ ngày không làm target tụt xuống hay nhảy bất ngờ."
-      backHref="/reading"
+      description={`Lộ trình này nuôi lớn ${snapshot.plant.name} và chỉ thay đổi sau kỳ review. Lỡ ngày không làm target tụt xuống hay nhảy bất ngờ.`}
+      backHref={getPlantHref(snapshot.plant.id)}
     >
       <section className="mx-auto mt-8 max-w-3xl rounded-[2rem] border border-white/75 bg-[#fffaf0]/94 p-5 shadow-[0_26px_80px_rgba(47,72,42,.18)] backdrop-blur-2xl sm:p-8">
         <div className="grid gap-3 sm:grid-cols-3">
@@ -163,6 +164,7 @@ export function GrowthPlanView({ snapshot }: { snapshot: ReadingJourneySnapshot 
 
         <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <ReadingStartButton
+            plantId={snapshot.plant.id}
             activeSession={activeSession}
             completedToday={completedToday}
           />

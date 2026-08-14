@@ -5,7 +5,7 @@
 See: .planning/PROJECT.md (updated 2026-07-28)
 
 **Core value:** The app must be fun enough that users open it on their worst day.
-**Current focus:** Review and close the completed Reading Plant Capability Attachment slice
+**Current focus:** Review the plant-scoped Reading diff while preserving the existing R2 closure-doc commit boundary
 
 ## Current Milestone
 
@@ -63,6 +63,32 @@ See: .planning/PROJECT.md (updated 2026-07-28)
 - Passed 344 tests, typecheck, focused lint, production build and authenticated Chromium Reading E2E
 - Added movement, capability and persistence regression coverage
 
+### 2026-07-30: R2 Release Closure
+- Committed Capability Attachment as `0fd1339`
+- Pushed `develop` to GitHub and received a successful Vercel deployment status
+- Re-ran the 59-version migration ledger check, typecheck, all 344 tests and the production build
+- Kept generated Playwright reports outside the product change scope
+- Deferred the next implementation slice until the R2 closure documentation is reviewed and committed
+
+### 2026-08-03: R2 Documentation Review
+- Reconciled the roadmap release criteria with the actual linked-schema verification and the deferred Docker-dependent local replay
+- Reviewed the closure documents against ADR 002, the guided-session OpenWiki pages and commit `0fd1339`
+- Kept generated Playwright reports outside the documentation commit scope
+
+### 2026-08-12: Reading Plant Identity Continuity
+- Found a split identity: `habits.plant_id` still referenced the correct plant, but Reading Home rendered a generic plant from `growth_states.plant_stage`
+- Added the owned linked `PlantWithType` to the Reading journey read model and reused the canonical plant renderer, name and type across Reading surfaces
+- Added component, persistence-contract and authenticated-flow regression assertions for plant ID, name and image continuity
+- Passed focused lint, typecheck, all 345 Vitest tests, production build and an authenticated local Garden → Reading browser smoke
+- Initially kept `/reading`; this route choice was superseded by the plant-scoped decision on 2026-08-14
+
+### 2026-08-14: Plant-Scoped Reading Route
+- Replaced the global Reading entry with `/plant/{plantId}` and nested session, completion and Growth Plan routes under the same plant
+- Removed the global Reading navigation items; Garden and the active-session banner now carry the concrete linked plant ID
+- Scoped Reading capability and session resolution by authenticated owner, requested plant, capability type and active state
+- Added a capability-empty plant state so a normal plant cannot display another plant's Reading journey
+- Passed focused lint, typecheck, all 354 Vitest tests, the 60-version migration ledger check and production build; authenticated E2E is discovered but credentials are not configured
+
 ## Decisions Log
 
 | Date | Decision | Context |
@@ -73,6 +99,7 @@ See: .planning/PROJECT.md (updated 2026-07-28)
 | 2026-07-28 | Additive guided-session aggregate | Prove persistent sessions and deterministic Growth Plans through Reading without rewriting legacy plants/goals |
 | 2026-07-28 | Gentle missed-period behavior | Hold the current target and log history; never regress or surprise-increase after missed days |
 | 2026-07-29 | Guided habits are plant capabilities | Keep plants as the spatial/lifecycle root; attach Reading and future guided behavior instead of projecting virtual plants |
+| 2026-08-14 | Plant-scoped Reading route | Use `/plant/{plantId}` as the resource identity; Reading is conditional behavior rendered inside that plant |
 
 ---
-*Last updated: 2026-07-30 after completing explicit Capability Attachment*
+*Last updated: 2026-08-14 after replacing global Reading navigation with plant-scoped routing*

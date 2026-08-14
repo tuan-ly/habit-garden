@@ -1,0 +1,13 @@
+version: 1
+name: Habit Garden
+type: digital-asset
+vault: .
+assetSystem: ASSET_SYSTEM.yaml
+signalRules: OBIZ_SIGNALS.yaml
+agents:
+  - id: codex
+    workingDirectory: .
+  - id: claude-code
+    workingDirectory: .
+  - id: hermes
+    workingDirectory: .

@@ -79,6 +79,35 @@ describe('habit session persistence contract', () => {
     expect(actions).toContain('plant_id: ensured.data.habit.plant_id')
   })
 
+  it('loads the Reading plant by its attachment within the current user scope', () => {
+    const snapshotStart = actions.indexOf('export async function getReadingJourneySnapshot')
+    const snapshotEnd = actions.indexOf('export async function startReadingSession', snapshotStart)
+    expect(snapshotStart).toBeGreaterThan(-1)
+    expect(snapshotEnd).toBeGreaterThan(snapshotStart)
+    const snapshotAction = actions.slice(snapshotStart, snapshotEnd)
+
+    expect(snapshotAction).toContain(".from('plants')")
+    expect(snapshotAction).toContain(".select('*, plant_type:plant_types(*)')")
+    expect(snapshotAction).toContain(".eq('id', habit.plant_id)")
+    expect(snapshotAction).toContain(".eq('user_id', user.id)")
+    expect(snapshotAction).toContain('plant: asPlant(plantResult.data)')
+  })
+
+  it('resolves Reading from the requested owned plant instead of a global route', () => {
+    const ensureStart = actions.indexOf('async function ensureReadingJourney')
+    const ensureEnd = actions.indexOf('export async function getActiveReadingSession', ensureStart)
+    const ensureAction = actions.slice(ensureStart, ensureEnd)
+    const snapshotStart = actions.indexOf('export async function getReadingJourneySnapshot')
+    const snapshotEnd = actions.indexOf('export async function startReadingSession', snapshotStart)
+    const snapshotAction = actions.slice(snapshotStart, snapshotEnd)
+
+    expect(ensureAction).toContain("habitQuery = habitQuery.eq('plant_id', plantId)")
+    expect(ensureAction).toContain(".eq('user_id', userId)")
+    expect(ensureAction).toContain(".eq('type', READING_HABIT_TEMPLATE.type)")
+    expect(ensureAction).toContain(".eq('is_active', true)")
+    expect(snapshotAction).toContain('ensureReadingJourney(user.id, plantId)')
+  })
+
   it('attaches Reading explicitly instead of provisioning a hidden plant', () => {
     expect(actions).toContain('attachReadingCapabilityToPlant')
     expect(actions).toContain(".update({ plant_id: plantId })")

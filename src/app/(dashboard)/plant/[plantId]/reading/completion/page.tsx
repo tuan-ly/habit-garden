@@ -6,45 +6,55 @@ import {
   getReadingJourneySnapshot,
   getReadingSession,
 } from '@/lib/actions/habit-sessions'
+import {
+  getPlantHref,
+  getReadingSessionHref,
+} from '@/lib/reading-routes'
 
 interface CompletionPageProps {
+  params: Promise<{ plantId: string }>
   searchParams: Promise<{ id?: string | string[] }>
 }
 
 export default async function CompletionPage({
+  params,
   searchParams,
 }: CompletionPageProps) {
-  const params = await searchParams
-  const sessionId = typeof params.id === 'string' ? params.id : undefined
-  if (!sessionId) redirect('/reading')
+  const [{ plantId }, query] = await Promise.all([params, searchParams])
+  const sessionId = typeof query.id === 'string' ? query.id : undefined
+  if (!sessionId) redirect(getPlantHref(plantId))
 
   const [journeyResult, sessionResult] = await Promise.all([
-    getReadingJourneySnapshot(),
-    getReadingSession(sessionId),
+    getReadingJourneySnapshot(plantId),
+    getReadingSession(plantId, sessionId),
   ])
 
   if (!sessionResult.success || !journeyResult.success) {
-    redirect('/reading')
+    redirect(getPlantHref(plantId))
   }
 
   if (sessionResult.data.status === 'running' || sessionResult.data.status === 'paused') {
-    redirect(`/reading/session?id=${sessionResult.data.id}`)
+    redirect(getReadingSessionHref(plantId, sessionResult.data.id))
   }
 
   const completionResult = sessionResult.data.status === 'completed'
     ? await getReadingCompletion(sessionResult.data.id)
     : null
+  const plantName = journeyResult.data.plant.name
 
   return (
     <ReadingShell
       eyebrow="Completion"
-      title={completionResult?.success ? 'Cây đã nhận phiên đọc' : 'Khép lại phiên đọc'}
+      title={completionResult?.success ? `${plantName} đã nhận phiên đọc` : `Khép lại phiên đọc cho ${plantName}`}
       description={completionResult?.success
-        ? 'Kết quả, nhịp đọc và tăng trưởng đều đã được lưu.'
-        : 'Ghi lại số trang thật để cây phản hồi đúng với hành trình của bạn.'}
-      backHref={completionResult?.success ? '/reading' : `/reading/session?id=${sessionResult.data.id}`}
+        ? `Kết quả, nhịp đọc và tăng trưởng đều đã được lưu vào ${plantName}.`
+        : `Ghi lại số trang thật để ${plantName} phản hồi đúng với hành trình của bạn.`}
+      backHref={completionResult?.success
+        ? getPlantHref(plantId)
+        : getReadingSessionHref(plantId, sessionResult.data.id)}
     >
       <CompletionClient
+        plantId={plantId}
         initialSession={sessionResult.data}
         initialCompletion={completionResult?.success ? completionResult.data : undefined}
       />
