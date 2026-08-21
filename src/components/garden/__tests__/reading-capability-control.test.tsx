@@ -51,10 +51,9 @@ describe('ReadingCapabilityControl', () => {
     mocks.attach.mockResolvedValue({
       success: true,
       data: {
-        outcome: 'moved',
+        outcome: 'attached',
         habit: {
           id: 'habit-1',
-          plant_id: 'new-plant',
           type: 'reading',
           is_active: true,
         },
@@ -62,17 +61,22 @@ describe('ReadingCapabilityControl', () => {
     })
   })
 
-  it('moves the Reading capability and reconciles both plants', async () => {
+  it('attaches the shared Reading capability without clearing the first plant', async () => {
     const onAttached = vi.fn()
     const plant = { id: 'new-plant', name: 'Cây mới' } as PlantWithType
 
     render(<ReadingCapabilityControl plant={plant} onAttached={onAttached} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Chuyển theo dõi sang cây này' }))
+    expect(screen.getByText(/Nhiều cây có thể dùng chung một hành trình/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Gắn theo dõi đọc sách' }))
 
     await waitFor(() => {
       expect(mocks.attach).toHaveBeenCalledWith('new-plant')
     })
-    expect(mocks.updatePlant).toHaveBeenCalledWith('old-plant', { guided_habit: null })
+    expect(mocks.updatePlant).toHaveBeenCalledTimes(1)
+    expect(mocks.updatePlant).not.toHaveBeenCalledWith(
+      'old-plant',
+      expect.objectContaining({ guided_habit: null })
+    )
     expect(mocks.updatePlant).toHaveBeenCalledWith('new-plant', {
       guided_habit: {
         id: 'habit-1',
@@ -80,6 +84,9 @@ describe('ReadingCapabilityControl', () => {
         type: 'reading',
         is_active: true,
       },
+    })
+    expect(mocks.toastSuccess).toHaveBeenCalledWith('Đã gắn theo dõi đọc sách', {
+      description: 'Cây mới dùng chung log và tiến trình của hành trình đọc.',
     })
     expect(onAttached).toHaveBeenCalledOnce()
     expect(mocks.refresh).toHaveBeenCalledOnce()

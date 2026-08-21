@@ -2,16 +2,16 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-07-28)
+See: .planning/PROJECT.md (updated 2026-08-14)
 
 **Core value:** The app must be fun enough that users open it on their worst day.
-**Current focus:** Review the plant-scoped Reading diff while preserving the existing R2 closure-doc commit boundary
+**Current focus:** Deploy and verify the locally complete shared Capability Assignment slice without losing Reading history or route identity
 
 ## Current Milestone
 
 **Milestone:** Retention Core — Guided Habit Sessions
 **Started:** 2026-07-28
-**Status:** Capability Attachment data model, explicit UX and linked migration complete
+**Status:** R3 Shared Capability Assignments is verified locally; linked schema deployment and release verification remain pending
 
 ## Phase Status
 
@@ -19,6 +19,7 @@ See: .planning/PROJECT.md (updated 2026-07-28)
 |---|-------|--------|---------|-----------|
 | R1 | Reading Habit Vertical Slice | complete | 2026-07-28 | 2026-07-28 |
 | R2 | Reading Plant Capability Attachment | complete | 2026-07-29 | 2026-07-30 |
+| R3 | Shared Capability Assignments | release pending | 2026-08-14 | — |
 | 1 | Dual Growth Core (older backlog) | pending | — | — |
 | 2 | Plant Personality & Harvest Loop (older backlog) | pending | — | — |
 | 3 | Visual Assets (older backlog) | pending | — | — |
@@ -89,6 +90,15 @@ See: .planning/PROJECT.md (updated 2026-07-28)
 - Added a capability-empty plant state so a normal plant cannot display another plant's Reading journey
 - Passed focused lint, typecheck, all 354 Vitest tests, the 60-version migration ledger check and production build; authenticated E2E is discovered but credentials are not configured
 
+### 2026-08-14: Shared Capability Assignments
+- Reframed the direct one-to-one plant link as a **Capability Assignment**: each plant keeps one capability slot while one capability can serve many plants
+- Started an expand/contract rollout with owned `plant_capability_assignments`, a nullable legacy anchor and additive compatibility synchronization
+- Made completed capability sessions the shared event stream projected on every assigned plant; existing session results, reflections, daily progress and Growth Plan stay keyed by `habit_id`
+- Added nullable `habit_sessions.source_plant_id` solely for route/resume context; it does not partition capability history
+- Replaced attach/move semantics with additive, idempotent assignment in the application working tree
+- Clean PostgreSQL 17 replay, schema-catalog/advisor checks, the 61-version migration ledger, focused lint, typecheck, all 34 Vitest files / 363 tests and production build pass; the linked migration ledger confirms `20260814145405` remains pending remotely, and the Reading E2E remains discoverable across five projects
+- Linked schema deployment, authenticated E2E and app release remain pending before R3 closure
+
 ## Decisions Log
 
 | Date | Decision | Context |
@@ -98,8 +108,9 @@ See: .planning/PROJECT.md (updated 2026-07-28)
 | 2026-04-28 | Quality model profile | Opus for research/roadmap agents — deeper analysis worth the cost |
 | 2026-07-28 | Additive guided-session aggregate | Prove persistent sessions and deterministic Growth Plans through Reading without rewriting legacy plants/goals |
 | 2026-07-28 | Gentle missed-period behavior | Hold the current target and log history; never regress or surprise-increase after missed days |
-| 2026-07-29 | Guided habits are plant capabilities | Keep plants as the spatial/lifecycle root; attach Reading and future guided behavior instead of projecting virtual plants |
+| 2026-07-29 | Guided habits are plant capabilities (superseded by ADR 003) | Keep plants as the spatial/lifecycle root; the original direct one-to-one attachment was later replaced |
 | 2026-08-14 | Plant-scoped Reading route | Use `/plant/{plantId}` as the resource identity; Reading is conditional behavior rendered inside that plant |
+| 2026-08-14 | Shared capability assignments and event stream | Give each plant one capability slot, allow many plants to share one capability, and keep logs/progression capability-owned |
 
 ---
-*Last updated: 2026-08-14 after replacing global Reading navigation with plant-scoped routing*
+*Last updated: 2026-08-14 after local verification of shared capability assignments*

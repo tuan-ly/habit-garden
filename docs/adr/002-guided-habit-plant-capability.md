@@ -1,7 +1,8 @@
 # ADR 002: Guided Habits As Plant Capabilities
 
-- Status: Accepted
+- Status: Superseded by [ADR 003](./003-shared-capability-assignments.md)
 - Date: 2026-07-29
+- Superseded: 2026-08-14
 
 ## Context
 

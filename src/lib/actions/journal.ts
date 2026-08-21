@@ -11,8 +11,8 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { getAuthUser } from '@/lib/auth-cached'
+import { getCapabilityLogProjection } from '@/lib/capability-log-projection'
 import type {
-  ActivityLog,
   Reflection,
   CreateReflectionDto,
   MilestoneType,
@@ -74,14 +74,16 @@ export async function getPlantJournalEntries(
   const user = await getAuthUser()
   if (!user) return []
 
-  // Get activities (include those with notes, but also recent ones)
-  const { data: activities } = await supabase
+  // Assigned plants project the capability-owned session log. Unassigned
+  // plants retain their legacy plant-owned activity stream.
+  const capabilityActivities = await getCapabilityLogProjection(user.id, plantId, { limit })
+  const activities = capabilityActivities ?? (await supabase
     .from('activity_logs')
     .select('*')
     .eq('plant_id', plantId)
     .eq('user_id', user.id)
     .order('logged_at', { ascending: false })
-    .limit(limit)
+    .limit(limit)).data ?? []
 
   const entries: JournalEntry[] = []
   const today = new Date()
@@ -103,7 +105,7 @@ export async function getPlantJournalEntries(
   }
 
   // Add activities
-  for (const activity of activities || []) {
+  for (const activity of activities) {
     entries.push({
       id: activity.id,
       date: activity.logged_date,
@@ -199,12 +201,14 @@ export async function getPlantMilestones(plantId: string): Promise<MilestoneData
 
   if (!plant) return []
 
-  // Get activity stats
-  const { data: activities } = await supabase
+  // Assigned plants share capability milestones because their event stream is
+  // capability-owned. Unassigned plants keep plant-local activity milestones.
+  const capabilityActivities = await getCapabilityLogProjection(user.id, plantId)
+  const activities = capabilityActivities ?? (await supabase
     .from('activity_logs')
     .select('logged_date, is_personal_record, notes')
     .eq('plant_id', plantId)
-    .eq('user_id', user.id)
+    .eq('user_id', user.id)).data ?? []
 
   // Get existing reflections for milestones
   const { data: reflections } = await supabase
@@ -214,14 +218,14 @@ export async function getPlantMilestones(plantId: string): Promise<MilestoneData
     .eq('user_id', user.id)
 
   // Calculate unique active days
-  const uniqueDays = new Set((activities || []).map(a => a.logged_date))
+  const uniqueDays = new Set(activities.map(a => a.logged_date))
   const daysActive = uniqueDays.size
 
   // Check for personal records
-  const hasPersonalRecord = (activities || []).some(a => a.is_personal_record)
+  const hasPersonalRecord = activities.some(a => a.is_personal_record)
 
   // Check for notes
-  const hasNote = (activities || []).some(a => a.notes && a.notes.trim().length > 0)
+  const hasNote = activities.some(a => a.notes && a.notes.trim().length > 0)
 
   // Find earliest date for each milestone
   const sortedDates = Array.from(uniqueDays).sort()
@@ -246,14 +250,14 @@ export async function getPlantMilestones(plantId: string): Promise<MilestoneData
       progress = unlocked ? 100 : 0
       // Find first PR date
       if (unlocked) {
-        const prActivity = (activities || []).find(a => a.is_personal_record)
+        const prActivity = activities.find(a => a.is_personal_record)
         unlockedAt = prActivity?.logged_date
       }
     } else if (def.requiresNote) {
       unlocked = hasNote
       progress = unlocked ? 100 : 0
       if (unlocked) {
-        const noteActivity = (activities || []).find(a => a.notes && a.notes.trim().length > 0)
+        const noteActivity = activities.find(a => a.notes && a.notes.trim().length > 0)
         unlockedAt = noteActivity?.logged_date
       }
     }
@@ -420,8 +424,6 @@ export async function createReflection(
  * Use this for the Journal tab to minimize round trips
  */
 export async function getPlantJournalData(plantId: string): Promise<JournalData | null> {
-  const supabase = await createClient()
-
   const user = await getAuthUser()
   if (!user) return null
 

@@ -44,7 +44,6 @@ vi.mock('@/lib/actions/habit-sessions', () => ({
 const habit: Habit = {
   id: 'habit-1',
   user_id: 'user-1',
-  plant_id: 'plant-1',
   type: 'reading',
   name: 'Đọc sách mỗi ngày',
   description: 'Một phiên đọc yên tĩnh.',
@@ -57,7 +56,7 @@ const habit: Habit = {
 }
 
 const linkedPlant = {
-  id: habit.plant_id,
+  id: 'plant-1',
   user_id: habit.user_id,
   plant_type_id: 'plant-type-lavender',
   name: 'Cây Oải Hương',
@@ -117,7 +116,7 @@ const linkedPlant = {
   },
   guided_habit: {
     id: habit.id,
-    plant_id: habit.plant_id,
+    plant_id: 'plant-1',
     type: habit.type,
     is_active: habit.is_active,
   },
@@ -167,6 +166,7 @@ const pausedSession: HabitSession = {
   id: 'session-1',
   habit_id: habit.id,
   user_id: habit.user_id,
+  source_plant_id: 'plant-1',
   status: 'paused',
   target_value: 5,
   duration_seconds: 1800,
@@ -200,7 +200,7 @@ describe('reading habit vertical slice UI', () => {
 
     expect(screen.getByTestId('reading-plant-image')).toHaveAttribute(
       'data-plant-id',
-      habit.plant_id
+      linkedPlant.id
     )
     expect(screen.getByTestId('reading-plant-image')).toHaveAttribute(
       'data-plant-type',

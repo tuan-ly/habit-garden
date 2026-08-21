@@ -1,5 +1,7 @@
 # Reading Plant Integration — Capability Attachment Handoff
 
+> Historical R2 handoff. Its direct one-to-one attachment and move semantics were superseded on 2026-08-14 by [ADR 003](../docs/adr/003-shared-capability-assignments.md). Preserve the verification record below as release history; use ADR 003 and `current-state.md` for current implementation truth.
+
 **Date:** 2026-07-30
 **Status:** Complete, migrated, committed and preview-deployed from `develop`
 

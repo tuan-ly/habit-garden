@@ -14,6 +14,7 @@ const runningSession: ActiveReadingSession = {
   plant_id: 'plant-1',
   habit_id: 'habit-1',
   user_id: 'user-1',
+  source_plant_id: 'plant-1',
   status: 'running',
   target_value: 5,
   duration_seconds: 1800,

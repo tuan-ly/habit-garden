@@ -118,23 +118,47 @@ export async function getPlants(): Promise<PlantWithType[]> {
   }
 
   const plantIds = plantsData.map(plant => plant.id)
-  const { data: guidedHabits, error: guidedHabitsError } = await supabase
-    .from('habits')
-    .select('id, plant_id, type, is_active')
+  const { data: capabilityAssignments, error: assignmentsError } = await supabase
+    .from('plant_capability_assignments')
+    .select('plant_id, habit_id')
     .eq('user_id', user.id)
-    .eq('is_active', true)
     .in('plant_id', plantIds)
 
-  if (guidedHabitsError) {
-    console.error('Unable to load guided plant capabilities:', guidedHabitsError)
+  if (assignmentsError) {
+    console.error('Unable to load plant capability assignments:', assignmentsError)
   }
 
-  const guidedHabitByPlant = new Map<string, HabitCapabilitySummary>(
-    (guidedHabits ?? []).map(habit => [
-      habit.plant_id,
-      habit as HabitCapabilitySummary,
-    ])
+  const habitIds = Array.from(new Set(
+    (capabilityAssignments ?? []).map(assignment => assignment.habit_id)
+  ))
+  const guidedHabitsResult = habitIds.length > 0
+    ? await supabase
+      .from('habits')
+      .select('id, type, is_active')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .in('id', habitIds)
+    : { data: [], error: null }
+
+  if (guidedHabitsResult.error) {
+    console.error('Unable to load guided plant capabilities:', guidedHabitsResult.error)
+  }
+
+  const guidedHabitById = new Map(
+    (guidedHabitsResult.data ?? []).map(habit => [habit.id, habit])
   )
+  const guidedHabitByPlant = new Map<string, HabitCapabilitySummary>()
+
+  for (const assignment of capabilityAssignments ?? []) {
+    const habit = guidedHabitById.get(assignment.habit_id)
+    if (!habit) continue
+    guidedHabitByPlant.set(assignment.plant_id, {
+      id: habit.id,
+      plant_id: assignment.plant_id,
+      type: habit.type,
+      is_active: habit.is_active,
+    })
+  }
 
   // Get plant IDs that have goals
   const plantsWithGoalMode = plantsData.filter(p => p.goal_mode)

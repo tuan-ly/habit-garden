@@ -38,16 +38,21 @@ Goal frequency can be daily, weekly, or monthly. Period-aware helpers live in `s
 
 ## Guided Plant Capabilities
 
-The guided-habit aggregate adds session behavior to a persisted plant without creating another plant representation:
+**Capability Assignment** is the association that lets a reusable guided capability appear on real persisted plants without creating another plant representation:
 
-- `Plant` - visual identity, lifecycle and persisted garden placement.
-- `Habit` - optional guided capability linked by the owned, unique `plant_id`; defines type, numeric unit and default session duration.
-- `GoalPlan` - start/end target, timeframe and deterministic review configuration.
-- `HabitSession` - running/paused/completion state with persisted elapsed time.
-- `DailyProgress` - one per habit/date, accumulating completed numeric value.
-- `GrowthState` - current/previous/next target, streak, plant stage and review history.
+- `Plant` - visual identity, lifecycle and persisted garden placement; may have zero or one assignment.
+- `PlantCapabilityAssignment` - owned `plant_id → habit_id` link; `plant_id` is unique while `habit_id` may repeat across many plants.
+- `Habit` - reusable capability defining type, numeric unit and default session duration; it does not own a canonical plant identity.
+- `GoalPlan` - start/end target, timeframe and deterministic review configuration, keyed by `habit_id`.
+- `HabitSession` - running/paused/completion state with persisted elapsed time, keyed by `habit_id`.
+- `DailyProgress` - one per capability/date, accumulating completed numeric value.
+- `GrowthState` - capability-level current/previous/next target, streak, plant stage and review history.
 
-Reading configures this model as pages, 30 minutes, 5→30 pages/day, seven-day reviews, 80% consistency and five-page increments. `PlantWithType.guided_habit` is the garden read-model attachment; pure progression rules live in `src/lib/habit-growth.ts`.
+**Shared Capability Event Stream** means completed sessions, progress and reflections belong to the capability. Journal, activity-history and milestone surfaces on any assigned plant project that same stream through `habit_id`; they do not create or filter a separate copy per plant.
+
+`HabitSession.source_plant_id` is nullable **Route Context**: it remembers which assigned `/plant/{plantId}` route opened the session so resume and return navigation can preserve context. It never partitions the event stream or owns progress, and deletion of the source plant must not delete the session.
+
+Reading configures this model as pages, 30 minutes, 5→30 pages/day, seven-day reviews, 80% consistency and five-page increments. `PlantWithType.guided_habit` is per-plant assignment metadata; multiple plants may expose summaries with the same capability id. Pure progression rules live in `src/lib/habit-growth.ts`. See [ADR 003](../adr/003-shared-capability-assignments.md).
 
 ## Mood And Weather
 

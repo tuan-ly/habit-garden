@@ -2,7 +2,7 @@
 
 import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowRightLeft, BookOpen } from 'lucide-react'
+import { BookOpen } from 'lucide-react'
 import { toast } from 'sonner'
 import { attachReadingCapabilityToPlant } from '@/lib/actions/habit-sessions'
 import { usePlants } from '@/lib/context/plants-context'
@@ -20,13 +20,8 @@ export function ReadingCapabilityControl({
   compact = false,
 }: ReadingCapabilityControlProps) {
   const router = useRouter()
-  const { plants, updatePlant } = usePlants()
+  const { updatePlant } = usePlants()
   const [isPending, startTransition] = useTransition()
-  const readingPlant = plants.find(
-    candidate => candidate.guided_habit?.type === 'reading'
-      && candidate.guided_habit.is_active
-  )
-  const isMoving = Boolean(readingPlant && readingPlant.id !== plant.id)
 
   const handleAttach = () => {
     startTransition(async () => {
@@ -38,11 +33,6 @@ export function ReadingCapabilityControl({
         return
       }
 
-      for (const candidate of plants) {
-        if (candidate.id !== plant.id && candidate.guided_habit?.type === 'reading') {
-          updatePlant(candidate.id, { guided_habit: null })
-        }
-      }
       updatePlant(plant.id, {
         guided_habit: {
           id: result.data.habit.id,
@@ -52,8 +42,8 @@ export function ReadingCapabilityControl({
         },
       })
 
-      toast.success(isMoving ? 'Đã chuyển hành trình đọc' : 'Đã gắn theo dõi đọc sách', {
-        description: `${plant.name} giờ sẽ lớn lên cùng những phiên đọc của bạn.`,
+      toast.success('Đã gắn theo dõi đọc sách', {
+        description: `${plant.name} dùng chung log và tiến trình của hành trình đọc.`,
       })
       onAttached?.()
       router.refresh()
@@ -73,19 +63,12 @@ export function ReadingCapabilityControl({
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-bold">
-            {isPending
-              ? 'Đang gắn…'
-              : isMoving
-                ? 'Chuyển Reading sang cây này'
-                : 'Gắn theo dõi đọc sách'}
+            {isPending ? 'Đang gắn…' : 'Gắn theo dõi đọc sách'}
           </span>
           <span className="mt-0.5 block truncate text-xs font-medium text-[#6a7763]">
-            {isMoving
-              ? `Hiện đang ở ${readingPlant?.name}`
-              : 'Cây vẫn là cây bình thường trong vườn'}
+            Dùng chung hành trình; không chuyển khỏi cây khác
           </span>
         </span>
-        {isMoving && <ArrowRightLeft className="h-4 w-4 shrink-0 text-[#708566]" />}
       </button>
     )
   }
@@ -101,9 +84,8 @@ export function ReadingCapabilityControl({
             Theo dõi đọc sách
           </p>
           <p className="mt-1 text-sm leading-6 text-[#697561]">
-            {isMoving
-              ? `Hành trình hiện đang gắn với ${readingPlant?.name}. Bạn có thể chuyển toàn bộ tiến trình sang cây này.`
-              : 'Gắn hành trình đọc vào cây này. Cây vẫn giữ nguyên vị trí, loài và cách chăm sóc.'}
+            Gắn hành trình đọc vào cây này. Nhiều cây có thể dùng chung một hành trình,
+            còn mỗi cây chỉ giữ một capability.
           </p>
         </div>
       </div>
@@ -113,12 +95,7 @@ export function ReadingCapabilityControl({
         disabled={isPending}
         className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#31523b] px-5 text-sm font-bold text-[#fff9e8] transition hover:bg-[#274633] disabled:cursor-wait disabled:opacity-65"
       >
-        {isMoving && <ArrowRightLeft className="h-4 w-4" />}
-        {isPending
-          ? 'Đang gắn…'
-          : isMoving
-            ? 'Chuyển theo dõi sang cây này'
-            : 'Gắn theo dõi đọc sách'}
+        {isPending ? 'Đang gắn…' : 'Gắn theo dõi đọc sách'}
       </button>
     </section>
   )

@@ -26,7 +26,6 @@ import type { PlantWithType } from '@/types/database'
 const HABIT_COLUMNS = [
   'id',
   'user_id',
-  'plant_id',
   'type',
   'name',
   'description',
@@ -58,6 +57,7 @@ const SESSION_COLUMNS = [
   'id',
   'habit_id',
   'user_id',
+  'source_plant_id',
   'status',
   'target_value',
   'duration_seconds',
@@ -165,9 +165,94 @@ async function requireUser() {
   return user
 }
 
+type ServerSupabaseClient = Awaited<ReturnType<typeof createClient>>
+
+async function loadAssignedReadingHabit(
+  supabase: ServerSupabaseClient,
+  userId: string,
+  plantId: string
+): Promise<ReadingActionResult<Habit>> {
+  const assignmentResult = await supabase
+    .from('plant_capability_assignments')
+    .select('habit_id')
+    .eq('plant_id', plantId)
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (assignmentResult.error) {
+    console.error('Unable to load the plant capability assignment:', assignmentResult.error)
+    return fail('PERSISTENCE_ERROR', 'Không thể tải tính năng của cây lúc này.')
+  }
+  if (!assignmentResult.data) {
+    return fail('NOT_FOUND', 'Cây này chưa được gắn tính năng theo dõi đọc sách.')
+  }
+
+  const habitResult = await supabase
+    .from('habits')
+    .select(HABIT_COLUMNS)
+    .eq('id', assignmentResult.data.habit_id)
+    .eq('user_id', userId)
+    .eq('type', READING_HABIT_TEMPLATE.type)
+    .eq('is_active', true)
+    .maybeSingle()
+
+  if (habitResult.error) {
+    console.error('Unable to load the assigned reading capability:', habitResult.error)
+    return fail('PERSISTENCE_ERROR', 'Không thể tải tính năng đọc sách lúc này.')
+  }
+  if (!habitResult.data) {
+    return fail('NOT_FOUND', 'Cây này chưa được gắn tính năng theo dõi đọc sách.')
+  }
+
+  return { success: true, data: asHabit(habitResult.data) }
+}
+
+async function resolveAssignedPlantId(
+  supabase: ServerSupabaseClient,
+  userId: string,
+  habitId: string,
+  preferredPlantId?: string | null
+): Promise<ReadingActionResult<string>> {
+  if (preferredPlantId) {
+    const preferred = await supabase
+      .from('plant_capability_assignments')
+      .select('plant_id')
+      .eq('plant_id', preferredPlantId)
+      .eq('habit_id', habitId)
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    if (preferred.error) {
+      console.error('Unable to validate the session source plant:', preferred.error)
+      return fail('PERSISTENCE_ERROR', 'Không thể xác định cây của phiên đọc lúc này.')
+    }
+    if (preferred.data) return { success: true, data: preferred.data.plant_id }
+  }
+
+  const fallback = await supabase
+    .from('plant_capability_assignments')
+    .select('plant_id')
+    .eq('habit_id', habitId)
+    .eq('user_id', userId)
+    .order('assigned_at', { ascending: true })
+    .order('plant_id', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+
+  if (fallback.error) {
+    console.error('Unable to resolve an assigned plant:', fallback.error)
+    return fail('PERSISTENCE_ERROR', 'Không thể xác định cây của phiên đọc lúc này.')
+  }
+  if (!fallback.data) {
+    return fail('NOT_FOUND', 'Hành trình đọc chưa được gắn với cây nào trong khu vườn.')
+  }
+
+  return { success: true, data: fallback.data.plant_id }
+}
+
 export type ReadingCapabilityAttachment = {
   habit: Habit
-  outcome: 'attached' | 'moved' | 'already_attached'
+  outcome: 'attached' | 'already_attached'
 }
 
 export async function attachReadingCapabilityToPlant(
@@ -194,18 +279,42 @@ export async function attachReadingCapabilityToPlant(
     return fail('INVALID_STATE', 'Hãy chọn một cây đang sống để theo dõi việc đọc sách.')
   }
 
-  const { data: occupiedCapability, error: occupiedError } = await supabase
-    .from('habits')
-    .select('id, type')
+  const { data: occupiedAssignment, error: occupiedError } = await supabase
+    .from('plant_capability_assignments')
+    .select('habit_id')
     .eq('plant_id', plantId)
+    .eq('user_id', user.id)
     .maybeSingle()
 
   if (occupiedError) {
     console.error('Unable to inspect plant capabilities:', occupiedError)
     return fail('PERSISTENCE_ERROR', 'Không thể kiểm tra tính năng của cây lúc này.')
   }
-  if (occupiedCapability && occupiedCapability.type !== READING_HABIT_TEMPLATE.type) {
-    return fail('INVALID_STATE', 'Cây này đã có một tính năng theo dõi khác.')
+  if (occupiedAssignment) {
+    const occupiedHabit = await supabase
+      .from('habits')
+      .select(HABIT_COLUMNS)
+      .eq('id', occupiedAssignment.habit_id)
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (occupiedHabit.error) {
+      console.error('Unable to load the plant capability:', occupiedHabit.error)
+      return fail('PERSISTENCE_ERROR', 'Không thể kiểm tra tính năng của cây lúc này.')
+    }
+    if (!occupiedHabit.data) {
+      return fail('PERSISTENCE_ERROR', 'Liên kết tính năng của cây chưa đầy đủ.')
+    }
+
+    const attachedHabit = asHabit(occupiedHabit.data)
+    if (attachedHabit.type !== READING_HABIT_TEMPLATE.type) {
+      return fail('INVALID_STATE', 'Cây này đã có một tính năng theo dõi khác.')
+    }
+
+    return {
+      success: true,
+      data: { habit: attachedHabit, outcome: 'already_attached' },
+    }
   }
 
   const { data: existingHabit, error: existingError } = await supabase
@@ -219,27 +328,16 @@ export async function attachReadingCapabilityToPlant(
     console.error('Unable to load existing reading capability:', existingError)
     return fail('PERSISTENCE_ERROR', 'Không thể tải tính năng đọc sách lúc này.')
   }
-  const existing = existingHabit ? asHabit(existingHabit) : null
+  let habit = existingHabit ? asHabit(existingHabit) : null
+  let createdHabit = false
 
-  if (existing?.plant_id === plantId) {
-    return {
-      success: true,
-      data: { habit: existing, outcome: 'already_attached' },
-    }
-  }
-
-  const persistence = existing
-    ? await supabase
-      .from('habits')
-      .update({ plant_id: plantId })
-      .eq('id', existing.id)
-      .eq('user_id', user.id)
-      .select(HABIT_COLUMNS)
-      .single()
-    : await supabase
+  if (!habit) {
+    const created = await supabase
       .from('habits')
       .insert({
         user_id: user.id,
+        // Deprecated rollout anchor for older deployed builds. The assignment
+        // table is canonical and this value is never moved by the new flow.
         plant_id: plantId,
         type: READING_HABIT_TEMPLATE.type,
         name: READING_HABIT_TEMPLATE.name,
@@ -251,22 +349,74 @@ export async function attachReadingCapabilityToPlant(
       .select(HABIT_COLUMNS)
       .single()
 
-  if (persistence.error || !persistence.data) {
-    console.error('Unable to attach reading capability:', persistence.error)
-    return fail('PERSISTENCE_ERROR', 'Không thể gắn theo dõi đọc sách vào cây lúc này.')
+    if (created.error?.code === '23505') {
+      const concurrentHabit = await supabase
+        .from('habits')
+        .select(HABIT_COLUMNS)
+        .eq('user_id', user.id)
+        .eq('type', READING_HABIT_TEMPLATE.type)
+        .maybeSingle()
+
+      if (concurrentHabit.error || !concurrentHabit.data) {
+        console.error('Unable to recover the concurrently created capability:', {
+          create: created.error,
+          load: concurrentHabit.error,
+        })
+        return fail('PERSISTENCE_ERROR', 'Không thể tạo tính năng đọc sách lúc này.')
+      }
+      habit = asHabit(concurrentHabit.data)
+    } else if (created.error || !created.data) {
+      console.error('Unable to create the reading capability:', created.error)
+      return fail('PERSISTENCE_ERROR', 'Không thể tạo tính năng đọc sách lúc này.')
+    } else {
+      habit = asHabit(created.data)
+      createdHabit = true
+    }
+  }
+
+  const assignment = await supabase
+    .from('plant_capability_assignments')
+    .insert({
+      plant_id: plantId,
+      habit_id: habit.id,
+      user_id: user.id,
+    })
+    .select('plant_id')
+    .single()
+
+  let outcome: ReadingCapabilityAttachment['outcome'] = 'attached'
+  if (assignment.error || !assignment.data) {
+    let recoveredAssignment = false
+    if (assignment.error?.code === '23505') {
+      const concurrent = await supabase
+        .from('plant_capability_assignments')
+        .select('habit_id')
+        .eq('plant_id', plantId)
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (concurrent.data?.habit_id === habit.id) {
+        outcome = createdHabit ? 'attached' : 'already_attached'
+        recoveredAssignment = true
+      } else if (concurrent.data) {
+        return fail('INVALID_STATE', 'Cây này đã có một tính năng theo dõi khác.')
+      }
+    }
+
+    if (!recoveredAssignment) {
+      console.error('Unable to assign the reading capability:', assignment.error)
+      return fail('PERSISTENCE_ERROR', 'Không thể gắn theo dõi đọc sách vào cây lúc này.')
+    }
   }
 
   revalidatePath('/garden')
   revalidatePath(getPlantHref(plantId))
-  if (existing?.plant_id && existing.plant_id !== plantId) {
-    revalidatePath(getPlantHref(existing.plant_id))
-  }
 
   return {
     success: true,
     data: {
-      habit: asHabit(persistence.data),
-      outcome: existing ? 'moved' : 'attached',
+      habit,
+      outcome,
     },
   }
 }
@@ -286,38 +436,32 @@ async function ensureReadingJourney(
   const supabase = await createClient()
   const today = todayIsoDate()
 
-  let habitQuery = supabase
-    .from('habits')
-    .select(HABIT_COLUMNS)
-    .eq('user_id', userId)
-    .eq('type', READING_HABIT_TEMPLATE.type)
-    .eq('is_active', true)
-
+  let habit: Habit
   if (plantId) {
-    habitQuery = habitQuery.eq('plant_id', plantId)
+    const assigned = await loadAssignedReadingHabit(supabase, userId, plantId)
+    if (!assigned.success) return assigned
+    habit = assigned.data
+  } else {
+    const habitResult = await supabase
+      .from('habits')
+      .select(HABIT_COLUMNS)
+      .eq('user_id', userId)
+      .eq('type', READING_HABIT_TEMPLATE.type)
+      .eq('is_active', true)
+      .maybeSingle()
+
+    if (habitResult.error) {
+      console.error('Unable to load reading habit:', habitResult.error)
+      return fail('PERSISTENCE_ERROR', 'Không thể tải thói quen đọc lúc này.')
+    }
+    if (!habitResult.data) {
+      return fail(
+        'NOT_FOUND',
+        'Hãy chọn một cây trong khu vườn và gắn tính năng theo dõi đọc sách trước.'
+      )
+    }
+    habit = asHabit(habitResult.data)
   }
-
-  const { data: habitRow, error: habitError } = await habitQuery
-    .maybeSingle()
-
-  if (habitError) {
-    console.error('Unable to load reading habit:', habitError)
-    return fail('PERSISTENCE_ERROR', 'Không thể tải thói quen đọc lúc này.')
-  }
-
-  if (!habitRow) {
-    return fail(
-      'NOT_FOUND',
-      'Hãy chọn một cây trong khu vườn và gắn tính năng theo dõi đọc sách trước.'
-    )
-  }
-
-  if (habitError || !habitRow) {
-    console.error('Reading habit bootstrap did not produce a habit:', habitError)
-    return fail('PERSISTENCE_ERROR', 'Thói quen đọc chưa sẵn sàng.')
-  }
-
-  const habit = asHabit(habitRow)
   const targetEndOn = addUtcDays(today, READING_HABIT_TEMPLATE.timeframeWeeks * 7)
 
   const { error: planInsertError } = await supabase
@@ -408,7 +552,7 @@ export async function getActiveReadingSession(): Promise<
   const supabase = await createClient()
   const habitResult = await supabase
     .from('habits')
-    .select('id, plant_id')
+    .select('id')
     .eq('user_id', user.id)
     .eq('type', READING_HABIT_TEMPLATE.type)
     .eq('is_active', true)
@@ -435,11 +579,20 @@ export async function getActiveReadingSession(): Promise<
     return fail('PERSISTENCE_ERROR', 'Không thể tải phiên đọc lúc này.')
   }
 
+  if (!sessionResult.data) return { success: true, data: null }
+
+  const session = asSession(sessionResult.data)
+  const routePlant = await resolveAssignedPlantId(
+    supabase,
+    user.id,
+    habitResult.data.id,
+    session.source_plant_id
+  )
+  if (!routePlant.success) return routePlant
+
   return {
     success: true,
-    data: sessionResult.data
-      ? { ...asSession(sessionResult.data), plant_id: habitResult.data.plant_id }
-      : null,
+    data: { ...session, plant_id: routePlant.data },
   }
 }
 
@@ -460,7 +613,7 @@ export async function getReadingJourneySnapshot(plantId: string): Promise<
     supabase
       .from('plants')
       .select('*, plant_type:plant_types(*)')
-      .eq('id', habit.plant_id)
+      .eq('id', plantId)
       .eq('user_id', user.id)
       .maybeSingle(),
     supabase
@@ -559,6 +712,7 @@ export async function startReadingSession(
     .insert({
       habit_id: habit.id,
       user_id: user.id,
+      source_plant_id: plantId,
       status: 'running',
       target_value: growth.current_target,
       duration_seconds: habit.session_duration_minutes * 60,
@@ -622,28 +776,14 @@ export async function getReadingSession(
   if (!UUID_PATTERN.test(plantId)) return fail('INVALID_INPUT', 'Cây được chọn không hợp lệ.')
 
   const supabase = await createClient()
-  const habitResult = await supabase
-    .from('habits')
-    .select('id')
-    .eq('user_id', user.id)
-    .eq('plant_id', plantId)
-    .eq('type', READING_HABIT_TEMPLATE.type)
-    .eq('is_active', true)
-    .maybeSingle()
-
-  if (habitResult.error) {
-    console.error('Unable to validate the plant reading capability:', habitResult.error)
-    return fail('PERSISTENCE_ERROR', 'Không thể tải phiên đọc lúc này.')
-  }
-  if (!habitResult.data) {
-    return fail('NOT_FOUND', 'Cây này chưa được gắn tính năng theo dõi đọc sách.')
-  }
+  const assignedHabit = await loadAssignedReadingHabit(supabase, user.id, plantId)
+  if (!assignedHabit.success) return assignedHabit
 
   if (sessionId) {
     const owned = await getOwnedSession(sessionId, user.id)
     if (!owned.success) return owned
-    if (owned.data.habit_id !== habitResult.data.id) {
-      return fail('NOT_FOUND', 'Phiên đọc này không thuộc cây được chọn.')
+    if (owned.data.habit_id !== assignedHabit.data.id) {
+      return fail('NOT_FOUND', 'Phiên đọc này không thuộc tính năng của cây được chọn.')
     }
     return owned
   }
@@ -651,7 +791,7 @@ export async function getReadingSession(
   const sessionResult = await supabase
     .from('habit_sessions')
     .select(SESSION_COLUMNS)
-    .eq('habit_id', habitResult.data.id)
+    .eq('habit_id', assignedHabit.data.id)
     .eq('user_id', user.id)
     .in('status', OPEN_SESSION_STATUSES)
     .order('started_at', { ascending: false })
@@ -886,16 +1026,27 @@ export async function completeReadingSession(
   const ensured = await ensureReadingJourney(user.id)
   if (!ensured.success) return ensured
 
-  const plantActivity = await logActivity({
-    mutationId: payload.session.id,
-    plant_id: ensured.data.habit.plant_id,
-    activity_type: 'progress',
-    value: completedPages,
-    notes: reflection?.trim() || undefined,
-  })
+  const sourcePlant = await resolveAssignedPlantId(
+    supabase,
+    user.id,
+    ensured.data.habit.id,
+    payload.session.source_plant_id
+  )
+  if (sourcePlant.success) {
+    const plantActivity = await logActivity({
+      mutationId: payload.session.id,
+      plant_id: sourcePlant.data,
+      // Plant care is a one-time side effect. Pages stay exclusively in the
+      // shared capability log so they cannot contaminate a plant-local goal.
+      activity_type: 'completed',
+      notes: reflection?.trim() || undefined,
+    })
 
-  if (!plantActivity.success) {
-    console.error('Reading completion could not update its plant:', plantActivity.error)
+    if (!plantActivity.success) {
+      console.error('Reading completion could not update its source plant:', plantActivity.error)
+    }
+  } else {
+    console.error('Reading completion has no assigned source plant:', sourcePlant.error)
   }
 
   return {

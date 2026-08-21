@@ -2,11 +2,13 @@
 
 - Date: 2026-08-14
 - Milestone: Retention Core — Guided Habit Sessions
-- Active task: Replace global Reading navigation with plant-scoped routing
-- Status: complete
-- Vertical slice: `/plant/{plantId}` resolves one owned persisted plant and conditionally renders its Reading capability, with session, completion and Growth Plan nested under that same identity
-- Completed: removed VirtualPlant from garden core; restored move-to-empty behavior; added owned `habits.plant_id`; backfilled existing habits; added explicit attach/move Reading control to normal plant focus/detail; added visible Reading badge and focus CTA; synced completion to plant activity; applied migration `20260729155039` to linked Supabase; committed as `0fd1339`; pushed `develop`; Vercel deployment completed successfully; reviewed closure docs against ADR 002 and OpenWiki; reconciled the Docker-dependent replay gap; made `ReadingJourneySnapshot` carry the owned linked `PlantWithType`; replaced the generic Reading tree with the linked plant renderer; deleted the global `/reading` route and navigation; added `/plant/[plantId]` plus plant-scoped Reading child routes; scoped capability/session reads by owner and requested plant; carried `plant_id` through active-session resume
-- Verification: migration ledger has 60 unique versions; typecheck pass; focused lint pass; 32 Vitest files / 354 tests pass; production build pass and manifest contains only plant-scoped Reading routes; authenticated E2E scenario is discovered; remote column/FK/unique/RLS invariants and the earlier Vercel commit status remain pass
-- Risks: local full-chain migration replay still depends on Docker Desktop; authenticated Playwright was not run because E2E credentials are not configured; the in-app browser could not access localhost due URL policy, so this change relies on component/persistence tests, E2E route assertions and the production route manifest
+- Active task: Deploy and verify shared many-to-one Capability Assignments
+- Status: implementation complete and verified locally; linked deployment pending
+- Vertical slice: each owned plant selects at most one capability through `plant_capability_assignments`; many plants may resolve the same Reading capability and display its shared session log/progression under their own `/plant/{plantId}` route identity
+- Non-goals: multiple capabilities on one plant; Exercise UI; per-plant copies or partitions of capability history; removing the deprecated rollout anchor in the expand migration
+- Completed: expand migration and ownership RLS; lossless legacy assignment/session-origin backfill; additive idempotent attach behavior; assignment-based Garden and Reading reads; shared capability-log projection for journal/history/milestones; `source_plant_id` route/resume context; ADR 003, OpenWiki and business-rule reconciliation
+- Verification: clean PostgreSQL 17 replay and schema-catalog/advisor checks pass; migration ledger has 61 unique versions; the linked migration ledger confirms `20260814145405` is pending remotely; focused lint and typecheck pass; 34 Vitest files / 363 tests pass; production build passes with only plant-scoped Reading routes; the Reading E2E is discovered in five Playwright projects
+- Constraints: `plant_id` is unique in assignments while `habit_id` is not; owner identity must match across plant, assignment and capability; capability sessions/progress stay keyed by `habit_id`; `source_plant_id` must never partition the shared log
+- Risks: deploy migration `20260814145405` before the new app build; the expand/contract window temporarily retains nullable `habits.plant_id` and a compatibility trigger; authenticated E2E has not run against the linked schema
 - Blockers: none
-- Next smallest step: review the plant-scoped Reading diff before staging it separately from the existing staged closure documents
+- Next smallest step: apply migration `20260814145405_shared_capability_assignments.sql` to the linked Supabase project and verify assignment, owner-RLS and backfill invariants before deploying the app build

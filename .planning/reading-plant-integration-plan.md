@@ -1,5 +1,7 @@
 # Guided Habit → Real Plant Capability Plan
 
+> Historical R2 plan. Its direct one-to-one attachment and move semantics were superseded on 2026-08-14 by [ADR 003](../docs/adr/003-shared-capability-assignments.md). Preserve the content below as delivered-slice history; use ADR 003 and `current-state.md` for current implementation truth.
+
 **Updated:** 2026-07-30
 **Goal:** Reading and future guided features extend normal persisted plants.
 

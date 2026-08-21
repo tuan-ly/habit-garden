@@ -29,7 +29,6 @@ export interface GrowthHistoryEntry {
 export interface Habit {
   id: string
   user_id: string
-  plant_id: string
   type: string
   name: string
   description: string | null
@@ -68,6 +67,7 @@ export interface HabitSession {
   id: string
   habit_id: string
   user_id: string
+  source_plant_id: string | null
   status: HabitSessionStatus
   target_value: number
   duration_seconds: number

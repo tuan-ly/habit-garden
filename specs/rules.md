@@ -26,6 +26,13 @@
 - Use atomic PostgreSQL functions for financial operations (coins, inventory, crafting)
 - Migration filenames: `YYYYMMDD_description.sql`
 
+## Guided Capability Rules
+
+- Mỗi cây có tối đa một row trong `plant_capability_assignments`; một capability có thể được assign cho nhiều cây.
+- `habit_sessions`, `daily_progress`, `goal_plans` và `growth_states` theo `habit_id` là nguồn sự thật dùng chung; không copy log cho từng cây.
+- `habit_sessions.source_plant_id` chỉ giữ route context và side-effect một lần, không chia tách ownership của log.
+- Không fan-out `record_activity_atomic` theo số cây được assign vì sẽ nhân đôi XP/coin và có thể làm bẩn goal riêng của cây.
+
 ## Status System Rules
 
 - Valid living statuses: growing, thriving, resting, waiting, sleeping

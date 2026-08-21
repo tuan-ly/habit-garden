@@ -72,6 +72,23 @@ Migration `20260728123500_grant_guided_habit_table_access.sql` explicitly grants
 
 `complete_habit_session_atomic(...)` is `SECURITY INVOKER`, clears `search_path`, locks the owned session/growth rows and completes all outcome writes in one transaction. Keep its review behavior aligned with `src/lib/habit-growth.ts` and its contract tests.
 
+## Shared Capability Assignment Rollout
+
+Migration `20260814145405_shared_capability_assignments.sql` implements the **expand** phase from [ADR 003](../adr/003-shared-capability-assignments.md):
+
+- `plant_capability_assignments` uses `plant_id` as its primary key, so one plant has at most one capability; `habit_id` is non-unique, so one capability can serve many plants.
+- Composite `(plant_id, user_id)` and `(habit_id, user_id)` foreign keys prevent cross-owner assignments. The table has authenticated owner RLS, explicit CRUD grants and a habit-side lookup index.
+- Every legacy non-null `habits.plant_id` is backfilled into an assignment, with a migration assertion that rejects silent attachment loss.
+- Nullable `habit_sessions.source_plant_id` is backfilled from the legacy link and uses an owner-scoped foreign key with `ON DELETE SET NULL`. It preserves route origin only; capability events and progress remain keyed by `habit_id`.
+
+The **compatibility** phase temporarily keeps `habits.plant_id` nullable as a deprecated anchor. Its plant foreign key changes from cascade-delete to set-null so deleting one plant cannot delete a shared capability. An invoker trigger mirrors old inserts or "moves" into additive assignments and never removes the previous assignment. New application code must treat `plant_capability_assignments` as canonical and must not read `habits.plant_id` to resolve capability ownership.
+
+The **contract** phase is deliberately deferred. Only after older deployed builds are retired and linked-environment invariants are verified should a separate migration remove the compatibility trigger, legacy plant-link constraint/index artifacts and `habits.plant_id`. Do not fold those destructive removals into the expand migration.
+
+Completed guided-session logs are capability-owned. `src/lib/capability-log-projection.ts` resolves a plant's assignment, reads completed `habit_sessions` by `habit_id`, and projects them into existing activity/journal read shapes. This is a read projection, not duplicated plant event rows; `source_plant_id` must never become a log partition key.
+
+The expand migration has passed a clean PostgreSQL 17 replay, schema-catalog/advisor checks and the 61-version migration-ledger validation. Linked-environment application and deployment verification remain a separate release step.
+
 ## Decoration Footprint Calibration
 
 `config/game-asset-catalog.json` is the repository-side desired catalog for manifest-backed decoration footprints. Asset Studio saves remain code-first: changing a canonical footprint stages the catalog, manifests and a timestamped SQL migration together; it never writes to a linked Supabase project.
