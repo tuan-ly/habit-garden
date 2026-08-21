@@ -9,8 +9,12 @@ import {
 } from '@/lib/habit-growth'
 import { createClient } from '@/lib/supabase/server'
 import { logActivity } from '@/lib/actions/activity'
-import { attachCapabilityToPlant } from '@/lib/actions/capabilities'
+import {
+  attachCapabilityToPlant,
+  getActiveCapabilitySession,
+} from '@/lib/actions/capabilities'
 import type {
+  ActiveCapabilitySession,
   DailyProgress,
   GoalPlan,
   GrowthState,
@@ -119,17 +123,55 @@ export type ReadingActionErrorCode =
   | 'NOT_FOUND'
   | 'INVALID_INPUT'
   | 'INVALID_STATE'
+  | 'ACTIVE_SESSION_CONFLICT'
   | 'PERSISTENCE_ERROR'
 
 export type ReadingActionResult<T> =
   | { success: true; data: T }
-  | { success: false; code: ReadingActionErrorCode; error: string }
+  | {
+      success: false
+      code: ReadingActionErrorCode
+      error: string
+      activeSession?: ActiveCapabilitySession
+    }
 
 function fail<T>(
   code: ReadingActionErrorCode,
-  error: string
+  error: string,
+  activeSession?: ActiveCapabilitySession
 ): ReadingActionResult<T> {
-  return { success: false, code, error }
+  return { success: false, code, error, activeSession }
+}
+
+function activeSessionConflict<T>(
+  activeSession: ActiveCapabilitySession
+): ReadingActionResult<T> {
+  return fail(
+    'ACTIVE_SESSION_CONFLICT',
+    'Một hành trình khác đang chạy. Hãy tiếp tục hoặc tạm dừng phiên đó trước.',
+    activeSession
+  )
+}
+
+async function loadConflictingRunningSession(options?: {
+  habitId?: string
+  sessionId?: string
+}): Promise<ReadingActionResult<ActiveCapabilitySession | null>> {
+  const activeResult = await getActiveCapabilitySession()
+  if (!activeResult.success) {
+    return fail(activeResult.code, activeResult.error)
+  }
+
+  const activeSession = activeResult.data
+  if (
+    !activeSession
+    || activeSession.habit_id === options?.habitId
+    || activeSession.id === options?.sessionId
+  ) {
+    return { success: true, data: null }
+  }
+
+  return { success: true, data: activeSession }
 }
 
 function todayIsoDate(): string {
@@ -543,6 +585,12 @@ export async function startReadingSession(
     return { success: true, data: asSession(existing.data) }
   }
 
+  const runningConflict = await loadConflictingRunningSession({ habitId: habit.id })
+  if (!runningConflict.success) return runningConflict
+  if (runningConflict.data) {
+    return activeSessionConflict(runningConflict.data)
+  }
+
   const now = new Date().toISOString()
   const created = await supabase
     .from('habit_sessions')
@@ -572,6 +620,12 @@ export async function startReadingSession(
         .single()
       if (concurrent.data) {
         return { success: true, data: asSession(concurrent.data) }
+      }
+
+      const concurrentConflict = await loadConflictingRunningSession({ habitId: habit.id })
+      if (!concurrentConflict.success) return concurrentConflict
+      if (concurrentConflict.data) {
+        return activeSessionConflict(concurrentConflict.data)
       }
     }
 
@@ -714,6 +768,12 @@ export async function resumeReadingSession(
     return fail('INVALID_STATE', 'Phiên đọc này không thể tiếp tục.')
   }
 
+  const runningConflict = await loadConflictingRunningSession({ sessionId: session.id })
+  if (!runningConflict.success) return runningConflict
+  if (runningConflict.data) {
+    return activeSessionConflict(runningConflict.data)
+  }
+
   const now = new Date().toISOString()
   const supabase = await createClient()
   const updated = await supabase
@@ -731,6 +791,16 @@ export async function resumeReadingSession(
     .single()
 
   if (updated.error || !updated.data) {
+    if (updated.error?.code === '23505') {
+      const concurrentConflict = await loadConflictingRunningSession({
+        sessionId: session.id,
+      })
+      if (!concurrentConflict.success) return concurrentConflict
+      if (concurrentConflict.data) {
+        return activeSessionConflict(concurrentConflict.data)
+      }
+    }
+
     console.error('Unable to resume reading session:', updated.error)
     return fail('PERSISTENCE_ERROR', 'Không thể tiếp tục phiên đọc.')
   }

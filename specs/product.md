@@ -605,11 +605,12 @@ The retention core now includes one complete guided reading journey:
 
 - Home Garden shows a persistent reading plant, plant stage, today pages/target, Start Reading and Growth Plan.
 - Focus Session persists a 30-minute start/pause/resume/finish timer and ambient preference across refresh or route leave.
+- A user can run only one guided timer at a time across all plants. Starting or resuming another plant redirects to the canonical running session instead of silently pausing it or creating concurrent timers.
 - Completion validates whole pages, records them atomically and reveals target comparison, reward, plant growth and streak.
 - Growth Plan shows a deterministic 5→30 pages/day trajectory with previous/current/next milestones, review date, rule and history.
 
 Generic domain models support habits, numeric units, plans, sessions, daily progress and growth state. Reading is configured as `type=reading`, `unit=pages`, 30 minutes, a seven-day review period, an 80% performance threshold and five-page increments capped at 30. Missed thresholds hold the target without guilt or unpredictable regression.
 
-As of 2026-08-15, guided behavior uses **Per-Plant Capability Instance**: each plant has at most one capability slot, while many plants may select the Reading type without switching it away from another plant. Each assignment owns a distinct `habit_id`, so sessions, daily progress, Growth Plan, target and completed-session log remain independent under each plant-scoped route.
+As of 2026-08-15, guided behavior uses **Per-Plant Capability Instance**: each plant has at most one capability slot, while many plants may select the Reading type without switching it away from another plant. Each assignment owns a distinct `habit_id`, so sessions, daily progress, Growth Plan, target and completed-session log remain independent under each plant-scoped route. As of 2026-08-21, running attention is user-scoped: only one of those independent instances may have a `running` timer at a time.
 
-See `docs/reading-habit-vertical-slice.md`, ADR `docs/adr/001-guided-habit-session-aggregate.md` and ADR `docs/adr/003-shared-capability-assignments.md`.
+See `docs/reading-habit-vertical-slice.md`, ADR `docs/adr/001-guided-habit-session-aggregate.md`, ADR `docs/adr/004-per-plant-capability-instances.md`, ADR `docs/adr/005-capability-plugin-platform.md` and ADR `docs/adr/006-user-scoped-running-session.md`.

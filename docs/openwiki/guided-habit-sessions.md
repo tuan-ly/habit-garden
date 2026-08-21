@@ -17,7 +17,7 @@ Generic capability routes live under `src/app/(dashboard)/plant/[plantId]/`:
 
 Reusable types live in `src/types/habits.ts`; deterministic progression and timer calculations live in `src/lib/habit-growth.ts`. Reading is configuration, not a hard-coded domain branch: pages, 30 minutes, 5→30 target, seven-day review, 80% threshold and five-page increment.
 
-Migration `20260728121000_reading_habit_vertical_slice.sql` owns `habits`, `goal_plans`, `habit_sessions`, `daily_progress`, `growth_states`, RLS and `complete_habit_session_atomic(...)`. Migration `20260814145405_shared_capability_assignments.sql` introduced canonical assignments; `20260814234237_isolate_capability_instances_per_plant.sql` made every assigned instance independent. Migration `20260819134213_capability_plugin_platform.sql` adds manifest version/config/archive metadata plus atomic attach/manage RPCs. See [ADR 005](../adr/005-capability-plugin-platform.md).
+Migration `20260728121000_reading_habit_vertical_slice.sql` owns `habits`, `goal_plans`, `habit_sessions`, `daily_progress`, `growth_states`, RLS and `complete_habit_session_atomic(...)`. Migration `20260814145405_shared_capability_assignments.sql` introduced canonical assignments; `20260814234237_isolate_capability_instances_per_plant.sql` made every assigned instance independent. Migration `20260819134213_capability_plugin_platform.sql` adds manifest version/config/archive metadata plus atomic attach/manage RPCs. Migration `20260821052602_enforce_single_running_session_per_user.sql` adds the user-scoped running-session invariant. See [ADR 005](../adr/005-capability-plugin-platform.md) and [ADR 006](../adr/006-user-scoped-running-session.md).
 
 ## Mutation Flow
 
@@ -29,7 +29,7 @@ Capability assignment is explicit and additive: `attachCapabilityToPlant(...)` v
 
 Pause/resume/remove use `manage_plant_capability_instance(...)`. Pause keeps the assignment; remove frees the slot, clears the legacy anchor and sets `archived_at` without deleting sessions, progress, plan or growth history. Open sessions must be completed before lifecycle management.
 
-Starting a session stores the route plant in `habit_sessions.source_plant_id`. Because each `habit_id` belongs to one assignment, target, daily progress and the open-session constraint are isolated per plant. Multiple plants may therefore run separate Reading sessions; the global banner selects the most recently started running session.
+Starting a session stores the route plant in `habit_sessions.source_plant_id`. Because each `habit_id` belongs to one assignment, target, daily progress and the open-session lifecycle remain isolated per plant. A partial unique index on `user_id` allows only one `running` timer across all capability instances; paused and awaiting-completion sessions may coexist. Start/resume conflicts return the canonical active session so clients can route to it without auto-pausing another plant.
 
 `getCapabilityLogProjection(userId, plantId)` resolves the plant's assignment and maps completed sessions for its unique `habit_id` into the journal/activity read shape. Each assigned plant therefore shows its own capability-instance log and reflections. Only unassigned plants fall back to their legacy plant-local activity stream.
 

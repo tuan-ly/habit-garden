@@ -1,6 +1,6 @@
 # ADR 004: Per-Plant Capability Instances
 
-- Status: Accepted
+- Status: Accepted; concurrent-running consequence superseded by [ADR 006](./006-user-scoped-running-session.md)
 - Date: 2026-08-15
 - Supersedes: [ADR 003](./003-shared-capability-assignments.md)
 
@@ -23,7 +23,7 @@ Existing habits with one assignment are unchanged. If one habit already has mult
 ## Consequences
 
 - Many plants can select Reading without switching it away from another plant.
-- Each plant has an independent target, Growth Plan, running session and capability log.
-- Two plants may run Reading sessions concurrently because the open-session constraint remains per `habit_id`.
-- The global resume banner selects the most recently started running Reading session across the user's instances.
+- Each plant has an independent target, Growth Plan, open-session lifecycle and capability log.
+- Running attention is user-scoped: [ADR 006](./006-user-scoped-running-session.md) supersedes the earlier allowance for concurrent timers.
+- The global resume banner resolves the user's single running capability session.
 - Capability reuse is represented by `habits.type`, while progress ownership is represented by the per-plant habit instance.

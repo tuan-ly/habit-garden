@@ -33,7 +33,7 @@ The app must be fun enough that users open it on their worst day. Psychology ser
 
 ### Active
 
-- [ ] Capability Plugin Platform release — local implementation and UX audit complete; linked migrations and authenticated release smoke remain pending
+- [ ] Capability Plugin Platform release — all platform and user-scoped running-session migrations applied; authenticated release smoke remains pending
 - [ ] Dual Growth Model — short-cycle 3×3 garden (seasonal harvest) + long-cycle ancient tree (years of growth)
 - [ ] Extended growth stages (Established → Ancient → Legendary, spanning years)
 - [ ] Plant personality system (9 types with unique growth patterns, resilience, visual stories)
@@ -55,7 +55,7 @@ The app must be fun enough that users open it on their worst day. Psychology ser
 ## Context
 
 - **User profile:** Solopreneur building solo. Can code but not professional developer. Needs AI as Product Thinking Partner.
-- **Current state:** R5 has a locally verified Capability Plugin Platform. Reading is the first plugin; Garden and generic journey routes no longer branch on Reading, Capability Library owns optional setup, Plant Detail owns pause/resume/remove, and focus mode keeps one contextual primary action. Atomic invoker RPCs preserve per-plant instance isolation and archived history. Linked migrations `20260814234237` and `20260819134213` plus authenticated release smoke remain pending.
+- **Current state:** R5 has a linked Capability Plugin Platform. Reading is the first plugin; Garden and generic journey routes no longer branch on Reading, Capability Library owns optional setup, Plant Detail owns pause/resume/remove, and focus mode keeps one contextual primary action. Per-plant progress remains isolated while a deployed user-scoped invariant permits only one running timer; authenticated release smoke remains pending.
 - **Design philosophy:** "Unfinished is OK, ugly is not." Every visible element must feel intentional and polished.
 - **Brand:** Habien (habien.com). Vietnamese market primary (VND pricing). English UI.
 - **Previous workflow:** SDD (Spec-Driven Development) → migrating to GSD for better phase management.
@@ -83,6 +83,7 @@ The app must be fun enough that users open it on their worst day. Psychology ser
 | Guided habits as plant capabilities | Preserve one plant identity/placement model while Reading, Exercise and later guided workflows add optional behavior | Superseded in cardinality by ADR 003 |
 | Per-plant capability instances | Each plant gets one capability slot; many plants may select the same type without switching, while every plant keeps an independent target and log | Implementation verification in progress |
 | Capability Plugin Platform | Separate manifest, server, UI and optional screen registries; expose setup as “Hành trình của cây” instead of mixing it into daily care | ✓ Locally implemented and audited; release pending |
+| User-scoped single running session | Keep each plant's progress independent while preventing concurrent focus timers across tabs, devices and capability instances | ✓ Implemented, deployed and schema-verified; authenticated smoke pending |
 
 ## Evolution
 
@@ -102,4 +103,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-19 after Capability Plugin Platform implementation and UX audit*
+*Last updated: 2026-08-21 after deploying and verifying the user-scoped running-session migration*

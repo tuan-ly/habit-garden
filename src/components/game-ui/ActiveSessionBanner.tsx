@@ -4,11 +4,14 @@ import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { Play } from 'lucide-react'
 import { getCapabilityManifest } from '@/capabilities/core/catalog'
-import { getCapabilitySessionHref } from '@/capabilities/core/routes'
+import {
+  getCapabilityCompletionHref,
+  getCapabilitySessionHref,
+} from '@/capabilities/core/routes'
 import { CapabilityIcon } from '@/components/capabilities/capability-icon'
 import { Button } from '@/components/ui/button'
 import { getActiveCapabilitySession } from '@/lib/actions/capabilities'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import type { ActiveCapabilitySession } from '@/types/habits'
 
 interface ActiveSessionBannerProps {
@@ -23,6 +26,7 @@ function getInitialElapsed(activeSession: ActiveCapabilitySession | null): numbe
 export function ActiveSessionBanner({ activeSession }: ActiveSessionBannerProps) {
   const router = useRouter()
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const reduceMotion = useReducedMotion()
   const previousPathname = useRef(pathname)
   const [currentSession, setCurrentSession] = useState(activeSession)
@@ -30,6 +34,16 @@ export function ActiveSessionBanner({ activeSession }: ActiveSessionBannerProps)
   const manifest = currentSession
     ? getCapabilityManifest(currentSession.capability_type)
     : null
+  const isViewingCurrentSession = currentSession
+    ? searchParams.get('id') === currentSession.id
+      && (
+        pathname === getCapabilitySessionHref(currentSession.plant_id)
+        || pathname === getCapabilityCompletionHref(
+          currentSession.plant_id,
+          currentSession.id
+        ).split('?')[0]
+      )
+    : false
 
   useEffect(() => {
     setCurrentSession(activeSession)
@@ -85,7 +99,11 @@ export function ActiveSessionBanner({ activeSession }: ActiveSessionBannerProps)
 
   return (
     <AnimatePresence>
-      {currentSession && manifest && currentSession.status === 'running' && (
+      {currentSession
+        && manifest
+        && currentSession.status === 'running'
+        && !isViewingCurrentSession
+        && (
         <motion.div
           initial={reduceMotion ? false : { y: -100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -124,7 +142,7 @@ export function ActiveSessionBanner({ activeSession }: ActiveSessionBannerProps)
             </Button>
           </div>
         </motion.div>
-      )}
+        )}
     </AnimatePresence>
   )
 }

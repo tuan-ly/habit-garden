@@ -134,6 +134,14 @@ See: .planning/PROJECT.md (updated 2026-08-15)
 - Verified both lifecycle RPCs remain `SECURITY INVOKER`; authenticated and system roles can execute while `anon` cannot
 - Ran linked ERROR-level database advisors with no issues; authenticated Garden lifecycle smoke remains pending
 
+### 2026-08-21: User-Scoped Running Session
+- Replaced the ADR 004 concurrent-timer consequence with a **User-Scoped Single Running Session** invariant
+- Added a partial unique index on running `habit_sessions.user_id`; existing duplicate timers are normalized while per-plant progress and open-session history stay isolated
+- Added `ACTIVE_SESSION_CONFLICT` handling so start/resume routes users to the canonical running plant instead of creating or auto-pausing another timer
+- Passed the 64-version PostgreSQL 17 replay, transactional uniqueness probe, 38 Vitest files / 388 tests, TypeScript, focused ESLint, production build and local ERROR-level advisors
+- Applied `20260821052602_enforce_single_running_session_per_user.sql` to linked project `jkhkfsfjnilbfqfatonb`
+- Verified the partial unique index, zero duplicate-running users, the remote migration ledger entry and clean linked ERROR-level security/performance advisors; authenticated two-plant smoke remains pending
+
 ## Decisions Log
 
 | Date | Decision | Context |
@@ -148,6 +156,7 @@ See: .planning/PROJECT.md (updated 2026-08-15)
 | 2026-08-14 | Shared capability assignments and event stream | Give each plant one capability slot, allow many plants to share one capability, and keep logs/progression capability-owned |
 | 2026-08-15 | Per-plant capability instances | Reuse capability type across plants while keeping each plant's target and log independent |
 | 2026-08-19 | Capability Plugin Platform + Capability Slot | Make new guided behavior an internal module registered at explicit server/client seams, while users manage one optional “Hành trình của cây” per plant |
+| 2026-08-21 | User-scoped single running session | Keep capability progress isolated per plant while allowing only one active focus timer per user across all instances |
 
 ---
-*Last updated: 2026-08-21 after linked Capability Plugin Platform migration deployment and catalog verification*
+*Last updated: 2026-08-21 after deploying and verifying the user-scoped running-session invariant*

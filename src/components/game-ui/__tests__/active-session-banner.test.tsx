@@ -5,6 +5,7 @@ import type { ActiveCapabilitySession } from '@/types/habits'
 
 const mocks = vi.hoisted(() => ({
   activePathname: '/garden',
+  activeSessionId: null as string | null,
   getActiveSession: vi.fn(),
   push: vi.fn(),
 }))
@@ -12,6 +13,9 @@ const mocks = vi.hoisted(() => ({
 vi.mock('next/navigation', () => ({
   usePathname: () => mocks.activePathname,
   useRouter: () => ({ push: mocks.push }),
+  useSearchParams: () => ({
+    get: (name: string) => name === 'id' ? mocks.activeSessionId : null,
+  }),
 }))
 
 vi.mock('@/lib/actions/capabilities', () => ({
@@ -46,6 +50,7 @@ describe('ActiveSessionBanner', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.activePathname = '/garden'
+    mocks.activeSessionId = null
     mocks.getActiveSession.mockResolvedValue({ success: true, data: null })
   })
 
@@ -68,7 +73,27 @@ describe('ActiveSessionBanner', () => {
     expect(screen.queryByText('Hành trình đang mở')).not.toBeInTheDocument()
   })
 
-  it('loads a newly started session after client-side navigation', async () => {
+  it('stays hidden while the matching timer is already open', () => {
+    mocks.activePathname = '/plant/plant-1/journey/session'
+    mocks.activeSessionId = runningSession.id
+
+    render(<ActiveSessionBanner activeSession={runningSession} />)
+
+    expect(screen.queryByText('Hành trình đang mở')).not.toBeInTheDocument()
+  })
+
+  it('remains visible when the route belongs to another session', () => {
+    mocks.activePathname = '/plant/plant-1/journey/session'
+    mocks.activeSessionId = 'older-session'
+
+    render(<ActiveSessionBanner activeSession={runningSession} />)
+
+    expect(screen.getByText('Hành trình đang mở')).toBeInTheDocument()
+  })
+
+  it('loads a newly started session after leaving the timer', async () => {
+    mocks.activePathname = '/plant/plant-1/journey/session'
+    mocks.activeSessionId = runningSession.id
     const { rerender } = render(<ActiveSessionBanner activeSession={null} />)
 
     expect(mocks.getActiveSession).not.toHaveBeenCalled()
@@ -77,7 +102,8 @@ describe('ActiveSessionBanner', () => {
       success: true,
       data: runningSession,
     })
-    mocks.activePathname = '/plant/plant-1/journey/session'
+    mocks.activePathname = '/garden'
+    mocks.activeSessionId = null
     rerender(<ActiveSessionBanner activeSession={null} />)
 
     expect(await screen.findByText('Hành trình đang mở')).toBeInTheDocument()
@@ -90,6 +116,7 @@ describe('ActiveSessionBanner', () => {
     )
 
     mocks.activePathname = '/plant/plant-1/journey/completion'
+    mocks.activeSessionId = runningSession.id
     rerender(<ActiveSessionBanner activeSession={runningSession} />)
 
     await waitFor(() => {

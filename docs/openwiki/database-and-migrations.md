@@ -68,6 +68,8 @@ The migration history includes:
 
 Migration `20260728121000_reading_habit_vertical_slice.sql` is additive. It creates `habits`, `goal_plans`, `habit_sessions`, `daily_progress` and `growth_states`, with direct user ownership, authenticated RLS policies and explicit indexes. A partial unique index permits only one running, paused or awaiting-completion session per habit.
 
+Migration `20260821052602_enforce_single_running_session_per_user.sql` adds a second partial unique index permitting only one `running` session per `user_id` across all capability instances. Before creating the index, it deterministically keeps the newest running row and normalizes older duplicates to `paused` or `awaiting_completion` using persisted elapsed-time fields. Per-habit open-session ownership remains unchanged.
+
 Migration `20260728123500_grant_guided_habit_table_access.sql` explicitly grants authenticated CRUD privileges because newer Supabase projects may disable automatic exposure of new public tables. RLS remains the ownership boundary.
 
 `complete_habit_session_atomic(...)` is `SECURITY INVOKER`, clears `search_path`, locks the owned session/growth rows and completes all outcome writes in one transaction. Keep its review behavior aligned with `src/lib/habit-growth.ts` and its contract tests.
@@ -98,7 +100,7 @@ Migration `20260819134213_capability_plugin_platform.sql` adds `habits.config`, 
 
 Do not replace the invoker functions with `SECURITY DEFINER` or broad service-role application calls. Do not hard-delete archived capability rows during normal management: `habit_sessions`, `daily_progress`, `goal_plans` and `growth_states` are retained by `habit_id`.
 
-Local verification covers concurrent attach, cross-user rejection, pause/resume/remove and preserved session history. Migrations `20260814234237` and `20260819134213` were applied to linked project `jkhkfsfjnilbfqfatonb` on 2026-08-21. The 63-version local/remote ledger is aligned; the remote catalog confirms the three capability metadata columns, unique assignment `habit_id`, invoker RPCs and no anonymous execute privilege. Linked ERROR-level database advisors report no issues. Authenticated application smoke remains the release gate.
+Local verification covers concurrent attach, cross-user rejection, pause/resume/remove and preserved session history. Migrations `20260814234237`, `20260819134213` and `20260821052602` were applied to linked project `jkhkfsfjnilbfqfatonb` on 2026-08-21. The remote catalog confirms the capability metadata, unique assignment `habit_id`, invoker RPCs, no anonymous execute privilege and the user-scoped partial unique index. The duplicate-running query returns zero rows, the ledger contains all three versions and linked ERROR-level database advisors report no issues. Authenticated application smoke remains the release gate.
 
 ## Decoration Footprint Calibration
 

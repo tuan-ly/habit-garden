@@ -3,6 +3,8 @@
 import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { BookOpen, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
+import { getCapabilitySessionHref } from '@/capabilities/core/routes'
 import { startReadingSession } from '@/lib/actions/habit-sessions'
 import { getReadingCompletionHref, getReadingSessionHref } from '@/lib/reading-routes'
 import { cn } from '@/lib/utils'
@@ -19,7 +21,19 @@ export function ReadingFocusAction({ plantId, className }: ReadingFocusActionPro
   function handleStart() {
     startTransition(async () => {
       const result = await startReadingSession(plantId)
-      if (!result.success) return
+      if (!result.success) {
+        if (result.code === 'ACTIVE_SESSION_CONFLICT' && result.activeSession) {
+          toast.info('Một hành trình khác đang chạy. Đang mở phiên đó.')
+          router.push(getCapabilitySessionHref(
+            result.activeSession.plant_id,
+            result.activeSession.id
+          ))
+          return
+        }
+
+        toast.error(result.error)
+        return
+      }
 
       const href = result.data.status === 'awaiting_completion'
         ? getReadingCompletionHref(plantId, result.data.id)

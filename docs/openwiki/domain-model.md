@@ -46,7 +46,7 @@ Goal frequency can be daily, weekly, or monthly. Period-aware helpers live in `s
 - `CapabilityManifest` - code-owned definition metadata: key, version, copy, icon, eligibility, session model and default config.
 - `CapabilityPlugin` - internal module registering manifest, server journey driver, UI renderers, optional screens and contextual focus action.
 - `GoalPlan` - start/end target, timeframe and deterministic review configuration, keyed by `habit_id`.
-- `HabitSession` - running/paused/completion state with persisted elapsed time, keyed by `habit_id`.
+- `HabitSession` - running/paused/completion state with persisted elapsed time, keyed by `habit_id`; open-session history is per instance while `running` attention is unique per user.
 - `DailyProgress` - one per capability/date, accumulating completed numeric value.
 - `GrowthState` - capability-level current/previous/next target, streak, plant stage and review history.
 
@@ -54,7 +54,7 @@ Goal frequency can be daily, weekly, or monthly. Period-aware helpers live in `s
 
 `HabitSession.source_plant_id` is nullable **Route Context**: it remembers which assigned `/plant/{plantId}` route opened the session so resume and return navigation can preserve context. It never partitions the event stream or owns progress, and deletion of the source plant must not delete the session.
 
-Reading configures this model as pages, 30 minutes, 5→30 pages/day, seven-day reviews, 80% consistency and five-page increments. `PlantWithType.guided_habit` is per-plant assignment metadata; different plants expose different instance ids even when both select Reading. Pure progression rules live in `src/lib/habit-growth.ts`. See [ADR 004](../adr/004-per-plant-capability-instances.md).
+Reading configures this model as pages, 30 minutes, 5→30 pages/day, seven-day reviews, 80% consistency and five-page increments. `PlantWithType.guided_habit` is per-plant assignment metadata; different plants expose different instance ids even when both select Reading. Pure progression rules live in `src/lib/habit-growth.ts`. See [ADR 004](../adr/004-per-plant-capability-instances.md) and [ADR 006](../adr/006-user-scoped-running-session.md).
 
 `habits.config`, `definition_version` and `archived_at` form an **Anti-Corruption Layer** over the legacy table name. App code speaks in capability instances while the schema rename remains out of scope. A plant can have zero or one assignment; pause keeps it assigned and inactive, while remove archives the instance and frees the slot. See [ADR 005](../adr/005-capability-plugin-platform.md).
 

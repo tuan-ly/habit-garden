@@ -22,6 +22,12 @@ const capabilityPlatformMigration = readFileSync(
   resolve('supabase/migrations/20260819134213_capability_plugin_platform.sql'),
   'utf8'
 )
+const singleRunningSessionMigration = readFileSync(
+  resolve(
+    'supabase/migrations/20260821052602_enforce_single_running_session_per_user.sql'
+  ),
+  'utf8'
+)
 const actions = readFileSync(
   resolve('src/lib/actions/habit-sessions.ts'),
   'utf8'
@@ -67,6 +73,26 @@ describe('habit session persistence contract', () => {
     expect(migration).toContain("WHERE status IN ('running', 'paused', 'awaiting_completion')")
     expect(actions).not.toMatch(/\.select\(\s*['"`]\*['"`]\s*\)/)
     expect(capabilityActions).not.toMatch(/\.select\(\s*['"`]\*['"`]\s*\)/)
+  })
+
+  it('allows only one running timer per user while preserving per-plant open sessions', () => {
+    expect(singleRunningSessionMigration).toContain('ROW_NUMBER() OVER')
+    expect(singleRunningSessionMigration).toContain('PARTITION BY sessions.user_id')
+    expect(singleRunningSessionMigration).toContain("WHERE sessions.status = 'running'")
+    expect(singleRunningSessionMigration).toContain(
+      'CREATE UNIQUE INDEX habit_sessions_one_running_per_user'
+    )
+    expect(singleRunningSessionMigration).toContain(
+      'ON public.habit_sessions (user_id)'
+    )
+    expect(singleRunningSessionMigration).toContain("WHERE status = 'running'")
+    expect(singleRunningSessionMigration).toContain("THEN 'awaiting_completion'")
+    expect(singleRunningSessionMigration).toContain("ELSE 'paused'")
+
+    expect(actions).toContain("'ACTIVE_SESSION_CONFLICT'")
+    expect(actions).toContain('loadConflictingRunningSession({ habitId: habit.id })')
+    expect(actions).toContain('loadConflictingRunningSession({ sessionId: session.id })')
+    expect(actions).toContain("updated.error?.code === '23505'")
   })
 
   it('explicitly exposes RLS-protected tables to authenticated users', () => {

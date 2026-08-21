@@ -12,6 +12,8 @@ import {
   Play,
   VolumeX,
 } from 'lucide-react'
+import { toast } from 'sonner'
+import { getCapabilitySessionHref } from '@/capabilities/core/routes'
 import { BackgroundAudio } from '@/components/garden/background-audio'
 import { Button } from '@/components/ui/button'
 import {
@@ -94,6 +96,15 @@ export function FocusSessionClient({
         ? await pauseReadingSession(session.id)
         : await resumeReadingSession(session.id)
       if (!result.success) {
+        if (result.code === 'ACTIVE_SESSION_CONFLICT' && result.activeSession) {
+          toast.info('Một hành trình khác đang chạy. Đang mở phiên đó.')
+          router.push(getCapabilitySessionHref(
+            result.activeSession.plant_id,
+            result.activeSession.id
+          ))
+          return
+        }
+
         setError(result.error)
         return
       }

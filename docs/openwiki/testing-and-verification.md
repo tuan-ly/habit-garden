@@ -37,6 +37,9 @@ Guided-session unit and contract coverage lives in:
 - `src/lib/__tests__/habit-growth.test.ts`
 - `src/lib/__tests__/habit-persistence-contract.test.ts`
 - `src/components/reading/__tests__/reading-vertical-slice.test.tsx`
+- `src/components/reading/__tests__/reading-session-conflict.test.tsx`
+
+`scripts/sql/verify-single-running-session.sql` transactionally proves that PostgreSQL rejects a second `running` session for the same user without retaining probe data.
 
 ## Storybook
 
