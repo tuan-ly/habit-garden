@@ -8,6 +8,8 @@
 - `src/components/garden/sanctuary-garden-chrome.tsx` - mobile sanctuary HUD, next-plant focus and three daily actions.
 - `src/components/garden/sanctuary-action-dialog.tsx` - no-guilt action entry for completed, tiny and rest paths.
 - `src/components/garden/sanctuary-plant-detail-sheet.tsx` - identity-first plant detail and Journey handoff.
+- `src/components/capabilities/capability-slot.tsx` - empty, active, paused and remove lifecycle surface inside Plant Detail.
+- `src/components/capabilities/capability-library-dialog.tsx` - optional journey library, preview and explicit intent confirmation.
 
 ## Rendering Strategy
 
@@ -84,13 +86,15 @@ The production `/garden` route is now **Garden-first**:
 
 Legacy list/focus/edit primitives still exist for compatibility and garden arrangement, but they are not first-level navigation.
 
-Reading uses **Capability Assignment** through `plant_capability_assignments`; it is not a virtual tile or a global destination. Each persisted plant has at most one capability, while the user's active Reading capability may be assigned to many plants. Assignment never moves Reading away from another plant. Every assigned plant keeps normal placement, movement and care behavior, displays its own visual identity, and exposes `Mở hành trình đọc` to `/plant/{plantId}`.
+Garden uses a **Capability Plugin Platform** through `plant_capability_assignments`; capabilities are not virtual tiles or global destinations. Each persisted plant has one optional **Capability Slot**, while many plants may select the same capability type through independent instances. A capability never changes plant placement, lifecycle or identity.
 
-An assigned Reading capability is visible as a book badge on every real plant that shares it. Selecting an unassigned eligible plant exposes an explicit additive attach control in the production sanctuary focus panel; the detail sheet mirrors the same behavior and must not use switch/move language. `/plant/{plantId}` renders Reading only when the requested owned plant has an assignment whose owned habit is active and has type `reading`. A normal plant without Reading shows its own capability-empty state instead of another plant's journey; a plant assigned to a different capability cannot receive Reading.
+The user-facing name is **Hành trình của cây**. Setup and management live in Plant Detail: an empty slot opens the Capability Library, preview explains the outcome, explicit-match capabilities require intent confirmation, and active instances support pause/resume/remove. Focus mode is a **Daily Action Flow**, not a setup surface: an active plugin may replace `Chăm cây` with one contextual primary action, while paused or unassigned plants use normal care actions. A compact `Chi tiết` action is the path back to management.
 
-The dashboard layout uses a read-only active-session query for the global resume banner and must not create or assign a capability merely because a protected page rendered. The underlying session stores nullable `source_plant_id` as route context. Resume prefers that still-valid assignment, then falls back deterministically to another plant assigned to the same capability.
+Assigned capabilities use `CapabilityCharm`, a screen-space overlay that is independent from plant sprite growth and cinematic scale. The charm label and icon come from the manifest. `/plant/{plantId}` and `/plant/{plantId}/journey/*` resolve the owned assignment and dispatch through registries; Garden and generic routes must not branch on `reading`.
 
-Assigned-plant journal, activity-history and milestone surfaces use a **Shared Capability Event Stream**: they project the same completed `habit_sessions` for the assigned `habit_id`. `source_plant_id` never filters that history, so all plants sharing Reading show the same log and reflections. Unassigned plants retain their legacy plant-local activity stream.
+The dashboard layout uses a read-only active-session query for the global resume banner and must not create or assign a capability merely because a protected page rendered. Each instance may have one open session; the banner chooses the most recently started running supported capability session and resolves its assigned plant. Because App Router preserves shared layouts during client navigation, `ActiveSessionBanner` rechecks this read model after pathname changes so start and finish transitions cannot leave the shell with a stale session snapshot.
+
+Assigned-plant journal, activity-history and milestone surfaces use a **Capability Instance Event Stream**: they resolve the plant's unique assigned `habit_id` and project only its completed `habit_sessions`. Two plants selecting the same capability keep independent logs, targets and reflections. Unassigned plants retain their legacy plant-local activity stream.
 
 ## Reaction And Modal Rules
 

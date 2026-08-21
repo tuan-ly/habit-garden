@@ -1,37 +1,72 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
-import { Book, Play } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { Play } from 'lucide-react'
+import { getCapabilityManifest } from '@/capabilities/core/catalog'
+import { getCapabilitySessionHref } from '@/capabilities/core/routes'
+import { CapabilityIcon } from '@/components/capabilities/capability-icon'
 import { Button } from '@/components/ui/button'
-import { useRouter } from 'next/navigation'
-import { getReadingSessionHref } from '@/lib/reading-routes'
-import type { ActiveReadingSession } from '@/types/habits'
+import { getActiveCapabilitySession } from '@/lib/actions/capabilities'
+import { usePathname, useRouter } from 'next/navigation'
+import type { ActiveCapabilitySession } from '@/types/habits'
 
 interface ActiveSessionBannerProps {
-  activeSession: ActiveReadingSession | null
+  activeSession: ActiveCapabilitySession | null
 }
 
-function getInitialElapsed(activeSession: ActiveReadingSession | null): number {
+function getInitialElapsed(activeSession: ActiveCapabilitySession | null): number {
   if (!activeSession) return 0
   return activeSession.accumulated_seconds
 }
 
 export function ActiveSessionBanner({ activeSession }: ActiveSessionBannerProps) {
   const router = useRouter()
-  const [elapsed, setElapsed] = useState(() => getInitialElapsed(activeSession))
+  const pathname = usePathname()
+  const reduceMotion = useReducedMotion()
+  const previousPathname = useRef(pathname)
+  const [currentSession, setCurrentSession] = useState(activeSession)
+  const [elapsed, setElapsed] = useState(() => getInitialElapsed(currentSession))
+  const manifest = currentSession
+    ? getCapabilityManifest(currentSession.capability_type)
+    : null
 
   useEffect(() => {
-    if (!activeSession || activeSession.status !== 'running') return
+    setCurrentSession(activeSession)
+  }, [activeSession])
+
+  useEffect(() => {
+    if (previousPathname.current === pathname) return
+    previousPathname.current = pathname
+
+    let cancelled = false
+
+    void getActiveCapabilitySession().then(result => {
+      if (!cancelled && result.success) {
+        setCurrentSession(result.data)
+      }
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [pathname])
+
+  useEffect(() => {
+    setElapsed(getInitialElapsed(currentSession))
+  }, [currentSession])
+
+  useEffect(() => {
+    if (!currentSession || currentSession.status !== 'running') return
 
     const calculateElapsed = () => {
-      if (!activeSession.last_resumed_at) return activeSession.accumulated_seconds
+      if (!currentSession.last_resumed_at) return currentSession.accumulated_seconds
       const now = Date.now()
-      const lastResumed = new Date(activeSession.last_resumed_at).getTime()
+      const lastResumed = new Date(currentSession.last_resumed_at).getTime()
       const sessionElapsed = Math.max(0, Math.floor((now - lastResumed) / 1000))
       return Math.min(
-        activeSession.duration_seconds,
-        activeSession.accumulated_seconds + sessionElapsed
+        currentSession.duration_seconds,
+        currentSession.accumulated_seconds + sessionElapsed
       )
     }
 
@@ -40,7 +75,7 @@ export function ActiveSessionBanner({ activeSession }: ActiveSessionBannerProps)
     }, 1000)
 
     return () => window.clearInterval(interval)
-  }, [activeSession])
+  }, [currentSession])
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60)
@@ -50,40 +85,42 @@ export function ActiveSessionBanner({ activeSession }: ActiveSessionBannerProps)
 
   return (
     <AnimatePresence>
-      {activeSession && activeSession.status === 'running' && (
+      {currentSession && manifest && currentSession.status === 'running' && (
         <motion.div
-          initial={{ y: -100, opacity: 0 }}
+          initial={reduceMotion ? false : { y: -100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          exit={{ y: -100, opacity: 0 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-          className="fixed top-16 left-1/2 -translate-x-1/2 z-50"
+          exit={reduceMotion ? { opacity: 0 } : { y: -100, opacity: 0 }}
+          transition={reduceMotion ? { duration: 0.12 } : { type: 'spring', stiffness: 300, damping: 30 }}
+          className="fixed left-1/2 top-16 z-50 w-[min(92vw,26rem)] -translate-x-1/2"
         >
-          <div className="bg-primary text-primary-foreground px-4 py-2 rounded-full shadow-lg flex items-center gap-3">
+          <div className="flex items-center gap-3 rounded-[1.35rem] border border-white/65 bg-[#31523b]/96 px-3 py-2.5 text-[#fff9e8] shadow-[0_16px_38px_rgba(24,54,34,0.3)] backdrop-blur-xl">
             <motion.div
-              animate={{
-                scale: [1, 1.2, 1],
-                opacity: [1, 0.7, 1],
-              }}
-              transition={{
-                duration: 1.5,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              }}
-              className="flex items-center gap-2"
+              animate={reduceMotion ? undefined : { scale: [1, 1.08, 1] }}
+              transition={reduceMotion ? undefined : { duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#fff9e8]/12"
+              aria-hidden="true"
             >
-              <Book className="w-4 h-4" />
-              <Play className="w-3 h-3 fill-current" />
+              <CapabilityIcon icon={manifest.icon} className="h-5 w-5" />
             </motion.div>
 
-            <span className="font-medium">Reading: {formatTime(elapsed)}</span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-[#cbdac3]">
+                Hành trình đang mở
+              </p>
+              <p className="mt-0.5 truncate text-sm font-bold">
+                {manifest.shortLabel} · {formatTime(elapsed)}
+              </p>
+            </div>
 
             <Button
               size="sm"
               variant="secondary"
-              onClick={() => router.push(getReadingSessionHref(activeSession.plant_id))}
-              className="h-7 px-3 text-xs"
+              onClick={() => router.push(getCapabilitySessionHref(currentSession.plant_id, currentSession.id))}
+              className="h-10 shrink-0 rounded-full bg-[#fff9e8] px-3 text-xs font-bold text-[#31523b] hover:bg-white"
+              aria-label={`Tiếp tục hành trình ${manifest.shortLabel}`}
             >
-              Resume
+              <Play className="h-3.5 w-3.5 fill-current" />
+              Tiếp tục
             </Button>
           </div>
         </motion.div>

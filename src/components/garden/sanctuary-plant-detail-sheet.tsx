@@ -1,13 +1,14 @@
 'use client'
 
 import Link from 'next/link'
+import { getPlantHref } from '@/capabilities/core/routes'
+import { CapabilitySlot } from '@/components/capabilities/capability-slot'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { PlantImage } from '@/components/plants/plant-image'
-import { ReadingCapabilityControl } from '@/components/garden/reading-capability-control'
-import { getPlantHref } from '@/lib/reading-routes'
+import { usePlants } from '@/lib/context/plants-context'
 import { isToday } from '@/lib/utils'
 import type { PlantWithType } from '@/types/database'
-import { BookOpen, CalendarDays, Check, ChevronRight, Leaf, Moon, Sprout } from 'lucide-react'
+import { CalendarDays, Check, ChevronRight, Leaf, Moon, Sprout } from 'lucide-react'
 
 interface SanctuaryPlantDetailSheetProps {
   plant: PlantWithType | null
@@ -17,8 +18,7 @@ interface SanctuaryPlantDetailSheetProps {
 
 export function getGuidedHabitHref(plant: PlantWithType): string | null {
   if (!plant.guided_habit?.is_active) return null
-  if (plant.guided_habit.type === 'reading') return getPlantHref(plant.id)
-  return null
+  return getPlantHref(plant.id)
 }
 
 function getStateCopy(plant: PlantWithType): { label: string; body: string } {
@@ -36,19 +36,20 @@ export function SanctuaryPlantDetailSheet({
   open,
   onOpenChange,
 }: SanctuaryPlantDetailSheetProps) {
+  const { updatePlant } = usePlants()
   if (!plant) return null
   const state = getStateCopy(plant)
   const purpose = plant.why_i_started || plant.habit_description || plant.tiny_seed
   const goalProgress = plant.goal?.current_period_target
     ? Math.min(100, (plant.goal.period_progress / plant.goal.current_period_target) * 100)
     : null
-  const guidedHabitHref = getGuidedHabitHref(plant)
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="h-[90dvh] overflow-y-auto rounded-t-[2.25rem] border-x border-t border-white/80 bg-[#fffaf0] px-0 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-[#2f472a] shadow-[0_-24px_80px_rgba(31,62,39,0.28)] sm:left-1/2 sm:max-w-2xl sm:-translate-x-1/2"
+        closeLabel={`Đóng chi tiết ${plant.name}`}
+        className="h-[90dvh] overflow-y-auto rounded-t-[2.25rem] border-x border-t border-white/80 bg-[#fffaf0] px-0 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-[#2f472a] shadow-[0_-24px_80px_rgba(31,62,39,0.28)] motion-reduce:animate-none motion-reduce:transition-none sm:left-1/2 sm:max-w-2xl sm:-translate-x-1/2"
       >
         <div className="mx-auto mt-1 h-1.5 w-12 rounded-full bg-[#cdd8c2]" aria-hidden="true" />
 
@@ -80,6 +81,16 @@ export function SanctuaryPlantDetailSheet({
             </p>
             <p className="mt-2 text-sm leading-6 text-[#dce5d0]">{state.body}</p>
           </section>
+
+          <CapabilitySlot
+            plant={plant}
+            onCapabilityChange={capability => {
+              updatePlant(plant.id, {
+                guided_habit: capability,
+              })
+            }}
+            onNavigate={() => onOpenChange(false)}
+          />
 
           {purpose && (
             <section className="rounded-[1.75rem] border border-[#dbe4d2] bg-white/65 p-5">
@@ -148,37 +159,6 @@ export function SanctuaryPlantDetailSheet({
               <p className="mt-1 text-[11px] text-[#74806e]">đang nghỉ</p>
             </div>
           </section>
-
-          {guidedHabitHref ? (
-            <section className="rounded-[1.75rem] border border-[#d8dfc8] bg-[#f2f0df] p-5">
-              <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-[#718064]">
-                <BookOpen className="h-4 w-4" />
-                Tính năng của cây
-              </p>
-              <p className="mt-2 font-display text-xl font-semibold text-[#315027]">
-                Theo dõi đọc sách
-              </p>
-              <p className="mt-1 text-sm leading-6 text-[#697561]">
-                Những phiên đọc được lưu vào hành trình và nuôi lớn chính cây này.
-              </p>
-              <Link
-                href={guidedHabitHref}
-                onClick={() => onOpenChange(false)}
-                className="mt-4 flex min-h-12 items-center justify-between rounded-full bg-[#31523b] px-5 text-sm font-bold text-[#fff9e8] transition hover:bg-[#274633]"
-              >
-                <span className="flex items-center gap-3">
-                  <BookOpen className="h-5 w-5" />
-                  Mở hành trình đọc
-                </span>
-                <ChevronRight className="h-5 w-5" />
-              </Link>
-            </section>
-          ) : (
-            <ReadingCapabilityControl
-              plant={plant}
-              onAttached={() => onOpenChange(false)}
-            />
-          )}
 
           <Link
             href="/overview"

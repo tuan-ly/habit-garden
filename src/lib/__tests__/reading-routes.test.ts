@@ -12,15 +12,15 @@ describe('plant-scoped Reading routes', () => {
   })
 
   it('nests every Reading destination under the same plant', () => {
-    expect(getReadingSessionHref('plant-1')).toBe('/plant/plant-1/reading/session')
+    expect(getReadingSessionHref('plant-1')).toBe('/plant/plant-1/journey/session')
     expect(getReadingSessionHref('plant-1', 'session-1')).toBe(
-      '/plant/plant-1/reading/session?id=session-1'
+      '/plant/plant-1/journey/session?id=session-1'
     )
     expect(getReadingCompletionHref('plant-1', 'session-1')).toBe(
-      '/plant/plant-1/reading/completion?id=session-1'
+      '/plant/plant-1/journey/completion?id=session-1'
     )
     expect(getReadingGrowthPlanHref('plant-1')).toBe(
-      '/plant/plant-1/reading/growth-plan'
+      '/plant/plant-1/journey/plan'
     )
   })
 })

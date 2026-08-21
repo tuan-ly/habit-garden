@@ -2,16 +2,16 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-08-14)
+See: .planning/PROJECT.md (updated 2026-08-15)
 
 **Core value:** The app must be fun enough that users open it on their worst day.
-**Current focus:** Deploy and verify the locally complete shared Capability Assignment slice without losing Reading history or route identity
+**Current focus:** Finish the authenticated linked-environment smoke for the deployed Capability Plugin Platform without widening scope
 
 ## Current Milestone
 
 **Milestone:** Retention Core — Guided Habit Sessions
 **Started:** 2026-07-28
-**Status:** R3 Shared Capability Assignments is verified locally; linked schema deployment and release verification remain pending
+**Status:** R5 Capability Plugin Platform is locally implemented, audited and deployed at the schema layer; authenticated release smoke remains pending
 
 ## Phase Status
 
@@ -20,6 +20,8 @@ See: .planning/PROJECT.md (updated 2026-08-14)
 | R1 | Reading Habit Vertical Slice | complete | 2026-07-28 | 2026-07-28 |
 | R2 | Reading Plant Capability Attachment | complete | 2026-07-29 | 2026-07-30 |
 | R3 | Shared Capability Assignments | release pending | 2026-08-14 | — |
+| R4 | Per-Plant Capability Instances | release pending | 2026-08-15 | — |
+| R5 | Capability Plugin Platform & Library | release pending | 2026-08-19 | — |
 | 1 | Dual Growth Core (older backlog) | pending | — | — |
 | 2 | Plant Personality & Harvest Loop (older backlog) | pending | — | — |
 | 3 | Visual Assets (older backlog) | pending | — | — |
@@ -99,6 +101,39 @@ See: .planning/PROJECT.md (updated 2026-08-14)
 - Clean PostgreSQL 17 replay, schema-catalog/advisor checks, the 61-version migration ledger, focused lint, typecheck, all 34 Vitest files / 363 tests and production build pass; the linked migration ledger confirms `20260814145405` remains pending remotely, and the Reading E2E remains discoverable across five projects
 - Linked schema deployment, authenticated E2E and app release remain pending before R3 closure
 
+### 2026-08-15: Shared Capability Linked Migration
+- Applied `20260814145405_shared_capability_assignments.sql` to the linked `habit-garden` Supabase project
+- Confirmed all 61 local and remote migration versions match
+- Verified 1 legacy capability assignment was backfilled with 0 missing links and 0 session-source mismatches
+- Verified assignment RLS and 4 policies, owner FKs, plant primary key, fan-out/source indexes and the compatibility trigger
+- Ran linked ERROR-level database advisors with no issues; authenticated E2E and app release remain pending
+
+### 2026-08-15: Per-Plant Capability Instances
+- Clarified that reuse applies to the Reading capability type, not to one shared progress aggregate
+- Changed assignment cardinality to one plant ↔ one `habit` instance while allowing multiple instances with type `reading`
+- Kept target, Growth Plan, sessions, daily progress and journal projection keyed by the plant's unique `habit_id`
+- Added a split migration for any already-shared assignments and rebuilt affected daily aggregates from sourced completed sessions
+- Added ADR 004 and updated UI copy/tests
+- Passed clean PostgreSQL 17 replay, a seeded shared-data split scenario, local catalog/advisors, all 364 tests, typecheck, focused lint and production build
+- Linked dry-run shows only `20260814234237` pending; authenticated E2E remains pending
+
+### 2026-08-19: Capability Plugin Platform & Library
+- Introduced manifest, server, client UI, journey renderer and optional screen registries under `src/capabilities/`
+- Migrated Reading to generic plant journey routes and removed Reading-specific branches from Garden core, lifecycle dispatch and active-session presentation
+- Added Capability Library, explicit intent confirmation, Plant Detail lifecycle management, focus-panel detail entry and a scale-independent plant charm
+- Added atomic `SECURITY INVOKER` attach/manage RPCs with advisory locking, config/version metadata and archive semantics
+- Fixed post-attach bootstrap upserts, keyboard focus restoration, paused-route guards, reduced-motion handling and Vietnamese accessible close labels
+- Completed desktop/mobile UX audit with local Supabase; exact 200% landscape zoom and full screen-reader/contrast testing remain release checks
+- Passed 37 Vitest files / 380 tests, focused ESLint, TypeScript, the 63-version migration ledger, production build and local ERROR-level database advisors
+- Linked ledger shows `20260814234237` and `20260819134213` pending; no linked migration was applied in this task
+
+### 2026-08-21: Capability Platform Linked Migrations
+- Applied `20260814234237_isolate_capability_instances_per_plant.sql` and `20260819134213_capability_plugin_platform.sql` to linked project `jkhkfsfjnilbfqfatonb`
+- Confirmed all 63 local and remote migration versions match
+- Verified `habits.config`, `definition_version` and `archived_at`, plus unique assignment `habit_id`
+- Verified both lifecycle RPCs remain `SECURITY INVOKER`; authenticated and system roles can execute while `anon` cannot
+- Ran linked ERROR-level database advisors with no issues; authenticated Garden lifecycle smoke remains pending
+
 ## Decisions Log
 
 | Date | Decision | Context |
@@ -111,6 +146,8 @@ See: .planning/PROJECT.md (updated 2026-08-14)
 | 2026-07-29 | Guided habits are plant capabilities (superseded by ADR 003) | Keep plants as the spatial/lifecycle root; the original direct one-to-one attachment was later replaced |
 | 2026-08-14 | Plant-scoped Reading route | Use `/plant/{plantId}` as the resource identity; Reading is conditional behavior rendered inside that plant |
 | 2026-08-14 | Shared capability assignments and event stream | Give each plant one capability slot, allow many plants to share one capability, and keep logs/progression capability-owned |
+| 2026-08-15 | Per-plant capability instances | Reuse capability type across plants while keeping each plant's target and log independent |
+| 2026-08-19 | Capability Plugin Platform + Capability Slot | Make new guided behavior an internal module registered at explicit server/client seams, while users manage one optional “Hành trình của cây” per plant |
 
 ---
-*Last updated: 2026-08-14 after local verification of shared capability assignments*
+*Last updated: 2026-08-21 after linked Capability Plugin Platform migration deployment and catalog verification*

@@ -201,8 +201,8 @@ export async function getPlantMilestones(plantId: string): Promise<MilestoneData
 
   if (!plant) return []
 
-  // Assigned plants share capability milestones because their event stream is
-  // capability-owned. Unassigned plants keep plant-local activity milestones.
+  // Assigned plants use milestones from their own capability instance.
+  // Unassigned plants keep plant-local activity milestones.
   const capabilityActivities = await getCapabilityLogProjection(user.id, plantId)
   const activities = capabilityActivities ?? (await supabase
     .from('activity_logs')

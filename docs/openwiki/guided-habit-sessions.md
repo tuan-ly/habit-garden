@@ -1,35 +1,37 @@
 # Guided Habit Sessions
 
-## Reading Slice
+## Capability Journey Shell
 
-The first guided slice lives under `src/app/(dashboard)/plant/[plantId]/`:
+Generic capability routes live under `src/app/(dashboard)/plant/[plantId]/`:
 
-- `/plant/{plantId}` - plant home; Reading Home replaces the base capability state only for the active attached plant.
-- `/plant/{plantId}/reading/session` - persistent timer and ambient audio.
-- `/plant/{plantId}/reading/completion` - page validation and persisted outcome.
-- `/plant/{plantId}/reading/growth-plan` - milestones, rule, dates and review history.
+- `/plant/{plantId}` - base plant home or the active plugin journey home.
+- `/plant/{plantId}/journey/session` - plugin session screen when exposed.
+- `/plant/{plantId}/journey/completion` - plugin completion screen when exposed.
+- `/plant/{plantId}/journey/plan` - plugin plan screen when exposed.
 
-UI components live in `src/components/reading/`. The existing sanctuary exposes an entry link; it does not replace the garden's plant-care flow.
+`src/capabilities/core/` owns the serializable catalog, server journey drivers, client focus actions, journey renderers and optional screen registry. Reading-specific pages and UI live in `src/capabilities/reading/` plus the existing `src/components/reading/` feature components. Legacy `/reading` paths are compatibility redirects only.
 
-`ReadingJourneySnapshot` carries the requested owned `PlantWithType` after resolving its row in `plant_capability_assignments`. Reading Home and its child routes must show that route plant's name, type and canonical `PlantImage`; never choose a second visual identity from `growth_states.plant_stage` or a generic asset. Several plants may resolve the same Reading capability, but the requested persisted plant remains the visual and return-route identity.
+`ReadingJourneySnapshot` carries the requested owned `PlantWithType` after resolving its row in `plant_capability_assignments`. Reading Home and its child routes must show that route plant's name, type and canonical `PlantImage`; never choose a second visual identity from `growth_states.plant_stage` or a generic asset. Several plants may select the same Reading type through separate instances, but the requested persisted plant remains the visual and return-route identity.
 
 ## Domain And Persistence
 
 Reusable types live in `src/types/habits.ts`; deterministic progression and timer calculations live in `src/lib/habit-growth.ts`. Reading is configuration, not a hard-coded domain branch: pages, 30 minutes, 5→30 target, seven-day review, 80% threshold and five-page increment.
 
-Migration `20260728121000_reading_habit_vertical_slice.sql` owns `habits`, `goal_plans`, `habit_sessions`, `daily_progress`, `growth_states`, RLS and `complete_habit_session_atomic(...)`. Migration `20260729155039_attach_habits_to_plants.sql` introduced the legacy one-to-one plant link. Migration `20260814145405_shared_capability_assignments.sql` expands that relationship into owned many-to-one assignments, backfills them, adds session route context and retains the old column only as a temporary compatibility anchor. See [ADR 003](../adr/003-shared-capability-assignments.md).
+Migration `20260728121000_reading_habit_vertical_slice.sql` owns `habits`, `goal_plans`, `habit_sessions`, `daily_progress`, `growth_states`, RLS and `complete_habit_session_atomic(...)`. Migration `20260814145405_shared_capability_assignments.sql` introduced canonical assignments; `20260814234237_isolate_capability_instances_per_plant.sql` made every assigned instance independent. Migration `20260819134213_capability_plugin_platform.sql` adds manifest version/config/archive metadata plus atomic attach/manage RPCs. See [ADR 005](../adr/005-capability-plugin-platform.md).
 
 ## Mutation Flow
 
-`assigned route plant -> shared reading capability -> habit-sessions server action -> owned row / atomic completion RPC -> canonical capability session/progress/growth -> shared log projection + idempotent source-plant activity -> local reconcile or route navigation`
+`assigned route plant -> isolated Reading instance -> habit-sessions server action -> atomic completion RPC -> instance session/progress/growth -> plant capability-log projection + idempotent plant activity -> local reconcile or route navigation`
 
-Timer state is persisted as accumulated seconds plus the last resume timestamp. Do not replace it with localStorage or a client-only countdown. Completion remains the guided-session transaction boundary. The completed `habit_session` is the canonical log event shared by every assigned plant; the source-plant care side effect uses the session id as its idempotency key.
+Timer state is persisted as accumulated seconds plus the last resume timestamp. Do not replace it with localStorage or a client-only countdown. Completion remains the guided-session transaction boundary. The completed `habit_session` is the canonical log event for its per-plant capability instance; the source-plant care side effect uses the session id as its idempotency key.
 
-Reading assignment is explicit and additive: `attachReadingCapabilityToPlant(plantId)` validates ownership and the plant's single-capability slot, creates the first Reading capability when needed, then inserts an assignment to the existing active Reading capability without removing assignments from other plants. Repeating the operation is idempotent. `ensureReadingJourney(userId, plantId)` may initialize plan/growth records only after the requested owned plant resolves to an active Reading assignment; it must never create a plant.
+Capability assignment is explicit and additive: `attachCapabilityToPlant(...)` validates the manifest and explicit intent, then calls `create_plant_capability_instance(...)`. The invoker RPC authenticates ownership, serializes on a plant-scoped advisory lock, creates the instance and assignment atomically, and returns the existing same-type instance on a repeated attach. Reading's `ensureReadingJourney(userId, plantId)` may initialize plan/growth records only after the requested owned plant resolves to its active Reading instance; it must never create a plant.
 
-Starting a session stores the route plant in `habit_sessions.source_plant_id`. Active-session resume prefers that plant only while it remains assigned to the capability, otherwise it chooses an assigned plant deterministically. This field is navigation context, not a filter for sessions, daily progress or Growth Plan. Because the open-session constraint is keyed by `habit_id`, plants sharing Reading also share the same running or paused session.
+Pause/resume/remove use `manage_plant_capability_instance(...)`. Pause keeps the assignment; remove frees the slot, clears the legacy anchor and sets `archived_at` without deleting sessions, progress, plan or growth history. Open sessions must be completed before lifecycle management.
 
-`getCapabilityLogProjection(userId, plantId)` resolves the plant's assignment and maps completed sessions for its `habit_id` into the journal/activity read shape. Every plant assigned to that capability therefore shows the same completed-session log and reflections. Only unassigned plants fall back to their legacy plant-local activity stream.
+Starting a session stores the route plant in `habit_sessions.source_plant_id`. Because each `habit_id` belongs to one assignment, target, daily progress and the open-session constraint are isolated per plant. Multiple plants may therefore run separate Reading sessions; the global banner selects the most recently started running session.
+
+`getCapabilityLogProjection(userId, plantId)` resolves the plant's assignment and maps completed sessions for its unique `habit_id` into the journal/activity read shape. Each assigned plant therefore shows its own capability-instance log and reflections. Only unassigned plants fall back to their legacy plant-local activity stream.
 
 ## Progression Contract
 

@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import type { PlantWithType } from '@/types/database'
 import { getGuidedHabitHref } from '../sanctuary-plant-detail-sheet'
-import { hasActiveReadingCapability } from '../isometric-plant'
+import { hasActiveCapability } from '../isometric-plant'
+
+const sanctuaryChrome = readFileSync(
+  resolve('src/components/garden/sanctuary-garden-chrome.tsx'),
+  'utf8'
+)
+const isometricGarden = readFileSync(
+  resolve('src/components/garden/isometric-garden.tsx'),
+  'utf8'
+)
 
 function plantWithCapability(
   type: string,
@@ -19,17 +30,23 @@ function plantWithCapability(
 }
 
 describe('guided plant capability routing', () => {
-  it('routes an active reading capability from its real plant', () => {
+  it('routes any active capability from its real plant', () => {
     const plant = plantWithCapability('reading')
 
     expect(getGuidedHabitHref(plant)).toBe('/plant/plant-1')
-    expect(hasActiveReadingCapability(plant)).toBe(true)
+    expect(hasActiveCapability(plant)).toBe(true)
+    expect(getGuidedHabitHref(plantWithCapability('movement'))).toBe('/plant/plant-1')
+    expect(hasActiveCapability(plantWithCapability('movement'))).toBe(true)
   })
 
-  it('keeps inactive and unsupported capabilities in the normal plant flow', () => {
+  it('keeps inactive capabilities in the normal plant flow', () => {
     expect(getGuidedHabitHref(plantWithCapability('reading', false))).toBeNull()
-    expect(getGuidedHabitHref(plantWithCapability('exercise'))).toBeNull()
-    expect(hasActiveReadingCapability(plantWithCapability('reading', false))).toBe(false)
-    expect(hasActiveReadingCapability(plantWithCapability('exercise'))).toBe(false)
+    expect(hasActiveCapability(plantWithCapability('reading', false))).toBe(false)
+  })
+
+  it('keeps journey management reachable without competing with the primary focus action', () => {
+    expect(sanctuaryChrome).toContain('aria-label={`Mở chi tiết ${focusedPlant.name}`}')
+    expect(sanctuaryChrome).toContain('Chi tiết')
+    expect(isometricGarden).toContain('interactions.handleShowInfo(sanctuaryDisplayPlant)')
   })
 })

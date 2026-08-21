@@ -848,7 +848,7 @@ export function IsometricGarden({
           onTinyAction={() => handleSanctuaryAction('log')}
           onRestAction={() => handleSanctuaryAction('water')}
           onOpenDetails={() => {
-            if (sanctuaryDisplayPlant) handleSanctuaryPlantFocus(sanctuaryDisplayPlant)
+            if (sanctuaryDisplayPlant) interactions.handleShowInfo(sanctuaryDisplayPlant)
           }}
           onCloseFocus={handleSanctuaryFocusClose}
           onFocusPanelTopChange={setSanctuaryFocusPanelTop}

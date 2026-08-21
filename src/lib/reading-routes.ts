@@ -1,16 +1,20 @@
-export function getPlantHref(plantId: string): string {
-  return `/plant/${encodeURIComponent(plantId)}`
-}
+import {
+  getCapabilityCompletionHref,
+  getCapabilityPlanHref,
+  getCapabilitySessionHref,
+  getPlantHref,
+} from '@/capabilities/core/routes'
+
+export { getPlantHref }
 
 export function getReadingSessionHref(plantId: string, sessionId?: string): string {
-  const href = `${getPlantHref(plantId)}/reading/session`
-  return sessionId ? `${href}?id=${encodeURIComponent(sessionId)}` : href
+  return getCapabilitySessionHref(plantId, sessionId)
 }
 
 export function getReadingCompletionHref(plantId: string, sessionId: string): string {
-  return `${getPlantHref(plantId)}/reading/completion?id=${encodeURIComponent(sessionId)}`
+  return getCapabilityCompletionHref(plantId, sessionId)
 }
 
 export function getReadingGrowthPlanHref(plantId: string): string {
-  return `${getPlantHref(plantId)}/reading/growth-plan`
+  return getCapabilityPlanHref(plantId)
 }

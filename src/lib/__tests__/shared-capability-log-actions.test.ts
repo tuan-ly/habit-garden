@@ -44,7 +44,7 @@ const sharedCapabilityActivity = {
   created_at: '2026-08-14T08:00:00.000Z',
 }
 
-describe('shared capability log action projections', () => {
+describe('plant capability instance log projections', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.createClient.mockResolvedValue({ from: mocks.from })

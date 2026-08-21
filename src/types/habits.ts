@@ -35,17 +35,22 @@ export interface Habit {
   unit: HabitUnit
   custom_unit: string | null
   session_duration_minutes: number
+  config?: Record<string, unknown>
+  definition_version?: number
   is_active: boolean
+  archived_at?: string | null
   created_at: string
   updated_at: string
 }
 
-export interface HabitCapabilitySummary {
+export interface PlantCapabilitySummary {
   id: string
   plant_id: string
   type: string
   is_active: boolean
 }
+
+export type HabitCapabilitySummary = PlantCapabilitySummary
 
 export interface GoalPlan {
   id: string
@@ -85,9 +90,12 @@ export interface HabitSession {
   updated_at: string
 }
 
-export type ActiveReadingSession = HabitSession & {
+export type ActiveCapabilitySession = HabitSession & {
   plant_id: string
+  capability_type: string
 }
+
+export type ActiveReadingSession = ActiveCapabilitySession
 
 export interface DailyProgress {
   id: string

@@ -610,6 +610,6 @@ The retention core now includes one complete guided reading journey:
 
 Generic domain models support habits, numeric units, plans, sessions, daily progress and growth state. Reading is configured as `type=reading`, `unit=pages`, 30 minutes, a seven-day review period, an 80% performance threshold and five-page increments capped at 30. Missed thresholds hold the target without guilt or unpredictable regression.
 
-As of 2026-08-14, guided behavior uses **Capability Assignment**: each plant has at most one capability slot, while one Reading capability may be assigned to many plants. Sessions, daily progress, Growth Plan and completed-session logs remain keyed by `habit_id`, so every assigned plant shows the same capability history under its own plant-scoped route without switching or copying events.
+As of 2026-08-15, guided behavior uses **Per-Plant Capability Instance**: each plant has at most one capability slot, while many plants may select the Reading type without switching it away from another plant. Each assignment owns a distinct `habit_id`, so sessions, daily progress, Growth Plan, target and completed-session log remain independent under each plant-scoped route.
 
 See `docs/reading-habit-vertical-slice.md`, ADR `docs/adr/001-guided-habit-session-aggregate.md` and ADR `docs/adr/003-shared-capability-assignments.md`.

@@ -74,9 +74,10 @@ describe('getCapabilityLogProjection', () => {
     vi.clearAllMocks()
   })
 
-  it('projects the same capability sessions onto every assigned plant', async () => {
+  it('projects only the capability instance assigned to each plant', async () => {
     const completedAt = '2026-08-14T08:30:00.000Z'
-    const { assignmentQuery, sessionsQuery } = setupSupabase({
+    const firstSetup = setupSupabase({
+      assignment: { habit_id: 'habit-plant-1' },
       sessions: [
         {
           id: 'session-1',
@@ -93,6 +94,11 @@ describe('getCapabilityLogProjection', () => {
       since: '2026-08-01T00:00:00.000Z',
       limit: 10,
     })
+
+    const secondSetup = setupSupabase({
+      assignment: { habit_id: 'habit-plant-2' },
+      sessions: [],
+    })
     const secondPlant = await getCapabilityLogProjection('user-1', 'plant-2')
 
     expect(firstPlant).toEqual([
@@ -107,21 +113,17 @@ describe('getCapabilityLogProjection', () => {
         notes: 'Đọc xong một chương.',
       }),
     ])
-    expect(secondPlant).toEqual([
-      expect.objectContaining({
-        ...firstPlant?.[0],
-        plant_id: 'plant-2',
-      }),
-    ])
-    expect(assignmentQuery.eq).toHaveBeenCalledWith('plant_id', 'plant-1')
-    expect(assignmentQuery.eq).toHaveBeenCalledWith('plant_id', 'plant-2')
-    expect(sessionsQuery.eq).toHaveBeenCalledWith('habit_id', 'habit-reading')
-    expect(sessionsQuery.eq).toHaveBeenCalledWith('status', 'completed')
-    expect(sessionsQuery.gte).toHaveBeenCalledWith(
+    expect(secondPlant).toEqual([])
+    expect(firstSetup.assignmentQuery.eq).toHaveBeenCalledWith('plant_id', 'plant-1')
+    expect(secondSetup.assignmentQuery.eq).toHaveBeenCalledWith('plant_id', 'plant-2')
+    expect(firstSetup.sessionsQuery.eq).toHaveBeenCalledWith('habit_id', 'habit-plant-1')
+    expect(secondSetup.sessionsQuery.eq).toHaveBeenCalledWith('habit_id', 'habit-plant-2')
+    expect(firstSetup.sessionsQuery.eq).toHaveBeenCalledWith('status', 'completed')
+    expect(firstSetup.sessionsQuery.gte).toHaveBeenCalledWith(
       'completed_at',
       '2026-08-01T00:00:00.000Z'
     )
-    expect(sessionsQuery.limit).toHaveBeenCalledWith(10)
+    expect(firstSetup.sessionsQuery.limit).toHaveBeenCalledWith(10)
   })
 
   it('returns null for an unassigned plant so callers can use legacy plant logs', async () => {

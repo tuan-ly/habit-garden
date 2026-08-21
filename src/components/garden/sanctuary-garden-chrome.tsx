@@ -2,15 +2,13 @@
 
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
+import { CapabilityFocusAction } from '@/capabilities/core/client-ui-registry'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { ReadingCapabilityControl } from '@/components/garden/reading-capability-control'
 import { useUser } from '@/lib/context/dashboard-data-context'
-import { getPlantHref } from '@/lib/reading-routes'
 import { cn } from '@/lib/utils'
 import type { PlantWithType } from '@/types/database'
 import {
   Check,
-  BookOpen,
   ChevronRight,
   Clock3,
   Leaf,
@@ -198,9 +196,20 @@ export function SanctuaryGardenChrome({
                 <h2 id="sanctuary-focus-title" className="mt-1 truncate font-display text-2xl font-semibold text-[#315027]">
                   {focusedPlant.name}
                 </h2>
-                <p className="mt-1 text-sm leading-5 text-[#687763]">
-                  {getVisitCopy(focusedPlant, activePlantCompleted)}
-                </p>
+                <div className="mt-1 flex items-center gap-2">
+                  <p className="min-w-0 flex-1 truncate text-sm leading-5 text-[#687763]">
+                    {getVisitCopy(focusedPlant, activePlantCompleted)}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={onOpenDetails}
+                    className="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-full bg-[#e7edda] px-3 text-xs font-bold text-[#49633f] transition hover:bg-[#dce6ce] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#789a68]"
+                    aria-label={`Mở chi tiết ${focusedPlant.name}`}
+                  >
+                    Chi tiết
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
               <button
                 type="button"
@@ -228,26 +237,6 @@ export function SanctuaryGardenChrome({
               </div>
             </div>
 
-            {focusedPlant.guided_habit?.type === 'reading'
-              && focusedPlant.guided_habit.is_active ? (
-                <Link
-                  href={getPlantHref(focusedPlant.id)}
-                  className="mt-3 flex min-h-14 items-center justify-between rounded-2xl bg-[#31523b] px-4 text-sm font-bold text-[#fff9e8] transition hover:bg-[#274633]"
-                >
-                  <span className="flex items-center gap-2">
-                    <BookOpen className="h-4 w-4" />
-                    Mở hành trình đọc
-                  </span>
-                  <ChevronRight className="h-4 w-4" />
-                </Link>
-              ) : (
-                <ReadingCapabilityControl
-                  plant={focusedPlant}
-                  compact
-                  onAttached={onCloseFocus}
-                />
-              )}
-
             <div className="mt-3 grid grid-cols-[1fr_1.18fr_1fr] items-end gap-2">
               <button
                 type="button"
@@ -258,15 +247,22 @@ export function SanctuaryGardenChrome({
                 <Clock3 className="h-4 w-4" />
                 2 phút
               </button>
-              <button
-                type="button"
-                onClick={onPrimaryAction}
-                disabled={activePlantCompleted || isSyncing}
-                className="flex min-h-16 items-center justify-center gap-2 rounded-full border-2 border-white bg-[#496d3d] px-3 font-bold text-[#fffaf0] shadow-[0_10px_24px_rgba(46,82,45,0.24)] transition hover:-translate-y-1 disabled:cursor-not-allowed disabled:opacity-55 motion-reduce:transform-none"
-              >
-                {activePlantCompleted ? <Check className="h-5 w-5" /> : <Leaf className="h-5 w-5 fill-current/25" />}
-                {activePlantCompleted ? 'Đã chăm' : 'Chăm cây'}
-              </button>
+              {focusedPlant.guided_habit?.is_active ? (
+                <CapabilityFocusAction
+                  capabilityType={focusedPlant.guided_habit.type}
+                  plantId={focusedPlant.id}
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={onPrimaryAction}
+                  disabled={activePlantCompleted || isSyncing}
+                  className="flex min-h-16 items-center justify-center gap-2 rounded-full border-2 border-white bg-[#496d3d] px-3 font-bold text-[#fffaf0] shadow-[0_10px_24px_rgba(46,82,45,0.24)] transition hover:-translate-y-1 disabled:cursor-not-allowed disabled:opacity-55 motion-reduce:transform-none"
+                >
+                  {activePlantCompleted ? <Check className="h-5 w-5" /> : <Leaf className="h-5 w-5 fill-current/25" />}
+                  {activePlantCompleted ? 'Đã chăm' : 'Chăm cây'}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={onRestAction}

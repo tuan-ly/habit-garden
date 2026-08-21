@@ -14,8 +14,20 @@ const sharedCapabilityMigration = readFileSync(
   resolve('supabase/migrations/20260814145405_shared_capability_assignments.sql'),
   'utf8'
 )
+const isolatedCapabilityMigration = readFileSync(
+  resolve('supabase/migrations/20260814234237_isolate_capability_instances_per_plant.sql'),
+  'utf8'
+)
+const capabilityPlatformMigration = readFileSync(
+  resolve('supabase/migrations/20260819134213_capability_plugin_platform.sql'),
+  'utf8'
+)
 const actions = readFileSync(
   resolve('src/lib/actions/habit-sessions.ts'),
+  'utf8'
+)
+const capabilityActions = readFileSync(
+  resolve('src/lib/actions/capabilities.ts'),
   'utf8'
 )
 const plantActions = readFileSync(
@@ -54,6 +66,7 @@ describe('habit session persistence contract', () => {
     expect(migration).toContain('habit_sessions_one_open_per_habit')
     expect(migration).toContain("WHERE status IN ('running', 'paused', 'awaiting_completion')")
     expect(actions).not.toMatch(/\.select\(\s*['"`]\*['"`]\s*\)/)
+    expect(capabilityActions).not.toMatch(/\.select\(\s*['"`]\*['"`]\s*\)/)
   })
 
   it('explicitly exposes RLS-protected tables to authenticated users', () => {
@@ -70,7 +83,7 @@ describe('habit session persistence contract', () => {
     }
   })
 
-  it('normalizes one capability across many owned plants without moving habit history', () => {
+  it('introduces owned plant capability assignments without moving legacy history', () => {
     expect(sharedCapabilityMigration).toContain(
       'CREATE TABLE public.plant_capability_assignments'
     )
@@ -112,6 +125,25 @@ describe('habit session persistence contract', () => {
       'WITH CHECK ((SELECT auth.uid()) = user_id)'
     )
     expect(restoredHabitPolicies).not.toContain('FROM public.plants')
+  })
+
+  it('isolates one capability instance, target, and log stream per plant', () => {
+    expect(isolatedCapabilityMigration).toContain(
+      'DROP CONSTRAINT habits_user_type_unique'
+    )
+    expect(isolatedCapabilityMigration).toContain(
+      'plant_capability_assignments_habit_unique UNIQUE (habit_id)'
+    )
+    expect(isolatedCapabilityMigration).toContain('capability_instance_splits')
+    expect(isolatedCapabilityMigration).toContain(
+      'sessions.source_plant_id = splits.plant_id'
+    )
+    expect(isolatedCapabilityMigration).toContain(
+      'INSERT INTO public.daily_progress'
+    )
+    expect(isolatedCapabilityMigration).toContain(
+      'Failed to isolate every capability instance by plant'
+    )
   })
 
   it('mirrors legacy anchor changes additively during the rollout', () => {
@@ -176,7 +208,7 @@ describe('habit session persistence contract', () => {
     const loadEnd = actions.indexOf('async function resolveAssignedPlantId', loadStart)
     const loadAction = actions.slice(loadStart, loadEnd)
     const ensureStart = actions.indexOf('async function ensureReadingJourney')
-    const ensureEnd = actions.indexOf('export async function getActiveReadingSession', ensureStart)
+    const ensureEnd = actions.indexOf('async function loadReadingJourneyByHabit', ensureStart)
     const ensureAction = actions.slice(ensureStart, ensureEnd)
     const snapshotStart = actions.indexOf('export async function getReadingJourneySnapshot')
     const snapshotEnd = actions.indexOf('export async function startReadingSession', snapshotStart)
@@ -191,24 +223,112 @@ describe('habit session persistence contract', () => {
     expect(loadAction).toContain(".eq('type', READING_HABIT_TEMPLATE.type)")
     expect(loadAction).toContain(".eq('is_active', true)")
     expect(ensureAction).toContain('loadAssignedReadingHabit(supabase, userId, plantId)')
+    expect(ensureAction.match(/onConflict: 'habit_id,user_id'/g)).toHaveLength(2)
     expect(snapshotAction).toContain('ensureReadingJourney(user.id, plantId)')
   })
 
-  it('adds Reading assignments without moving the legacy habit anchor', () => {
+  it('keeps the Reading attachment as a compatibility wrapper over the generic lifecycle', () => {
     expect(actions).toContain('attachReadingCapabilityToPlant')
-    expect(actions).toContain(".from('plant_capability_assignments')")
-    expect(actions).toContain('habit_id: habit.id')
-    expect(actions).toContain("outcome: 'attached'")
-    expect(actions).toContain("outcome: 'already_attached'")
-    expect(actions).toContain('Deprecated rollout anchor for older deployed builds')
+    expect(actions).toContain('attachCapabilityToPlant({')
+    expect(actions).toContain("capabilityKey: 'reading'")
+    expect(actions).toContain('confirmedIntent: true')
     expect(actions).not.toContain(".update({ plant_id: plantId })")
     expect(actions).not.toContain("'moved'")
     expect(actions).not.toContain('createPlant({')
     expect(actions).not.toContain('deletePlant(')
-    expect(actions).toContain('Hãy chọn một cây trong khu vườn')
   })
 
-  it('projects one shared capability summary onto every assigned garden plant', () => {
+  it('creates a capability instance and assignment through one invoker-safe RPC', () => {
+    const functionStart = capabilityPlatformMigration.indexOf(
+      'FUNCTION public.create_plant_capability_instance'
+    )
+    const functionSql = capabilityPlatformMigration.slice(functionStart)
+    const lockPosition = functionSql.indexOf('pg_advisory_xact_lock')
+    const habitInsertPosition = functionSql.indexOf('INSERT INTO public.habits')
+    const assignmentInsertPosition = functionSql.indexOf(
+      'INSERT INTO public.plant_capability_assignments'
+    )
+
+    expect(capabilityPlatformMigration).toContain('ADD COLUMN config JSONB')
+    expect(capabilityPlatformMigration).toContain('ADD COLUMN definition_version INTEGER')
+    expect(capabilityPlatformMigration).toContain('ADD COLUMN archived_at TIMESTAMPTZ')
+    expect(capabilityPlatformMigration).toContain('GRANT SELECT (id, user_id, status)')
+    expect(capabilityPlatformMigration).toContain('ON TABLE public.plants')
+    expect(functionStart).toBeGreaterThan(-1)
+    expect(functionSql).toContain('SECURITY INVOKER')
+    expect(functionSql).toContain("SET search_path = ''")
+    expect(functionSql).toContain('v_user_id UUID := (SELECT auth.uid())')
+    expect(functionSql).toContain('plants.user_id = v_user_id')
+    expect(functionSql).toContain('pg_catalog.hashtextextended(p_plant_id::text, 0)')
+    expect(lockPosition).toBeGreaterThan(-1)
+    expect(habitInsertPosition).toBeGreaterThan(lockPosition)
+    expect(assignmentInsertPosition).toBeGreaterThan(habitInsertPosition)
+    expect(functionSql).toContain("'outcome', 'already_attached'")
+    expect(functionSql).toContain("'outcome', 'attached'")
+    expect(functionSql).toContain('REVOKE ALL ON FUNCTION')
+    expect(functionSql).toContain('FROM PUBLIC')
+    expect(functionSql).toContain('FROM anon')
+    expect(functionSql).toContain('TO authenticated')
+
+    expect(capabilityActions).toContain(".rpc('create_plant_capability_instance'")
+    expect(capabilityActions).toContain('p_type: manifest.key')
+    expect(capabilityActions).toContain('p_definition_version: manifest.version')
+    expect(capabilityActions).toContain('p_config: manifest.defaults.config')
+    expect(capabilityActions).not.toContain("capabilityKey === 'reading'")
+  })
+
+  it('resolves the newest active session across registered capability types', () => {
+    const activeStart = capabilityActions.indexOf(
+      'export async function getActiveCapabilitySession'
+    )
+    const attachStart = capabilityActions.indexOf(
+      'export async function attachCapabilityToPlant',
+      activeStart
+    )
+    const activeAction = capabilityActions.slice(activeStart, attachStart)
+
+    expect(activeStart).toBeGreaterThan(-1)
+    expect(activeAction).toContain('listCapabilityManifests()')
+    expect(activeAction).toContain(".in('type', supportedTypes)")
+    expect(activeAction).toContain(".eq('status', 'running')")
+    expect(activeAction).toContain(".from('plant_capability_assignments')")
+    expect(activeAction).toContain('capability_type: capabilityType')
+    expect(activeAction.toLowerCase()).not.toContain('reading')
+  })
+
+  it('pauses or removes a capability without deleting its session history', () => {
+    const functionStart = capabilityPlatformMigration.indexOf(
+      'FUNCTION public.manage_plant_capability_instance'
+    )
+    const functionSql = capabilityPlatformMigration.slice(functionStart)
+
+    expect(functionStart).toBeGreaterThan(-1)
+    expect(functionSql).toContain('SECURITY INVOKER')
+    expect(functionSql).toContain("SET search_path = ''")
+    expect(functionSql).toContain("p_action NOT IN ('pause', 'resume', 'remove')")
+    expect(functionSql).toContain('FOR UPDATE OF assignments, habits')
+    expect(functionSql).toContain(
+      "sessions.status IN ('running', 'paused', 'awaiting_completion')"
+    )
+    expect(functionSql).toContain('SET is_active = FALSE')
+    expect(functionSql).toContain('SET is_active = TRUE')
+    expect(functionSql).toContain('archived_at = COALESCE(habits.archived_at, now())')
+    expect(functionSql).toContain('DELETE FROM public.plant_capability_assignments')
+    expect(functionSql).not.toContain('DELETE FROM public.habit_sessions')
+    expect(functionSql).not.toContain('DELETE FROM public.daily_progress')
+    expect(functionSql).not.toContain('DELETE FROM public.growth_states')
+    expect(functionSql).toContain(
+      'GRANT EXECUTE ON FUNCTION public.manage_plant_capability_instance(UUID, TEXT) TO authenticated'
+    )
+
+    expect(capabilityActions).toContain(".rpc('manage_plant_capability_instance'")
+    expect(capabilityActions).toContain("action: 'pause' | 'resume' | 'remove'")
+    expect(capabilityActions).toContain("return manageCapabilityInstance(plantId, 'pause')")
+    expect(capabilityActions).toContain("return manageCapabilityInstance(plantId, 'resume')")
+    expect(capabilityActions).toContain("return manageCapabilityInstance(plantId, 'remove')")
+  })
+
+  it('projects each assigned capability instance onto its own garden plant', () => {
     expect(plantActions).toContain(".from('plant_capability_assignments')")
     expect(plantActions).toContain(".select('plant_id, habit_id')")
     expect(plantActions).toContain(".in('plant_id', plantIds)")

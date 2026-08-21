@@ -16,7 +16,7 @@ interface CompletedCapabilitySessionRow {
 }
 
 /**
- * Projects one capability-owned event stream onto an assigned plant.
+ * Projects the assigned plant's isolated capability-instance event stream.
  * `null` means the plant has no capability assignment; `[]` means it is
  * assigned but the capability has no completed sessions in the requested span.
  */

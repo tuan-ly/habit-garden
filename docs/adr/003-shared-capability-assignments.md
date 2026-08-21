@@ -1,6 +1,6 @@
 # ADR 003: Shared Capability Assignments And Event Stream
 
-- Status: Accepted
+- Status: Superseded by [ADR 004](./004-per-plant-capability-instances.md)
 - Date: 2026-08-14
 - Supersedes: [ADR 002](./002-guided-habit-plant-capability.md)
 

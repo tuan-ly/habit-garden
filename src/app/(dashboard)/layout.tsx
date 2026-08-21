@@ -6,7 +6,7 @@ import { getAuthUser } from '@/lib/auth-cached'
 import { getDashboardBootstrap } from '@/lib/actions/dashboard-bootstrap'
 import { TimezoneSync } from '@/components/timezone-sync'
 import { ClientModals } from './client-modals'
-import { getActiveReadingSession } from '@/lib/actions/habit-sessions'
+import { getActiveCapabilitySession } from '@/lib/actions/capabilities'
 import { ActiveSessionBanner } from '@/components/game-ui/ActiveSessionBanner'
 
 export default async function DashboardLayout({
@@ -24,10 +24,10 @@ export default async function DashboardLayout({
   // One read-model request replaces the three shell queries.
   const [{ mood: initialMood, profile, plantTypes }, activeSessionResult] = await Promise.all([
     getDashboardBootstrap(),
-    getActiveReadingSession(),
+    getActiveCapabilitySession(),
   ])
   const userTimezone = profile?.timezone ?? null
-  const activeReadingSession = activeSessionResult.success
+  const activeCapabilitySession = activeSessionResult.success
     ? activeSessionResult.data
     : null
 
@@ -53,7 +53,7 @@ export default async function DashboardLayout({
           {children}
         </main>
 
-        <ActiveSessionBanner activeSession={activeReadingSession} />
+        <ActiveSessionBanner activeSession={activeCapabilitySession} />
 
         {/* Game-style bottom navigation - uses DashboardDataContext for user */}
         <GameNav />

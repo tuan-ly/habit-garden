@@ -1,12 +1,13 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { RefreshCw } from 'lucide-react'
+import { getPlantHref } from '@/capabilities/core/routes'
+import { getCapabilityServerDriver } from '@/capabilities/core/server-registry'
+import { renderCapabilityJourney } from '@/capabilities/core/ui-registry'
+import { JourneyShell } from '@/components/capabilities/journey-shell'
 import { PlantCapabilityHome } from '@/components/plants/plant-capability-home'
-import { ReadingHome } from '@/components/reading/reading-home'
-import { ReadingShell } from '@/components/reading/reading-shell'
-import { getReadingJourneySnapshot } from '@/lib/actions/habit-sessions'
+import { getPlantCapabilitySummary } from '@/lib/actions/capabilities'
 import { getPlant } from '@/lib/actions/plants'
-import { getPlantHref } from '@/lib/reading-routes'
 
 interface PlantPageProps {
   params: Promise<{ plantId: string }>
@@ -17,12 +18,54 @@ export default async function PlantPage({ params }: PlantPageProps) {
   const plant = await getPlant(plantId)
   if (!plant) notFound()
 
-  const result = await getReadingJourneySnapshot(plantId)
-  if (result.success) return <ReadingHome snapshot={result.data} />
-  if (result.code === 'NOT_FOUND') return <PlantCapabilityHome plant={plant} />
+  const capability = await getPlantCapabilitySummary(plantId)
+  if (!capability.success) {
+    return (
+      <JourneyShell
+        eyebrow={plant.name}
+        title="Chưa thể mở cây lúc này"
+        description={capability.error}
+        backHref="/garden"
+      >
+        <div />
+      </JourneyShell>
+    )
+  }
+  if (!capability.data) return <PlantCapabilityHome plant={plant} />
+  if (!capability.data.is_active) {
+    return (
+      <PlantCapabilityHome
+        plant={{ ...plant, guided_habit: capability.data }}
+      />
+    )
+  }
+
+  const driver = getCapabilityServerDriver(capability.data.type)
+  if (!driver) {
+    return (
+      <JourneyShell
+        eyebrow={plant.name}
+        title="Hành trình này chưa được hỗ trợ"
+        description="Cây vẫn an toàn trong vườn. Hãy thử lại sau khi ứng dụng được cập nhật."
+        backHref="/garden"
+      >
+        <div />
+      </JourneyShell>
+    )
+  }
+
+  const result = await driver.loadJourney(plantId)
+  if (result.success) return renderCapabilityJourney(driver.key, result.data)
+  if (result.code === 'NOT_FOUND') {
+    return (
+      <PlantCapabilityHome
+        plant={{ ...plant, guided_habit: capability.data }}
+      />
+    )
+  }
 
   return (
-    <ReadingShell
+    <JourneyShell
       eyebrow={plant.name}
       title="Chưa thể mở cây lúc này"
       description={result.error}
@@ -37,6 +80,6 @@ export default async function PlantPage({ params }: PlantPageProps) {
           Thử lại
         </Link>
       </div>
-    </ReadingShell>
+    </JourneyShell>
   )
 }

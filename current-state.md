@@ -1,14 +1,14 @@
 # Current State
 
-- Date: 2026-08-14
+- Date: 2026-08-21
 - Milestone: Retention Core — Guided Habit Sessions
-- Active task: Deploy and verify shared many-to-one Capability Assignments
-- Status: implementation complete and verified locally; linked deployment pending
-- Vertical slice: each owned plant selects at most one capability through `plant_capability_assignments`; many plants may resolve the same Reading capability and display its shared session log/progression under their own `/plant/{plantId}` route identity
-- Non-goals: multiple capabilities on one plant; Exercise UI; per-plant copies or partitions of capability history; removing the deprecated rollout anchor in the expand migration
-- Completed: expand migration and ownership RLS; lossless legacy assignment/session-origin backfill; additive idempotent attach behavior; assignment-based Garden and Reading reads; shared capability-log projection for journal/history/milestones; `source_plant_id` route/resume context; ADR 003, OpenWiki and business-rule reconciliation
-- Verification: clean PostgreSQL 17 replay and schema-catalog/advisor checks pass; migration ledger has 61 unique versions; the linked migration ledger confirms `20260814145405` is pending remotely; focused lint and typecheck pass; 34 Vitest files / 363 tests pass; production build passes with only plant-scoped Reading routes; the Reading E2E is discovered in five Playwright projects
-- Constraints: `plant_id` is unique in assignments while `habit_id` is not; owner identity must match across plant, assignment and capability; capability sessions/progress stay keyed by `habit_id`; `source_plant_id` must never partition the shared log
-- Risks: deploy migration `20260814145405` before the new app build; the expand/contract window temporarily retains nullable `habits.plant_id` and a compatibility trigger; authenticated E2E has not run against the linked schema
+- Active task: Capability Plugin Platform release verification
+- Status: implementation, local database lifecycle, desktop/mobile UX audit and linked schema deployment complete; authenticated release smoke pending
+- Vertical slice: each owned plant has one optional **Hành trình của cây** slot; Reading registers as the first plugin through manifest/server/UI/screen seams, generic `/plant/{plantId}/journey/*` routes, atomic attach/manage RPCs and per-instance archived history
+- Non-goals: multiple capabilities on one plant; third-party/runtime plugin loading; Exercise UI; automatic AI habit classification; renaming legacy `habits` tables; deleting archived logs
+- Completed: plugin registries and contract tests; generic journey dispatcher/routes; Capability Library and explicit intent confirmation; active/paused/remove management; contextual focus CTA and screen-space charm; focus restoration; paused-route guards; route-synchronized active-session banner; linked migrations `20260814234237` and `20260819134213`; ADR/OpenWiki/audit documentation
+- Verification: 37 Vitest files / 380 tests, focused ESLint, TypeScript, production build and the 63-version local/remote migration ledger pass; remote catalog confirms capability metadata columns, unique `habit_id`, `SECURITY INVOKER` RPCs and no anonymous execute privilege; linked ERROR-level database advisors report no issues; local attach/pause/resume/remove work through the production UI and archived history is preserved; focused session-banner and Reading tests pass (3 files / 11 tests) after the navigation-sync fix
+- Constraints: both `plant_id` and `habit_id` are unique in assignments; RPCs remain `SECURITY INVOKER`; RLS and owner-scoped foreign keys are the privilege boundary; generic Garden/routes must not branch on Reading; plugin screens are optional; focus mode has one primary action
+- Risks: authenticated linked-environment smoke has not run; exact 200% landscape zoom, contrast measurement and screen-reader announcements remain manual release checks
 - Blockers: none
-- Next smallest step: apply migration `20260814145405_shared_capability_assignments.sql` to the linked Supabase project and verify assignment, owner-RLS and backfill invariants before deploying the app build
+- Next smallest step: run one authenticated linked-environment Garden → attach → session → completion → pause/remove smoke

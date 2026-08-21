@@ -212,7 +212,7 @@ describe('reading habit vertical slice UI', () => {
     expect(screen.getByRole('button', { name: 'Bắt đầu đọc' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Growth Plan/i })).toHaveAttribute(
       'href',
-      '/plant/plant-1/reading/growth-plan'
+      '/plant/plant-1/journey/plan'
     )
     expect(screen.getByRole('progressbar', { name: 'Tiến độ đọc hôm nay' })).toHaveAttribute(
       'aria-valuenow',

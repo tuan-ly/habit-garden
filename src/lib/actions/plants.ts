@@ -136,7 +136,7 @@ export async function getPlants(): Promise<PlantWithType[]> {
       .from('habits')
       .select('id, type, is_active')
       .eq('user_id', user.id)
-      .eq('is_active', true)
+      .is('archived_at', null)
       .in('id', habitIds)
     : { data: [], error: null }
 

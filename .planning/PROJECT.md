@@ -33,7 +33,7 @@ The app must be fun enough that users open it on their worst day. Psychology ser
 
 ### Active
 
-- [ ] Shared Capability Assignments — each plant selects at most one capability; one capability can serve many plants with one shared log and progression stream
+- [ ] Capability Plugin Platform release — local implementation and UX audit complete; linked migrations and authenticated release smoke remain pending
 - [ ] Dual Growth Model — short-cycle 3×3 garden (seasonal harvest) + long-cycle ancient tree (years of growth)
 - [ ] Extended growth stages (Established → Ancient → Legendary, spanning years)
 - [ ] Plant personality system (9 types with unique growth patterns, resilience, visual stories)
@@ -55,7 +55,7 @@ The app must be fun enough that users open it on their worst day. Psychology ser
 ## Context
 
 - **User profile:** Solopreneur building solo. Can code but not professional developer. Needs AI as Product Thinking Partner.
-- **Current state:** R3 now has a locally verified many-to-one Capability Assignment implementation replacing per-plant switching. The expand migration, focused lint, typecheck, all 362 tests and production build pass; linked schema deployment and release verification are still pending. Existing capability sessions, progress and Growth Plan remain keyed by `habit_id`, and `source_plant_id` carries route context only. The older Dual Growth backlog remains pending.
+- **Current state:** R5 has a locally verified Capability Plugin Platform. Reading is the first plugin; Garden and generic journey routes no longer branch on Reading, Capability Library owns optional setup, Plant Detail owns pause/resume/remove, and focus mode keeps one contextual primary action. Atomic invoker RPCs preserve per-plant instance isolation and archived history. Linked migrations `20260814234237` and `20260819134213` plus authenticated release smoke remain pending.
 - **Design philosophy:** "Unfinished is OK, ugly is not." Every visible element must feel intentional and polished.
 - **Brand:** Habien (habien.com). Vietnamese market primary (VND pricing). English UI.
 - **Previous workflow:** SDD (Spec-Driven Development) → migrating to GSD for better phase management.
@@ -81,7 +81,8 @@ The app must be fun enough that users open it on their worst day. Psychology ser
 | Emoji fallback for missing images | Ship quality > block on assets | ✓ Good |
 | Generic guided-session aggregate | A reusable Habit/Plan/Session/Progress/Growth model enables persistent sessions and deterministic progression without coupling the domain to Reading UI | ✓ Good |
 | Guided habits as plant capabilities | Preserve one plant identity/placement model while Reading, Exercise and later guided workflows add optional behavior | Superseded in cardinality by ADR 003 |
-| Shared capability assignments and event stream | Each plant gets one capability slot; many plants may reuse one capability and display its same log/progression without switching or duplicating events | Locally verified; release pending |
+| Per-plant capability instances | Each plant gets one capability slot; many plants may select the same type without switching, while every plant keeps an independent target and log | Implementation verification in progress |
+| Capability Plugin Platform | Separate manifest, server, UI and optional screen registries; expose setup as “Hành trình của cây” instead of mixing it into daily care | ✓ Locally implemented and audited; release pending |
 
 ## Evolution
 
@@ -101,4 +102,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-14 during Shared Capability Assignments implementation*
+*Last updated: 2026-08-19 after Capability Plugin Platform implementation and UX audit*

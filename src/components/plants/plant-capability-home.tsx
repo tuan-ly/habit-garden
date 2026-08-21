@@ -1,11 +1,13 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowLeft, BookOpen, Leaf } from 'lucide-react'
+import { ArrowLeft, Leaf, Sparkles } from 'lucide-react'
+import { CapabilitySlot } from '@/components/capabilities/capability-slot'
 import { PlantImage } from '@/components/plants/plant-image'
 import type { PlantWithType } from '@/types/database'
 
 export function PlantCapabilityHome({ plant }: { plant: PlantWithType }) {
   const typeName = plant.plant_type.name_vi || plant.plant_type.name
+  const hasPausedJourney = Boolean(plant.guided_habit && !plant.guided_habit.is_active)
 
   return (
     <div className="relative h-full overflow-y-auto bg-[#e9efe3] pb-32 text-[#283f2a]">
@@ -52,19 +54,18 @@ export function PlantCapabilityHome({ plant }: { plant: PlantWithType }) {
             </h1>
             <div className="mt-5 rounded-2xl border border-[#d7e1ce] bg-[#eef3e7] p-4">
               <p className="flex items-center gap-2 font-extrabold text-[#45613f]">
-                <BookOpen className="h-5 w-5" />
-                Chưa có tính năng Reading
+                <Sparkles className="h-5 w-5" />
+                {hasPausedJourney ? 'Hành trình đang nghỉ' : 'Chưa có hành trình riêng'}
               </p>
               <p className="mt-2 text-sm leading-6 text-[#66765f]">
-                Cây này vẫn là một cây bình thường trong vườn. Hãy gắn Reading từ trang chi tiết cây nếu bạn muốn đọc cùng cây này.
+                {hasPausedJourney
+                  ? 'Nhật ký vẫn còn nguyên. Bạn có thể tiếp tục khi thấy đúng nhịp, hoặc gỡ để chọn một Hành trình khác.'
+                  : 'Cây vẫn trọn vẹn và có thể được chăm như bình thường. Bạn chỉ cần chọn hành trình nếu muốn cây hướng dẫn thói quen này sâu hơn.'}
               </p>
             </div>
-            <Link
-              href="/garden"
-              className="mt-5 inline-flex min-h-12 items-center justify-center rounded-2xl bg-[#5f854f] px-5 text-sm font-extrabold text-white"
-            >
-              Mở chi tiết trong vườn
-            </Link>
+            <div className="mt-5">
+              <CapabilitySlot plant={plant} />
+            </div>
           </div>
         </section>
       </main>

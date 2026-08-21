@@ -1,6 +1,5 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
 import { getAuthUser } from '@/lib/auth-cached'
 import {
   addUtcDays,
@@ -10,9 +9,8 @@ import {
 } from '@/lib/habit-growth'
 import { createClient } from '@/lib/supabase/server'
 import { logActivity } from '@/lib/actions/activity'
-import { getPlantHref } from '@/lib/reading-routes'
+import { attachCapabilityToPlant } from '@/lib/actions/capabilities'
 import type {
-  ActiveReadingSession,
   DailyProgress,
   GoalPlan,
   GrowthState,
@@ -32,7 +30,10 @@ const HABIT_COLUMNS = [
   'unit',
   'custom_unit',
   'session_duration_minutes',
+  'config',
+  'definition_version',
   'is_active',
+  'archived_at',
   'created_at',
   'updated_at',
 ].join(',')
@@ -258,210 +259,41 @@ export type ReadingCapabilityAttachment = {
 export async function attachReadingCapabilityToPlant(
   plantId: string
 ): Promise<ReadingActionResult<ReadingCapabilityAttachment>> {
-  const user = await requireUser()
-  if (!user) return fail('NOT_AUTHENTICATED', 'Bạn cần đăng nhập để gắn theo dõi đọc sách.')
-  if (!UUID_PATTERN.test(plantId)) return fail('INVALID_INPUT', 'Cây được chọn không hợp lệ.')
+  const result = await attachCapabilityToPlant({
+    plantId,
+    capabilityKey: 'reading',
+    confirmedIntent: true,
+  })
 
-  const supabase = await createClient()
-  const { data: plant, error: plantError } = await supabase
-    .from('plants')
-    .select('id, user_id, status')
-    .eq('id', plantId)
-    .eq('user_id', user.id)
-    .maybeSingle()
-
-  if (plantError) {
-    console.error('Unable to load plant for reading capability:', plantError)
-    return fail('PERSISTENCE_ERROR', 'Không thể kiểm tra cây được chọn lúc này.')
-  }
-  if (!plant) return fail('NOT_FOUND', 'Không tìm thấy cây trong khu vườn của bạn.')
-  if (plant.status === 'dead') {
-    return fail('INVALID_STATE', 'Hãy chọn một cây đang sống để theo dõi việc đọc sách.')
-  }
-
-  const { data: occupiedAssignment, error: occupiedError } = await supabase
-    .from('plant_capability_assignments')
-    .select('habit_id')
-    .eq('plant_id', plantId)
-    .eq('user_id', user.id)
-    .maybeSingle()
-
-  if (occupiedError) {
-    console.error('Unable to inspect plant capabilities:', occupiedError)
-    return fail('PERSISTENCE_ERROR', 'Không thể kiểm tra tính năng của cây lúc này.')
-  }
-  if (occupiedAssignment) {
-    const occupiedHabit = await supabase
-      .from('habits')
-      .select(HABIT_COLUMNS)
-      .eq('id', occupiedAssignment.habit_id)
-      .eq('user_id', user.id)
-      .maybeSingle()
-
-    if (occupiedHabit.error) {
-      console.error('Unable to load the plant capability:', occupiedHabit.error)
-      return fail('PERSISTENCE_ERROR', 'Không thể kiểm tra tính năng của cây lúc này.')
-    }
-    if (!occupiedHabit.data) {
-      return fail('PERSISTENCE_ERROR', 'Liên kết tính năng của cây chưa đầy đủ.')
-    }
-
-    const attachedHabit = asHabit(occupiedHabit.data)
-    if (attachedHabit.type !== READING_HABIT_TEMPLATE.type) {
-      return fail('INVALID_STATE', 'Cây này đã có một tính năng theo dõi khác.')
-    }
-
-    return {
-      success: true,
-      data: { habit: attachedHabit, outcome: 'already_attached' },
-    }
-  }
-
-  const { data: existingHabit, error: existingError } = await supabase
-    .from('habits')
-    .select(HABIT_COLUMNS)
-    .eq('user_id', user.id)
-    .eq('type', READING_HABIT_TEMPLATE.type)
-    .maybeSingle()
-
-  if (existingError) {
-    console.error('Unable to load existing reading capability:', existingError)
-    return fail('PERSISTENCE_ERROR', 'Không thể tải tính năng đọc sách lúc này.')
-  }
-  let habit = existingHabit ? asHabit(existingHabit) : null
-  let createdHabit = false
-
-  if (!habit) {
-    const created = await supabase
-      .from('habits')
-      .insert({
-        user_id: user.id,
-        // Deprecated rollout anchor for older deployed builds. The assignment
-        // table is canonical and this value is never moved by the new flow.
-        plant_id: plantId,
-        type: READING_HABIT_TEMPLATE.type,
-        name: READING_HABIT_TEMPLATE.name,
-        description: READING_HABIT_TEMPLATE.description,
-        unit: READING_HABIT_TEMPLATE.unit,
-        custom_unit: null,
-        session_duration_minutes: READING_HABIT_TEMPLATE.sessionDurationMinutes,
-      })
-      .select(HABIT_COLUMNS)
-      .single()
-
-    if (created.error?.code === '23505') {
-      const concurrentHabit = await supabase
-        .from('habits')
-        .select(HABIT_COLUMNS)
-        .eq('user_id', user.id)
-        .eq('type', READING_HABIT_TEMPLATE.type)
-        .maybeSingle()
-
-      if (concurrentHabit.error || !concurrentHabit.data) {
-        console.error('Unable to recover the concurrently created capability:', {
-          create: created.error,
-          load: concurrentHabit.error,
-        })
-        return fail('PERSISTENCE_ERROR', 'Không thể tạo tính năng đọc sách lúc này.')
-      }
-      habit = asHabit(concurrentHabit.data)
-    } else if (created.error || !created.data) {
-      console.error('Unable to create the reading capability:', created.error)
-      return fail('PERSISTENCE_ERROR', 'Không thể tạo tính năng đọc sách lúc này.')
-    } else {
-      habit = asHabit(created.data)
-      createdHabit = true
-    }
-  }
-
-  const assignment = await supabase
-    .from('plant_capability_assignments')
-    .insert({
-      plant_id: plantId,
-      habit_id: habit.id,
-      user_id: user.id,
-    })
-    .select('plant_id')
-    .single()
-
-  let outcome: ReadingCapabilityAttachment['outcome'] = 'attached'
-  if (assignment.error || !assignment.data) {
-    let recoveredAssignment = false
-    if (assignment.error?.code === '23505') {
-      const concurrent = await supabase
-        .from('plant_capability_assignments')
-        .select('habit_id')
-        .eq('plant_id', plantId)
-        .eq('user_id', user.id)
-        .maybeSingle()
-
-      if (concurrent.data?.habit_id === habit.id) {
-        outcome = createdHabit ? 'attached' : 'already_attached'
-        recoveredAssignment = true
-      } else if (concurrent.data) {
-        return fail('INVALID_STATE', 'Cây này đã có một tính năng theo dõi khác.')
-      }
-    }
-
-    if (!recoveredAssignment) {
-      console.error('Unable to assign the reading capability:', assignment.error)
-      return fail('PERSISTENCE_ERROR', 'Không thể gắn theo dõi đọc sách vào cây lúc này.')
-    }
-  }
-
-  revalidatePath('/garden')
-  revalidatePath(getPlantHref(plantId))
+  if (!result.success) return fail(result.code, result.error)
 
   return {
     success: true,
     data: {
-      habit,
-      outcome,
+      habit: result.data.habit,
+      outcome: result.data.outcome,
     },
   }
 }
 
 async function ensureReadingJourney(
   userId: string,
-  plantId?: string
+  plantId: string
 ): Promise<ReadingActionResult<{
   habit: Habit
   plan: GoalPlan
   growth: GrowthState
 }>> {
-  if (plantId && !UUID_PATTERN.test(plantId)) {
+  if (!UUID_PATTERN.test(plantId)) {
     return fail('INVALID_INPUT', 'Cây được chọn không hợp lệ.')
   }
 
   const supabase = await createClient()
   const today = todayIsoDate()
 
-  let habit: Habit
-  if (plantId) {
-    const assigned = await loadAssignedReadingHabit(supabase, userId, plantId)
-    if (!assigned.success) return assigned
-    habit = assigned.data
-  } else {
-    const habitResult = await supabase
-      .from('habits')
-      .select(HABIT_COLUMNS)
-      .eq('user_id', userId)
-      .eq('type', READING_HABIT_TEMPLATE.type)
-      .eq('is_active', true)
-      .maybeSingle()
-
-    if (habitResult.error) {
-      console.error('Unable to load reading habit:', habitResult.error)
-      return fail('PERSISTENCE_ERROR', 'Không thể tải thói quen đọc lúc này.')
-    }
-    if (!habitResult.data) {
-      return fail(
-        'NOT_FOUND',
-        'Hãy chọn một cây trong khu vườn và gắn tính năng theo dõi đọc sách trước.'
-      )
-    }
-    habit = asHabit(habitResult.data)
-  }
+  const assigned = await loadAssignedReadingHabit(supabase, userId, plantId)
+  if (!assigned.success) return assigned
+  const habit = assigned.data
   const targetEndOn = addUtcDays(today, READING_HABIT_TEMPLATE.timeframeWeeks * 7)
 
   const { error: planInsertError } = await supabase
@@ -478,7 +310,7 @@ async function ensureReadingJourney(
       started_on: today,
       target_end_on: targetEndOn,
     }, {
-      onConflict: 'habit_id',
+      onConflict: 'habit_id,user_id',
       ignoreDuplicates: true,
     })
 
@@ -501,7 +333,7 @@ async function ensureReadingJourney(
       review_period_started_on: today,
       next_review_on: addUtcDays(today, READING_HABIT_TEMPLATE.reviewPeriodDays),
     }, {
-      onConflict: 'habit_id',
+      onConflict: 'habit_id,user_id',
       ignoreDuplicates: true,
     })
 
@@ -543,56 +375,61 @@ async function ensureReadingJourney(
   }
 }
 
-export async function getActiveReadingSession(): Promise<
-  ReadingActionResult<ActiveReadingSession | null>
-> {
-  const user = await requireUser()
-  if (!user) return fail('NOT_AUTHENTICATED', 'Bạn cần đăng nhập để tải phiên đọc.')
+async function loadReadingJourneyByHabit(
+  supabase: ServerSupabaseClient,
+  userId: string,
+  habitId: string
+): Promise<ReadingActionResult<{
+  habit: Habit
+  plan: GoalPlan
+  growth: GrowthState
+}>> {
+  const [habitResult, planResult, growthResult] = await Promise.all([
+    supabase
+      .from('habits')
+      .select(HABIT_COLUMNS)
+      .eq('id', habitId)
+      .eq('user_id', userId)
+      .eq('type', READING_HABIT_TEMPLATE.type)
+      .eq('is_active', true)
+      .maybeSingle(),
+    supabase
+      .from('goal_plans')
+      .select(GOAL_PLAN_COLUMNS)
+      .eq('habit_id', habitId)
+      .eq('user_id', userId)
+      .maybeSingle(),
+    supabase
+      .from('growth_states')
+      .select(GROWTH_STATE_COLUMNS)
+      .eq('habit_id', habitId)
+      .eq('user_id', userId)
+      .maybeSingle(),
+  ])
 
-  const supabase = await createClient()
-  const habitResult = await supabase
-    .from('habits')
-    .select('id')
-    .eq('user_id', user.id)
-    .eq('type', READING_HABIT_TEMPLATE.type)
-    .eq('is_active', true)
-    .maybeSingle()
-
-  if (habitResult.error) {
-    console.error('Unable to load the reading capability:', habitResult.error)
-    return fail('PERSISTENCE_ERROR', 'Không thể tải phiên đọc lúc này.')
+  if (
+    habitResult.error
+    || planResult.error
+    || growthResult.error
+    || !habitResult.data
+    || !planResult.data
+    || !growthResult.data
+  ) {
+    console.error('Unable to load the capability instance journey:', {
+      habit: habitResult.error,
+      plan: planResult.error,
+      growth: growthResult.error,
+    })
+    return fail('PERSISTENCE_ERROR', 'Dữ liệu hành trình đọc chưa đầy đủ.')
   }
-  if (!habitResult.data) return { success: true, data: null }
-
-  const sessionResult = await supabase
-    .from('habit_sessions')
-    .select(SESSION_COLUMNS)
-    .eq('habit_id', habitResult.data.id)
-    .eq('user_id', user.id)
-    .eq('status', 'running')
-    .order('started_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-  if (sessionResult.error) {
-    console.error('Unable to load the active reading session:', sessionResult.error)
-    return fail('PERSISTENCE_ERROR', 'Không thể tải phiên đọc lúc này.')
-  }
-
-  if (!sessionResult.data) return { success: true, data: null }
-
-  const session = asSession(sessionResult.data)
-  const routePlant = await resolveAssignedPlantId(
-    supabase,
-    user.id,
-    habitResult.data.id,
-    session.source_plant_id
-  )
-  if (!routePlant.success) return routePlant
 
   return {
     success: true,
-    data: { ...session, plant_id: routePlant.data },
+    data: {
+      habit: asHabit(habitResult.data),
+      plan: asGoalPlan(planResult.data),
+      growth: asGrowthState(growthResult.data),
+    },
   }
 }
 
@@ -1023,13 +860,17 @@ export async function completeReadingSession(
     daily_progress: DailyProgress
     growth_state: GrowthState
   }
-  const ensured = await ensureReadingJourney(user.id)
-  if (!ensured.success) return ensured
+  const journey = await loadReadingJourneyByHabit(
+    supabase,
+    user.id,
+    payload.session.habit_id
+  )
+  if (!journey.success) return journey
 
   const sourcePlant = await resolveAssignedPlantId(
     supabase,
     user.id,
-    ensured.data.habit.id,
+    payload.session.habit_id,
     payload.session.source_plant_id
   )
   if (sourcePlant.success) {
@@ -1037,7 +878,7 @@ export async function completeReadingSession(
       mutationId: payload.session.id,
       plant_id: sourcePlant.data,
       // Plant care is a one-time side effect. Pages stay exclusively in the
-      // shared capability log so they cannot contaminate a plant-local goal.
+      // plant's capability-instance log so it cannot contaminate a legacy goal.
       activity_type: 'completed',
       notes: reflection?.trim() || undefined,
     })
@@ -1052,8 +893,8 @@ export async function completeReadingSession(
   return {
     success: true,
     data: {
-      habit: ensured.data.habit,
-      plan: ensured.data.plan,
+      habit: journey.data.habit,
+      plan: journey.data.plan,
       growth: asGrowthState(payload.growth_state),
       daily_progress: asDailyProgress(payload.daily_progress),
       session: asSession(payload.session),
@@ -1073,9 +914,9 @@ export async function getReadingCompletion(
     return fail('INVALID_STATE', 'Phiên đọc này chưa có kết quả.')
   }
 
-  const ensured = await ensureReadingJourney(user.id)
-  if (!ensured.success) return ensured
   const supabase = await createClient()
+  const journey = await loadReadingJourneyByHabit(supabase, user.id, owned.data.habit_id)
+  if (!journey.success) return journey
   const progressDate = owned.data.completed_at.slice(0, 10)
   const daily = await supabase
     .from('daily_progress')
@@ -1093,9 +934,9 @@ export async function getReadingCompletion(
   return {
     success: true,
     data: {
-      habit: ensured.data.habit,
-      plan: ensured.data.plan,
-      growth: ensured.data.growth,
+      habit: journey.data.habit,
+      plan: journey.data.plan,
+      growth: journey.data.growth,
       daily_progress: asDailyProgress(daily.data),
       session: owned.data,
     },
