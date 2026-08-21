@@ -9,17 +9,20 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: mocks.createClient,
 }))
 
+interface SessionRow {
+  id: string
+  user_id: string
+  result_value: number | string | null
+  reflection: string | null
+  completed_at: string | null
+  created_at: string
+}
+
 interface ProjectionSetup {
   assignment?: { habit_id: string } | null
   assignmentError?: { message: string } | null
-  sessions?: Array<{
-    id: string
-    user_id: string
-    result_value: number | string | null
-    reflection: string | null
-    completed_at: string | null
-    created_at: string
-  }>
+  sessions?: SessionRow[]
+  sessionPages?: SessionRow[][]
   sessionsError?: { message: string } | null
 }
 
@@ -27,6 +30,7 @@ function setupSupabase({
   assignment = { habit_id: 'habit-reading' },
   assignmentError = null,
   sessions = [],
+  sessionPages,
   sessionsError = null,
 }: ProjectionSetup = {}) {
   const assignmentQuery = {
@@ -47,6 +51,7 @@ function setupSupabase({
     order: vi.fn(),
     gte: vi.fn(),
     limit: vi.fn(),
+    range: vi.fn(),
     then: vi.fn(),
   }
   sessionsQuery.select.mockReturnValue(sessionsQuery)
@@ -54,6 +59,10 @@ function setupSupabase({
   sessionsQuery.order.mockReturnValue(sessionsQuery)
   sessionsQuery.gte.mockReturnValue(sessionsQuery)
   sessionsQuery.limit.mockReturnValue(sessionsQuery)
+  sessionsQuery.range.mockImplementation((from: number) => Promise.resolve({
+    data: sessionPages?.[Math.floor(from / 500)] ?? sessions,
+    error: sessionsError,
+  }))
   sessionsQuery.then.mockImplementation((resolve) => resolve({
     data: sessions,
     error: sessionsError,
@@ -143,5 +152,27 @@ describe('getCapabilityLogProjection', () => {
       getCapabilityLogProjection('user-1', 'plant-1')
     ).resolves.toEqual([])
     errorSpy.mockRestore()
+  })
+
+  it('pages through the complete capability stream when no limit is requested', async () => {
+    const createSession = (index: number) => ({
+      id: `session-${String(index).padStart(3, '0')}`,
+      user_id: 'user-1',
+      result_value: index + 1,
+      reflection: null,
+      completed_at: `2026-08-14T08:${String(index % 60).padStart(2, '0')}:00.000Z`,
+      created_at: '2026-08-14T08:00:00.000Z',
+    })
+    const firstPage = Array.from({ length: 500 }, (_, index) => createSession(index))
+    const secondPage = [createSession(500)]
+    const { sessionsQuery } = setupSupabase({
+      sessionPages: [firstPage, secondPage],
+    })
+
+    const result = await getCapabilityLogProjection('user-1', 'plant-1')
+
+    expect(result).toHaveLength(501)
+    expect(sessionsQuery.range).toHaveBeenNthCalledWith(1, 0, 499)
+    expect(sessionsQuery.range).toHaveBeenNthCalledWith(2, 500, 999)
   })
 })

@@ -15,6 +15,8 @@ interface CompletedCapabilitySessionRow {
   created_at: string
 }
 
+const CAPABILITY_LOG_PAGE_SIZE = 500
+
 /**
  * Projects the assigned plant's isolated capability-instance event stream.
  * `null` means the plant has no capability assignment; `[]` means it is
@@ -38,36 +40,56 @@ export async function getCapabilityLogProjection(
     return null
   }
   if (!assignment.data) return null
+  const habitId = assignment.data.habit_id
 
-  let sessionsQuery = supabase
-    .from('habit_sessions')
-    .select([
-      'id',
-      'user_id',
-      'result_value',
-      'reflection',
-      'completed_at',
-      'created_at',
-    ].join(','))
-    .eq('habit_id', assignment.data.habit_id)
-    .eq('user_id', userId)
-    .eq('status', 'completed')
-    .order('completed_at', { ascending: false })
+  const buildSessionsQuery = () => {
+    let query = supabase
+      .from('habit_sessions')
+      .select([
+        'id',
+        'user_id',
+        'result_value',
+        'reflection',
+        'completed_at',
+        'created_at',
+      ].join(','))
+      .eq('habit_id', habitId)
+      .eq('user_id', userId)
+      .eq('status', 'completed')
+      .order('completed_at', { ascending: false })
+      .order('id', { ascending: false })
 
-  if (options.since) {
-    sessionsQuery = sessionsQuery.gte('completed_at', options.since)
-  }
-  if (options.limit) {
-    sessionsQuery = sessionsQuery.limit(options.limit)
-  }
-
-  const sessions = await sessionsQuery
-  if (sessions.error) {
-    console.error('Unable to load capability log:', sessions.error)
-    return []
+    if (options.since) query = query.gte('completed_at', options.since)
+    return query
   }
 
-  const completedSessions = (sessions.data ?? []) as unknown as CompletedCapabilitySessionRow[]
+  let completedSessions: CompletedCapabilitySessionRow[] = []
+  const requestedLimit = options.limit && options.limit > 0
+    ? Math.floor(options.limit)
+    : null
+
+  if (requestedLimit) {
+    const sessions = await buildSessionsQuery().limit(requestedLimit)
+    if (sessions.error) {
+      console.error('Unable to load capability log:', sessions.error)
+      return []
+    }
+    completedSessions = (sessions.data ?? []) as unknown as CompletedCapabilitySessionRow[]
+  } else {
+    for (let from = 0; ; from += CAPABILITY_LOG_PAGE_SIZE) {
+      const sessions = await buildSessionsQuery()
+        .range(from, from + CAPABILITY_LOG_PAGE_SIZE - 1)
+      if (sessions.error) {
+        console.error('Unable to load capability log:', sessions.error)
+        return []
+      }
+
+      const page = (sessions.data ?? []) as unknown as CompletedCapabilitySessionRow[]
+      completedSessions.push(...page)
+      if (page.length < CAPABILITY_LOG_PAGE_SIZE) break
+    }
+  }
+
   return completedSessions.map(session => {
     const loggedAt = session.completed_at ?? session.created_at
     return {
