@@ -7,19 +7,19 @@ import { cn } from '@/lib/utils';
 
 const SOUNDSCAPES = [
     {
-        name: "Forest Birds",
+        name: "Chim rừng",
         // Source: Mixkit (Free for personal/commercial use) - Local asset
         src: "/sounds/forest.mp3",
         icon: "🌲"
     },
     {
-        name: "Ocean Waves",
+        name: "Sóng biển",
         // Source: Mixkit - Local asset
         src: "/sounds/ocean.mp3",
         icon: "🌊"
     },
     {
-        name: "Gentle Rain",
+        name: "Mưa nhẹ",
         // Source: Mixkit - Local asset
         src: "/sounds/rain.mp3",
         icon: "🌧️"
@@ -40,7 +40,7 @@ export function BackgroundAudio({
     currentTrackIndex = 0
 }: BackgroundAudioProps) {
     const audioRef = useRef<HTMLAudioElement | null>(null);
-    const [volume, setVolume] = useState(0.5);
+    const volume = 0.5;
     const [isMuted, setIsMuted] = useState(false);
 
     // Safety check for index
@@ -121,6 +121,7 @@ export function BackgroundAudio({
                         variant="ghost"
                         size="icon"
                         onClick={toggleMute}
+                        aria-label={isMuted ? 'Bật tiếng ambient' : 'Tắt tiếng ambient'}
                         className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10 rounded-full"
                     >
                         {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
@@ -129,7 +130,7 @@ export function BackgroundAudio({
                     <button
                         onClick={nextTrack}
                         className="flex items-center gap-2 text-xs text-white/80 hover:text-white transition-colors"
-                        title="Click to change soundscape"
+                        title="Đổi âm thanh nền"
                     >
                         <span className="text-base">{currentTrack.icon}</span>
                         <span className="font-medium hidden sm:inline-block w-20 truncate text-start">

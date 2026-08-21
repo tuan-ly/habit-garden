@@ -12,6 +12,7 @@ This wiki is the compact repo map for coding agents working in Habit Garden. Use
 - [Server Actions](./server-actions.md) - mutation rules, auth, ownership checks, and feature action files.
 - [Database And Migrations](./database-and-migrations.md) - Supabase schema sources, RLS expectations, and migration workflow.
 - [Testing And Verification](./testing-and-verification.md) - unit, e2e, Storybook, and build commands.
+- [Guided Habit Sessions](./guided-habit-sessions.md) - persistent focus sessions, daily progress, completion, and deterministic Growth Plans.
 - [Agent Playbook](./agent-playbook.md) - practical rules for future agents before editing this repo.
 
 ## OpenWiki Contract

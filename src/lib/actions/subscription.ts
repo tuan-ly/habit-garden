@@ -280,7 +280,7 @@ export async function checkLimits(): Promise<{
     .from('plants')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', user.id)
-    .neq('status', 'dead')
+    .or('status.neq.dead,death_acknowledged_at.is.null')
 
   // Count current active goals
   const { count: goalCount } = await supabase

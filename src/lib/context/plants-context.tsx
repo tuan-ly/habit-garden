@@ -12,10 +12,15 @@ import {
   type ReactNode,
 } from 'react'
 import type { PlantWithType, TodayGoalLog } from '@/types/database'
-import { waterPlant as waterPlantAction, updatePlantPosition as updatePlantPositionAction } from '@/lib/actions/plants'
+import {
+  acknowledgePlantDeath as acknowledgePlantDeathAction,
+  waterPlant as waterPlantAction,
+  updatePlantPosition as updatePlantPositionAction,
+} from '@/lib/actions/plants'
 import { logGoalValue as logGoalValueAction } from '@/lib/actions/goals'
 import { validatePlantMove } from '@/lib/utils/grid-positioning'
 import { applyGoalLogToPeriod } from '@/lib/goal-progress'
+import { isVisibleInGarden } from '@/lib/plant-status'
 import { toast } from 'sonner'
 import { logActivity, type LogActivityDto, type LogActivityResult } from '@/lib/actions/activity'
 
@@ -43,6 +48,11 @@ interface GoalLogResult {
   isPersonalRecord?: boolean
   exceededTarget?: boolean
   newValue?: number
+  error?: string
+}
+
+interface AcknowledgePlantDeathResult {
+  success: boolean
   error?: string
 }
 
@@ -74,6 +84,7 @@ interface PlantsContextType {
     gridRow: number,
     gridCol: number
   ) => Promise<MoveResult>
+  acknowledgePlantDeath: (plantId: string) => Promise<AcknowledgePlantDeathResult>
   addPlant: (plant: PlantWithType) => void
   removePlant: (plantId: string) => void
   updatePlant: (plantId: string, updates: Partial<PlantWithType>) => void
@@ -502,8 +513,13 @@ export function PlantsProvider({
       gridRow: number,
       gridCol: number
     ): Promise<MoveResult> => {
-      // Filter out dead plants for validation (consistent with isometric-garden)
-      const livingPlants = optimisticPlants.filter(p => p.status !== 'dead')
+      const plant = optimisticPlants.find((item) => item.id === plantId)
+      if (!plant || plant.status === 'dead') {
+        return { success: false, error: 'This plant is no longer active' }
+      }
+
+      // Pending losses remain physical garden occupants until acknowledged.
+      const livingPlants = optimisticPlants.filter(isVisibleInGarden)
 
       // Validate move locally first
       const validation = validatePlantMove(plantId, gridRow, gridCol, livingPlants)
@@ -552,6 +568,33 @@ export function PlantsProvider({
     [optimisticPlants, startTransition, addOptimisticUpdate]
   )
 
+  const acknowledgePlantDeath = useCallback(
+    async (plantId: string): Promise<AcknowledgePlantDeathResult> => {
+      setIsSyncing(true)
+      try {
+        const result = await acknowledgePlantDeathAction(plantId)
+        const acknowledgedAt = result.acknowledgedAt
+        if (!result.success || !acknowledgedAt) {
+          return { success: false, error: result.error || 'Could not acknowledge plant loss' }
+        }
+
+        setServerPlants((prev) =>
+          prev.map((plant) =>
+            plant.id === plantId
+              ? { ...plant, death_acknowledged_at: acknowledgedAt }
+              : plant
+          )
+        )
+        return { success: true }
+      } catch {
+        return { success: false, error: 'Network error' }
+      } finally {
+        setIsSyncing(false)
+      }
+    },
+    []
+  )
+
   // Add a new plant immediately to state
   const addPlant = useCallback((plant: PlantWithType) => {
     setServerPlants((prev) => [...prev, plant])
@@ -591,13 +634,14 @@ export function PlantsProvider({
       waterPlant,
       logGoal,
       movePlant,
+      acknowledgePlantDeath,
       addPlant,
       removePlant,
       updatePlant,
       refreshPlants,
       getPlant,
     }),
-    [optimisticPlants, isPending, isSyncing, isPlantPending, recordActivity, waterPlant, logGoal, movePlant, addPlant, removePlant, updatePlant, refreshPlants, getPlant]
+    [optimisticPlants, isPending, isSyncing, isPlantPending, recordActivity, waterPlant, logGoal, movePlant, acknowledgePlantDeath, addPlant, removePlant, updatePlant, refreshPlants, getPlant]
   )
 
   return (

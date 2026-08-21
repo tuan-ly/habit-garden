@@ -14,6 +14,22 @@
 
 import type { Plant, PlantStatus, PlantStateInfo, VisualStage } from '@/types/database'
 
+/**
+ * Acknowledged Plant Loss keeps the final visual moment durable across reloads.
+ * Dead plants leave the interactive garden only after this value is persisted.
+ */
+export function isPendingPlantDeath(
+  plant: Pick<Plant, 'status' | 'death_acknowledged_at'>
+): boolean {
+  return plant.status === 'dead' && plant.death_acknowledged_at == null
+}
+
+export function isVisibleInGarden(
+  plant: Pick<Plant, 'status' | 'death_acknowledged_at'>
+): boolean {
+  return plant.status !== 'dead' || isPendingPlantDeath(plant)
+}
+
 // =====================================================
 // Status Calculation
 // =====================================================

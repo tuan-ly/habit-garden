@@ -1,8 +1,11 @@
 'use client'
 
 import Link from 'next/link'
+import { getPlantHref } from '@/capabilities/core/routes'
+import { CapabilitySlot } from '@/components/capabilities/capability-slot'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { PlantImage } from '@/components/plants/plant-image'
+import { usePlants } from '@/lib/context/plants-context'
 import { isToday } from '@/lib/utils'
 import type { PlantWithType } from '@/types/database'
 import { CalendarDays, Check, ChevronRight, Leaf, Moon, Sprout } from 'lucide-react'
@@ -11,6 +14,11 @@ interface SanctuaryPlantDetailSheetProps {
   plant: PlantWithType | null
   open: boolean
   onOpenChange: (open: boolean) => void
+}
+
+export function getGuidedHabitHref(plant: PlantWithType): string | null {
+  if (!plant.guided_habit?.is_active) return null
+  return getPlantHref(plant.id)
 }
 
 function getStateCopy(plant: PlantWithType): { label: string; body: string } {
@@ -28,6 +36,7 @@ export function SanctuaryPlantDetailSheet({
   open,
   onOpenChange,
 }: SanctuaryPlantDetailSheetProps) {
+  const { updatePlant } = usePlants()
   if (!plant) return null
   const state = getStateCopy(plant)
   const purpose = plant.why_i_started || plant.habit_description || plant.tiny_seed
@@ -39,7 +48,8 @@ export function SanctuaryPlantDetailSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="h-[90dvh] overflow-y-auto rounded-t-[2.25rem] border-x border-t border-white/80 bg-[#fffaf0] px-0 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-[#2f472a] shadow-[0_-24px_80px_rgba(31,62,39,0.28)] sm:left-1/2 sm:max-w-2xl sm:-translate-x-1/2"
+        closeLabel={`Đóng chi tiết ${plant.name}`}
+        className="h-[90dvh] overflow-y-auto rounded-t-[2.25rem] border-x border-t border-white/80 bg-[#fffaf0] px-0 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-[#2f472a] shadow-[0_-24px_80px_rgba(31,62,39,0.28)] motion-reduce:animate-none motion-reduce:transition-none sm:left-1/2 sm:max-w-2xl sm:-translate-x-1/2"
       >
         <div className="mx-auto mt-1 h-1.5 w-12 rounded-full bg-[#cdd8c2]" aria-hidden="true" />
 
@@ -71,6 +81,16 @@ export function SanctuaryPlantDetailSheet({
             </p>
             <p className="mt-2 text-sm leading-6 text-[#dce5d0]">{state.body}</p>
           </section>
+
+          <CapabilitySlot
+            plant={plant}
+            onCapabilityChange={capability => {
+              updatePlant(plant.id, {
+                guided_habit: capability,
+              })
+            }}
+            onNavigate={() => onOpenChange(false)}
+          />
 
           {purpose && (
             <section className="rounded-[1.75rem] border border-[#dbe4d2] bg-white/65 p-5">
@@ -141,11 +161,11 @@ export function SanctuaryPlantDetailSheet({
           </section>
 
           <Link
-            href="/overview"
+            href={`/overview/${plant.id}`}
             onClick={() => onOpenChange(false)}
             className="flex min-h-14 items-center justify-between rounded-full bg-[#e4ecd9] px-5 font-bold text-[#40583a] transition hover:bg-[#d9e4cc]"
           >
-            Xem toàn bộ hành trình
+            Xem câu chuyện của cây
             <ChevronRight className="h-5 w-5" />
           </Link>
         </div>

@@ -12,6 +12,7 @@ Important fields:
 - `grid_row`, `grid_col`, `grid_size` - isometric garden placement.
 - `goal_mode` - whether this plant has a goal-tracking layer.
 - `visual_stage`, `maturity_level`, `grace_period_days` - gentle-growth concepts.
+- `death_acknowledged_at` - dấu mốc người dùng đã xác nhận lời tạm biệt cho một cây `dead`.
 
 ## Plant Status
 
@@ -24,7 +25,7 @@ New code should prefer the gentle status language:
 - `sleeping`
 - `mature`
 
-`dead` and `dormant` remain in types for backward compatibility. Treat them carefully and avoid reintroducing harsh UX language.
+`dead` and `dormant` remain in types for backward compatibility. Một cây `dead` có `death_acknowledged_at = null` là pending loss: vẫn render, giữ grid footprint/plant slot và mở Goodbye dialog theo thứ tự `died_at`. Khi action `acknowledgePlantDeath` lưu timestamp, cây rời garden nhưng record lịch sử vẫn còn. Dùng `isVisibleInGarden()` thay vì tự lọc theo `status`.
 
 ## Goals
 
@@ -34,6 +35,36 @@ Goals add measurable habit progress. Main modes:
 - `total_progress` - accumulate toward a target.
 
 Goal frequency can be daily, weekly, or monthly. Period-aware helpers live in `src/lib/goal-utils.ts` and `src/lib/goal-progress.ts`.
+
+## Capability Plugin Platform
+
+**Capability Assignment** is the association that lets a reusable guided capability appear on real persisted plants without creating another plant representation:
+
+- `Plant` - visual identity, lifecycle and persisted garden placement; may have zero or one assignment.
+- `PlantCapabilityAssignment` - owned one-to-one `plant_id → habit_id` instance link; both identifiers are unique.
+- `Habit` - per-plant capability instance defining type, numeric unit and default session duration. Multiple plants may have separate instances of the same capability type.
+- `CapabilityManifest` - code-owned definition metadata: key, version, copy, icon, eligibility, session model and default config.
+- `CapabilityPlugin` - internal module registering manifest, server journey driver, UI renderers, optional screens and contextual focus action.
+- `GoalPlan` - start/end target, timeframe and deterministic review configuration, keyed by `habit_id`.
+- `HabitSession` - running/paused/completion state with persisted elapsed time, keyed by `habit_id`; open-session history is per instance while `running` attention is unique per user.
+- `DailyProgress` - one per capability/date, accumulating completed numeric value.
+- `GrowthState` - capability-level current/previous/next target, streak, plant stage and review history.
+
+**Per-Plant Capability Instance** means completed sessions, progress, targets and reflections belong to the instance selected by one plant. Journal, activity-history and milestone surfaces resolve the assignment and project only that instance's stream through `habit_id`.
+
+`HabitSession.source_plant_id` is nullable **Route Context**: it remembers which assigned `/plant/{plantId}` route opened the session so resume and return navigation can preserve context. It never partitions the event stream or owns progress, and deletion of the source plant must not delete the session.
+
+Reading configures this model as pages, 30 minutes, 5→30 pages/day, seven-day reviews, 80% consistency and five-page increments. `PlantWithType.guided_habit` is per-plant assignment metadata; different plants expose different instance ids even when both select Reading. Pure progression rules live in `src/lib/habit-growth.ts`. See [ADR 004](../adr/004-per-plant-capability-instances.md) and [ADR 006](../adr/006-user-scoped-running-session.md).
+
+`habits.config`, `definition_version` and `archived_at` form an **Anti-Corruption Layer** over the legacy table name. App code speaks in capability instances while the schema rename remains out of scope. A plant can have zero or one assignment; pause keeps it assigned and inactive, while remove archives the instance and frees the slot. See [ADR 005](../adr/005-capability-plugin-platform.md).
+
+## Plant Story Projection
+
+`PlantStorySnapshot` is a read-only lifetime projection for one owned plant. It combines plant identity, switchable plant options, lifetime entry/day totals, the current month, ordered monthly chapters and a two-entry recent preview.
+
+`PlantStoryEntry` normalizes capability sessions and legacy plant activities into one event vocabulary: `completed`, `progress`, `reflection`, `watering` and `rest_day`. Calendar dates are grouped deterministically into `PlantStoryChapter` values; chapter labels and gentle Vietnamese theme copy are derived rather than persisted. This keeps chapter creation automatic and avoids a schema migration or manual note requirement.
+
+For capability-assigned plants, `habit_id` is the partition key and `source_plant_id` remains route context only. For unassigned plants, `plant_id` partitions the legacy activity stream. Paging continues until the source is exhausted, preserving full-history semantics for both paths.
 
 ## Mood And Weather
 

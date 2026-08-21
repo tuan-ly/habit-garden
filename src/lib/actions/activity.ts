@@ -1,6 +1,7 @@
 'use server'
 
 import { getAuthUser } from '@/lib/auth-cached'
+import { getCapabilityLogProjection } from '@/lib/capability-log-projection'
 import { calculateRhythm } from '@/lib/plant-status'
 import { createClient } from '@/lib/supabase/server'
 import type { ActivityLog, PlantWithType } from '@/types/database'
@@ -210,13 +211,27 @@ export async function getPlantActivityHistory(
 
   const startDate = new Date()
   startDate.setDate(startDate.getDate() - days)
+  const startDateIso = startDate.toISOString().split('T')[0]
+  const capabilityActivities = await getCapabilityLogProjection(user.id, plantId, {
+    since: `${startDateIso}T00:00:00.000Z`,
+  })
+
+  if (capabilityActivities) {
+    return {
+      activities: capabilityActivities,
+      rhythm: calculateRhythm(
+        capabilityActivities.map((activity) => activity.logged_date)
+      ),
+    }
+  }
+
   const supabase = await createClient()
   const { data: activities } = await supabase
     .from('activity_logs')
     .select('*')
     .eq('plant_id', plantId)
     .eq('user_id', user.id)
-    .gte('logged_date', startDate.toISOString().split('T')[0])
+    .gte('logged_date', startDateIso)
     .order('logged_at', { ascending: false })
 
   const typedActivities = (activities ?? []) as ActivityLog[]

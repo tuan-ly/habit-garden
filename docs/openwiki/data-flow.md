@@ -48,6 +48,14 @@ Client component -> context helper -> compatibility server action -> atomic Supa
 
 User-facing mutations must not call `revalidatePath()` or `router.refresh()`. Single-row preference/profile writes may use `update(...).select(...)`; multi-write/reward flows belong in an atomic RPC.
 
+## Guided Reading Session
+
+`/plant/{plantId}` resolves the owned plant first, then bootstraps the idempotent reading plan/state only when an active Reading habit matches that exact plant. Starting creates or returns the single open `habit_sessions` row for the matched habit. Pause/resume updates persisted elapsed fields; clients derive live elapsed time from the canonical timestamps, so refresh and route leave do not lose the timer.
+
+The journey snapshot requires the route `plantId`, authenticated `user_id`, Reading type and active state to resolve the capability, then loads that persisted plant including `plant_types`. Reading renders the same plant read model through the shared renderer, so Garden → plant route → Reading preserves URL, data, name, species and asset identity as one resource.
+
+Finishing moves the session to `awaiting_completion`. `complete_habit_session_atomic(...)` then validates pages and atomically updates session result, daily progress, reward, streak, plant stage and any due review history. The action returns canonical completion data directly; no route refresh is required for the completion reveal.
+
 ## Cross-Feature Data
 
 Plant rows can embed goal summary data for garden rendering. `getPlants()` joins `plant_types`, fetches active goals and relevant period logs, then attaches `goal`, `today_logs`, `today_log_count`, and `today_value` to `PlantWithType`.

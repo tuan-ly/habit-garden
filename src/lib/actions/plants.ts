@@ -1,5 +1,6 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import type { CreatePlantDto, PlantWithType, PlantType, Difficulty, WeatherType, PlantGoalInfo, TodayGoalLog, GoalMode, PlantTier, Profile, Goal } from '@/types/database'
 import { getAuthUser } from '@/lib/auth-cached'
@@ -23,6 +24,7 @@ import {
 import { getDevPlantBypass } from '@/lib/actions/dev'
 import { cache } from 'react'
 import type { PlacedDecorationWithType } from '@/types/database'
+import type { HabitCapabilitySummary } from '@/types/habits'
 
 interface GardenReadModel {
   plants: PlantWithType[]
@@ -106,12 +108,56 @@ export async function getPlants(): Promise<PlantWithType[]> {
   const user = await getAuthUser()
   if (!user) return []
 
+  const supabase = await createClient()
   const today = new Date().toISOString().split('T')[0]
   const snapshot = await loadGardenReadModel()
   const plantsData = snapshot?.plants ?? []
 
   if (plantsData.length === 0) {
     return []
+  }
+
+  const plantIds = plantsData.map(plant => plant.id)
+  const { data: capabilityAssignments, error: assignmentsError } = await supabase
+    .from('plant_capability_assignments')
+    .select('plant_id, habit_id')
+    .eq('user_id', user.id)
+    .in('plant_id', plantIds)
+
+  if (assignmentsError) {
+    console.error('Unable to load plant capability assignments:', assignmentsError)
+  }
+
+  const habitIds = Array.from(new Set(
+    (capabilityAssignments ?? []).map(assignment => assignment.habit_id)
+  ))
+  const guidedHabitsResult = habitIds.length > 0
+    ? await supabase
+      .from('habits')
+      .select('id, type, is_active')
+      .eq('user_id', user.id)
+      .is('archived_at', null)
+      .in('id', habitIds)
+    : { data: [], error: null }
+
+  if (guidedHabitsResult.error) {
+    console.error('Unable to load guided plant capabilities:', guidedHabitsResult.error)
+  }
+
+  const guidedHabitById = new Map(
+    (guidedHabitsResult.data ?? []).map(habit => [habit.id, habit])
+  )
+  const guidedHabitByPlant = new Map<string, HabitCapabilitySummary>()
+
+  for (const assignment of capabilityAssignments ?? []) {
+    const habit = guidedHabitById.get(assignment.habit_id)
+    if (!habit) continue
+    guidedHabitByPlant.set(assignment.plant_id, {
+      id: habit.id,
+      plant_id: assignment.plant_id,
+      type: habit.type,
+      is_active: habit.is_active,
+    })
   }
 
   // Get plant IDs that have goals
@@ -217,6 +263,7 @@ export async function getPlants(): Promise<PlantWithType[]> {
     return {
       ...plant,
       plant_type: plantType,
+      guided_habit: guidedHabitByPlant.get(plant.id) ?? null,
       goal,
       today_logs: todayLogs,
       today_log_count: todayLogCount,
@@ -282,7 +329,7 @@ export async function createPlant(dto: CreatePlantDto): Promise<{ success: boole
       plant_type:plant_types(*)
     `)
     .eq('user_id', user.id)
-    .neq('status', 'dead')
+    .or('status.neq.dead,death_acknowledged_at.is.null')
 
   const livingPlants = existingPlants || []
 
@@ -445,6 +492,34 @@ export async function deletePlant(plantId: string): Promise<{ success: boolean; 
   return { success: true }
 }
 
+export async function acknowledgePlantDeath(
+  plantId: string
+): Promise<{ success: boolean; acknowledgedAt?: string; error?: string }> {
+  const supabase = await createClient()
+  const user = await getAuthUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
+
+  const acknowledgedAt = new Date().toISOString()
+  const { data, error } = await supabase
+    .from('plants')
+    .update({ death_acknowledged_at: acknowledgedAt, updated_at: acknowledgedAt })
+    .eq('id', plantId)
+    .eq('user_id', user.id)
+    .eq('status', 'dead')
+    .is('death_acknowledged_at', null)
+    .select('death_acknowledged_at')
+    .maybeSingle()
+
+  if (error) {
+    console.error('Error acknowledging plant death:', error)
+    return { success: false, error: error.message }
+  }
+  if (!data) return { success: false, error: 'Plant loss is no longer awaiting acknowledgement' }
+
+  revalidatePath('/garden')
+  return { success: true, acknowledgedAt: data.death_acknowledged_at }
+}
+
 export async function waterPlant(
   plantId: string,
   options?: { notes?: string; difficulty?: Difficulty }
@@ -480,6 +555,9 @@ export async function waterPlant(
 
   if (plantError || !plant) {
     return { success: false, error: 'Plant not found' }
+  }
+  if (plant.status === 'dead') {
+    return { success: false, error: 'This plant is no longer active' }
   }
 
   // Check if already logged today
@@ -599,7 +677,7 @@ export async function waterPlant(
       .from('plants')
       .select('id, grid_row, grid_col, grid_size')
       .eq('user_id', user.id)
-      .neq('status', 'dead')
+      .or('status.neq.dead,death_acknowledged_at.is.null')
 
     if (livingPlants) {
       const testPlant = {
@@ -753,7 +831,7 @@ export async function resolveGrowthConflict(plantId: string): Promise<{ success:
     .from('plants')
     .select('id, grid_row, grid_col, grid_size')
     .eq('user_id', user.id)
-    .neq('status', 'dead')
+    .or('status.neq.dead,death_acknowledged_at.is.null')
 
   if (!livingPlants) return { success: false, error: 'Could not fetch garden data' }
 
@@ -1437,6 +1515,7 @@ export async function updatePlantPosition(
     })
     .eq('id', plantId)
     .eq('user_id', user.id)
+    .neq('status', 'dead')
 
   if (error) {
     console.error('Error updating plant position:', error)
@@ -1467,7 +1546,7 @@ export async function expandPlantSize(
     .from('plants')
     .select('id, grid_size, grid_row, grid_col')
     .eq('user_id', user.id)
-    .neq('status', 'dead')
+    .or('status.neq.dead,death_acknowledged_at.is.null')
 
   if (fetchError || !allPlants) {
     return { success: false, error: 'Failed to fetch plants' }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
@@ -13,11 +13,9 @@ import {
   Sprout,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { StatsDetailSheet } from '@/components/garden/stats-detail-sheet'
 import {
   getAggregatedGardenStats,
   type AggregatedGardenStats,
-  type PlantPeriodStats,
 } from '@/lib/actions/plants'
 
 type Period = 'day' | 'week' | 'month' | 'year'
@@ -91,8 +89,6 @@ export default function OverviewClient({ initialPeriod, initialStats }: Overview
   const [currentDate, setCurrentDate] = useState(() => new Date())
   const [stats, setStats] = useState<AggregatedGardenStats | null>(initialStats)
   const [isPending, startTransition] = useTransition()
-  const [selectedPlant, setSelectedPlant] = useState<PlantPeriodStats | null>(null)
-  const [detailOpen, setDetailOpen] = useState(false)
   const isFirstRun = useRef(true)
 
   useEffect(() => {
@@ -105,11 +101,6 @@ export default function OverviewClient({ initialPeriod, initialStats }: Overview
       setStats(nextStats)
     })
   }, [period, currentDate])
-
-  const openPlant = useCallback((plant: PlantPeriodStats) => {
-    setSelectedPlant(plant)
-    setDetailOpen(true)
-  }, [])
 
   const canGoNext = navigateDate(currentDate, period, 'next') <= new Date()
   const periodLabel = formatPeriodDisplay(period, currentDate)
@@ -229,10 +220,9 @@ export default function OverviewClient({ initialPeriod, initialStats }: Overview
           <div className="mt-3 overflow-hidden rounded-[1.75rem] border border-white/70 bg-[#fffaf0]/78 shadow-[0_16px_42px_rgba(58,82,49,0.1)] backdrop-blur-xl">
             {stats?.plants.length ? (
               stats.plants.map((plant, index) => (
-                <button
+                <Link
                   key={plant.plant_id}
-                  type="button"
-                  onClick={() => openPlant(plant)}
+                  href={`/overview/${plant.plant_id}`}
                   className={cn(
                     'flex min-h-[5.5rem] w-full items-center gap-4 px-4 text-left transition hover:bg-white/55',
                     index > 0 && 'border-t border-[#dfe6d7]'
@@ -261,7 +251,7 @@ export default function OverviewClient({ initialPeriod, initialStats }: Overview
                     </p>
                   </div>
                   <ChevronRight className="h-5 w-5 shrink-0 text-[#8a9983]" />
-                </button>
+                </Link>
               ))
             ) : (
               <div className="px-5 py-8 text-center">
@@ -273,13 +263,6 @@ export default function OverviewClient({ initialPeriod, initialStats }: Overview
           </div>
         </section>
       </main>
-
-      <StatsDetailSheet
-        stats={selectedPlant}
-        open={detailOpen}
-        onOpenChange={setDetailOpen}
-        periodLabel={periodLabel}
-      />
     </div>
   )
 }

@@ -74,7 +74,7 @@ export async function placeDecoration(
     .from('plants')
     .select('id, grid_row, grid_col, grid_size, status')
     .eq('user_id', user.id)
-    .neq('status', 'dead')
+    .or('status.neq.dead,death_acknowledged_at.is.null')
 
   const { data: existingDecos } = await supabase
     .from('placed_decorations')
@@ -199,7 +199,7 @@ export async function moveDecoration(
     .from('plants')
     .select('id, grid_row, grid_col, grid_size, status')
     .eq('user_id', user.id)
-    .neq('status', 'dead')
+    .or('status.neq.dead,death_acknowledged_at.is.null')
 
   const { data: existingDecos } = await supabase
     .from('placed_decorations')

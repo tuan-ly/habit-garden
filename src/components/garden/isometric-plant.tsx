@@ -1,6 +1,7 @@
 'use client'
 
 import { memo } from 'react'
+import { CapabilityCharm } from '@/components/capabilities/capability-charm'
 import { PlantVisual } from '@/components/plants/plant-visual'
 import type { PlantWithType, WeatherType } from '@/types/database'
 import { cn } from '@/lib/utils'
@@ -11,6 +12,10 @@ import { getTileOffsetTransform } from '@/lib/assets/game-asset-display'
 import { resolveGameAssetDisplay } from '@/lib/assets/game-asset-contract'
 
 export type FocusState = 'normal' | 'highlight' | 'dim' | 'urgent'
+
+export function hasActiveCapability(plant: PlantWithType): boolean {
+  return Boolean(plant.guided_habit?.is_active)
+}
 
 interface IsometricPlantProps {
   plant: PlantWithType
@@ -117,6 +122,13 @@ function IsometricPlantComponent({
         </div>
       )}
       </div>
+
+      {hasActiveCapability(plant) && plant.guided_habit && (
+        <CapabilityCharm
+          capabilityType={plant.guided_habit.type}
+          cinematic={cinematic}
+        />
+      )}
     </div>
   )
 }

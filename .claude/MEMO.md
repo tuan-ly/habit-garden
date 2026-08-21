@@ -8,40 +8,44 @@
 
 ## 🎯 Current Sprint
 
-**Focus**: Decoration System + Plant Images + Crafting System (Phase 7 complete)
+**Focus**: Reading Habit → Plant System integration
 
-**Plan**: [sharded-conjuring-dahl.md](../../.claude/plans/sharded-conjuring-dahl.md)
+**Plan**: [reading-plant-integration-plan.md](../.planning/reading-plant-integration-plan.md)
 
-**Phases**:
+**Progress**:
 
-- [x] **Phase 1: Plant Images** — PNG images with emoji fallback
-- [x] **Phase 2: Database Schema + Coins** — 7 new tables, seed data, coin economy
-- [x] **Phase 3: Server Actions + Inventory Context** — Backend logic, crafting, coins, decorations
-- [x] **Phase 4: Grid Integration** — Decorations rendered on isometric tiles
-- [x] **Phase 5: Edit Mode Overlay** — Full decoration placement UI
-- [x] **Phase 6: Crafting UI + Shop** — Workshop, shop, harvest dialog
-- [x] **Phase 7: Polish & Gating** — Subscription limits, level gates, coin wiring
+- [x] **Phase 1: Data Layer** — virtual plant mapping and unified provider types
+- [x] **Phase 2: Garden UI** — deterministic tile placement, reading navigation, active-session tile state and resume banner
+- [ ] **Phase 3: Progression History UI**
+- [ ] **Phase 4: Session Customization**
+- [ ] **Phase 5: Cross-System Sync**
 
-**Completed in Phase 7**:
-- Added `maxPlacedDecorations`, `hasCrafting`, `hasShop` to `TierLimits` + all tier configs
-- Added `canPlaceMoreDecorations()`, `getRemainingDecorationSlots()`, `canAccessRecipe()`, `getRequiredTierForRecipe()` to subscription-limits.ts
-- Added crafting/decoration unlock entries to progression-system.ts `getLevelUnlocks()`
-- Wired `awardCoins()` into `activity.ts` logActivity() — coins for watering + streaks + plant maturity
-- Wired `harvestMaterial()` into maturity flow — auto-harvest when plant matures
-- Updated `LogActivityResult` with `coinsEarned` and `harvestedMaterial` fields
-- Fixed `GardenMode` type propagation to `garden-tile-grid.tsx` and `use-garden-interactions.ts`
-
-**Remaining Work (not blocking)**:
-1. SSR data fetching for `InventoryProvider` (currently uses `initialCoins=0`)
-2. Plant image assets: 42 PNG files needed (only 6 exist)
-3. Decoration/material image assets: ~30+ PNG files needed
-4. Run migration on Supabase: `20260311_crafting_decoration_system.sql`
+**Phase 2 verification**:
+- TypeScript passes with `npx tsc --noEmit`
+- Garden + Phase 2 regression suite passes: 67 tests
+- Focused lint passes with zero errors (pre-existing unused-code warnings remain in plant card/detail)
 
 **Next Actions**:
-1. Generate plant/decoration PNG assets with AI
-2. Run migration on Supabase
-3. SSR fetch for InventoryProvider initial data
-4. Integration testing with real data
+1. Review Phase 2 in the running garden with persisted reading data
+2. Commit Phase 2 on the current feature branch
+3. Discuss/plan Phase 3 before implementation
+4. Keep virtual plants excluded from watering, goals, movement and sanctuary care mutations
+
+---
+
+## Session Log
+
+### 2026-07-29: Reading Plant Integration — Garden UI Phase 2
+
+- Added the reading journey as a runtime virtual plant in `/garden`
+- Assigned virtual plants to deterministic free garden tiles without DB duplication
+- Added reading-specific tile visuals, active-session indicator and resume banner
+- Routed tile selection to `/reading` or `/reading/session`
+- Preserved real-plant interactions through discriminated type guards
+
+**Key files**: [garden/page.tsx](src/app/(dashboard)/garden/page.tsx), [isometric-garden.tsx](src/components/garden/isometric-garden.tsx), [HabitPlantTile.tsx](src/components/garden/HabitPlantTile.tsx), [plants-context.tsx](src/lib/context/plants-context.tsx)
+
+---
 
 ---
 
