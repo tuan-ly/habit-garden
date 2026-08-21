@@ -235,6 +235,59 @@ final result: blocked
 
 ---
 
+# Design QA — Câu chuyện theo từng cây (2026-08-21)
+
+- Source visual truth: `D:/Code/habit-garden/generated-images/plant-story-usable-hybrid.png` (`852×1846` px).
+- Implementation route: `http://localhost:3000/overview/64f5ad17-26d1-445f-afc1-ca28ebee33f6`.
+- Mobile implementation screenshot: `D:/Code/habit-garden/docs/ux-audit/plant-story-chapters-2026-08-21/implementation-mobile-390x844-final2.png` (`390×844` px, CSS viewport `390×844`, DPR 1).
+- Desktop resilience screenshot: `D:/Code/habit-garden/docs/ux-audit/plant-story-chapters-2026-08-21/implementation-desktop-1280x900.png`.
+- Normalized comparison: `D:/Code/habit-garden/docs/ux-audit/plant-story-chapters-2026-08-21/comparison-mobile-source-left-implementation-right-final.png`; source được resize đúng tỉ lệ từ `852×1846` xuống `390×844`, implementation giữ nguyên `390×844`.
+- State: authenticated Plant Story của `Chạy bộ`, current month đóng với hai preview; dữ liệu thật chưa có tháng cũ nên archive hiển thị empty state. Source có ba tháng cũ; khác biệt nội dung này được xem là data-state constraint, không phải design drift.
+
+## Full-view comparison evidence
+
+- Composite cùng viewport cho thấy hierarchy, sage/cream palette, bo góc hữu cơ, plant identity, current chapter và archive header bám sát visual direction đã chọn.
+- Production giữ bottom navigation của dashboard và dùng `PlantImage` thật thay cho ảnh concept; đây là hai ràng buộc sản phẩm có chủ đích.
+- Mobile `390×844` không có horizontal overflow; desktop `1280×900` chuyển sang bố cục hai cột mà không cắt nội dung hoặc che control.
+
+## Focused-region evidence
+
+- Không cần crop riêng: mỗi nửa của composite giữ nguyên `390×844`, nên typography, row spacing, icon, card border và CTA vẫn đọc được trực tiếp ở mức 1:1.
+- Switcher state được kiểm tra riêng tại `D:/Code/habit-garden/docs/ux-audit/plant-story-chapters-2026-08-21/implementation-mobile-switcher.png`; menu dài được giới hạn chiều cao, current plant đứng đầu và vùng cuộn không tràn viewport.
+
+## Findings và comparison history
+
+1. Pass đầu (`implementation-mobile-390x844.png`) — [P1] log mobile xếp date và nội dung thành hai hàng, làm current chapter quá cao và đẩy archive khỏi vùng quét. Fix: dùng grid ba cột ngay từ mobile, bỏ `capitalize` làm sai chữ thường trong ngày tháng.
+2. Pass hai (`implementation-mobile-390x844-pass2.png`) — [P2] heading archive bị gãy dòng và subtitle của chapter lặp lại theme. Fix: heading mobile gọn hơn, ẩn helper copy trên mobile và thay subtitle lặp bằng số khoảnh khắc/ngày hiện diện.
+3. Interaction pass — [P1] test account có danh sách cây rất dài, switcher có thể tràn viewport. Fix: current plant đứng đầu, các cây còn lại sort tiếng Việt, menu có max-height, overscroll containment và scrollbar màu sage.
+4. Final mobile pass (`implementation-mobile-390x844-final2.png`) — identity được giảm về chiều cao gần source, hai preview quét ngang nhanh, archive/filter hiện rõ phía trên bottom navigation.
+5. Console pass — warning LCP của background được sửa bằng eager loading; reload sau fix không phát sinh warning/error mới.
+
+## Required fidelity surfaces
+
+- Fonts and typography: `font-display` giữ editorial character cho chapter/plant name; body dùng production font, weight và line-height đủ đọc; không còn ngày tháng bị viết hoa sai.
+- Spacing and layout rhythm: tap target tối thiểu 44px, identity gọn, current entries có nhịp divider đều; mobile và desktop không overlap ngoài bottom navigation cố định đã có của app.
+- Colors and tokens: palette kem–sage–xanh đậm, border vàng nhạt và shadow mềm khớp mockup lẫn Soft Isometric Sanctuary hiện hữu.
+- Image quality and asset fidelity: dùng background sanctuary và `PlantImage` production, không dùng emoji, placeholder, CSS art hay SVG tự vẽ thay asset.
+- Copy and content: thuật ngữ tách rõ `Hành trình` toàn cục, `Câu chuyện của` từng cây; ghi chú là tùy chọn và chapter được tạo tự động theo tháng.
+- Icons and affordances: icon Lucide cùng stroke family, chevron phản ánh open state, focus ring và `aria-expanded` hiện diện trên các control chính.
+
+## Primary interactions tested
+
+- Journey row mở đúng `/overview/[plantId]`.
+- `Xem tất cả` mở đủ current-month entries và đổi sang `Thu gọn tháng này`.
+- Filter đổi giữa `Tất cả thời gian` và `Có ghi chú`.
+- Plant switcher điều hướng sang cây khác và chịu được danh sách dài.
+- Authenticated Chromium E2E pass; in-app Browser kiểm tra mobile, desktop và console.
+
+## Follow-up polish
+
+- [P3] Khi tài khoản có dữ liệu nhiều tháng, có thể cân nhắc thumbnail theo mùa thay vì lặp plant image; không cần cho release hiện tại.
+
+final result: passed
+
+---
+
 # Design QA — Footprint-aware Calibration Studio (2026-07-15)
 
 - Source visual truth: `C:/Users/TUAN LY/AppData/Local/Packages/MicrosoftWindows.Client.Core_cw5n1h2txyewy/TempState/ScreenClip/{3CE50B91-13D8-4471-AB4B-1BC1EB07A2CE}.png`.
@@ -288,3 +341,11 @@ final result: passed
 - Automated evidence: all 24 geometry tests, file-scoped ESLint, TypeScript `--noEmit` and `git diff --check` pass.
 
 final result: blocked
+
+---
+
+# Current build gate — Plant Story
+
+The `Câu chuyện theo từng cây (2026-08-21)` review in this file is the active Product Design gate. Its normalized mobile comparison, browser evidence, interaction checks and post-fix history show no remaining P0/P1/P2 findings. Older `blocked` results belong to earlier terrain tasks and do not describe this build.
+
+final result: passed

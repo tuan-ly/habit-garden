@@ -58,6 +58,14 @@ Reading configures this model as pages, 30 minutes, 5→30 pages/day, seven-day 
 
 `habits.config`, `definition_version` and `archived_at` form an **Anti-Corruption Layer** over the legacy table name. App code speaks in capability instances while the schema rename remains out of scope. A plant can have zero or one assignment; pause keeps it assigned and inactive, while remove archives the instance and frees the slot. See [ADR 005](../adr/005-capability-plugin-platform.md).
 
+## Plant Story Projection
+
+`PlantStorySnapshot` is a read-only lifetime projection for one owned plant. It combines plant identity, switchable plant options, lifetime entry/day totals, the current month, ordered monthly chapters and a two-entry recent preview.
+
+`PlantStoryEntry` normalizes capability sessions and legacy plant activities into one event vocabulary: `completed`, `progress`, `reflection`, `watering` and `rest_day`. Calendar dates are grouped deterministically into `PlantStoryChapter` values; chapter labels and gentle Vietnamese theme copy are derived rather than persisted. This keeps chapter creation automatic and avoids a schema migration or manual note requirement.
+
+For capability-assigned plants, `habit_id` is the partition key and `source_plant_id` remains route context only. For unassigned plants, `plant_id` partitions the legacy activity stream. Paging continues until the source is exhausted, preserving full-history semantics for both paths.
+
 ## Mood And Weather
 
 Mood is user-facing emotional state. Garden weather can be derived from mood in `GardenView`: high mood trends sunny, lower mood trends rainy/stormy. Weather also appears in XP and visual systems.

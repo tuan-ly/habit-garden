@@ -96,6 +96,16 @@ The dashboard layout uses a read-only active-session query for the global resume
 
 Assigned-plant journal, activity-history and milestone surfaces use a **Capability Instance Event Stream**: they resolve the plant's unique assigned `habit_id` and project only its completed `habit_sessions`. Two plants selecting the same capability keep independent logs, targets and reflections. Unassigned plants retain their legacy plant-local activity stream.
 
+## Per-Plant Story Recall
+
+`/overview` remains the global **Hành trình**. Each plant row and the Plant Detail CTA deep-link to `/overview/[plantId]`, whose user-facing title is **Câu chuyện của <plant>**. Both entry points resolve the same authenticated, owner-scoped read model.
+
+The story uses **Automatic Monthly Chapters**: entries are grouped by calendar month without asking the user to create, title or maintain chapters. The current month previews the two newest entries and can expand to all entries; previous months are newest-first expandable rows. Notes enrich entries but are never required for a month to exist. A filter can narrow previous months to those containing notes.
+
+Assigned plants project only the selected capability instance's completed sessions through `habit_id`. Unassigned plants use their plant-local activity stream. The read model pages source rows in batches of 500 until exhaustion, so lifetime history is not silently truncated by a single Supabase response limit.
+
+The plant identity card doubles as a switcher. The current plant is pinned first, remaining plants are Vietnamese-name sorted, and long collections stay inside a bounded scroll region. Historical or acknowledged plants remain accessible because this surface recalls the plant's story rather than representing current garden placement.
+
 ## Reaction And Modal Rules
 
 - `useGardenInteractions()` performs existing optimistic mutations and can open a selected action mode directly.

@@ -161,11 +161,11 @@ export function SanctuaryPlantDetailSheet({
           </section>
 
           <Link
-            href="/overview"
+            href={`/overview/${plant.id}`}
             onClick={() => onOpenChange(false)}
             className="flex min-h-14 items-center justify-between rounded-full bg-[#e4ecd9] px-5 font-bold text-[#40583a] transition hover:bg-[#d9e4cc]"
           >
-            Xem toàn bộ hành trình
+            Xem câu chuyện của cây
             <ChevronRight className="h-5 w-5" />
           </Link>
         </div>

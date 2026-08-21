@@ -1,14 +1,14 @@
 # Current State
 
 - Date: 2026-08-21
-- Milestone: Retention Core — Guided Habit Sessions
-- Active task: Capability Plugin Platform release verification
-- Status: plugin platform and user-scoped running-session migrations deployed; authenticated release smoke pending
-- Vertical slice: each owned plant has one optional **Hành trình của cây** slot; Reading registers as the first plugin through manifest/server/UI/screen seams, generic `/plant/{plantId}/journey/*` routes, atomic attach/manage RPCs and per-instance archived history
-- Non-goals: multiple capabilities on one plant; third-party/runtime plugin loading; Exercise UI; automatic AI habit classification; renaming legacy `habits` tables; deleting archived logs
-- Completed: plugin registries and contract tests; generic journey dispatcher/routes; Capability Library and explicit intent confirmation; active/paused/remove management; contextual focus CTA and screen-space charm; focus restoration; paused-route guards; route-synchronized active-session banner hidden on its own timer/completion surfaces; user-scoped single-running-session invariant with structured conflict routing; linked migrations `20260814234237`, `20260819134213` and `20260821052602`; ADR/OpenWiki/audit documentation
-- Verification: 64-version PostgreSQL 17 replay, transactional duplicate-running probe, local ERROR-level security/performance advisors, 38 Vitest files / 388 tests, focused ESLint, TypeScript and production build pass; linked catalog confirms `habit_sessions_one_running_per_user`, the duplicate-running query returns zero rows, migration ledger contains `20260821052602`, and linked ERROR-level security/performance advisors report no issues; full repository lint remains blocked by pre-existing legacy/generated-file errors outside this slice
-- Constraints: both `plant_id` and `habit_id` are unique in assignments; at most one `running` session exists per user while `paused` and `awaiting_completion` remain per-instance; RPCs remain `SECURITY INVOKER`; RLS and owner-scoped foreign keys are the privilege boundary; generic Garden/routes must not branch on Reading; plugin screens are optional; focus mode has one primary action
-- Risks: authenticated linked-environment smoke has not run; exact 200% landscape zoom, contrast measurement and screen-reader announcements remain manual release checks
+- Milestone: Retention Core — Per-Plant Story Recall
+- Active task: Living Chapters usable hybrid for `/overview/[plantId]` — Done
+- Status: implemented, authenticated-browser verified and design-QA passed
+- Vertical slice: Journey and Plant Detail open one owner-scoped plant story; automatic monthly chapters merge capability-instance sessions or legacy plant activities, preview two current-month entries, expand complete months, filter months with notes and switch between plants
+- Non-goals: manual chapter creation or naming; requiring notes; editing/deleting historical logs; new Supabase schema or migration; seasonal archive thumbnails; changing progression, XP or capability rules
+- Completed: lifetime `PlantStorySnapshot` read model with exhaustive 500-row paging; authenticated action and ownership scope; `/overview/[plantId]` page plus loading/error/not-found states; compact plant identity and bounded switcher; current-month expand/collapse; newest-first archive and note filter; Journey and Plant Detail deep links; responsive mobile/desktop UI; source-vs-implementation QA evidence and E2E coverage
+- Verification: 5 focused Vitest files / 18 tests pass; scoped ESLint pass; TypeScript `--noEmit` pass; production build pass; authenticated Chromium Plant Story E2E pass; in-app Browser verified `390×844`, `768×1152` and `1280×900`, current-month expansion, note filter, plant switching and no new console warnings/errors; root `design-qa.md` ends with `final result: passed`
+- Constraints: assigned plants must project only their unique `habit_id`; unassigned plants retain plant-local activities; current month always exists even when empty; history must not stop at one Supabase response page; notes remain optional; acknowledged/historical plants remain readable; global label stays `Hành trình` while the detail page says `Câu chuyện của`
+- Risks: the linked-environment two-plant running-session release smoke from the previous milestone is still outstanding; the authenticated QA account had no previous-month data, so populated archive visuals are covered by deterministic component fixtures/tests while the real browser verified the empty archive state
 - Blockers: none
-- Next smallest step: run an authenticated two-plant start/resume conflict smoke against the linked environment
+- Next smallest step: run the authenticated two-plant start/resume conflict smoke against the linked environment
