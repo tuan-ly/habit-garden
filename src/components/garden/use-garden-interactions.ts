@@ -11,6 +11,7 @@ import { isToday } from '@/lib/utils'
 import type { LogActivityDto, LogActivityResult } from '@/lib/actions/activity'
 import { validatePlantMove } from '@/lib/utils/grid-positioning'
 import { applyGoalLogToPeriod } from '@/lib/goal-progress'
+import type { GardenActionKind } from '@/lib/garden-encounters'
 import { isPendingPlantDeath } from '@/lib/plant-status'
 import type { PlantWithType, InventoryItemWithDetails, DecorationRotation } from '@/types/database'
 import type { GardenMode } from './mode-toolbar'
@@ -57,6 +58,7 @@ interface UseGardenInteractionsOpts {
   onEditPlacementSuccess?: () => void
   editPlacementPending?: boolean
   calmFeedback?: boolean
+  onActivitySuccess?: (plant: PlantWithType, actionKind: GardenActionKind) => void
 }
 
 export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
@@ -67,6 +69,7 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
     onEditSelectItem,
     onEditPlacementError, onEditPlacementSuccess, editPlacementPending = false,
     calmFeedback = false,
+    onActivitySuccess,
   } = opts
 
   // Modal state
@@ -79,6 +82,7 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
   const [wateringPlant, setWateringPlant] = useState<PlantWithType | null>(null)
   const [wateringModalOpen, setWateringModalOpen] = useState(false)
   const [wateringInitialMode, setWateringInitialMode] = useState<WateringActionMode>('choose')
+  const [wateringActionKind, setWateringActionKind] = useState<GardenActionKind>('care')
 
   // Celebration state
   const [celebration, setCelebration] = useState<CelebrationState | null>(null)
@@ -132,16 +136,25 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
   }, [])
 
   // Open watering modal
-  const handleQuickWaterRequest = useCallback((plant: PlantWithType, initialMode: WateringActionMode = 'choose') => {
+  const handleQuickWaterRequest = useCallback((
+    plant: PlantWithType,
+    initialMode: WateringActionMode = 'choose',
+    actionKind: GardenActionKind = 'care'
+  ) => {
     if (isPendingPlantDeath(plant)) return
     setWateringPlant(plant)
     setWateringInitialMode(initialMode)
+    setWateringActionKind(actionKind)
     setWateringModalOpen(true)
   }, [])
 
   // Watering confirm (from modal)
   const handleWaterConfirm = useCallback(
-    async (notes: string | undefined, estimatedXp: number) => {
+    async (
+      notes: string | undefined,
+      estimatedXp: number,
+      actionKind: GardenActionKind = wateringActionKind
+    ) => {
       if (!wateringPlant) return
       const plant = wateringPlant
 
@@ -200,6 +213,7 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
             })
           }
           handleServerResult(result, plant.name)
+          onActivitySuccess?.(plant, actionKind)
         }
       } catch {
         setCelebration(null)
@@ -209,12 +223,20 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
         setTimeout(() => actionCooldown.current.delete(plant.id), 500)
       }
     },
-    [wateringPlant, recordActivity, welcomeBackPending, onWelcomeBackUsed, handleServerResult, calmFeedback]
+    [
+      wateringPlant, wateringActionKind, recordActivity, welcomeBackPending,
+      onWelcomeBackUsed, handleServerResult, calmFeedback, onActivitySuccess,
+    ]
   )
 
   // Log + water confirm (from modal "I did it" action)
   const handleLogAndWaterConfirm = useCallback(
-    async (value: number | undefined, notes: string | undefined, estimatedXp: number) => {
+    async (
+      value: number | undefined,
+      notes: string | undefined,
+      estimatedXp: number,
+      actionKind: GardenActionKind = wateringActionKind
+    ) => {
       if (!wateringPlant) return
       const plant = wateringPlant
 
@@ -315,6 +337,7 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
             })
           }
           handleServerResult(result, plant.name)
+          onActivitySuccess?.(plant, actionKind)
         }
       } catch {
         setCelebration(null)
@@ -324,7 +347,11 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
         setTimeout(() => actionCooldown.current.delete(plant.id), 500)
       }
     },
-    [wateringPlant, isWateredToday, recordActivity, welcomeBackPending, onWelcomeBackUsed, handleServerResult, calmFeedback]
+    [
+      wateringPlant, wateringActionKind, isWateredToday, recordActivity,
+      welcomeBackPending, onWelcomeBackUsed, handleServerResult, calmFeedback,
+      onActivitySuccess,
+    ]
   )
 
   // Plant tap (single = water modal, double = detail sheet)
@@ -472,7 +499,7 @@ export function useGardenInteractions(opts: UseGardenInteractionsOpts) {
     // Modal state
     selectedPlant, sheetOpen, setSheetOpen,
     addDialogOpen, setAddDialogOpen, addDialogPosition, setAddDialogPosition,
-    wateringPlant, wateringModalOpen, setWateringModalOpen, wateringInitialMode,
+    wateringPlant, wateringModalOpen, setWateringModalOpen, wateringInitialMode, wateringActionKind,
     // Celebration state
     celebration, setCelebration,
     levelUpData, setLevelUpData,

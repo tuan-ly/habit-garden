@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { completeReadingSession } from '@/lib/actions/habit-sessions'
+import { queuePendingGardenEncounter } from '@/lib/garden-encounter-pending'
 import { validateCompletedValue } from '@/lib/habit-growth'
 import { getPlantHref, getReadingGrowthPlanHref } from '@/lib/reading-routes'
 import type {
@@ -35,12 +36,14 @@ const PLANT_STAGE_LABELS: Record<HabitPlantStage, string> = {
 
 interface CompletionClientProps {
   plantId: string
+  plantName: string
   initialSession: HabitSession
   initialCompletion?: ReadingCompletionSnapshot
 }
 
 export function CompletionClient({
   plantId,
+  plantName,
   initialSession,
   initialCompletion,
 }: CompletionClientProps) {
@@ -70,6 +73,11 @@ export function CompletionClient({
         setError(result.error)
         return
       }
+      queuePendingGardenEncounter({
+        plantId,
+        plantName,
+        actionKind: 'care',
+      })
       setCompletion(result.data)
     })
   }

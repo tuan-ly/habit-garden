@@ -16,6 +16,9 @@ import { DecorationPlacementGhostLayer } from './edit-mode/decoration-placement-
 import { useGardenInteractions } from './use-garden-interactions'
 import { SanctuaryGardenChrome } from './sanctuary-garden-chrome'
 import { selectSanctuaryActivePlant } from './sanctuary-plant-selection'
+import { DailyGardenAtmosphereLayer } from './daily-garden-atmosphere'
+import { GardenEncounterReveal } from './garden-encounter-reveal'
+import { useDailyGardenEncounter } from './use-daily-garden-encounter'
 import { usePlants } from '@/lib/context/plants-context'
 import { useGardenSettingsOptional } from '@/lib/context/garden-settings-context'
 import { useInventoryOptional } from '@/lib/context/inventory-context'
@@ -240,6 +243,22 @@ export function IsometricGarden({
   // Grid computation
   // Pending losses remain on the grid so their plot cannot be reused early.
   const livingPlants = useMemo(() => plants.filter(isVisibleInGarden), [plants])
+  const dailyGardenEncounter = useDailyGardenEncounter({
+    plants: livingPlants,
+    weather,
+    enabled: sanctuaryMode,
+  })
+  const freshGardenEncounter = dailyGardenEncounter.freshEncounter
+  const completeFreshGardenEncounter = dailyGardenEncounter.completeFreshEncounter
+  useEffect(() => {
+    if (freshGardenEncounter && !gardenSettings.showCelebrations) {
+      completeFreshGardenEncounter()
+    }
+  }, [
+    freshGardenEncounter,
+    completeFreshGardenEncounter,
+    gardenSettings.showCelebrations,
+  ])
   const minimumGridSize = useMemo(() => getGardenSize(userLevel), [userLevel])
   // Include decorations in grid size calculation so placed decos don't get cut off
   const allGridItems = useMemo(
@@ -320,6 +339,7 @@ export function IsometricGarden({
     }),
     onEditPlacementSuccess: () => toast.success('Đã đặt vật trang trí'),
     calmFeedback: sanctuaryMode,
+    onActivitySuccess: dailyGardenEncounter.revealEncounter,
   })
 
   // Fix setMode to use interactions ref
@@ -503,9 +523,13 @@ export function IsometricGarden({
   )
 
   const handleSanctuaryAction = useCallback(
-    (mode: 'log' | 'water') => {
+    (actionKind: 'care' | 'tiny' | 'rest') => {
       if (sanctuaryDisplayPlant) {
-        interactions.handleQuickWaterRequest(sanctuaryDisplayPlant, mode)
+        interactions.handleQuickWaterRequest(
+          sanctuaryDisplayPlant,
+          actionKind === 'rest' ? 'water' : 'log',
+          actionKind
+        )
       }
     },
     [sanctuaryDisplayPlant, interactions]
@@ -637,6 +661,10 @@ export function IsometricGarden({
 
   return (
     <div className="relative w-full h-full flex flex-col select-none">
+      {sanctuaryMode && (
+        <DailyGardenAtmosphereLayer atmosphere={dailyGardenEncounter.atmosphere} />
+      )}
+
       {/* Mode toolbar */}
       {!focusMode && mode !== 'arrange' && (
         <ModeToolbar
@@ -831,6 +859,7 @@ export function IsometricGarden({
         journalStreak={journalStreak}
         isWateredToday={interactions.isWateredToday}
         wateringInitialMode={interactions.wateringInitialMode}
+        wateringActionKind={interactions.wateringActionKind}
         sanctuaryMode={sanctuaryMode}
       />}
 
@@ -844,9 +873,11 @@ export function IsometricGarden({
           totalCount={sanctuaryPlants.length}
           isSyncing={sanctuaryDisplayPlant ? isPlantPending(sanctuaryDisplayPlant.id) : false}
           welcomeBackDays={welcomeBackDays}
-          onPrimaryAction={() => handleSanctuaryAction('log')}
-          onTinyAction={() => handleSanctuaryAction('log')}
-          onRestAction={() => handleSanctuaryAction('water')}
+          atmosphere={dailyGardenEncounter.atmosphere}
+          encounterMemory={dailyGardenEncounter.memory}
+          onPrimaryAction={() => handleSanctuaryAction('care')}
+          onTinyAction={() => handleSanctuaryAction('tiny')}
+          onRestAction={() => handleSanctuaryAction('rest')}
           onOpenDetails={() => {
             if (sanctuaryDisplayPlant) interactions.handleShowInfo(sanctuaryDisplayPlant)
           }}
@@ -884,6 +915,16 @@ export function IsometricGarden({
           onHarvestClose={handleHarvestClose}
           showCelebrations={gardenSettings.showCelebrations}
           sanctuaryMode={sanctuaryMode}
+        />
+      )}
+
+      {sanctuaryMode
+        && gardenSettings.showCelebrations
+        && freshGardenEncounter && (
+        <GardenEncounterReveal
+          memory={freshGardenEncounter}
+          reducedMotion={gardenSettings.reducedMotion}
+          onComplete={completeFreshGardenEncounter}
         />
       )}
     </div>

@@ -2216,6 +2216,35 @@
 .sanctuary-reaction-leaves { animation: sanctuary-reaction-leaves 2.2s ease-out forwards; }
 .sanctuary-reaction-copy { animation: sanctuary-reaction-copy 2.6s ease-in-out forwards; }
 
+@keyframes garden-atmosphere-breathe {
+  0%, 100% { opacity: 0.72; }
+  50% { opacity: 1; }
+}
+
+@keyframes garden-encounter-icon {
+  0% { opacity: 0; transform: translateY(22px) scale(0.72); }
+  22%, 72% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-28px) scale(0.92); }
+}
+
+@keyframes garden-encounter-card {
+  0% { opacity: 0; transform: translateY(22px) scale(0.96); }
+  18%, 76% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-12px) scale(0.98); }
+}
+
+.garden-atmosphere-breathe {
+  animation: garden-atmosphere-breathe 12s ease-in-out infinite;
+}
+
+.garden-encounter-icon {
+  animation: garden-encounter-icon 4s cubic-bezier(0.22, 1, 0.36, 1) 2.1s both;
+}
+
+.garden-encounter-card {
+  animation: garden-encounter-card 4s cubic-bezier(0.22, 1, 0.36, 1) 2.3s both;
+}
+
 .sanctuary-active button[title="Open Dev Panel (Ctrl+Shift+D)"],
 .sanctuary-active button[aria-label="Open Next.js Dev Tools"] {
   display: none !important;

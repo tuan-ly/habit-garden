@@ -86,6 +86,16 @@ The production `/garden` route is now **Garden-first**:
 
 Legacy list/focus/edit primitives still exist for compatibility and garden arrangement, but they are not first-level navigation.
 
+## Daily Garden Encounters
+
+Garden uses **Bounded Variable Delight**: every local date deterministically selects one of six atmospheres and one of eight encounters from the date, visible-garden signature and weather. `useDailyGardenEncounter()` freezes that plan in browser storage so reloads and later actions cannot reroll it.
+
+The first successful `care`, `tiny` or `rest` mutation may reveal the encounter. The existing immediate plant reaction remains first; the encounter follows as a short ambient story and then collapses into a compact memory whisper in `SanctuaryGardenChrome`. Reload restores only the memory, never the fresh reveal. Celebration-disabled users keep the memory without the overlay, and Reduced Motion removes entrance/exit animation.
+
+Guided capability completion crosses routes through a one-use **Pending Signal** in `garden-encounter-pending.ts`. `CompletionClient` queues it only after `completeReadingSession()` succeeds; Garden consumes it before same-day activity inference. This handoff is intentionally client-only and must not change Supabase session persistence, capability rewards or plant progression.
+
+Encounters are aesthetic recognition, not rewards: no XP, inventory, progression advantage, countdown, false scarcity or repeatable farming. First successful action wins for the day, including `Nghỉ`, so the system preserves the no-guilt action model.
+
 Garden uses a **Capability Plugin Platform** through `plant_capability_assignments`; capabilities are not virtual tiles or global destinations. Each persisted plant has one optional **Capability Slot**, while many plants may select the same capability type through independent instances. A capability never changes plant placement, lifecycle or identity.
 
 The user-facing name is **Hành trình của cây**. Setup and management live in Plant Detail: an empty slot opens the Capability Library, preview explains the outcome, explicit-match capabilities require intent confirmation, and active instances support pause/resume/remove. Focus mode is a **Daily Action Flow**, not a setup surface: an active plugin may replace `Chăm cây` with one contextual primary action, while paused or unassigned plants use normal care actions. A compact `Chi tiết` action is the path back to management.
