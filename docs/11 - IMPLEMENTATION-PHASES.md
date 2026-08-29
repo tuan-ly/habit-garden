@@ -70,7 +70,7 @@ Dự án chia thành 4 phases chính:
 - [x] Streak tracking logic
 - [x] Daily moisture decay (cron job)
 - [x] Plant death logic
-- [ ] Basic notifications setup
+- [x] Basic notifications setup
 - [x] XP calculation (basic)
 
 **Deliverables:**

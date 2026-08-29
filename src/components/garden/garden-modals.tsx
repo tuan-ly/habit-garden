@@ -4,6 +4,7 @@ import { memo, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import type { PlantWithType, PlantType } from '@/types/database'
 import type { WateringActionMode } from '@/components/plants/gentle-watering-modal'
+import type { GardenActionKind } from '@/lib/garden-encounters'
 
 // Dynamic imports — these heavy modal components are only loaded when needed
 const AddPlantDialog = dynamic(() => import('@/components/plants/add-plant-dialog').then(m => ({ default: m.AddPlantDialog })), { ssr: false })
@@ -17,8 +18,8 @@ interface GardenModalsProps {
   wateringPlant: PlantWithType | null
   wateringModalOpen: boolean
   onWateringOpenChange: (open: boolean) => void
-  onWater: (notes: string | undefined, estimatedXp: number) => Promise<void>
-  onLogAndWater: (value: number | undefined, notes: string | undefined, estimatedXp: number) => Promise<void>
+  onWater: (notes: string | undefined, estimatedXp: number, actionKind?: GardenActionKind) => Promise<void>
+  onLogAndWater: (value: number | undefined, notes: string | undefined, estimatedXp: number, actionKind?: GardenActionKind) => Promise<void>
   onDetails: () => void
   // Add dialog
   plantTypes: PlantType[]
@@ -34,6 +35,7 @@ interface GardenModalsProps {
   journalStreak: number
   isWateredToday: (plant: PlantWithType) => boolean
   wateringInitialMode?: WateringActionMode
+  wateringActionKind?: GardenActionKind
   sanctuaryMode?: boolean
 }
 
@@ -66,6 +68,7 @@ export const GardenModals = memo(function GardenModals({
   journalStreak,
   isWateredToday,
   wateringInitialMode,
+  wateringActionKind = 'care',
   sanctuaryMode = false,
 }: GardenModalsProps) {
   const handleAddDialogOpenChange = useCallback(
@@ -84,6 +87,7 @@ export const GardenModals = memo(function GardenModals({
           plant={wateringPlant}
           open={wateringModalOpen}
           initialMode={wateringInitialMode ?? 'choose'}
+          actionKind={wateringActionKind}
           onOpenChange={onWateringOpenChange}
           onWater={onWater}
           onLogAndWater={onLogAndWater}

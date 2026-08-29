@@ -8,6 +8,9 @@ import { TimezoneSync } from '@/components/timezone-sync'
 import { ClientModals } from './client-modals'
 import { getActiveCapabilitySession } from '@/lib/actions/capabilities'
 import { ActiveSessionBanner } from '@/components/game-ui/ActiveSessionBanner'
+import { getNotifications } from '@/lib/actions/notifications'
+import { NotificationCenter } from '@/components/notifications/notification-center'
+import { NativeReminderSync } from '@/components/notifications/native-reminder-sync'
 
 export default async function DashboardLayout({
   children,
@@ -22,9 +25,14 @@ export default async function DashboardLayout({
   }
 
   // One read-model request replaces the three shell queries.
-  const [{ mood: initialMood, profile, plantTypes }, activeSessionResult] = await Promise.all([
+  const [
+    { mood: initialMood, profile, plantTypes },
+    activeSessionResult,
+    initialNotifications,
+  ] = await Promise.all([
     getDashboardBootstrap(),
     getActiveCapabilitySession(),
+    getNotifications(),
   ])
   const userTimezone = profile?.timezone ?? null
   const activeCapabilitySession = activeSessionResult.success
@@ -39,6 +47,8 @@ export default async function DashboardLayout({
       plantTypes={plantTypes}
     >
       <div className="min-h-screen relative ">
+        <NativeReminderSync globallyEnabled={profile?.daily_reminder_enabled ?? true} />
+
         {/* Static gradient background - single layer, no animations for better performance */}
         <div className="fixed inset-0 bg-gradient-to-br from-sky-200 via-emerald-100 to-green-200 dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950 pointer-events-none" />
 
@@ -54,6 +64,8 @@ export default async function DashboardLayout({
         </main>
 
         <ActiveSessionBanner activeSession={activeCapabilitySession} />
+
+        <NotificationCenter initialNotifications={initialNotifications} />
 
         {/* Game-style bottom navigation - uses DashboardDataContext for user */}
         <GameNav />

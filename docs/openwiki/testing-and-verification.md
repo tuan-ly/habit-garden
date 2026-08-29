@@ -53,3 +53,15 @@ Use Storybook for visual component changes that are hard to validate through uni
 - Server action/domain mutation: Vitest if possible plus manual flow or Playwright when user-visible.
 - Garden rendering/interaction change: browser smoke test and screenshot when practical.
 - Schema change: migration review, type update, and action-level verification.
+
+For daily notifications, also run the migration ledger check and execute `scripts/sql/verify-daily-habit-notifications.sql` against local Postgres. The probe rolls back its fixtures after checking goal suppression, simple-habit completion, idempotency, target resolution and the cross-midnight due window. Use `npx.cmd cap update`, `npx.cmd cap ls` and platform doctor output to verify native plugin registration without requiring exported web assets.
+
+For Web Push delivery, also:
+
+- run `npm run db:migrations:check`;
+- execute `scripts/sql/verify-web-push-delivery.sql` against the migrated local database;
+- run `npx.cmd -y deno check --config supabase/functions/push-notifications/deno.json supabase/functions/push-notifications/index.ts`;
+- run focused notification contract tests and scoped ESLint;
+- run a production build and confirm generated `sw.js` imports the custom worker containing `push` and `notificationclick` handlers.
+
+The Settings **Gửi thử** action validates device permission and local service-worker display only. A real closed-app smoke must create an inbox notification, observe `notification_push_deliveries` reach `delivered`, and receive the notification after the app/tab is closed.

@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, useState, useTransition } from 'react'
+import { FormEvent, useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import {
   ArrowRight,
@@ -17,8 +17,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { completeReadingSession } from '@/lib/actions/habit-sessions'
+import { queuePendingGardenEncounter } from '@/lib/garden-encounter-pending'
 import { validateCompletedValue } from '@/lib/habit-growth'
 import { getPlantHref, getReadingGrowthPlanHref } from '@/lib/reading-routes'
+import { notifyHabitCompletionForReminders } from '@/lib/native-notifications'
 import type {
   HabitPlantStage,
   HabitSession,
@@ -35,12 +37,14 @@ const PLANT_STAGE_LABELS: Record<HabitPlantStage, string> = {
 
 interface CompletionClientProps {
   plantId: string
+  plantName: string
   initialSession: HabitSession
   initialCompletion?: ReadingCompletionSnapshot
 }
 
 export function CompletionClient({
   plantId,
+  plantName,
   initialSession,
   initialCompletion,
 }: CompletionClientProps) {
@@ -49,6 +53,11 @@ export function CompletionClient({
   const [reflection, setReflection] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+
+  useEffect(() => {
+    if (!completion) return
+    notifyHabitCompletionForReminders(plantId)
+  }, [completion, plantId])
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -70,6 +79,11 @@ export function CompletionClient({
         setError(result.error)
         return
       }
+      queuePendingGardenEncounter({
+        plantId,
+        plantName,
+        actionKind: 'care',
+      })
       setCompletion(result.data)
     })
   }

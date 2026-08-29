@@ -6,16 +6,24 @@ import { CapabilityFocusAction } from '@/capabilities/core/client-ui-registry'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useUser } from '@/lib/context/dashboard-data-context'
 import { cn } from '@/lib/utils'
+import type { DailyGardenAtmosphere } from '@/lib/garden-encounters'
 import type { PlantWithType } from '@/types/database'
+import type { DailyGardenEncounterMemory } from './use-daily-garden-encounter'
+import type { LucideIcon } from 'lucide-react'
 import {
   Check,
   ChevronRight,
+  CloudSun,
   Clock3,
+  Droplets,
+  Flower2,
   Leaf,
   MapPinned,
   Moon,
   Sparkles,
   Sprout,
+  Sun,
+  Wind,
   X,
 } from 'lucide-react'
 
@@ -28,12 +36,23 @@ interface SanctuaryGardenChromeProps {
   totalCount: number
   isSyncing?: boolean
   welcomeBackDays?: number
+  atmosphere?: DailyGardenAtmosphere | null
+  encounterMemory?: DailyGardenEncounterMemory | null
   onPrimaryAction: () => void
   onTinyAction: () => void
   onRestAction: () => void
   onOpenDetails: () => void
   onCloseFocus: () => void
   onFocusPanelTopChange?: (top: number | null) => void
+}
+
+const atmosphereIcons: Record<DailyGardenAtmosphere['icon'], LucideIcon> = {
+  droplets: Droplets,
+  sun: Sun,
+  cloud: CloudSun,
+  flower: Flower2,
+  wind: Wind,
+  sparkles: Sparkles,
 }
 
 function getGardenDate(): string {
@@ -61,6 +80,8 @@ export function SanctuaryGardenChrome({
   totalCount,
   isSyncing = false,
   welcomeBackDays = 0,
+  atmosphere = null,
+  encounterMemory = null,
   onPrimaryAction,
   onTinyAction,
   onRestAction,
@@ -72,6 +93,7 @@ export function SanctuaryGardenChrome({
   const chromeRef = useRef<HTMLDivElement>(null)
   const focusPanelRef = useRef<HTMLElement>(null)
   const allDone = totalCount > 0 && completedCount >= totalCount
+  const AtmosphereIcon = atmosphere ? atmosphereIcons[atmosphere.icon] : Sparkles
   const initials = (user?.user_metadata?.full_name || user?.email || 'G')
     .trim()
     .charAt(0)
@@ -148,9 +170,22 @@ export function SanctuaryGardenChrome({
         </Link>
       </header>
 
-      <section className="absolute left-1/2 top-[7.6rem] -translate-x-1/2 text-center">
+      <section className="absolute left-1/2 top-[7.6rem] flex -translate-x-1/2 flex-col items-center gap-2 text-center">
+        {(encounterMemory || atmosphere) && (
+          <p
+            className="flex max-w-[78vw] items-center gap-1.5 rounded-full border border-white/60 bg-[#fffaf0]/78 px-3 py-1 text-[11px] font-semibold text-[#58704d] shadow-sm backdrop-blur-md"
+            aria-label={encounterMemory?.copy.memoryLabel ?? atmosphere?.description}
+          >
+            {encounterMemory
+              ? <Sparkles className="h-3.5 w-3.5 shrink-0 text-[#8b8052]" />
+              : <AtmosphereIcon className="h-3.5 w-3.5 shrink-0" />}
+            <span className="truncate">
+              {encounterMemory?.encounter.title ?? atmosphere?.label}
+            </span>
+          </p>
+        )}
         {welcomeBackDays >= 3 && (
-          <p className="mt-2 whitespace-nowrap rounded-full bg-[#fffaf0]/78 px-3 py-1 text-[11px] font-medium text-[#58704d] backdrop-blur-md">
+          <p className="whitespace-nowrap rounded-full bg-[#fffaf0]/78 px-3 py-1 text-[11px] font-medium text-[#58704d] backdrop-blur-md">
             Khu vườn vẫn ở đây, chờ bạn trở lại
           </p>
         )}

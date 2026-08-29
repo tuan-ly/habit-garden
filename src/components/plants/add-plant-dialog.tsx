@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Plus, Clock, Sparkles, Lock, Crown } from 'lucide-react'
+import { BellRing, Plus, Clock, Sparkles, Lock, Crown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { PlantType, Profile, PlantTier } from '@/types/database'
 import { createPlant } from '@/lib/actions/plants'
@@ -33,6 +33,11 @@ import {
 } from '@/lib/progression-system'
 import { getMinimumSubscriptionForPlantTier } from '@/lib/subscription-limits'
 import { isVisibleInGarden } from '@/lib/plant-status'
+import {
+  getDailyReminderEnabled,
+  getHabitReminderSettings,
+} from '@/lib/actions/notifications'
+import { syncNativeHabitReminders } from '@/lib/native-notifications'
 
 interface AddPlantDialogProps {
   plantTypes: PlantType[]
@@ -74,6 +79,8 @@ export function AddPlantDialog({
   const [description, setDescription] = useState('')
   const [easyMode, setEasyMode] = useState(false)
   const [tinySeed, setTinySeed] = useState('')
+  const [reminderEnabled, setReminderEnabled] = useState(true)
+  const [reminderTime, setReminderTime] = useState('20:00')
   const [isPending, startTransition] = useTransition()
 
   // Calculate actual plant count (from context or prop)
@@ -214,6 +221,8 @@ export function AddPlantDialog({
         grid_col: gridPosition?.col,
         easy_mode: easyMode,
         tiny_seed: easyMode && tinySeed.trim() ? tinySeed.trim() : null,
+        reminder_enabled: reminderEnabled,
+        reminder_time: reminderEnabled ? reminderTime : undefined,
       })
 
       if (result.success && result.plant) {
@@ -225,6 +234,14 @@ export function AddPlantDialog({
         })
         setOpen(false)
         resetForm()
+        void Promise.all([
+          getHabitReminderSettings(),
+          getDailyReminderEnabled(),
+        ]).then(([settings, globallyEnabled]) => (
+          syncNativeHabitReminders(settings, globallyEnabled)
+        )).catch(error => {
+          console.error('Unable to sync reminders after creating a habit:', error)
+        })
       } else {
         toast.error('Failed to create plant', {
           description: result.error,
@@ -240,6 +257,8 @@ export function AddPlantDialog({
     setDescription('')
     setEasyMode(false)
     setTinySeed('')
+    setReminderEnabled(true)
+    setReminderTime('20:00')
   }
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -493,6 +512,41 @@ export function AddPlantDialog({
                     <p className="text-xs text-muted-foreground">
                       This is what counts when you really don&apos;t feel like it.
                     </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-3 rounded-[1.35rem] border border-[#d8e2ce] bg-[#f4f7ec]/80 p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-start gap-2.5">
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#dce9cc] text-[#557849]">
+                      <BellRing className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <div className="text-sm font-semibold">Nhắc mình mỗi ngày</div>
+                      <div className="text-xs text-[#71806c]">
+                        Có thể đổi giờ và mục tiêu sau trong Cài đặt.
+                      </div>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={reminderEnabled}
+                    onCheckedChange={setReminderEnabled}
+                    aria-label="Bật nhắc hằng ngày cho habit mới"
+                  />
+                </div>
+
+                {reminderEnabled && (
+                  <div className="relative">
+                    <Clock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#78906d]" />
+                    <Input
+                      type="time"
+                      step={300}
+                      value={reminderTime}
+                      onChange={event => setReminderTime(event.target.value)}
+                      className="rounded-xl border-[#d4dfca] bg-[#fffdf8] pl-10"
+                      aria-label="Giờ nhắc hằng ngày"
+                    />
                   </div>
                 )}
               </div>

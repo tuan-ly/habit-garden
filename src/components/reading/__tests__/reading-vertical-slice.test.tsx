@@ -1,9 +1,11 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CompletionClient } from '@/components/reading/completion-client'
 import { FocusSessionClient } from '@/components/reading/focus-session-client'
 import { GrowthPlanView } from '@/components/reading/growth-plan-view'
 import { ReadingHome } from '@/components/reading/reading-home'
+import { completeReadingSession } from '@/lib/actions/habit-sessions'
+import { consumePendingGardenEncounter } from '@/lib/garden-encounter-pending'
 import type { PlantWithType } from '@/types/database'
 import type {
   GoalPlan,
@@ -40,6 +42,20 @@ vi.mock('@/lib/actions/habit-sessions', () => ({
   setReadingAmbient: vi.fn(),
   completeReadingSession: vi.fn(),
 }))
+
+function createMemoryStorage(): Storage {
+  const values = new Map<string, string>()
+  return {
+    get length() {
+      return values.size
+    },
+    clear: () => { values.clear() },
+    getItem: (key) => values.get(key) ?? null,
+    key: (index) => [...values.keys()][index] ?? null,
+    removeItem: (key) => { values.delete(key) },
+    setItem: (key, value) => { values.set(key, value) },
+  }
+}
 
 const habit: Habit = {
   id: 'habit-1',
@@ -194,7 +210,50 @@ const journey: ReadingJourneySnapshot = {
   latest_completed_session: null,
 }
 
+function createCompletionSnapshot(): ReadingCompletionSnapshot {
+  const completedAt = '2026-07-28T00:26:00.000Z'
+  return {
+    habit,
+    plan,
+    growth: {
+      ...growth,
+      current_streak: 1,
+      total_growth_points: 8,
+    },
+    session: {
+      ...pausedSession,
+      status: 'completed',
+      result_value: 8,
+      reward_points: 8,
+      reflection: 'Một chương rất hay.',
+      finished_at: '2026-07-28T00:25:00.000Z',
+      completed_at: completedAt,
+    },
+    daily_progress: {
+      id: 'daily-1',
+      habit_id: habit.id,
+      user_id: habit.user_id,
+      progress_date: '2026-07-28',
+      target_value: 5,
+      completed_value: 8,
+      session_count: 1,
+      met_target: true,
+      completed_at: completedAt,
+      created_at: completedAt,
+      updated_at: completedAt,
+    },
+  }
+}
+
 describe('reading habit vertical slice UI', () => {
+  beforeEach(() => {
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      value: createMemoryStorage(),
+    })
+    vi.clearAllMocks()
+  })
+
   it('shows the reading plant, today target, and both primary destinations', () => {
     render(<ReadingHome snapshot={journey} />)
 
@@ -264,45 +323,13 @@ describe('reading habit vertical slice UI', () => {
   })
 
   it('shows persisted completion reward, growth, streak, and target comparison', () => {
-    const completedAt = '2026-07-28T00:26:00.000Z'
-    const completedSession: HabitSession = {
-      ...pausedSession,
-      status: 'completed',
-      result_value: 8,
-      reward_points: 8,
-      reflection: 'Một chương rất hay.',
-      finished_at: '2026-07-28T00:25:00.000Z',
-      completed_at: completedAt,
-    }
-    const completedGrowth: GrowthState = {
-      ...growth,
-      current_streak: 1,
-      total_growth_points: 8,
-    }
-    const completion: ReadingCompletionSnapshot = {
-      habit,
-      plan,
-      growth: completedGrowth,
-      session: completedSession,
-      daily_progress: {
-        id: 'daily-1',
-        habit_id: habit.id,
-        user_id: habit.user_id,
-        progress_date: '2026-07-28',
-        target_value: 5,
-        completed_value: 8,
-        session_count: 1,
-        met_target: true,
-        completed_at: completedAt,
-        created_at: completedAt,
-        updated_at: completedAt,
-      },
-    }
+    const completion = createCompletionSnapshot()
 
     render(
       <CompletionClient
         plantId={linkedPlant.id}
-        initialSession={completedSession}
+        plantName={linkedPlant.name}
+        initialSession={completion.session}
         initialCompletion={completion}
       />
     )
@@ -316,6 +343,39 @@ describe('reading habit vertical slice UI', () => {
       'href',
       '/plant/plant-1'
     )
+  })
+
+  it('queues a one-time Garden encounter only after completion succeeds', async () => {
+    const completion = createCompletionSnapshot()
+    vi.mocked(completeReadingSession).mockResolvedValue({
+      success: true,
+      data: completion,
+    })
+
+    render(
+      <CompletionClient
+        plantId={linkedPlant.id}
+        plantName={linkedPlant.name}
+        initialSession={pausedSession}
+      />
+    )
+
+    fireEvent.change(screen.getByLabelText('Số trang đã đọc'), {
+      target: { value: '8' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu kết quả' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('8 trang đã thành tăng trưởng')).toBeInTheDocument()
+    })
+
+    const pending = consumePendingGardenEncounter()
+    expect(pending).toMatchObject({
+      plantId: linkedPlant.id,
+      plantName: linkedPlant.name,
+      actionKind: 'care',
+    })
+    expect(consumePendingGardenEncounter()).toBeNull()
   })
 
   it('shows deterministic milestones and an honest empty history state', () => {

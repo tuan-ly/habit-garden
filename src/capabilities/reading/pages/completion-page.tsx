@@ -47,6 +47,7 @@ export async function ReadingCompletionPage({ plantId, sessionId }: ReadingCompl
     >
       <CompletionClient
         plantId={plantId}
+        plantName={plantName}
         initialSession={sessionResult.data}
         initialCompletion={completionResult?.success ? completionResult.data : undefined}
       />

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { PlantImage } from '@/components/plants/plant-image'
 import type { WateringActionMode } from '@/components/plants/gentle-watering-modal'
+import type { GardenActionKind } from '@/lib/garden-encounters'
 import type { PlantWithType } from '@/types/database'
 import { ArrowLeft, Check, Leaf, Moon, Sprout } from 'lucide-react'
 
@@ -14,9 +15,10 @@ interface SanctuaryActionDialogProps {
   plant: PlantWithType | null
   open: boolean
   initialMode: WateringActionMode
+  actionKind: GardenActionKind
   onOpenChange: (open: boolean) => void
-  onWater: (notes: string | undefined, estimatedXp: number) => Promise<void>
-  onLogAndWater: (value: number | undefined, notes: string | undefined, estimatedXp: number) => Promise<void>
+  onWater: (notes: string | undefined, estimatedXp: number, actionKind?: GardenActionKind) => Promise<void>
+  onLogAndWater: (value: number | undefined, notes: string | undefined, estimatedXp: number, actionKind?: GardenActionKind) => Promise<void>
   onDetails: () => void
 }
 
@@ -24,6 +26,7 @@ export function SanctuaryActionDialog({
   plant,
   open,
   initialMode,
+  actionKind,
   onOpenChange,
   onWater,
   onLogAndWater,
@@ -50,13 +53,18 @@ export function SanctuaryActionDialog({
     if (hasGoal && (numericValue === undefined || Number.isNaN(numericValue))) return
 
     closeAndReset(false)
-    void onLogAndWater(numericValue, notes.trim() || undefined, 10)
+    void onLogAndWater(
+      numericValue,
+      notes.trim() || undefined,
+      10,
+      actionKind === 'tiny' ? 'tiny' : 'care'
+    )
   }
 
   const submitRest = () => {
     if (!plant) return
     closeAndReset(false)
-    void onWater(notes.trim() || undefined, 0)
+    void onWater(notes.trim() || undefined, 0, 'rest')
   }
 
   return (

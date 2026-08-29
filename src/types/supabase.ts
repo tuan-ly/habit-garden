@@ -284,10 +284,78 @@ export type Database = {
           },
         ]
       }
+      notification_push_deliveries: {
+        Row: {
+          attempt_count: number
+          available_at: string
+          claimed_at: string | null
+          created_at: string
+          delivered_at: string | null
+          id: number
+          last_error: string | null
+          notification_id: string
+          status: string
+          subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempt_count?: number
+          available_at?: string
+          claimed_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          id?: number
+          last_error?: string | null
+          notification_id: string
+          status?: string
+          subscription_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempt_count?: number
+          available_at?: string
+          claimed_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          id?: number
+          last_error?: string | null
+          notification_id?: string
+          status?: string
+          subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_push_deliveries_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_push_deliveries_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "push_subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_push_deliveries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string | null
           data: Json | null
+          dedupe_key: string | null
           id: string
           message: string
           message_vi: string | null
@@ -300,6 +368,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           data?: Json | null
+          dedupe_key?: string | null
           id?: string
           message: string
           message_vi?: string | null
@@ -312,6 +381,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           data?: Json | null
+          dedupe_key?: string | null
           id?: string
           message?: string
           message_vi?: string | null
@@ -519,6 +589,53 @@ export type Database = {
           xp?: number | null
         }
         Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth_key: string
+          created_at: string
+          endpoint: string
+          expiration_time: number | null
+          id: string
+          last_seen_at: string
+          p256dh: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth_key: string
+          created_at?: string
+          endpoint: string
+          expiration_time?: number | null
+          id?: string
+          last_seen_at?: string
+          p256dh: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth_key?: string
+          created_at?: string
+          endpoint?: string
+          expiration_time?: number | null
+          id?: string
+          last_seen_at?: string
+          p256dh?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_achievements: {
         Row: {

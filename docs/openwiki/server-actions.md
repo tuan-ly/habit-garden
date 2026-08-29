@@ -39,6 +39,7 @@ environment exposes `record_activity_atomic(...)`.
 - `inventory.ts`, `crafting.ts`, `decorations.ts` - economy/customization.
 - `subscription.ts`, `paddle.ts` - subscription state and billing integration.
 - `profile.ts`, `identity.ts`, `journal.ts`, `activity.ts` - user and habit-supporting domains.
+- `notifications.ts` - owned inbox reads/read-state updates, per-plant reminder settings, current goal summaries, and authenticated Web Push subscription registration/removal.
 - `weeds.ts` - compatibility-only; avoid adding new feature logic.
 
 ## Auth Helper
@@ -55,3 +56,9 @@ Do not call `supabase.auth.getUser()` directly in ordinary action code. The help
 ## Component Rule
 
 Components may call server actions, but they must not perform Supabase writes directly. If a component needs optimistic behavior, put that behavior in the relevant context provider and let the provider call the server action.
+
+## Web Push Subscription Boundary
+
+`registerPushSubscription(...)` accepts browser-generated endpoint/key material, authenticates with `getAuthUser()`, validates bounded strings, and upserts only the current user's subscription. `unregisterPushSubscription(...)` deletes by endpoint plus authenticated owner. Components never write `push_subscriptions` directly and never receive access to `notification_push_deliveries`.
+
+The browser public VAPID key is configuration, not authorization. Project secret keys and VAPID private keys must remain outside Server Actions and client bundles.

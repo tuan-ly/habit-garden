@@ -63,6 +63,15 @@ Deployment receipt ngày 2026-07-16:
 
 Lệnh push có một cảnh báo cache `pg-delta` sau khi transaction đã commit. Ledger, dry-run và semantic query độc lập đều xác nhận migration đã áp dụng thành công.
 
+Deployment receipt ngày 2026-08-27:
+
+- Workflow run `33083824941` áp dụng migration `20260823143710_daily_habit_notifications.sql` từ commit `a1f93c3` lên project `jkhkfsfjnilbfqfatonb`.
+- Remote ledger khớp đủ 65/65 version và linked dry-run trả về `Remote database is up to date`.
+- `habit-reminder-dispatcher` active với lịch `*/5 * * * *`; lần chạy được kiểm tra đầu tiên kết thúc `succeeded` lúc `2026-08-27 14:50:00+00`.
+- Semantic verification xác nhận `notifications.dedupe_key`, partial unique index, RLS, authenticated SELECT và UPDATE riêng cột `read` đều tồn tại.
+- `private.dispatch_due_habit_reminders(TIMESTAMPTZ)` là `SECURITY INVOKER`, có `search_path` rỗng và không cấp EXECUTE cho `anon` hoặc `authenticated`.
+- Linked database advisors không có issue mức `ERROR`; không dùng `migration repair`, `--include-all` hoặc thao tác trực tiếp remote ledger.
+
 ## Advisor backlog
 
 Remote database advisors không có lỗi mức `ERROR`, nhưng còn 40 cảnh báo cần xử lý trong một security hardening task riêng:

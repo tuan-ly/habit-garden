@@ -23,6 +23,7 @@ import { applyGoalLogToPeriod } from '@/lib/goal-progress'
 import { isVisibleInGarden } from '@/lib/plant-status'
 import { toast } from 'sonner'
 import { logActivity, type LogActivityDto, type LogActivityResult } from '@/lib/actions/activity'
+import { notifyHabitCompletionForReminders } from '@/lib/native-notifications'
 
 // Types for optimistic updates
 type OptimisticAction =
@@ -271,6 +272,7 @@ export function PlantsProvider({
               : plant.goal,
           } as PlantWithType
         }))
+        notifyHabitCompletionForReminders(dto.plant_id)
         return result
       } catch (error) {
         setServerPlants((plants) => plants.map((plant) =>
@@ -341,6 +343,7 @@ export function PlantsProvider({
         const result = await waterPlantAction(plantId, options)
         
         if (result.success) {
+          notifyHabitCompletionForReminders(plantId)
           // Server confirmed - update serverPlants to persist the change
           setServerPlants((prev) =>
             prev.map((p) => {
@@ -426,6 +429,7 @@ export function PlantsProvider({
         })
 
         if (result.success) {
+          notifyHabitCompletionForReminders(plantId)
           // Server confirmed - update serverPlants to persist the change
           setServerPlants((prev) =>
             prev.map((p) => {
