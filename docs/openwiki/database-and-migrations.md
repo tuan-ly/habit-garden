@@ -29,6 +29,14 @@ Migration `20260823143710_daily_habit_notifications.sql` adds nullable `notifica
 
 The migration was applied to linked project `jkhkfsfjnilbfqfatonb` on 2026-08-27 by migration-ledger workflow run `33083824941` from commit `a1f93c3`. The remote ledger and dry-run are aligned, the five-minute cron job is active, its first verified execution succeeded, the dispatcher remains unavailable to `anon` and `authenticated`, and ERROR-level database advisors report no issues.
 
+## Web Push Delivery
+
+Migration `20260829221041_web_push_delivery.sql` adds `push_subscriptions` and `notification_push_deliveries`. Subscription CRUD is authenticated and owner-scoped by RLS. The delivery table is inaccessible to `anon` and `authenticated`; the Edge Function uses the server admin client.
+
+The migration ensures `pg_net` is installed before defining its invoker. `private.enqueue_notification_push_deliveries()` is an invoker trigger that creates one delivery for every subscription owned by the notification recipient. `private.invoke_web_push_dispatcher()` is a private `SECURITY DEFINER` cron boundary with an empty `search_path` and no client execute privilege. It reads `habit_garden_project_url` and `habit_garden_secret_key` from Vault, returns `NULL` when either is absent, and otherwise invokes `push-notifications` through `pg_net` every minute.
+
+Expired subscriptions use `ON DELETE SET NULL` so delivery audit survives cleanup. `scripts/sql/verify-web-push-delivery.sql` transactionally verifies enqueueing, safe idle behavior without Vault secrets and audit retention. Production configuration and deployment are documented in `docs/WEB-PUSH-SETUP.md`; the migration remains local-only until the protected migration-ledger workflow applies it.
+
 ## RLS
 
 All user-owned tables should have RLS policies that constrain reads/writes by `auth.uid()`. Server actions should still perform ownership checks before writes; RLS is the database backstop, not a reason to skip app-level authorization.
@@ -37,7 +45,7 @@ All user-owned tables should have RLS policies that constrain reads/writes by `a
 
 When adding or changing schema:
 
-1. Add a timestamped SQL migration under `supabase/migrations/`.
+1. Create a timestamped SQL migration under `supabase/migrations/` with `supabase migration new`.
 2. Add or update RLS policies in the same migration when needed.
 3. Update `src/types/database.ts` if app code depends on the new fields.
 4. Update relevant actions with explicit column lists.

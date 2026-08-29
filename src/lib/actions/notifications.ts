@@ -4,10 +4,39 @@ import { getAuthUser } from '@/lib/auth-cached'
 import { getGoalsForPlants } from '@/lib/actions/goals'
 import { normalizeReminderTime } from '@/lib/notification-system'
 import { createClient } from '@/lib/supabase/server'
-import type { HabitReminderSetting, NotificationInboxItem } from '@/types/notifications'
+import type {
+  HabitReminderSetting,
+  NotificationInboxItem,
+  WebPushSubscriptionInput,
+} from '@/types/notifications'
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const TIME_PATTERN = /^(?:[01]\d|2[0-3]):[0-5]\d$/
+const PUSH_KEY_PATTERN = /^[A-Za-z0-9_-]+$/
+
+function isValidPushSubscription(input: WebPushSubscriptionInput): boolean {
+  if (
+    !input
+    || typeof input.endpoint !== 'string'
+    || input.endpoint.length < 16
+    || input.endpoint.length > 4096
+    || typeof input.keys?.p256dh !== 'string'
+    || typeof input.keys?.auth !== 'string'
+    || input.keys.p256dh.length < 16
+    || input.keys.p256dh.length > 512
+    || input.keys.auth.length < 8
+    || input.keys.auth.length > 256
+    || !PUSH_KEY_PATTERN.test(input.keys.p256dh)
+    || !PUSH_KEY_PATTERN.test(input.keys.auth)
+  ) return false
+
+  try {
+    const endpoint = new URL(input.endpoint)
+    return endpoint.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
 
 function getCapabilityUnit(unit: string, customUnit: string | null): string {
   switch (unit) {
@@ -79,6 +108,68 @@ export async function markNotificationsRead(
   if (error) {
     console.error('Unable to mark notifications as read:', error)
     return { success: false, error: 'Không thể cập nhật thông báo.' }
+  }
+
+  return { success: true }
+}
+
+export async function registerPushSubscription(
+  subscription: WebPushSubscriptionInput,
+  userAgent?: string
+): Promise<{ success: boolean; error?: string }> {
+  const user = await getAuthUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
+  if (!isValidPushSubscription(subscription)) {
+    return { success: false, error: 'Thông tin đăng ký Web Push không hợp lệ.' }
+  }
+
+  const expirationTime = subscription.expirationTime == null
+    ? null
+    : Number.isSafeInteger(subscription.expirationTime) && subscription.expirationTime >= 0
+      ? subscription.expirationTime
+      : null
+  const now = new Date().toISOString()
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('push_subscriptions')
+    .upsert({
+      user_id: user.id,
+      endpoint: subscription.endpoint,
+      p256dh: subscription.keys.p256dh,
+      auth_key: subscription.keys.auth,
+      expiration_time: expirationTime,
+      user_agent: typeof userAgent === 'string' ? userAgent.slice(0, 512) : null,
+      updated_at: now,
+      last_seen_at: now,
+    }, { onConflict: 'endpoint' })
+
+  if (error) {
+    console.error('Unable to register Web Push subscription:', error)
+    return { success: false, error: 'Không thể đăng ký thiết bị nhận Web Push.' }
+  }
+
+  return { success: true }
+}
+
+export async function unregisterPushSubscription(
+  endpoint: string
+): Promise<{ success: boolean; error?: string }> {
+  const user = await getAuthUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
+  if (typeof endpoint !== 'string' || endpoint.length < 16 || endpoint.length > 4096) {
+    return { success: false, error: 'Web Push subscription không hợp lệ.' }
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('push_subscriptions')
+    .delete()
+    .eq('user_id', user.id)
+    .eq('endpoint', endpoint)
+
+  if (error) {
+    console.error('Unable to unregister Web Push subscription:', error)
+    return { success: false, error: 'Không thể tắt Web Push trên thiết bị này.' }
   }
 
   return { success: true }

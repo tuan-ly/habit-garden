@@ -16,11 +16,13 @@ import {
 } from '@/components/ui/select'
 import {
   Bell,
+  BellOff,
   BellRing,
   Clock3,
   Loader2,
   Palette,
   Save,
+  Send,
   Shield,
   Smartphone,
   Target,
@@ -32,14 +34,15 @@ import {
   updateHabitReminder,
 } from '@/lib/actions/notifications'
 import {
-  getDeviceNotificationPermission,
-  isNativeNotificationPlatform,
-  requestDeviceNotificationPermission,
+  disableDeviceNotifications,
+  enableDeviceNotifications,
+  getDeviceNotificationState,
+  showDeviceNotificationPreview,
   syncNativeHabitReminders,
 } from '@/lib/native-notifications'
 import { formatGoalValue } from '@/lib/notification-system'
 import type {
-  DeviceNotificationPermission,
+  DeviceNotificationState,
   HabitReminderSetting,
 } from '@/types/notifications'
 import { ChangePasswordDialog } from './change-password-dialog'
@@ -47,6 +50,23 @@ import { ChangePasswordDialog } from './change-password-dialog'
 interface NotificationSettingsProps {
   defaultDailyReminder?: boolean
   defaultAchievementNotifications?: boolean
+}
+
+function getDeviceNotificationCopy(state: DeviceNotificationState): string {
+  if (state.mode === 'unsupported') {
+    return 'Thiết bị hoặc trình duyệt này không hỗ trợ thông báo hệ thống'
+  }
+  if (!state.configured) return 'Web Push chưa được cấu hình trên môi trường này'
+  if (state.subscribed) {
+    return state.mode === 'native-local'
+      ? 'Local notification đã bật trên thiết bị này'
+      : 'Web Push đã bật trên thiết bị này'
+  }
+  if (state.permission === 'denied') return 'Đang bị chặn trong cài đặt thiết bị'
+  if (state.permission === 'granted') {
+    return 'Đã cấp quyền nhưng thiết bị chưa đăng ký Web Push'
+  }
+  return 'Chưa cấp quyền trên thiết bị này'
 }
 
 export function NotificationSettings({
@@ -60,7 +80,13 @@ export function NotificationSettings({
   const [loadingReminders, setLoadingReminders] = useState(true)
   const [savingPlantId, setSavingPlantId] = useState<string | null>(null)
   const [requestingPermission, setRequestingPermission] = useState(false)
-  const [permission, setPermission] = useState<DeviceNotificationPermission>('prompt')
+  const [testingNotification, setTestingNotification] = useState(false)
+  const [deviceState, setDeviceState] = useState<DeviceNotificationState>({
+    permission: 'prompt',
+    mode: 'unsupported',
+    configured: false,
+    subscribed: false,
+  })
   const [reminders, setReminders] = useState<HabitReminderSetting[]>([])
   const [persistedReminders, setPersistedReminders] = useState<HabitReminderSetting[]>([])
 
@@ -69,12 +95,12 @@ export function NotificationSettings({
 
     void Promise.all([
       getHabitReminderSettings(),
-      getDeviceNotificationPermission(),
-    ]).then(([settings, nextPermission]) => {
+      getDeviceNotificationState(),
+    ]).then(([settings, nextDeviceState]) => {
       if (cancelled) return
       setReminders(settings)
       setPersistedReminders(settings)
-      setPermission(nextPermission)
+      setDeviceState(nextDeviceState)
       setLoadingReminders(false)
     })
 
@@ -99,15 +125,43 @@ export function NotificationSettings({
 
   const requestPermission = async () => {
     setRequestingPermission(true)
-    const nextPermission = await requestDeviceNotificationPermission()
-    setPermission(nextPermission)
+    const nextState = await enableDeviceNotifications()
+    setDeviceState(nextState)
     setRequestingPermission(false)
 
-    if (nextPermission === 'granted') {
-      await syncNativeHabitReminders(reminders, daily)
+    if (nextState.error) {
+      toast.error(nextState.error)
+    } else if (nextState.subscribed) {
+      if (nextState.mode === 'native-local') {
+        await syncNativeHabitReminders(reminders, daily)
+      }
       toast.success('Thiết bị đã sẵn sàng nhận lời nhắc')
-    } else if (nextPermission === 'denied') {
+    } else if (nextState.permission === 'denied') {
       toast.error('Quyền thông báo đang bị chặn trong cài đặt thiết bị')
+    }
+  }
+
+  const disableOnDevice = async () => {
+    setRequestingPermission(true)
+    const nextState = await disableDeviceNotifications()
+    setDeviceState(nextState)
+    setRequestingPermission(false)
+
+    if (nextState.error) toast.error(nextState.error)
+    else toast.success('Đã tắt Web Push trên thiết bị này')
+  }
+
+  const testOnDevice = async () => {
+    setTestingNotification(true)
+    try {
+      const shown = await showDeviceNotificationPreview()
+      if (shown) toast.success('Đã gửi một thông báo thử tới thiết bị')
+      else toast.error('Thiết bị chưa sẵn sàng hiển thị thông báo')
+    } catch (error) {
+      console.error('Unable to show notification preview:', error)
+      toast.error('Không thể gửi thông báo thử')
+    } finally {
+      setTestingNotification(false)
     }
   }
 
@@ -152,13 +206,7 @@ export function NotificationSettings({
     await saveReminder(nextReminder)
   }
 
-  const permissionCopy = permission === 'granted'
-    ? 'Đã bật trên thiết bị này'
-    : permission === 'denied'
-      ? 'Đang bị chặn trong cài đặt thiết bị'
-      : permission === 'unsupported'
-        ? 'Trình duyệt này không hỗ trợ thông báo hệ thống'
-        : 'Chưa cấp quyền trên thiết bị này'
+  const permissionCopy = getDeviceNotificationCopy(deviceState)
 
   const toggleAch = async (next: boolean) => {
     setSavingAch(true)
@@ -213,25 +261,55 @@ export function NotificationSettings({
                 <p className="text-sm text-[#71806c]">{permissionCopy}</p>
               </div>
             </div>
-            {permission !== 'granted' && permission !== 'unsupported' && (
-              <Button
-                type="button"
-                size="sm"
-                onClick={requestPermission}
-                disabled={requestingPermission}
-                className="rounded-full bg-[#638653] text-white hover:bg-[#557747]"
-              >
-                {requestingPermission
-                  ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  : <BellRing className="mr-2 h-4 w-4" />}
-                Bật thông báo
-              </Button>
-            )}
+            <div className="flex flex-wrap gap-2">
+              {!deviceState.subscribed && deviceState.mode !== 'unsupported' && (
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={requestPermission}
+                  disabled={requestingPermission || !deviceState.configured}
+                  className="rounded-full bg-[#638653] text-white hover:bg-[#557747]"
+                >
+                  {requestingPermission
+                    ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    : <BellRing className="mr-2 h-4 w-4" />}
+                  Bật thông báo
+                </Button>
+              )}
+              {deviceState.subscribed && deviceState.mode === 'web-push' && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={disableOnDevice}
+                  disabled={requestingPermission}
+                  className="rounded-full border-[#c7d5bb] bg-white/70 text-[#5c7652]"
+                >
+                  <BellOff className="mr-2 h-4 w-4" />
+                  Tắt trên thiết bị
+                </Button>
+              )}
+              {deviceState.subscribed && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={testOnDevice}
+                  disabled={testingNotification}
+                  className="rounded-full border-[#c7d5bb] bg-white/70 text-[#5c7652]"
+                >
+                  {testingNotification
+                    ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    : <Send className="mr-2 h-4 w-4" />}
+                  Gửi thử
+                </Button>
+              )}
+            </div>
           </div>
           <p className="mt-3 text-xs leading-relaxed text-[#7b8775]">
-            {isNativeNotificationPlatform()
+            {deviceState.mode === 'native-local'
               ? 'Bản mobile sẽ nhắc đúng giờ ngay cả khi Habit Garden đang đóng.'
-              : 'Trên web, inbox luôn đồng bộ; thông báo hệ thống xuất hiện khi Habit Garden đang mở.'}
+              : 'Web Push có thể nhắc trên desktop hoặc PWA ngay cả khi Habit Garden không mở.'}
           </p>
         </div>
 

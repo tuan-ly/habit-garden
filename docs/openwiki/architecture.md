@@ -38,10 +38,14 @@ Client code can consume hydrated context and call server actions, but direct Sup
 
 Capacitor config is in `capacitor.config.ts`; platform projects live under `ios/` and `android/`. PWA config and icons live under `next.config.ts`, `public/manifest.json`, and `public/icons/`.
 
-The authenticated shell mounts `NotificationCenter` and `NativeReminderSync`. The center polls the durable Supabase inbox while native sync mirrors each enabled plant reminder into Capacitor Local Notifications. Habit completion crosses a client event boundary, so reused completion/context components do not fetch reminder settings or depend on a Next.js request scope.
+The authenticated shell mounts `NotificationCenter` and `NativeReminderSync`. The center polls the durable Supabase inbox. Capacitor shells mirror enabled plant reminders into Local Notifications, while browsers register an owner-scoped Web Push subscription through Settings. Habit completion crosses a client event boundary, so reused completion/context components do not fetch reminder settings or depend on a Next.js request scope.
+
+The inbox remains the source of truth. Migration `20260829221041_web_push_delivery.sql` adds a per-device delivery queue, and `supabase/functions/push-notifications` sends VAPID-signed payloads even when the PWA is closed. `worker/index.js` renders the system notification and permits same-origin navigation only. See [ADR 007](../adr/007-web-push-delivery-layer.md) and [Web Push Setup](../WEB-PUSH-SETUP.md).
 
 ## Scheduled Work
 
 Daily moisture decay primarily belongs in Supabase migrations/functions. The Next.js cron/admin API is a backup or utility path; do not put ordinary user-facing mutation logic there.
 
 Daily habit reminders follow the same database-owned rule. `private.dispatch_due_habit_reminders(...)` runs every five minutes through Supabase Cron, computes the owner's local clock and current target/progress, and inserts at most one inbox row per plant/local date.
+
+Web Push delivery is a separate scheduled concern. An inbox insert enqueues one delivery per active browser subscription; `habit-web-push-dispatcher` invokes the secret-authenticated Edge Function every minute. Vault and Edge secrets are deployment configuration, never migration contents or client environment values.

@@ -6,6 +6,28 @@ export type DeviceNotificationPermission =
   | 'prompt'
   | 'unsupported'
 
+export type DeviceNotificationMode =
+  | 'native-local'
+  | 'web-push'
+  | 'unsupported'
+
+export interface DeviceNotificationState {
+  permission: DeviceNotificationPermission
+  mode: DeviceNotificationMode
+  configured: boolean
+  subscribed: boolean
+  error?: string
+}
+
+export interface WebPushSubscriptionInput {
+  endpoint: string
+  expirationTime: number | null
+  keys: {
+    p256dh: string
+    auth: string
+  }
+}
+
 export interface NotificationInboxItem {
   id: string
   type: string

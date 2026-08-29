@@ -75,7 +75,7 @@ export function NotificationCenter({ initialNotifications }: NotificationCenterP
 
     for (const notification of fresh) {
       knownIds.current.add(notification.id)
-      showBrowserNotification(notification)
+      void showBrowserNotification(notification)
     }
 
     setNotifications(next)

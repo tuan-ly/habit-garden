@@ -81,6 +81,7 @@ src/
 | System architecture & data flow | [`docs/system-architecture.md`](docs/system-architecture.md) |
 | Roadmap (done + upcoming) | [`docs/project-roadmap.md`](docs/project-roadmap.md) |
 | Deployment (Vercel, Supabase, Paddle, mobile) | [`docs/deployment-guide.md`](docs/deployment-guide.md) |
+| Web Push production setup | [`docs/WEB-PUSH-SETUP.md`](docs/WEB-PUSH-SETUP.md) |
 | Visual & UX guidelines | [`docs/design-guidelines.md`](docs/design-guidelines.md) |
 | AI context (current sprint) | [`.claude/MEMO.md`](.claude/MEMO.md) |
 | Architecture decisions | [`.claude/DECISIONS.md`](.claude/DECISIONS.md) |
