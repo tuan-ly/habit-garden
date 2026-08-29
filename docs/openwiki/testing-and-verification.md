@@ -53,3 +53,5 @@ Use Storybook for visual component changes that are hard to validate through uni
 - Server action/domain mutation: Vitest if possible plus manual flow or Playwright when user-visible.
 - Garden rendering/interaction change: browser smoke test and screenshot when practical.
 - Schema change: migration review, type update, and action-level verification.
+
+For daily notifications, also run the migration ledger check and execute `scripts/sql/verify-daily-habit-notifications.sql` against local Postgres. The probe rolls back its fixtures after checking goal suppression, simple-habit completion, idempotency, target resolution and the cross-midnight due window. Use `npx.cmd cap update`, `npx.cmd cap ls` and platform doctor output to verify native plugin registration without requiring exported web assets.

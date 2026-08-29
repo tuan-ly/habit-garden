@@ -39,6 +39,7 @@ environment exposes `record_activity_atomic(...)`.
 - `inventory.ts`, `crafting.ts`, `decorations.ts` - economy/customization.
 - `subscription.ts`, `paddle.ts` - subscription state and billing integration.
 - `profile.ts`, `identity.ts`, `journal.ts`, `activity.ts` - user and habit-supporting domains.
+- `notifications.ts` - owned inbox reads/read-state updates plus per-plant reminder settings and current goal summaries.
 - `weeds.ts` - compatibility-only; avoid adding new feature logic.
 
 ## Auth Helper

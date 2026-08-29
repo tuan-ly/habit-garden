@@ -38,6 +38,10 @@ Client code can consume hydrated context and call server actions, but direct Sup
 
 Capacitor config is in `capacitor.config.ts`; platform projects live under `ios/` and `android/`. PWA config and icons live under `next.config.ts`, `public/manifest.json`, and `public/icons/`.
 
+The authenticated shell mounts `NotificationCenter` and `NativeReminderSync`. The center polls the durable Supabase inbox while native sync mirrors each enabled plant reminder into Capacitor Local Notifications. Habit completion crosses a client event boundary, so reused completion/context components do not fetch reminder settings or depend on a Next.js request scope.
+
 ## Scheduled Work
 
 Daily moisture decay primarily belongs in Supabase migrations/functions. The Next.js cron/admin API is a backup or utility path; do not put ordinary user-facing mutation logic there.
+
+Daily habit reminders follow the same database-owned rule. `private.dispatch_due_habit_reminders(...)` runs every five minutes through Supabase Cron, computes the owner's local clock and current target/progress, and inserts at most one inbox row per plant/local date.

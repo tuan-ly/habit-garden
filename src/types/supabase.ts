@@ -288,6 +288,7 @@ export type Database = {
         Row: {
           created_at: string | null
           data: Json | null
+          dedupe_key: string | null
           id: string
           message: string
           message_vi: string | null
@@ -300,6 +301,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           data?: Json | null
+          dedupe_key?: string | null
           id?: string
           message: string
           message_vi?: string | null
@@ -312,6 +314,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           data?: Json | null
+          dedupe_key?: string | null
           id?: string
           message?: string
           message_vi?: string | null
