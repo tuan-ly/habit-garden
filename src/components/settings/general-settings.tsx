@@ -56,7 +56,7 @@ function getDeviceNotificationCopy(state: DeviceNotificationState): string {
   if (state.mode === 'unsupported') {
     return 'Thiết bị hoặc trình duyệt này không hỗ trợ thông báo hệ thống'
   }
-  if (!state.configured) return 'Web Push chưa được cấu hình trên môi trường này'
+  if (!state.configured) return state.error ?? 'Web Push chưa được cấu hình trên môi trường này'
   if (state.subscribed) {
     return state.mode === 'native-local'
       ? 'Local notification đã bật trên thiết bị này'
