@@ -24,6 +24,7 @@ import {
 const REMINDER_CHANNEL_ID = 'habit-reminders'
 const HABIT_COMPLETED_EVENT = 'habit-garden:habit-completed'
 const WEB_PUSH_PUBLIC_KEY = process.env.NEXT_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY?.trim() ?? ''
+const SERVICE_WORKER_READY_TIMEOUT_MS = 10_000
 
 interface HabitCompletedEventDetail {
   plantId: string
@@ -83,6 +84,7 @@ async function getWebPushRegistration(
   registerWhenMissing: boolean
 ): Promise<ServiceWorkerRegistration | null> {
   if (!isWebPushSupported()) return null
+  if (process.env.NODE_ENV !== 'production') return null
 
   const existing = await navigator.serviceWorker.getRegistration('/')
   if (existing || !registerWhenMissing) return existing ?? null
@@ -91,7 +93,13 @@ async function getWebPushRegistration(
 
   // A newly registered worker may still be installing. `ready` resolves only
   // after an active worker controls this origin and can own a PushSubscription.
-  return navigator.serviceWorker.ready
+  let timeoutId: number | undefined
+  const timeout = new Promise<null>(resolve => {
+    timeoutId = window.setTimeout(resolve, SERVICE_WORKER_READY_TIMEOUT_MS, null)
+  })
+  const ready = await Promise.race([navigator.serviceWorker.ready, timeout])
+  if (timeoutId !== undefined) window.clearTimeout(timeoutId)
+  return ready
 }
 
 function toPushSubscriptionInput(
@@ -147,13 +155,26 @@ export async function getDeviceNotificationState(): Promise<DeviceNotificationSt
   const permission = window.Notification.permission === 'default'
     ? 'prompt'
     : window.Notification.permission
+  const configuredForWebPush = WEB_PUSH_PUBLIC_KEY.length > 0
+    && process.env.NODE_ENV === 'production'
+
+  if (!configuredForWebPush) {
+    return {
+      permission,
+      mode: 'web-push',
+      configured: false,
+      subscribed: false,
+      error: 'Web Push chỉ hoạt động trên bản production/PWA, không chạy cùng next dev ở localhost.',
+    }
+  }
+
   const registration = await getWebPushRegistration(false)
   const subscription = await registration?.pushManager.getSubscription()
 
   return {
     permission,
     mode: 'web-push',
-    configured: WEB_PUSH_PUBLIC_KEY.length > 0,
+    configured: true,
     subscribed: Boolean(subscription),
   }
 }
@@ -204,7 +225,7 @@ export async function enableDeviceNotifications(): Promise<DeviceNotificationSta
   }
 
   if (!isWebPushSupported()) return getDeviceNotificationState()
-  if (!WEB_PUSH_PUBLIC_KEY) {
+  if (!WEB_PUSH_PUBLIC_KEY || process.env.NODE_ENV !== 'production') {
     return {
       permission: window.Notification.permission === 'default'
         ? 'prompt'
@@ -212,7 +233,9 @@ export async function enableDeviceNotifications(): Promise<DeviceNotificationSta
       mode: 'web-push',
       configured: false,
       subscribed: false,
-      error: 'Web Push chưa được cấu hình cho môi trường này.',
+      error: process.env.NODE_ENV === 'production'
+        ? 'Web Push chưa được cấu hình cho môi trường này.'
+        : 'Web Push chỉ hoạt động trên bản production/PWA, không chạy cùng next dev ở localhost.',
     }
   }
 
