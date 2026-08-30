@@ -81,6 +81,15 @@ Deployment receipt ngày 2026-08-30:
 - `habit-web-push-dispatcher` active với lịch mỗi phút; lần chạy gần nhất được kiểm tra có trạng thái `succeeded`, và `pg_net` response gần nhất trả HTTP `200`.
 - Edge Function secrets, Vault entries và VAPID private key không được ghi vào Git hoặc migration history; không dùng `migration repair`, `--include-all` hoặc thao tác trực tiếp remote ledger.
 
+Deployment receipt ngày 2026-08-30 — same-day reminder rescheduling:
+
+- PR `#21` được merge vào master commit `057c64f`; Vercel production deployment `9GXpdEskLTTs5DvyTFcrPBhZwN5H` hoàn tất thành công.
+- Workflow run `33303304968` áp dụng migration `20260830085552_reschedule_daily_habit_reminders.sql` lên project `jkhkfsfjnilbfqfatonb`.
+- Remote ledger có version mới nhất `20260830085552` và khớp đủ 67 migration.
+- Rollback-only production probe xác nhận retry cùng giờ không tạo row trùng, còn đổi `08:00` sang `08:07` trong cùng ngày tạo đúng một reminder mới.
+- Trigger `notifications_version_habit_reminder_dedupe` đang enabled; function private là `SECURITY INVOKER`, có `search_path` rỗng và không cấp EXECUTE cho `anon` hoặc `authenticated`.
+- Cả `habit-reminder-dispatcher` và `habit-web-push-dispatcher` vẫn active; cron runs mới nhất succeeded, `pg_net` trả HTTP `200` và delivery audit có trạng thái `delivered`.
+
 ## Advisor backlog
 
 Remote database advisors không có lỗi mức `ERROR`, nhưng còn 40 cảnh báo cần xử lý trong một security hardening task riêng:
