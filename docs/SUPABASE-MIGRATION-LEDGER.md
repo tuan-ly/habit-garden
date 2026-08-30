@@ -72,6 +72,15 @@ Deployment receipt ngày 2026-08-27:
 - `private.dispatch_due_habit_reminders(TIMESTAMPTZ)` là `SECURITY INVOKER`, có `search_path` rỗng và không cấp EXECUTE cho `anon` hoặc `authenticated`.
 - Linked database advisors không có issue mức `ERROR`; không dùng `migration repair`, `--include-all` hoặc thao tác trực tiếp remote ledger.
 
+Deployment receipt ngày 2026-08-30:
+
+- Workflow run `33281295863` áp dụng migration `20260829221041_web_push_delivery.sql` từ master commit `e62f22d` lên project `jkhkfsfjnilbfqfatonb`.
+- Remote ledger khớp đủ 66/66 version; `supabase migration list --linked` xác nhận local và remote cùng có version `20260829221041`.
+- Semantic verification xác nhận `push_subscriptions` và `notification_push_deliveries` tồn tại và bật RLS; trigger `notifications_enqueue_web_push` tồn tại.
+- `anon` và `authenticated` không có quyền SELECT delivery audit; subscription access tiếp tục được giới hạn bởi authenticated grants và owner RLS.
+- `habit-web-push-dispatcher` active với lịch mỗi phút; lần chạy gần nhất được kiểm tra có trạng thái `succeeded`, và `pg_net` response gần nhất trả HTTP `200`.
+- Edge Function secrets, Vault entries và VAPID private key không được ghi vào Git hoặc migration history; không dùng `migration repair`, `--include-all` hoặc thao tác trực tiếp remote ledger.
+
 ## Advisor backlog
 
 Remote database advisors không có lỗi mức `ERROR`, nhưng còn 40 cảnh báo cần xử lý trong một security hardening task riêng:
