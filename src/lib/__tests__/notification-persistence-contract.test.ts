@@ -117,7 +117,9 @@ describe('daily habit notification persistence contract', () => {
   it('waits for an active service worker before subscribing a device', () => {
     expect(nativeNotifications).toContain("navigator.serviceWorker.register('/sw.js', { scope: '/' })")
     expect(nativeNotifications).toContain('Promise.race([navigator.serviceWorker.ready, timeout])')
-    expect(nativeNotifications).toContain('return ready')
+    expect(nativeNotifications).toContain('if (existing?.active) return existing')
+    expect(nativeNotifications).toContain('return ready?.active ? ready : null')
+    expect(nativeNotifications).toContain('getWebPushRegistration(true)')
     expect(nativeNotifications).toContain('SERVICE_WORKER_READY_TIMEOUT_MS')
     expect(nativeNotifications).toContain("process.env.NODE_ENV !== 'production'")
   })

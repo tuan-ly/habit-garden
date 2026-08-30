@@ -87,19 +87,22 @@ async function getWebPushRegistration(
   if (process.env.NODE_ENV !== 'production') return null
 
   const existing = await navigator.serviceWorker.getRegistration('/')
-  if (existing || !registerWhenMissing) return existing ?? null
+  if (existing?.active) return existing
+  if (!existing && !registerWhenMissing) return null
 
-  await navigator.serviceWorker.register('/sw.js', { scope: '/' })
+  if (!existing) {
+    await navigator.serviceWorker.register('/sw.js', { scope: '/' })
+  }
 
-  // A newly registered worker may still be installing. `ready` resolves only
-  // after an active worker controls this origin and can own a PushSubscription.
+  // iOS may expose a registration while its worker is still installing. Wait
+  // for an active worker before touching PushManager, even for an existing one.
   let timeoutId: number | undefined
   const timeout = new Promise<null>(resolve => {
     timeoutId = window.setTimeout(resolve, SERVICE_WORKER_READY_TIMEOUT_MS, null)
   })
   const ready = await Promise.race([navigator.serviceWorker.ready, timeout])
   if (timeoutId !== undefined) window.clearTimeout(timeoutId)
-  return ready
+  return ready?.active ? ready : null
 }
 
 function toPushSubscriptionInput(
@@ -168,7 +171,9 @@ export async function getDeviceNotificationState(): Promise<DeviceNotificationSt
     }
   }
 
-  const registration = await getWebPushRegistration(false)
+  // Start installation while the settings page is open, before the user taps
+  // the permission button. This avoids an iOS cold-launch activation race.
+  const registration = await getWebPushRegistration(true)
   const subscription = await registration?.pushManager.getSubscription()
 
   return {
@@ -257,7 +262,7 @@ export async function enableDeviceNotifications(): Promise<DeviceNotificationSta
         mode: 'web-push',
         configured: true,
         subscribed: false,
-        error: 'Service Worker chưa sẵn sàng. Hãy thử lại trên bản production/PWA.',
+        error: 'Service Worker đang khởi động. Hãy giữ PWA mở vài giây rồi thử lại.',
       }
     }
 
@@ -289,12 +294,16 @@ export async function enableDeviceNotifications(): Promise<DeviceNotificationSta
     }
   } catch (error) {
     console.error('Unable to enable Web Push:', error)
+    const waitingForWorker = error instanceof DOMException
+      && error.name === 'InvalidStateError'
     return {
       permission: 'granted',
       mode: 'web-push',
       configured: true,
       subscribed: false,
-      error: 'Không thể đăng ký Web Push trên thiết bị này.',
+      error: waitingForWorker
+        ? 'Service Worker đang khởi động. Hãy giữ PWA mở vài giây rồi thử lại.'
+        : 'Không thể đăng ký Web Push trên thiết bị này.',
     }
   }
 }
