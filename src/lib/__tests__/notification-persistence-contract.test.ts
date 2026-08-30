@@ -19,6 +19,10 @@ const webPushFunction = readFileSync(
   'utf8'
 )
 const pushWorker = readFileSync(resolve('worker/index.js'), 'utf8')
+const nativeNotifications = readFileSync(
+  resolve('src/lib/native-notifications.ts'),
+  'utf8'
+)
 
 describe('daily habit notification persistence contract', () => {
   it('deduplicates one scheduled reminder per user, habit, and local date', () => {
@@ -108,5 +112,10 @@ describe('daily habit notification persistence contract', () => {
     expect(pushWorker).toContain('self.registration.showNotification')
     expect(pushWorker).toContain("addEventListener('notificationclick'")
     expect(pushWorker).toContain('targetUrl.origin !== self.location.origin')
+  })
+
+  it('waits for an active service worker before subscribing a device', () => {
+    expect(nativeNotifications).toContain("navigator.serviceWorker.register('/sw.js', { scope: '/' })")
+    expect(nativeNotifications).toContain('return navigator.serviceWorker.ready')
   })
 })
