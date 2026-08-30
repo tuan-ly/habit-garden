@@ -31,8 +31,17 @@ export function OnboardingModal({ onOpenAddPlant }: OnboardingModalProps) {
     if (plantSeed) onOpenAddPlant?.()
   }
 
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      setOpen(true)
+      return
+    }
+
+    finish(false)
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[92dvh] overflow-y-auto border-[#d6e0cc] bg-[#fffaf0] p-0 text-[#304b2b] sm:max-w-md">
         <div className="relative overflow-hidden rounded-[inherit] px-6 pb-7 pt-8">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-48 bg-[radial-gradient(circle_at_top,#dce9cc,transparent_72%)]" />

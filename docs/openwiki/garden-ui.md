@@ -121,6 +121,7 @@ The plant identity card doubles as a switcher. The current plant is pinned first
 - `useGardenInteractions()` performs existing optimistic mutations and can open a selected action mode directly.
 - In sanctuary mode, `GardenCelebrationLayer` renders `SanctuaryGardenReaction`; XP-first overlays are suppressed.
 - Mood is no longer a proactive blocking modal. Onboarding is the only automatic entry modal.
+- **Onboarding Completion** accepts every clear dismissal path: finishing, choosing to explore, clicking the close control, the backdrop, or Escape. It is device-persisted, and accounts with existing XP skip it so a reset local browser state cannot make an experienced gardener feel new again.
 - The idle garden remains visually balanced before and after an action; stronger focus is reserved for a plant the user explicitly opens.
 - Use real plant/background assets; do not replace them with emoji or placeholder drawings.
 

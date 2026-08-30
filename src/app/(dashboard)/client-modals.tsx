@@ -11,10 +11,25 @@ const OnboardingModal = dynamic(
   () => import('@/components/onboarding').then(m => ({ default: m.OnboardingModal })),
   { ssr: false }
 )
-export function ClientModals() {
+
+export function shouldDisplayOnboarding(
+  hasExistingProgress: boolean,
+  hasCompletedOnboardingOnDevice: boolean
+): boolean {
+  return !hasExistingProgress && !hasCompletedOnboardingOnDevice
+}
+
+interface ClientModalsProps {
+  hasExistingProgress: boolean
+}
+
+export function ClientModals({ hasExistingProgress }: ClientModalsProps) {
   const shouldLoadOnboarding = useSyncExternalStore(
     subscribeToLocalStorage,
-    () => !localStorage.getItem('habit-garden-onboarding-completed'),
+    () => shouldDisplayOnboarding(
+      hasExistingProgress,
+      Boolean(localStorage.getItem('habit-garden-onboarding-completed'))
+    ),
     () => false
   )
 
