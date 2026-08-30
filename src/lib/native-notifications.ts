@@ -85,11 +85,13 @@ async function getWebPushRegistration(
   if (!isWebPushSupported()) return null
 
   const existing = await navigator.serviceWorker.getRegistration('/')
-  if (existing || !registerWhenMissing || process.env.NODE_ENV !== 'production') {
-    return existing ?? null
-  }
+  if (existing || !registerWhenMissing) return existing ?? null
 
-  return navigator.serviceWorker.register('/sw.js', { scope: '/' })
+  await navigator.serviceWorker.register('/sw.js', { scope: '/' })
+
+  // A newly registered worker may still be installing. `ready` resolves only
+  // after an active worker controls this origin and can own a PushSubscription.
+  return navigator.serviceWorker.ready
 }
 
 function toPushSubscriptionInput(

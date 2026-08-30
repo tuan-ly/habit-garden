@@ -35,7 +35,9 @@ Migration `20260829221041_web_push_delivery.sql` adds `push_subscriptions` and `
 
 The migration ensures `pg_net` is installed before defining its invoker. `private.enqueue_notification_push_deliveries()` is an invoker trigger that creates one delivery for every subscription owned by the notification recipient. `private.invoke_web_push_dispatcher()` is a private `SECURITY DEFINER` cron boundary with an empty `search_path` and no client execute privilege. It reads `habit_garden_project_url` and `habit_garden_secret_key` from Vault, returns `NULL` when either is absent, and otherwise invokes `push-notifications` through `pg_net` every minute.
 
-Expired subscriptions use `ON DELETE SET NULL` so delivery audit survives cleanup. `scripts/sql/verify-web-push-delivery.sql` transactionally verifies enqueueing, safe idle behavior without Vault secrets and audit retention. Production configuration and deployment are documented in `docs/WEB-PUSH-SETUP.md`; the migration remains local-only until the protected migration-ledger workflow applies it.
+Expired subscriptions use `ON DELETE SET NULL` so delivery audit survives cleanup. `scripts/sql/verify-web-push-delivery.sql` transactionally verifies enqueueing, safe idle behavior without Vault secrets and audit retention. Production configuration and deployment are documented in `docs/WEB-PUSH-SETUP.md`.
+
+The migration was applied to linked project `jkhkfsfjnilbfqfatonb` on 2026-08-30 by migration-ledger workflow run `33281295863` from master commit `e62f22d`. The remote ledger is aligned through all 66 versions. Production catalog verification confirms RLS on both Web Push tables, the notification enqueue trigger, revoked client access to delivery audit and an active one-minute `habit-web-push-dispatcher` cron. The latest checked cron run succeeded and its `pg_net` Edge Function request returned HTTP `200`. VAPID and invoker secrets remain deployment configuration outside migration history.
 
 ## RLS
 
