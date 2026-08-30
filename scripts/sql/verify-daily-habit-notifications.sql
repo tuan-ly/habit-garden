@@ -105,8 +105,10 @@ DO $$
 DECLARE
   v_first_dispatch INTEGER;
   v_second_dispatch INTEGER;
+  v_rescheduled_dispatch INTEGER;
   v_late_dispatch INTEGER;
   v_notification_count INTEGER;
+  v_rescheduled_notification_count INTEGER;
   v_late_notification_count INTEGER;
   v_target NUMERIC;
 BEGIN
@@ -116,6 +118,14 @@ BEGIN
   v_second_dispatch := private.dispatch_due_habit_reminders(
     TIMESTAMPTZ '2026-08-24 01:05:00+00'
   );
+
+  UPDATE public.plants
+  SET reminder_time = '08:07'
+  WHERE id = '92000000-0000-4000-8000-000000000001';
+
+  v_rescheduled_dispatch := private.dispatch_due_habit_reminders(
+    TIMESTAMPTZ '2026-08-24 01:07:00+00'
+  );
   v_late_dispatch := private.dispatch_due_habit_reminders(
     TIMESTAMPTZ '2026-08-24 17:01:00+00'
   );
@@ -124,13 +134,19 @@ BEGIN
   INTO v_notification_count, v_target
   FROM public.notifications
   WHERE user_id = '91000000-0000-4000-8000-000000000001'
-    AND dedupe_key = 'habit-reminder:92000000-0000-4000-8000-000000000001:2026-08-24';
+    AND dedupe_key = 'habit-reminder:92000000-0000-4000-8000-000000000001:2026-08-24:08:00:00';
+
+  SELECT COUNT(*)
+  INTO v_rescheduled_notification_count
+  FROM public.notifications
+  WHERE user_id = '91000000-0000-4000-8000-000000000001'
+    AND dedupe_key = 'habit-reminder:92000000-0000-4000-8000-000000000001:2026-08-24:08:07:00';
 
   SELECT COUNT(*)
   INTO v_late_notification_count
   FROM public.notifications
   WHERE user_id = '91000000-0000-4000-8000-000000000001'
-    AND dedupe_key = 'habit-reminder:92000000-0000-4000-8000-000000000003:2026-08-24';
+    AND dedupe_key = 'habit-reminder:92000000-0000-4000-8000-000000000003:2026-08-24:23:55:00';
 
   IF v_first_dispatch <> 1 THEN
     RAISE EXCEPTION 'Expected one due reminder, got %', v_first_dispatch;
@@ -138,11 +154,17 @@ BEGIN
   IF v_second_dispatch <> 0 THEN
     RAISE EXCEPTION 'Expected idempotent retry to insert zero reminders, got %', v_second_dispatch;
   END IF;
+  IF v_rescheduled_dispatch <> 1 THEN
+    RAISE EXCEPTION 'Expected a same-day reschedule to insert one reminder, got %', v_rescheduled_dispatch;
+  END IF;
   IF v_late_dispatch <> 1 THEN
     RAISE EXCEPTION 'Expected one late-night reminder across midnight, got %', v_late_dispatch;
   END IF;
   IF v_notification_count <> 1 THEN
     RAISE EXCEPTION 'Expected one deduplicated inbox row, got %', v_notification_count;
+  END IF;
+  IF v_rescheduled_notification_count <> 1 THEN
+    RAISE EXCEPTION 'Expected one inbox row for the changed reminder time, got %', v_rescheduled_notification_count;
   END IF;
   IF v_target <> 30 THEN
     RAISE EXCEPTION 'Expected daily target 30, got %', v_target;

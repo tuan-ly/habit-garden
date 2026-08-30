@@ -6,6 +6,10 @@ const migration = readFileSync(
   resolve('supabase/migrations/20260823143710_daily_habit_notifications.sql'),
   'utf8'
 )
+const rescheduleMigration = readFileSync(
+  resolve('supabase/migrations/20260830085552_reschedule_daily_habit_reminders.sql'),
+  'utf8'
+)
 const actions = readFileSync(
   resolve('src/lib/actions/notifications.ts'),
   'utf8'
@@ -25,13 +29,18 @@ const nativeNotifications = readFileSync(
 )
 
 describe('daily habit notification persistence contract', () => {
-  it('deduplicates one scheduled reminder per user, habit, and local date', () => {
+  it('deduplicates scheduled reminders by habit, local date, and configured time', () => {
     expect(migration).toContain('ADD COLUMN IF NOT EXISTS dedupe_key TEXT')
     expect(migration).toContain('notifications_user_dedupe_key_unique')
     expect(migration).toContain("'habit-reminder:' || item.plant_id::TEXT || ':' || item.local_date::TEXT")
     expect(migration).toContain(
       'ON CONFLICT (user_id, dedupe_key) WHERE dedupe_key IS NOT NULL'
     )
+    expect(rescheduleMigration).toContain('notifications_version_habit_reminder_dedupe')
+    expect(rescheduleMigration).toContain("NEW.type NOT IN ('habit_reminder', 'goal_warning')")
+    expect(rescheduleMigration).toContain("TO_CHAR(v_reminder_time, 'HH24:MI:SS')")
+    expect(rescheduleMigration).toContain('SECURITY INVOKER')
+    expect(rescheduleMigration).toContain("SET search_path = ''")
   })
 
   it('dispatches by the owner timezone and respects both global and per-habit switches', () => {

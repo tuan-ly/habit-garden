@@ -27,6 +27,8 @@ Migration `20260823143710_daily_habit_notifications.sql` adds nullable `notifica
 
 `private.dispatch_due_habit_reminders(...)` is `SECURITY INVOKER`, has an empty `search_path`, and is executable only by the cron owner. It evaluates each profile timezone, handles a ten-minute due window across midnight, reads legacy goals and capability `daily_progress`, suppresses completed plants, and uses `ON CONFLICT` for retry safety. `scripts/sql/verify-daily-habit-notifications.sql` is the rollback-only local probe.
 
+Migration `20260830085552_reschedule_daily_habit_reminders.sql` versions scheduled reminder dedupe keys by plant, local date and configured reminder time. A private invoker-safe `BEFORE INSERT` trigger canonicalizes the key, so changing a habit from an already-dispatched time to a later time on the same day creates one new reminder while cron retries at the unchanged time remain idempotent.
+
 The migration was applied to linked project `jkhkfsfjnilbfqfatonb` on 2026-08-27 by migration-ledger workflow run `33083824941` from commit `a1f93c3`. The remote ledger and dry-run are aligned, the five-minute cron job is active, its first verified execution succeeded, the dispatcher remains unavailable to `anon` and `authenticated`, and ERROR-level database advisors report no issues.
 
 ## Web Push Delivery
