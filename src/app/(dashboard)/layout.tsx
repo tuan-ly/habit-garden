@@ -38,6 +38,7 @@ export default async function DashboardLayout({
   const activeCapabilitySession = activeSessionResult.success
     ? activeSessionResult.data
     : null
+  const hasExistingProgress = (profile?.xp ?? 0) > 0
 
   return (
     <DashboardProviders
@@ -71,7 +72,7 @@ export default async function DashboardLayout({
         <GameNav />
 
         <Toaster />
-        <ClientModals />
+        <ClientModals hasExistingProgress={hasExistingProgress} />
         <TimezoneSync currentTimezone={userTimezone} />
       </div>
     </DashboardProviders>
